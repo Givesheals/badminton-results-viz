@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  base: process.env.GITHUB_PAGES ? '/badminton-results-viz/' : '/',
   plugins: [react(), tailwindcss()],
   test: {
     environment: 'node',

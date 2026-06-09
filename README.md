@@ -1,16 +1,16 @@
 # Badminton Results Viz
 
-Local prototype for uploading badminton match results (Excel or CSV) and exploring charts. Built for user testing before a full product.
+Prototype for uploading badminton match results (Excel or CSV) and exploring charts. Built for user testing before a full product.
 
-**Privacy:** This is a client-only app. When you upload a spreadsheet, parsing happens entirely in your browser — match data is never sent to a server.
+**Privacy:** This is a client-only app. When you upload a spreadsheet, parsing happens entirely in your browser — match data is never sent to a server. The app only works with the specific Match History export format, so casual visitors cannot do much without your data.
 
-## Hosted preview (no install)
+## Live preview (no install)
 
-Open the live preview in any browser:
+Open in any browser:
 
-**https://badminton-results-viz.vercel.app**
+**https://simparele.github.io/badminton-results-viz/**
 
-Share this URL only with people you invite. The site is unlisted (not indexed by search engines).
+The repo is public but unlisted — share the link only with people you invite. The site uses `noindex` so search engines should not index it.
 
 ## Local setup
 
@@ -65,7 +65,7 @@ Uploads expect the standard **Match History** export with columns like `Competit
 
 - **`npm` is not recognized:** Restart the terminal after installing Node, or reinstall Node with "Add to PATH" checked
 - **Port 5173 is busy:** Vite picks the next available port — use the URL shown in the terminal
-- **Corporate firewall:** Local dev uses localhost only; the hosted preview URL needs normal HTTPS access
+- **Corporate firewall:** Local dev uses localhost only; the live preview URL needs normal HTTPS access
 
 ## Project layout
 
@@ -80,6 +80,8 @@ src/
 public/samples/   Example CSV you can upload
 ```
 
-## Contributing
+## Sharing with others
 
-This is a private prototype. If you have access to the repo, open a pull request or push to a branch for review.
+Anyone with the GitHub Pages link can open the app. They need a Match History export in the expected format to see real data — otherwise they can only use **Load sample data**.
+
+To contribute code, fork the repo or ask to be added as a collaborator.
