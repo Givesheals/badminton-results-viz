@@ -1,0 +1,84 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans:
+    'Segoe UI', 'Segoe UI Variable Text', 'Segoe UI Variable Display', 'Helvetica Neue',
+    Arial, system-ui, sans-serif;
+
+  --color-brand-50: #f6effb;
+  --color-brand-100: #e8d8f7;
+  --color-brand-200: #d6bbf0;
+  --color-brand-300: #bf97e5;
+  --color-brand-400: #9c63d0;
+  --color-brand-500: #7030a5;
+  --color-brand-600: #41016f;
+  --color-brand-700: #35015b;
+  --color-brand-800: #290146;
+  --color-brand-900: #1b0130;
+
+  --color-court-50: #edf8ee;
+  --color-court-100: #d7edd9;
+  --color-court-200: #b8dcb9;
+  --color-court-300: #89bf8b;
+  --color-court-500: #2f8e39;
+  --color-court-600: #047e10;
+  --color-court-700: #04670d;
+  --color-court-800: #034f0a;
+
+  --color-shuttle-400: #d9cf72;
+  --color-shuttle-500: #b6ab43;
+
+  --color-ink-50: #f8f8fb;
+  --color-ink-100: #ececf2;
+  --color-ink-200: #d8d9e2;
+  --color-ink-300: #bcc0cc;
+  --color-ink-400: #8d93a3;
+  --color-ink-500: #626979;
+  --color-ink-600: #4b5260;
+  --color-ink-700: #343a48;
+  --color-ink-800: #232936;
+  --color-ink-900: #141926;
+
+  --color-gain-50: #edf8ee;
+  --color-gain-100: #d7edd9;
+  --color-gain-600: #047e10;
+  --color-gain-700: #04670d;
+
+  --color-loss-50: #f9ebeb;
+  --color-loss-100: #f1d2d2;
+  --color-loss-600: #a10000;
+  --color-loss-700: #850000;
+
+  --color-level-copper: #9dd8c2;
+  --color-level-bronze: #eda687;
+  --color-level-silver: #b0b0b0;
+  --color-level-gold: #fff500;
+  --color-level-county: #159eda;
+  --color-level-medal-text: #41016f;
+
+  --color-discipline-mixed: #7acfd2;
+  --color-discipline-doubles: #a0acda;
+  --color-discipline-singles: #d1ca7b;
+  --color-discipline-mixed-soft: #f7fcfc;
+  --color-discipline-doubles-soft: #f8f9fd;
+  --color-discipline-singles-soft: #fcfaf5;
+
+  --color-surface-border: #d0d2dc;
+  --border-width-card: 1.5px;
+}
+
+@utility card-frame {
+  border-width: var(--border-width-card);
+  border-style: solid;
+  border-color: var(--color-surface-border);
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply min-h-screen bg-white text-ink-900 font-sans;
+  }
+}

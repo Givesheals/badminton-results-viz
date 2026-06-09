@@ -1,0 +1,528 @@
+import { useMemo, useState, type ReactNode } from 'react'
+import { useSectionMatches } from '../../hooks/useSectionMatches'
+import { useResetFiltersOnImport } from '../../hooks/useResetFiltersOnImport'
+import { countActiveSectionFilters } from '../../lib/filterCounts'
+import { getDisciplineStyle } from '../../lib/disciplineStyle'
+import {
+  formatRatingGap,
+  formatWholePercent,
+  formatWinLossRecord,
+} from '../../lib/formatNumbers'
+import { getMatchGames } from '../../lib/matchScores'
+import {
+  computeOpponentMatchups,
+  DEFAULT_MIN_MEETINGS,
+  DEFAULT_MIN_SCALP_WINS,
+  getHeadToHeadMatches,
+  type OpponentH2HRow,
+} from '../../lib/opponentMatchups'
+import type { FilterOptions } from '../../types/filters'
+import { DEFAULT_MATCH_FILTERS, type MatchFilters } from '../../types/filters'
+import type { NormalizedMatch } from '../../types/matchHistory'
+import { DisciplineChip } from '../discipline/DisciplineChip'
+import { CollapsibleFilters } from '../filters/CollapsibleFilters'
+import { FilterMatchCount } from '../filters/FilterMatchCount'
+import { SectionFilterBar } from '../filters/SectionFilterBar'
+import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
+import { favouriteOpponentsInfo, nemesesInfo } from '../../content/sectionInfo'
+import { SectionHeading } from '../ui/SectionHeading'
+
+const LIMIT_OPTIONS = [5, 10, 15] as const
+const DEFAULT_LIMIT = 5
+
+type MatchupKind = 'nemesis' | 'scalp'
+
+const PANEL_STYLES: Record<
+  MatchupKind,
+  { wrapper: string; title: string; list: string }
+> = {
+  nemesis: {
+    wrapper: '',
+    title: 'text-loss-700',
+    list: 'mt-1.5 space-y-1.5',
+  },
+  scalp: {
+    wrapper: '',
+    title: 'text-gain-700',
+    list: 'mt-1.5 space-y-1',
+  },
+}
+
+const ROW_STYLES: Record<
+  MatchupKind,
+  {
+    row: string
+    rank: string
+    metric: string
+    metricLabel: string
+    lossPercent: string
+    summaryButton: string
+  }
+> = {
+  nemesis: {
+    row: 'rounded-lg card-frame bg-white',
+    rank: 'bg-loss-100 text-loss-700 ring-1 ring-loss-100',
+    metric: 'text-loss-700',
+    metricLabel: 'text-loss-700/80',
+    lossPercent: 'font-medium text-loss-700',
+    summaryButton: 'hover:bg-loss-50/60 focus-visible:ring-loss-100',
+  },
+  scalp: {
+    row: 'rounded-lg card-frame bg-white',
+    rank: 'bg-gain-100 text-gain-700 ring-1 ring-gain-100',
+    metric: 'text-gain-700',
+    metricLabel: 'text-gain-700/80',
+    lossPercent: '',
+    summaryButton: 'hover:bg-gain-50/60 focus-visible:ring-gain-100',
+  },
+}
+
+type Props = {
+  allMatches: NormalizedMatch[]
+  filterOptions: FilterOptions
+  importedAt: string | undefined
+}
+
+export function OpponentMatchupsSection({
+  allMatches,
+  filterOptions,
+  importedAt,
+}: Props) {
+  const fields = ['time', 'discipline'] as const
+  const [filters, setFilters] = useState<MatchFilters>(DEFAULT_MATCH_FILTERS)
+  const [limit, setLimit] = useState<number>(DEFAULT_LIMIT)
+  const [minMeetings, setMinMeetings] = useState(DEFAULT_MIN_MEETINGS)
+  const [minScalpWins, setMinScalpWins] = useState(DEFAULT_MIN_SCALP_WINS)
+
+  useResetFiltersOnImport(importedAt, setFilters)
+
+  const matches = useSectionMatches(allMatches, filters)
+
+  const matchups = useMemo(
+    () => computeOpponentMatchups(matches, minMeetings, minScalpWins),
+    [matches, minMeetings, minScalpWins],
+  )
+
+  const maxListLength = Math.max(matchups.nemeses.length, matchups.scalps.length)
+  const limitOptions: number[] = [...LIMIT_OPTIONS]
+  if (maxListLength > 15) {
+    limitOptions.push(maxListLength)
+  }
+
+  const nemesisRows = matchups.nemeses.slice(0, limit)
+  const scalpRows = matchups.scalps.slice(0, limit)
+  const activeCount =
+    countActiveSectionFilters(filters, [...fields]) +
+    (limit !== DEFAULT_LIMIT ? 1 : 0) +
+    (minMeetings !== DEFAULT_MIN_MEETINGS ? 1 : 0) +
+    (minScalpWins !== DEFAULT_MIN_SCALP_WINS ? 1 : 0)
+
+  return (
+    <article
+      id="opponent-matchups"
+      className="scroll-mt-6 rounded-2xl card-frame bg-white p-4 shadow-sm"
+    >
+      <SectionHeaderWithFilters
+        title={
+          <h3 className="font-medium text-ink-900">Nemeses &amp; favourite opponents</h3>
+        }
+        description={
+          <FilterMatchCount filteredCount={matches.length} totalCount={allMatches.length} />
+        }
+        filters={
+          <CollapsibleFilters
+            storageKey="filters:opponents"
+            activeCount={activeCount}
+            onReset={() => {
+              setFilters(DEFAULT_MATCH_FILTERS)
+              setLimit(DEFAULT_LIMIT)
+              setMinMeetings(DEFAULT_MIN_MEETINGS)
+              setMinScalpWins(DEFAULT_MIN_SCALP_WINS)
+            }}
+          >
+            <fieldset className="flex flex-wrap items-end gap-3 text-sm">
+              <legend className="sr-only">Opponent matchup filters</legend>
+              <SectionFilterBar
+                fields={[...fields]}
+                filters={filters}
+                options={filterOptions}
+                onChange={setFilters}
+                idPrefix="opponents"
+                className="contents"
+              />
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-ink-700">
+                  Minimum meetings
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={minMeetings}
+                  onChange={(e) => {
+                    const next = Number.parseInt(e.target.value, 10)
+                    if (Number.isFinite(next) && next >= 1) {
+                      setMinMeetings(Math.min(99, next))
+                    }
+                  }}
+                  className="w-20 rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-ink-700">Show top</span>
+                <select
+                  value={limit}
+                  onChange={(e) => setLimit(Number.parseInt(e.target.value, 10))}
+                  className="min-w-[4.5rem] appearance-none rounded-lg border border-ink-200 bg-white py-2 pl-3 pr-8 text-sm text-ink-900 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                >
+                  {limitOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option === maxListLength && maxListLength > 15 ? 'All' : option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </fieldset>
+          </CollapsibleFilters>
+        }
+      />
+
+      {matchups.competitiveMatchCount === 0 ? (
+        <p className="mt-4 flex h-32 items-center justify-center text-sm text-ink-700">
+          No competitive wins or losses in the current selection.
+        </p>
+      ) : (
+        <>
+          {matchups.hiddenBelowThresholdCount > 0 && (
+            <p className="mt-3 text-xs text-ink-500">
+              {matchups.hiddenBelowThresholdCount} opponent
+              {matchups.hiddenBelowThresholdCount === 1 ? '' : 's'} hidden below{' '}
+              {minMeetings} meeting{minMeetings === 1 ? '' : 's'}
+            </p>
+          )}
+          <div className="mt-3 grid gap-5 lg:grid-cols-2">
+            <MatchupPanel
+              title="Nemeses"
+              info={nemesesInfo}
+              infoLabel="About Nemeses"
+              rows={nemesisRows}
+              kind="nemesis"
+              matches={matches}
+              emptyMessage={
+                matchups.nemeses.length === 0
+                  ? 'No opponents you are behind on at this threshold.'
+                  : undefined
+              }
+            />
+            <MatchupPanel
+              title="Favourite opponents"
+              info={favouriteOpponentsInfo}
+              infoLabel="About Favourite opponents"
+              rows={scalpRows}
+              kind="scalp"
+              matches={matches}
+              minWins={minScalpWins}
+              onMinWinsChange={setMinScalpWins}
+              emptyMessage={
+                matchups.scalps.length === 0
+                  ? `No opponents with at least ${minScalpWins} rated win${minScalpWins === 1 ? '' : 's'} when they were higher.`
+                  : undefined
+              }
+            />
+          </div>
+        </>
+      )}
+    </article>
+  )
+}
+
+type PanelProps = {
+  title: string
+  info: ReactNode
+  infoLabel: string
+  rows: OpponentH2HRow[]
+  kind: MatchupKind
+  matches: NormalizedMatch[]
+  emptyMessage?: string
+  minWins?: number
+  onMinWinsChange?: (value: number) => void
+}
+
+function MatchupPanel({
+  title,
+  info,
+  infoLabel,
+  rows,
+  kind,
+  matches,
+  emptyMessage,
+  minWins,
+  onMinWinsChange,
+}: PanelProps) {
+  const panel = PANEL_STYLES[kind]
+  const showScalpControl =
+    kind === 'scalp' && minWins != null && onMinWinsChange != null
+
+  return (
+    <section className={panel.wrapper || undefined}>
+      <div
+        className={
+          showScalpControl
+            ? 'flex flex-wrap items-end justify-between gap-2'
+            : undefined
+        }
+      >
+        <SectionHeading size="panel" info={info} infoLabel={infoLabel}>
+          <h4
+            className={`text-xs font-medium uppercase tracking-wide ${
+              panel.title
+            }`}
+          >
+            {title}
+          </h4>
+        </SectionHeading>
+        {showScalpControl && (
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs font-medium text-gain-700">
+              Min. wins
+            </span>
+            <input
+              type="number"
+              min={1}
+              max={99}
+              value={minWins}
+              onChange={(e) => {
+                const next = Number.parseInt(e.target.value, 10)
+                if (Number.isFinite(next) && next >= 1) {
+                  onMinWinsChange(Math.min(99, next))
+                }
+              }}
+              className="w-16 rounded-lg border border-gain-100 bg-white px-2 py-1.5 text-sm text-ink-900 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+            />
+          </label>
+        )}
+      </div>
+      {rows.length === 0 ? (
+        <p className="mt-2 text-sm text-ink-700">{emptyMessage ?? 'None in this selection.'}</p>
+      ) : (
+        <ol className={panel.list}>
+          {rows.map((row, index) => (
+            <MatchupRowItem
+              key={`${row.opponentName}-${index}`}
+              row={row}
+              kind={kind}
+              rank={index + 1}
+              matches={matches}
+            />
+          ))}
+        </ol>
+      )}
+    </section>
+  )
+}
+
+function MatchupRowItem({
+  row,
+  kind,
+  rank,
+  matches,
+}: {
+  row: OpponentH2HRow
+  kind: MatchupKind
+  rank: number
+  matches: NormalizedMatch[]
+}) {
+  const [open, setOpen] = useState(false)
+  const record = formatWinLossRecord(row.wins, row.losses)
+  const scalpGap = row.avgRatingGap
+  const styles = ROW_STYLES[kind]
+  const h2hMatches = useMemo(
+    () => getHeadToHeadMatches(matches, row.opponentName),
+    [matches, row.opponentName],
+  )
+
+  return (
+    <li className={styles.row}>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className={`flex w-full items-center gap-2.5 rounded-lg py-2.5 pr-3 pl-2.5 text-left transition focus:outline-none focus-visible:ring-2 ${styles.summaryButton}`}
+        aria-expanded={open}
+      >
+        <span
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums ${styles.rank}`}
+          aria-hidden
+        >
+          {rank}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-ink-900" title={row.opponentName}>
+            {row.opponentName}
+          </p>
+          <p className="text-xs text-ink-600">
+            {kind === 'nemesis' ? (
+              <>
+                {row.games} meeting{row.games === 1 ? '' : 's'}
+                <span className="text-loss-600/30"> · </span>
+                {row.wins} win{row.wins === 1 ? '' : 's'}
+                <span className="text-loss-600/30"> · </span>
+                <span className={styles.lossPercent}>
+                  {formatWholePercent(row.lossPercent)} losses
+                </span>
+              </>
+            ) : (
+              <>
+                {row.ratedUpsetWins} win{row.ratedUpsetWins === 1 ? '' : 's'} when they were
+                rated higher
+                {scalpGap != null && (
+                  <>
+                    <span className="text-ink-400"> · </span>
+                    avg {formatRatingGap(scalpGap)} pts
+                  </>
+                )}
+                <span className="text-ink-400"> · </span>
+                {record}
+              </>
+            )}
+          </p>
+        </div>
+        <p
+          className={`shrink-0 tabular-nums text-sm font-semibold ${styles.metric}`}
+          title={
+            kind === 'nemesis'
+              ? `${row.losses} loss${row.losses === 1 ? '' : 'es'} against ${row.opponentName}`
+              : ratingGapTitle(scalpGap, row.ratedUpsetWins, row.opponentName)
+          }
+        >
+          {kind === 'nemesis' ? (
+            <>
+              {row.losses}
+              <span className={`ml-0.5 text-xs font-normal ${styles.metricLabel}`}>
+                losses
+              </span>
+            </>
+          ) : scalpGap != null ? (
+            <>
+              {formatRatingGap(scalpGap)}
+              <span className={`ml-0.5 text-xs font-normal ${styles.metricLabel}`}>avg</span>
+            </>
+          ) : null}
+        </p>
+        <ChevronIcon open={open} kind={kind} />
+      </button>
+
+      {open ? <OpponentH2HMatchList matches={h2hMatches} /> : null}
+    </li>
+  )
+}
+
+function OpponentH2HMatchList({ matches }: { matches: NormalizedMatch[] }) {
+  return (
+    <ul className="space-y-1 border-t border-ink-50 bg-ink-50/40 px-2 py-2">
+      {matches.map((match, index) => (
+        <OpponentH2HMatchRow
+          key={`${match.date}-${match.competitionName}-${index}`}
+          match={match}
+        />
+      ))}
+    </ul>
+  )
+}
+
+function OpponentH2HMatchRow({ match }: { match: NormalizedMatch }) {
+  const style = getDisciplineStyle(match.discipline)
+  const games = getMatchGames(match)
+  const outcomeLabel =
+    match.outcome === 'win' ? 'Win' : match.outcome === 'loss' ? 'Loss' : null
+
+  return (
+    <li
+      className={`grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-0.5 rounded-r border-l-4 py-1.5 pl-2 pr-1 ${style.borderClass} bg-white`}
+    >
+      <DisciplineChip code={match.discipline} className="row-span-2 self-center" />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-ink-900" title={match.competitionName}>
+          {match.competitionName}
+        </p>
+        <p className="text-xs text-ink-500">
+          {formatShortDate(match.date)}
+          {match.partnerName ? (
+            <>
+              <span className="text-ink-300"> · </span>
+              with {match.partnerName}
+            </>
+          ) : null}
+        </p>
+        <p className="text-xs text-ink-600">
+          {outcomeLabel != null && (
+            <span
+              className={
+                match.outcome === 'win'
+                  ? 'font-medium text-gain-700'
+                  : 'font-medium text-loss-700'
+              }
+            >
+              {outcomeLabel}
+              {match.scoreSummary ? ' · ' : ''}
+            </span>
+          )}
+          {match.scoreSummary || (games.length === 0 ? '—' : null)}
+        </p>
+      </div>
+      {games.length > 0 ? (
+        <div className="self-center text-right text-xs tabular-nums text-ink-800">
+          {games.map((game) => (
+            <p key={game.game}>
+              <ScoreSpan value={game.player} won={game.player > game.opponent} />
+              <span className="text-ink-400">-</span>
+              <ScoreSpan value={game.opponent} won={game.opponent > game.player} />
+            </p>
+          ))}
+        </div>
+      ) : null}
+    </li>
+  )
+}
+
+function ScoreSpan({ value, won }: { value: number; won: boolean }) {
+  return <span className={won ? 'font-bold' : ''}>{value}</span>
+}
+
+function ChevronIcon({ open, kind }: { open: boolean; kind: MatchupKind }) {
+  const color = kind === 'nemesis' ? 'text-loss-600' : 'text-gain-700'
+  return (
+    <svg
+      className={`h-3.5 w-3.5 shrink-0 transition ${color} ${open ? 'rotate-180' : ''}`}
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path
+        fillRule="evenodd"
+        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z"
+        clipRule="evenodd"
+      />
+    </svg>
+  )
+}
+
+function ratingGapTitle(
+  gap: number | null,
+  upsetWins: number,
+  opponentName: string,
+): string {
+  if (gap == null) {
+    return `${upsetWins} win${upsetWins === 1 ? '' : 's'} vs higher-rated ${opponentName}`
+  }
+  return `Across ${upsetWins} win${upsetWins === 1 ? '' : 's'} vs ${opponentName}, they were rated ${gap} pts higher than you on average before the match`
+}
+
+function formatShortDate(isoDate: string): string {
+  const date = new Date(`${isoDate}T12:00:00`)
+  if (Number.isNaN(date.getTime())) return isoDate
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
