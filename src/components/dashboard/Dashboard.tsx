@@ -94,7 +94,7 @@ export function Dashboard() {
         importedAt={dataset.importedAt}
       />
 
-      <BestWinsSection matches={allMatches} />
+      <BestWinsSection allMatches={allMatches} />
 
       <TournamentProgressionSection
         allMatches={allMatches}

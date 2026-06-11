@@ -13,20 +13,37 @@ type Props = {
   row: PartnerAchievementRow
   onSelect?: () => void
   isSelected?: boolean
+  variant?: 'standalone' | 'embedded'
 }
 
-export function PartnerHighlightCard({ row, onSelect, isSelected = false }: Props) {
+export function PartnerHighlightCard({
+  row,
+  onSelect,
+  isSelected = false,
+  variant = 'standalone',
+}: Props) {
   const chips = PROGRESSION_STAGE_CHIP_ORDER.filter(
     (stage) => (row.stageCounts[stage] ?? 0) > 0,
   )
 
+  const isEmbedded = variant === 'embedded'
+
   const className = [
-    'w-full rounded-xl bg-white p-4 text-left shadow-sm transition',
-    isSelected
-      ? 'border border-brand-400 bg-brand-50/35 ring-2 ring-brand-100'
-      : 'card-frame',
+    'w-full p-4 text-left transition',
+    isEmbedded
+      ? isSelected
+        ? 'bg-brand-50/35'
+        : 'bg-white'
+      : [
+          'rounded-xl bg-white shadow-sm',
+          isSelected
+            ? 'border border-brand-400 bg-brand-50/35 ring-2 ring-brand-100'
+            : 'card-frame',
+        ].join(' '),
     onSelect != null
-      ? 'cursor-pointer hover:border-brand-300 hover:bg-brand-50/20 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
+      ? isEmbedded
+        ? 'cursor-pointer hover:bg-brand-50/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200'
+        : 'cursor-pointer hover:border-brand-300 hover:bg-brand-50/20 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
       : '',
   ]
     .filter(Boolean)

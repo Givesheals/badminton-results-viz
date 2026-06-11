@@ -211,34 +211,36 @@ function PartnerHighlightsFamilyBlockBody({
         </p>
       ) : (
         <>
-          <ul
-            className={
-              isSinglePartner ? 'max-w-md space-y-3' : 'grid gap-3 sm:grid-cols-2'
-            }
-          >
-            {visible.map((row) => (
-              <li key={row.partnerName}>
-                <PartnerHighlightCard
-                  row={row}
-                  onSelect={
-                    isSinglePartner
-                      ? undefined
-                      : () => onSelectedPartnerChange(row.partnerName)
-                  }
-                  isSelected={isSinglePartner}
-                />
-              </li>
-            ))}
-          </ul>
-
-          {isSinglePartner && partnerInPeriod ? (
-            <PartnerTournamentHistoryPanel
-              matches={familyMatches}
-              partnerName={selectedPartner}
-              family={family}
-              disciplineCode={disciplineCode}
-            />
-          ) : null}
+          {isSinglePartner ? (
+            visible.map((row) => (
+              <div
+                key={row.partnerName}
+                className="max-w-md overflow-hidden rounded-xl card-frame bg-white shadow-sm"
+              >
+                <PartnerHighlightCard row={row} isSelected variant="embedded" />
+                {partnerInPeriod ? (
+                  <PartnerTournamentHistoryPanel
+                    matches={familyMatches}
+                    partnerName={selectedPartner}
+                    family={family}
+                    disciplineCode={disciplineCode}
+                    variant="embedded"
+                  />
+                ) : null}
+              </div>
+            ))
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {visible.map((row) => (
+                <li key={row.partnerName}>
+                  <PartnerHighlightCard
+                    row={row}
+                    onSelect={() => onSelectedPartnerChange(row.partnerName)}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
 
           {!isSinglePartner ? (
             <div className="space-y-2 pt-1">

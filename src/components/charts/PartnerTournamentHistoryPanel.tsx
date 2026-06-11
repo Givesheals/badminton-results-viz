@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import type { DisciplineFamily } from '../../lib/disciplineStyle'
 import { getDisciplineStyle } from '../../lib/disciplineStyle'
 import { getMatchGames } from '../../lib/matchScores'
@@ -24,6 +24,7 @@ type Props = {
   partnerName: string
   family: DisciplineFamily
   disciplineCode: string
+  variant?: 'standalone' | 'embedded'
 }
 
 export function PartnerTournamentHistoryPanel({
@@ -31,6 +32,7 @@ export function PartnerTournamentHistoryPanel({
   partnerName,
   family,
   disciplineCode,
+  variant = 'standalone',
 }: Props) {
   return (
     <PartnerTournamentHistoryPanelBody
@@ -39,6 +41,7 @@ export function PartnerTournamentHistoryPanel({
       partnerName={partnerName}
       family={family}
       disciplineCode={disciplineCode}
+      variant={variant}
     />
   )
 }
@@ -48,8 +51,10 @@ function PartnerTournamentHistoryPanelBody({
   partnerName,
   family,
   disciplineCode,
+  variant = 'standalone',
 }: Props) {
   const [open, setOpen] = useState(false)
+  const panelId = useId()
 
   const groups = useMemo(
     () => buildPartnerTournamentHistory(matches, partnerName, family),
@@ -58,10 +63,66 @@ function PartnerTournamentHistoryPanelBody({
   const eventCount = countPartnerTournamentEvents(groups)
 
   if (eventCount === 0) {
+    if (variant === 'embedded') {
+      return (
+        <div className="border-t border-ink-100 px-4 py-3">
+          <p className="text-sm text-ink-600">
+            No tournament progression events with {partnerName} in this selection.
+          </p>
+        </div>
+      )
+    }
+
     return (
       <p className="text-sm text-ink-600">
         No tournament progression events with {partnerName} in this selection.
       </p>
+    )
+  }
+
+  const toggleLabel = open
+    ? 'Hide tournament history'
+    : `Explore ${eventCount} tournaments together`
+
+  const historyContent = (
+    <>
+      <p className="text-xs text-ink-500">
+        Grouped by how far you went together — deepest finishes first. Within each stage,
+        newest events appear first.
+      </p>
+      {groups.map((group) => (
+        <StageGroupSection
+          key={group.stage}
+          group={group}
+          disciplineCode={disciplineCode}
+        />
+      ))}
+    </>
+  )
+
+  if (variant === 'embedded') {
+    return (
+      <div className="border-t border-ink-100">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className="flex w-full items-center justify-between gap-3 bg-brand-50/80 px-4 py-2.5 text-left text-sm font-medium text-brand-800 transition hover:bg-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200"
+          aria-expanded={open}
+          aria-controls={panelId}
+        >
+          <span>{toggleLabel}</span>
+          <ChevronIcon open={open} />
+        </button>
+
+        {open ? (
+          <div
+            id={panelId}
+            className="space-y-2 border-t border-ink-100 bg-ink-50/30 px-3 py-3"
+          >
+            {historyContent}
+          </div>
+        ) : null}
+      </div>
     )
   }
 
@@ -72,24 +133,18 @@ function PartnerTournamentHistoryPanelBody({
         onClick={() => setOpen((value) => !value)}
         className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50/80 px-3 py-2 text-sm font-medium text-brand-800 shadow-sm transition hover:border-brand-300 hover:bg-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
         aria-expanded={open}
+        aria-controls={panelId}
       >
-        {open ? 'Hide tournament history' : `Explore ${eventCount} tournaments together`}
+        {toggleLabel}
         <ChevronIcon open={open} />
       </button>
 
       {open ? (
-        <div className="space-y-2 rounded-xl card-frame bg-white/80 p-3 shadow-inner">
-          <p className="text-xs text-ink-500">
-            Grouped by how far you went together — deepest finishes first. Within each stage,
-            newest events appear first.
-          </p>
-          {groups.map((group) => (
-            <StageGroupSection
-              key={group.stage}
-              group={group}
-              disciplineCode={disciplineCode}
-            />
-          ))}
+        <div
+          id={panelId}
+          className="space-y-2 rounded-xl card-frame bg-white/80 p-3 shadow-inner"
+        >
+          {historyContent}
         </div>
       ) : null}
     </div>

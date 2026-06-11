@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import {
   computeBestWins,
-  selectUpsetRowsExcludingStrength,
+  selectUpsetRows,
   type BestWinRow,
 } from '../../lib/bestWins'
 import {
@@ -16,89 +16,138 @@ import { getTournamentCategoryChipStyle } from '../../lib/tournamentCategoryStyl
 import { DisciplineChip } from '../discipline/DisciplineChip'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
 import { biggestUpsetsInfo, strongestBeatenInfo } from '../../content/sectionInfo'
+import { CollapsibleFilters } from '../filters/CollapsibleFilters'
+import { FilterMatchCount } from '../filters/FilterMatchCount'
+import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
 import { SectionHeading } from '../ui/SectionHeading'
 
 const LIMIT_OPTIONS = [3, 5, 10] as const
 const DEFAULT_LIMIT = 5
 
 const FILTER_SELECT_CLASS =
-  'rounded-lg border border-ink-100 bg-white py-1 pl-2 pr-7 text-sm text-ink-900 shadow-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100'
+  'min-w-[4.5rem] appearance-none rounded-lg border border-ink-200 bg-white py-2 pl-3 pr-8 text-sm text-ink-900 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100'
 
 type BestWinsDisciplineFilter = 'all' | 'singles' | 'doubles' | 'mixed'
 
 type Props = {
-  matches: NormalizedMatch[]
+  allMatches: NormalizedMatch[]
 }
 
-export function BestWinsSection({ matches }: Props) {
+export function BestWinsSection({ allMatches }: Props) {
   const [limit, setLimit] = useState<number>(DEFAULT_LIMIT)
   const [disciplineFilter, setDisciplineFilter] =
     useState<BestWinsDisciplineFilter>('all')
+  const [excludeStrengthDuplicates, setExcludeStrengthDuplicates] = useState(true)
 
   const filteredMatches = useMemo(() => {
-    if (disciplineFilter === 'all') return matches
-    return matchesForDisciplineFamily(matches, disciplineFilter)
-  }, [matches, disciplineFilter])
+    if (disciplineFilter === 'all') return allMatches
+    return matchesForDisciplineFamily(allMatches, disciplineFilter)
+  }, [allMatches, disciplineFilter])
 
   const bestWins = useMemo(
     () => computeBestWins(filteredMatches),
     [filteredMatches],
   )
 
+  const limitOptions: number[] = [...LIMIT_OPTIONS]
+  if (bestWins.ratedWinCount > 10) {
+    limitOptions.push(bestWins.ratedWinCount)
+  }
+
   const strengthRows = bestWins.byOpponentStrength.slice(0, limit)
   const upsetRows = useMemo(
     () =>
-      selectUpsetRowsExcludingStrength(
-        bestWins.byOpponentStrength,
-        bestWins.byUpset,
-        limit,
-      ),
-    [bestWins.byOpponentStrength, bestWins.byUpset, limit],
+      selectUpsetRows(bestWins.byOpponentStrength, bestWins.byUpset, limit, {
+        excludeStrengthDuplicates,
+      }),
+    [
+      bestWins.byOpponentStrength,
+      bestWins.byUpset,
+      limit,
+      excludeStrengthDuplicates,
+    ],
   )
+
+  const activeCount =
+    (limit !== DEFAULT_LIMIT ? 1 : 0) +
+    (disciplineFilter !== 'all' ? 1 : 0) +
+    (excludeStrengthDuplicates === false ? 1 : 0)
 
   return (
     <article
       id="best-wins"
       className="scroll-mt-6 rounded-2xl card-frame bg-white p-4 shadow-sm"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="font-medium text-ink-900">Best wins</h3>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-ink-700">
-            <span className="sr-only">How many wins to show per list</span>
-            <span aria-hidden>Top</span>
-            <select
-              value={limit}
-              onChange={(e) => setLimit(Number.parseInt(e.target.value, 10))}
-              className={FILTER_SELECT_CLASS}
-            >
-              {LIMIT_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-              {bestWins.ratedWinCount > 10 && (
-                <option value={bestWins.ratedWinCount}>All</option>
-              )}
-            </select>
-          </label>
-          <label>
-            <span className="sr-only">Discipline</span>
-            <select
-              value={disciplineFilter}
-              onChange={(e) =>
-                setDisciplineFilter(e.target.value as BestWinsDisciplineFilter)
-              }
-              className={FILTER_SELECT_CLASS}
-            >
-              <option value="all">All disciplines</option>
-              <option value="singles">Singles</option>
-              <option value="doubles">Doubles</option>
-              <option value="mixed">Mixed</option>
-            </select>
-          </label>
-        </div>
-      </div>
+      <SectionHeaderWithFilters
+        title={<h3 className="font-medium text-ink-900">Best wins</h3>}
+        description={
+          <FilterMatchCount
+            filteredCount={filteredMatches.length}
+            totalCount={allMatches.length}
+          />
+        }
+        filters={
+          <CollapsibleFilters
+            storageKey="filters:best-wins"
+            activeCount={activeCount}
+            onReset={() => {
+              setLimit(DEFAULT_LIMIT)
+              setDisciplineFilter('all')
+              setExcludeStrengthDuplicates(true)
+            }}
+          >
+            <fieldset className="flex flex-wrap items-end gap-3 text-sm">
+              <legend className="sr-only">Best wins filters</legend>
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-ink-700">
+                  Discipline
+                </span>
+                <select
+                  value={disciplineFilter}
+                  onChange={(e) =>
+                    setDisciplineFilter(e.target.value as BestWinsDisciplineFilter)
+                  }
+                  className={FILTER_SELECT_CLASS}
+                >
+                  <option value="all">All disciplines</option>
+                  <option value="singles">Singles</option>
+                  <option value="doubles">Doubles</option>
+                  <option value="mixed">Mixed</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-ink-700">
+                  Show top
+                </span>
+                <select
+                  value={limit}
+                  onChange={(e) => setLimit(Number.parseInt(e.target.value, 10))}
+                  className={FILTER_SELECT_CLASS}
+                >
+                  {limitOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option === bestWins.ratedWinCount && bestWins.ratedWinCount > 10
+                        ? 'All'
+                        : option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-2 self-end pb-2">
+                <input
+                  type="checkbox"
+                  checked={!excludeStrengthDuplicates}
+                  onChange={(e) => setExcludeStrengthDuplicates(!e.target.checked)}
+                  className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-200"
+                />
+                <span className="text-xs font-medium text-ink-700">
+                  Include games already in strongest beaten
+                </span>
+              </label>
+            </fieldset>
+          </CollapsibleFilters>
+        }
+      />
 
       {bestWins.ratedWinCount === 0 ? (
         <p className="mt-3 text-sm text-ink-700">No rated wins in this selection.</p>
@@ -115,7 +164,7 @@ export function BestWinsSection({ matches }: Props) {
             title="Biggest upsets"
             rows={upsetRows}
             metricKind="upset"
-            info={biggestUpsetsInfo(limit)}
+            info={biggestUpsetsInfo(limit, excludeStrengthDuplicates)}
             infoLabel="About Biggest upsets"
           />
         </div>

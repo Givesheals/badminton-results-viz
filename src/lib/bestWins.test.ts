@@ -3,6 +3,7 @@ import type { NormalizedMatch } from '../types/matchHistory'
 import {
   computeBestWins,
   detectBestWinRecapMilestones,
+  selectUpsetRows,
   selectUpsetRowsExcludingStrength,
   type BestWinRow,
 } from './bestWins'
@@ -209,6 +210,29 @@ describe('selectUpsetRowsExcludingStrength', () => {
         (r) => r.match.opponents,
       ),
     ).toEqual(['Underdog'])
+  })
+})
+
+describe('selectUpsetRows', () => {
+  it('includes strongest-beaten rows when excludeStrengthDuplicates is false', () => {
+    const shared = ratedWin(
+      { competitionName: 'Cup', date: '2026-01-01', opponents: 'Star' },
+      700,
+      550,
+    )
+    const otherUpset = ratedWin(
+      { competitionName: 'Cup', date: '2026-02-01', opponents: 'Underdog' },
+      620,
+      550,
+    )
+    const strength = [winRow(shared, 700)]
+    const upset = [winRow(shared, 700), winRow(otherUpset, 620)]
+
+    expect(
+      selectUpsetRows(strength, upset, 1, { excludeStrengthDuplicates: false }).map(
+        (r) => r.match.opponents,
+      ),
+    ).toEqual(['Star'])
   })
 })
 

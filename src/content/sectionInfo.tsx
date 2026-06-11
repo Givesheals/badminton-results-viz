@@ -41,17 +41,27 @@ export const strongestBeatenInfo = (
   </div>
 )
 
-export function biggestUpsetsInfo(limit: number): ReactNode {
+export function biggestUpsetsInfo(
+  limit: number,
+  excludeStrengthDuplicates: boolean,
+): ReactNode {
   return (
     <div className={infoBlockClass}>
       <p>
         Rated wins where you were the bigger underdog, ranked by rating gap and shown with your
         pre-match win chance from the official rating-difference table.
       </p>
-      <p>
-        Matches already in your top {limit} strongest beaten are skipped so the two lists do
-        not repeat the same game.
-      </p>
+      {excludeStrengthDuplicates ? (
+        <p>
+          Matches already in your top {limit} strongest beaten are skipped so the two lists do
+          not repeat the same game.
+        </p>
+      ) : (
+        <p>
+          Games can appear in both lists, including matches already shown in your strongest
+          beaten highlights.
+        </p>
+      )}
       <p>
         Same exclusions as strongest beaten: no walkovers, retirements, or unrated wins without
         played scores.

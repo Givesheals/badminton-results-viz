@@ -105,6 +105,19 @@ export function selectUpsetRowsExcludingStrength(
   return rows
 }
 
+/** Upset highlights for display, optionally skipping strongest-beaten overlap. */
+export function selectUpsetRows(
+  byOpponentStrength: BestWinRow[],
+  byUpset: BestWinRow[],
+  limit: number,
+  options: { excludeStrengthDuplicates: boolean },
+): BestWinRow[] {
+  if (!options.excludeStrengthDuplicates) {
+    return byUpset.slice(0, limit)
+  }
+  return selectUpsetRowsExcludingStrength(byOpponentStrength, byUpset, limit)
+}
+
 /** Strongest rated opponent beaten in the given match set. */
 export function findBestWinInMatches(matches: NormalizedMatch[]): BestWinRow | null {
   let best: BestWinRow | null = null
