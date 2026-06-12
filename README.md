@@ -8,7 +8,7 @@ Prototype for uploading badminton match results (Excel or CSV) and exploring cha
 
 Open in any browser:
 
-**https://simparele.github.io/badminton-results-viz/**
+**https://givesheals.github.io/badminton-results-viz/**
 
 The repo is public but unlisted — share the link only with people you invite. The site uses `noindex` so search engines should not index it.
 
@@ -28,7 +28,7 @@ The repo is public but unlisted — share the link only with people you invite. 
 ### Clone and run
 
 ```bash
-git clone https://github.com/SimParEle/badminton-results-viz.git
+git clone https://github.com/Givesheals/badminton-results-viz.git
 cd badminton-results-viz
 npm install
 npm run dev
