@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   isSemiFinalRound,
   KNOCKOUT_OR_BETTER_MIN_RANK,
+  isBronzeFinalRound,
   lostInSemiFinal,
+  wonBronzeFinal,
   medianRank,
   mergeKnockoutCountsForProgressionUI,
   parseRoundToStage,
@@ -66,6 +68,29 @@ describe('lostInSemiFinal', () => {
     } as unknown as Parameters<typeof lostInSemiFinal>[0][number]
 
     expect(lostInSemiFinal([match])).toBe(false)
+  })
+})
+
+describe('wonBronzeFinal', () => {
+  it('returns true when the bronze final was won', () => {
+    const match = {
+      outcome: 'win',
+      nonCompetitiveReason: null,
+      raw: { Round: 'Bronze Final' },
+    } as unknown as Parameters<typeof wonBronzeFinal>[0][number]
+
+    expect(isBronzeFinalRound('Bronze Final')).toBe(true)
+    expect(wonBronzeFinal([match])).toBe(true)
+  })
+
+  it('returns false for bronze final loss', () => {
+    const match = {
+      outcome: 'loss',
+      nonCompetitiveReason: null,
+      raw: { Round: 'Bronze Final' },
+    } as unknown as Parameters<typeof wonBronzeFinal>[0][number]
+
+    expect(wonBronzeFinal([match])).toBe(false)
   })
 })
 

@@ -104,7 +104,7 @@ export const nemesesInfo = (
 export const seasonJourneyInfo = (
   <div className={infoBlockClass}>
     <p>
-      Your badminton season runs from 1 September to 31 August. This board fills in as you
+      Your badminton season runs from 1 October to 30 September. This board fills in as you
       upload match history — ratings extend across the full season timeline, and quarter tiles
       track how many distinct tournaments you played in each season quarter.
     </p>
@@ -115,6 +115,11 @@ export const seasonJourneyInfo = (
     </p>
     <p>
       Tap a dot on the season weekends strip to see results and how far you went at that event.
+    </p>
+    <p>
+      The trophy cabinet lists podium finishes this season — winners, runner-up, and 3rd place
+      (including semi-final exits). Tournament level chips show the event grade, not the medal
+      position.
     </p>
   </div>
 )

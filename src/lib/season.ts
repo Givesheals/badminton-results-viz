@@ -1,6 +1,6 @@
-/** Badminton season runs 1 Sept – 31 Aug. Season id e.g. `2025-26`. */
+/** Badminton season runs 1 Oct – 30 Sep. Season id e.g. `2025-26`. */
 
-export const SEASON_START_MONTH = 8 // September (0-indexed)
+export const SEASON_START_MONTH = 9 // October (0-indexed)
 
 export type SeasonBounds = {
   seasonId: string
@@ -20,7 +20,7 @@ export type SeasonQuarterSlot = {
   endDate: string
 }
 
-const QUARTER_SHORT_LABELS = ['Sep–Nov', 'Dec–Feb', 'Mar–May', 'Jun–Aug'] as const
+const QUARTER_SHORT_LABELS = ['Oct–Dec', 'Jan–Mar', 'Apr–Jun', 'Jul–Sep'] as const
 
 function parseIsoDate(isoDate: string): Date | null {
   const date = new Date(`${isoDate}T12:00:00`)
@@ -72,7 +72,7 @@ export function getSeasonBounds(seasonId: string): SeasonBounds | null {
   if (startYear == null) return null
 
   const start = new Date(startYear, SEASON_START_MONTH, 1, 12, 0, 0, 0)
-  const end = new Date(startYear + 1, SEASON_START_MONTH - 1, 31, 12, 0, 0, 0)
+  const end = lastDayOfMonth(startYear + 1, SEASON_START_MONTH - 1)
 
   return {
     seasonId,
@@ -119,9 +119,9 @@ export function filterMatchesInSeason<T extends { date: string }>(
 /** Season quarter 1–4 for a date inside the season calendar. */
 export function seasonQuarterNumber(date: Date): 1 | 2 | 3 | 4 {
   const month = date.getMonth()
-  if (month >= 8 && month <= 10) return 1
-  if (month === 11 || month <= 1) return 2
-  if (month >= 2 && month <= 4) return 3
+  if (month >= 9 && month <= 11) return 1
+  if (month >= 0 && month <= 2) return 2
+  if (month >= 3 && month <= 5) return 3
   return 4
 }
 
@@ -133,9 +133,6 @@ export function formatSeasonQuarterLabel(seasonId: string, quarter: 1 | 2 | 3 | 
   const startYear = parseSeasonId(seasonId)
   if (startYear == null) return `Q${quarter}`
   const range = QUARTER_SHORT_LABELS[quarter - 1]
-  if (quarter === 2) {
-    return `Q${quarter} · ${range} ${startYear}–${startYear + 1}`
-  }
   const year = quarter === 1 ? startYear : startYear + 1
   return `Q${quarter} · ${range} ${year}`
 }
@@ -150,23 +147,23 @@ export function getSeasonQuarterBounds(
   switch (quarter) {
     case 1:
       return {
-        startDate: toIsoDate(new Date(startYear, 8, 1, 12, 0, 0, 0)),
-        endDate: toIsoDate(lastDayOfMonth(startYear, 10)),
+        startDate: toIsoDate(new Date(startYear, 9, 1, 12, 0, 0, 0)),
+        endDate: toIsoDate(lastDayOfMonth(startYear, 11)),
       }
     case 2:
       return {
-        startDate: toIsoDate(new Date(startYear, 11, 1, 12, 0, 0, 0)),
-        endDate: toIsoDate(lastDayOfMonth(startYear + 1, 1)),
+        startDate: toIsoDate(new Date(startYear + 1, 0, 1, 12, 0, 0, 0)),
+        endDate: toIsoDate(lastDayOfMonth(startYear + 1, 2)),
       }
     case 3:
       return {
-        startDate: toIsoDate(new Date(startYear + 1, 2, 1, 12, 0, 0, 0)),
-        endDate: toIsoDate(lastDayOfMonth(startYear + 1, 4)),
+        startDate: toIsoDate(new Date(startYear + 1, 3, 1, 12, 0, 0, 0)),
+        endDate: toIsoDate(lastDayOfMonth(startYear + 1, 5)),
       }
     case 4:
       return {
-        startDate: toIsoDate(new Date(startYear + 1, 5, 1, 12, 0, 0, 0)),
-        endDate: toIsoDate(new Date(startYear + 1, 7, 31, 12, 0, 0, 0)),
+        startDate: toIsoDate(new Date(startYear + 1, 6, 1, 12, 0, 0, 0)),
+        endDate: toIsoDate(lastDayOfMonth(startYear + 1, 8)),
       }
     default:
       return null

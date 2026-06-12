@@ -387,6 +387,24 @@ export function lostInSemiFinal(matches: NormalizedMatch[]): boolean {
   return false
 }
 
+/** True when the round is a bronze placement final (not a main or semi-final). */
+export function isBronzeFinalRound(round: string): boolean {
+  if (isMissingRound(round)) return false
+  const text = normalizeRoundText(round)
+  return /\bbronze\b/.test(text) && /\bfinal\b/.test(text)
+}
+
+/** True when the player won the bronze final at this event (3rd place). */
+export function wonBronzeFinal(matches: NormalizedMatch[]): boolean {
+  for (const match of matches) {
+    if (!isCompetitiveMatch(match)) continue
+    const round = getMatchRound(match)
+    if (!isBronzeFinalRound(round)) continue
+    if (match.outcome === 'win') return true
+  }
+  return false
+}
+
 function isMainFinalRound(round: string): boolean {
   const text = normalizeRoundText(round)
   return (

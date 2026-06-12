@@ -11,6 +11,7 @@ import { PartnerChemistrySection } from '../charts/PartnerChemistrySection'
 import { ResultsOverTimeSection } from '../charts/ResultsOverTimeSection'
 import { TournamentProgressionSection } from '../charts/TournamentProgressionSection'
 import { OpponentMatchupsSection } from '../charts/OpponentMatchupsSection'
+import { DashboardTabs, TabSubgroupHeading } from './DashboardTabs'
 import { PlayerProfileSection } from './PlayerProfileSection'
 import { SummarySection } from './SummarySection'
 import { SeasonJourneySection } from './SeasonJourneySection'
@@ -41,6 +42,12 @@ export function Dashboard() {
       ? `${formatDisplayDate(headerStats.dateFrom)} → ${formatDisplayDate(headerStats.dateTo)}`
       : null
 
+  const sectionProps = {
+    allMatches,
+    filterOptions,
+    importedAt: dataset.importedAt,
+  }
+
   return (
     <div className="space-y-6">
       <section className="flex flex-wrap items-center justify-between gap-3">
@@ -59,56 +66,45 @@ export function Dashboard() {
         </button>
       </section>
 
-      <TournamentRecapSection allMatches={allMatches} />
-
-      <SeasonJourneySection allMatches={allMatches} />
-
-      <SummarySection
-        allMatches={allMatches}
-        filterOptions={filterOptions}
+      <DashboardTabs
         importedAt={dataset.importedAt}
+        panels={{
+          'latest-event': <TournamentRecapSection allMatches={allMatches} />,
+          'this-season': <SeasonJourneySection allMatches={allMatches} />,
+          'all-time': (
+            <>
+              <SummarySection
+                allMatches={allMatches}
+                filterOptions={filterOptions}
+                importedAt={dataset.importedAt}
+              />
+              <ResultsOverTimeSection
+                key={dataset.importedAt}
+                allMatches={allMatches}
+                filterOptions={filterOptions}
+                importedAt={dataset.importedAt}
+              />
+              <MatchesByDisciplineSection {...sectionProps} />
+              <TournamentProgressionSection {...sectionProps} />
+              <PlayerProfileSection allMatches={allMatches} />
+            </>
+          ),
+          people: (
+            <>
+              <div className="space-y-6">
+                <TabSubgroupHeading>Who I play with</TabSubgroupHeading>
+                <PartnerHighlightsSection {...sectionProps} />
+                <PartnerChemistrySection {...sectionProps} />
+              </div>
+              <div className="space-y-6">
+                <TabSubgroupHeading>Who I play against</TabSubgroupHeading>
+                <OpponentMatchupsSection {...sectionProps} />
+                <BestWinsSection allMatches={allMatches} />
+              </div>
+            </>
+          ),
+        }}
       />
-
-      <ResultsOverTimeSection
-        key={dataset.importedAt}
-        allMatches={allMatches}
-        filterOptions={filterOptions}
-        importedAt={dataset.importedAt}
-      />
-
-      <MatchesByDisciplineSection
-        allMatches={allMatches}
-        filterOptions={filterOptions}
-        importedAt={dataset.importedAt}
-      />
-
-      <PartnerHighlightsSection
-        allMatches={allMatches}
-        filterOptions={filterOptions}
-        importedAt={dataset.importedAt}
-      />
-
-      <PartnerChemistrySection
-        allMatches={allMatches}
-        filterOptions={filterOptions}
-        importedAt={dataset.importedAt}
-      />
-
-      <BestWinsSection allMatches={allMatches} />
-
-      <TournamentProgressionSection
-        allMatches={allMatches}
-        filterOptions={filterOptions}
-        importedAt={dataset.importedAt}
-      />
-
-      <OpponentMatchupsSection
-        allMatches={allMatches}
-        filterOptions={filterOptions}
-        importedAt={dataset.importedAt}
-      />
-
-      <PlayerProfileSection allMatches={allMatches} />
     </div>
   )
 }

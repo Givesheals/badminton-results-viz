@@ -65,8 +65,8 @@ describe('computeSeasonJourney', () => {
     const journey = computeSeasonJourney(matches, ref)
     const q1 = journey.quarters.find((q) => q.key === '2025-26-Q1')!
     const q2 = journey.quarters.find((q) => q.key === '2025-26-Q2')!
-    expect(q1.tournamentCount).toBe(2)
-    expect(q2.tournamentCount).toBe(2)
+    expect(q1.tournamentCount).toBe(3)
+    expect(q2.tournamentCount).toBe(1)
     expect(q1.displayState).toBe('closed')
     expect(q2.displayState).toBe('in_progress')
   })
@@ -93,5 +93,22 @@ describe('computeSeasonJourney', () => {
     )
     expect(journey.weekends).toHaveLength(2)
     expect(journey.weekendCount).toBe(2)
+  })
+
+  it('includes trophy cabinet data', () => {
+    const journey = computeSeasonJourney(
+      [
+        makeMatch({
+          competitionName: 'Autumn Open',
+          date: '2025-10-15',
+          discipline: 'WS',
+          raw: { Round: 'Final' },
+        }),
+      ],
+      ref,
+    )
+    expect(journey.trophyCabinet).toBeDefined()
+    expect(journey.trophyCabinet.first).toHaveLength(1)
+    expect(journey.trophyCabinet.first[0]!.competitionName).toBe('Autumn Open')
   })
 })

@@ -22,6 +22,10 @@ import {
   type SeasonBounds,
   type SeasonQuarterPhase,
 } from './season'
+import {
+  computeSeasonTrophyCabinet,
+  type SeasonTrophyCabinetData,
+} from './seasonTrophyCabinet'
 
 export const QUARTER_TOURNAMENT_THRESHOLD = 4
 export const QUARTER_ACHIEVEMENT_ID = 'quarter-on-board'
@@ -71,6 +75,7 @@ export type SeasonJourneyData = {
   quarters: SeasonQuarterJourney[]
   ratingSeries: SeasonRatingSeries[]
   weekends: SeasonWeekendStory[]
+  trophyCabinet: SeasonTrophyCabinetData
   seasonStartMs: number
   seasonEndMs: number
 }
@@ -138,6 +143,7 @@ export function formatClosedQuarterMessage(tournamentCount: number): string {
 function buildHeadline(
   seasonMatches: NormalizedMatch[],
   ratingSeries: SeasonRatingSeries[],
+  matchCount: number,
 ): string | null {
   const weekends = countDistinctCompetitions(
     seasonMatches.filter(isCompetitiveMatch),
@@ -146,12 +152,13 @@ function buildHeadline(
 
   if (ratingGain && ratingGain.delta > 0) {
     const sign = ratingGain.delta >= 0 ? '+' : ''
-    return `${sign}${Math.round(ratingGain.delta)} ${ratingGain.label.toLowerCase()} rating since September`
+    return `${sign}${Math.round(ratingGain.delta)} ${ratingGain.label.toLowerCase()} rating since October`
   }
 
   if (weekends > 0) {
-    const label = weekends === 1 ? 'weekend' : 'weekends'
-    return `${weekends} ${label} on the board this season`
+    const weekendLabel = weekends === 1 ? 'weekend' : 'weekends'
+    const matchLabel = matchCount === 1 ? 'match' : 'matches'
+    return `${weekends} ${weekendLabel} (${matchCount} ${matchLabel}) on the board this season`
   }
 
   return null
@@ -252,10 +259,11 @@ export function computeSeasonJourney(
     rangeSubtitle: formatSeasonRangeSubtitle(bounds),
     weekendCount: countDistinctCompetitions(competitive),
     matchCount: competitive.length,
-    headline: buildHeadline(seasonMatches, ratingSeries),
+    headline: buildHeadline(seasonMatches, ratingSeries, competitive.length),
     quarters,
     ratingSeries,
     weekends: buildWeekendStories(seasonMatches, bounds),
+    trophyCabinet: computeSeasonTrophyCabinet(matches, bounds),
     seasonStartMs: parseSeasonMs(bounds.startDate),
     seasonEndMs: parseSeasonMs(bounds.endDate),
   }

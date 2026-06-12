@@ -1,80 +1,88 @@
-import { useMemo } from 'react'
-import type { NormalizedMatch } from '../../types/matchHistory'
-import { seasonJourneyInfo } from '../../content/sectionInfo'
-import { computeStatsFromMatches } from '../../lib/computeStats'
-import { getSeasonForReferenceDate } from '../../lib/season'
-import { computeSeasonJourney } from '../../lib/seasonJourney'
-import { useSeasonClaims } from '../../hooks/useSeasonClaims'
-import { SectionHeading } from '../ui/SectionHeading'
-import { SeasonQuarterBadges } from './SeasonQuarterBadges'
-import { SeasonRatingChart } from './SeasonRatingChart'
-import { SeasonStoryStrip } from './SeasonStoryStrip'
-
-type Props = {
-  allMatches: NormalizedMatch[]
-}
-
-export function SeasonJourneySection({ allMatches }: Props) {
-  const playerName = useMemo(
-    () => computeStatsFromMatches(allMatches).playerName,
-    [allMatches],
-  )
-
-  const seasonId = useMemo(() => getSeasonForReferenceDate(), [])
-
-  const { claimedKeys, claimQuarter } = useSeasonClaims(playerName, seasonId)
-
-  const journey = useMemo(
-    () => computeSeasonJourney(allMatches, new Date(), claimedKeys),
-    [allMatches, claimedKeys],
-  )
-
-  const hasSeasonActivity = journey.matchCount > 0
-
-  return (
-    <section className="overflow-hidden rounded-2xl card-frame bg-gradient-to-br from-brand-50/60 to-white p-6 shadow-sm">
-      <SectionHeading info={seasonJourneyInfo} infoLabel="About season journey">
-        <h3 className="text-lg font-semibold text-ink-900">{journey.title}</h3>
-      </SectionHeading>
-      <p className="mt-1 text-sm text-ink-600">{journey.rangeSubtitle}</p>
-
-      {journey.headline && (
-        <p className="mt-3 text-sm font-medium text-brand-700">{journey.headline}</p>
-      )}
-
-      {hasSeasonActivity && (
-        <p className="mt-2 text-sm text-ink-700">
-          {journey.weekendCount} {journey.weekendCount === 1 ? 'weekend' : 'weekends'} ·{' '}
-          {journey.matchCount} {journey.matchCount === 1 ? 'match' : 'matches'} this season
-        </p>
-      )}
-
-      {!hasSeasonActivity && (
-        <p className="mt-3 text-sm text-ink-700">
-          Your season board is ready — play and re-upload your sheet to watch it fill in.
-        </p>
-      )}
-
-      <div className="mt-6 space-y-8">
-        <div>
-          <p className="mb-3 text-sm font-medium text-ink-800">Quarterly presence</p>
-          <SeasonQuarterBadges
-            quarters={journey.quarters}
-            onClaim={(key) => claimQuarter(key)}
-          />
-        </div>
-
-        <div>
-          <p className="mb-3 text-sm font-medium text-ink-800">Ratings through the season</p>
-          <SeasonRatingChart
-            series={journey.ratingSeries}
-            seasonStartMs={journey.seasonStartMs}
-            seasonEndMs={journey.seasonEndMs}
-          />
-        </div>
-
-        <SeasonStoryStrip weekends={journey.weekends} />
-      </div>
-    </section>
-  )
-}
+import { useMemo } from 'react'
+import type { NormalizedMatch } from '../../types/matchHistory'
+import { seasonJourneyInfo } from '../../content/sectionInfo'
+import { computeStatsFromMatches } from '../../lib/computeStats'
+import { getSeasonForReferenceDate } from '../../lib/season'
+import { computeSeasonJourney } from '../../lib/seasonJourney'
+import { useSeasonClaims } from '../../hooks/useSeasonClaims'
+import { SectionHeading } from '../ui/SectionHeading'
+import { SeasonQuarterBadges } from './SeasonQuarterBadges'
+import { SeasonRatingChart } from './SeasonRatingChart'
+import { SeasonStoryStrip } from './SeasonStoryStrip'
+import { SeasonTrophyCabinet } from './SeasonTrophyCabinet'
+
+type Props = {
+  allMatches: NormalizedMatch[]
+}
+
+const SEASON_CARD_CLASS =
+  'overflow-hidden rounded-2xl card-frame bg-white p-6 shadow-sm'
+
+export function SeasonJourneySection({ allMatches }: Props) {
+  const playerName = useMemo(
+    () => computeStatsFromMatches(allMatches).playerName,
+    [allMatches],
+  )
+
+  const seasonId = useMemo(() => getSeasonForReferenceDate(), [])
+
+  const { claimedKeys, claimQuarter } = useSeasonClaims(playerName, seasonId)
+
+  const journey = useMemo(
+    () => computeSeasonJourney(allMatches, new Date(), claimedKeys),
+    [allMatches, claimedKeys],
+  )
+
+  const hasSeasonActivity = journey.matchCount > 0
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <SectionHeading info={seasonJourneyInfo} infoLabel="About season journey">
+          <h3 className="text-lg font-semibold text-ink-900">{journey.title}</h3>
+        </SectionHeading>
+        <p className="mt-1 text-sm text-ink-600">{journey.rangeSubtitle}</p>
+
+        {journey.headline && (
+          <p className="mt-3 text-sm font-medium text-brand-700">{journey.headline}</p>
+        )}
+
+        {!hasSeasonActivity && (
+          <p className="mt-3 text-sm text-ink-700">
+            Your season board is ready — play and re-upload your sheet to watch it fill in.
+          </p>
+        )}
+      </header>
+
+      <section className={SEASON_CARD_CLASS}>
+        <h4 className="text-sm font-medium text-ink-800">Performance</h4>
+        <p className="mt-0.5 text-xs text-ink-500">Quarterly presence</p>
+        <div className="mt-4">
+          <SeasonQuarterBadges
+            quarters={journey.quarters}
+            onClaim={(key) => claimQuarter(key)}
+          />
+        </div>
+        <div className="mt-8">
+          <SeasonStoryStrip weekends={journey.weekends} />
+        </div>
+      </section>
+
+      <section className={SEASON_CARD_CLASS}>
+        <h4 className="text-sm font-medium text-ink-800">Ratings through the season</h4>
+        <div className="mt-4">
+          <SeasonRatingChart
+            series={journey.ratingSeries}
+            seasonStartMs={journey.seasonStartMs}
+            seasonEndMs={journey.seasonEndMs}
+          />
+        </div>
+      </section>
+
+      <section className={SEASON_CARD_CLASS}>
+        <SeasonTrophyCabinet cabinet={journey.trophyCabinet} />
+      </section>
+    </div>
+  )
+}
+
