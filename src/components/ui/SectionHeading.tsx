@@ -8,6 +8,7 @@ type Props = {
   infoLabel: string
   size?: 'section' | 'panel'
   className?: string
+  actions?: ReactNode
 }
 
 const ICON_SIZE: Record<'section' | 'panel', InfoButtonSize> = {
@@ -22,6 +23,7 @@ export function SectionHeading({
   infoLabel,
   size = 'section',
   className = '',
+  actions,
 }: Props) {
   return (
     <div
@@ -33,6 +35,7 @@ export function SectionHeading({
           {info}
         </InfoPopover>
       ) : null}
+      {actions}
     </div>
   )
 }

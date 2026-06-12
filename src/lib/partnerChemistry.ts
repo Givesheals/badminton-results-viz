@@ -2,7 +2,7 @@ import type { NormalizedMatch } from '../types/matchHistory'
 import { isCompetitiveMatch } from './matchExclusions'
 import { getMatchExpectedWinProbability } from './ratings'
 
-export type PartnerChemistryFilterMode = 'games' | 'competitions'
+export type PartnerChemistryFilterMode = 'matches' | 'competitions'
 
 export type PartnerChemistryRow = {
   partnerName: string
@@ -41,7 +41,7 @@ function meetsThreshold(
   minThreshold: number,
   filterMode: PartnerChemistryFilterMode,
 ): boolean {
-  const count = filterMode === 'games' ? row.games : row.competitions
+  const count = filterMode === 'matches' ? row.games : row.competitions
   return count >= minThreshold
 }
 

@@ -1,4 +1,5 @@
 import type { MatchOutcome, NormalizedMatch } from '../types/matchHistory'
+import { compareCompetitionAgeOldestFirst } from './competitionAge'
 import { isCompetitiveMatch, isWalkoverWin } from './matchExclusions'
 import { formatTournamentCategory } from './tournamentCategory'
 
@@ -79,9 +80,129 @@ export type TournamentEntry = {
   competitionName: string
   discipline: string
   disciplineLabel: string
+  tournamentCategoryLabel: string
+  competitionAgeLabel: string | null
+  /** Earliest match date at this event — used for first-milestone chronology. */
+  eventDate: string
+  /** Latest match date at this event — used for primary-combo tie-breaking. */
+  latestDate: string
+  partnerName: string | null
   bestStage: ProgressionStage
   bestStageRank: number
   matchCount: number
+}
+
+/** Milestone stages shown on the category completion ladder (deepest-first grouping excluded). */
+export const CATEGORY_COMPLETION_STAGES = [
+  'group-stages',
+  'group-wins',
+  'quarter-final',
+  'semi-final',
+  'runner-up',
+  'winner',
+] as const satisfies readonly ProgressionStage[]
+
+export const CATEGORY_COMPLETION_STAGE_LABELS: Record<
+  (typeof CATEGORY_COMPLETION_STAGES)[number],
+  string
+> = {
+  'group-stages': 'Grp',
+  'group-wins': 'GW',
+  'quarter-final': 'QF',
+  'semi-final': 'SF',
+  'runner-up': 'RU',
+  winner: 'W',
+}
+
+export type CategoryMilestoneFirstAchievement = {
+  competitionName: string
+  date: string
+  partnerName: string | null
+}
+
+export type CategoryCompletionMilestone = {
+  stage: ProgressionStage
+  label: string
+  achieved: boolean
+  firstAchievement: CategoryMilestoneFirstAchievement | null
+}
+
+export type CategoryCompletionRow = {
+  label: string
+  tournamentCategoryLabel: string
+  competitionAgeLabel: string | null
+  tournamentCount: number
+  bestStageRank: number
+  milestones: CategoryCompletionMilestone[]
+}
+
+export type CategoryCompletionAgeGroup = {
+  ageLabel: string | null
+  rows: CategoryCompletionRow[]
+}
+
+export const DEFAULT_VISIBLE_AGE_GROUP_COUNT = 2
+
+export const SENIOR_COMPETITION_AGE_LABEL = 'Senior'
+
+/** Stable key for age-group visibility maps; null age uses an empty string. */
+export function categoryCompletionAgeKey(ageLabel: string | null): string {
+  return ageLabel ?? ''
+}
+
+export function groupCategoryCompletionsByAge(
+  rows: CategoryCompletionRow[],
+): CategoryCompletionAgeGroup[] {
+  const groups: CategoryCompletionAgeGroup[] = []
+  const groupIndex = new Map<string, number>()
+
+  for (const row of rows) {
+    const key = categoryCompletionAgeKey(row.competitionAgeLabel)
+    const existingIndex = groupIndex.get(key)
+
+    if (existingIndex == null) {
+      groupIndex.set(key, groups.length)
+      groups.push({ ageLabel: row.competitionAgeLabel, rows: [row] })
+      continue
+    }
+
+    groups[existingIndex]!.rows.push(row)
+  }
+
+  return groups
+}
+
+export function pickDefaultVisibleAgeLabels(
+  ageGroups: CategoryCompletionAgeGroup[],
+  maxCount = DEFAULT_VISIBLE_AGE_GROUP_COUNT,
+): string[] {
+  if (ageGroups.length === 0 || maxCount <= 0) return []
+
+  const labels = ageGroups.map((group) => categoryCompletionAgeKey(group.ageLabel))
+  const selected: string[] = []
+
+  const seniorKey = categoryCompletionAgeKey(SENIOR_COMPETITION_AGE_LABEL)
+  if (labels.includes(seniorKey)) {
+    selected.push(seniorKey)
+  }
+
+  for (const key of labels) {
+    if (selected.length >= maxCount) break
+    if (key === seniorKey && selected.includes(seniorKey)) continue
+    if (selected.includes(key)) continue
+    selected.push(key)
+  }
+
+  return selected
+}
+
+export type PrimaryComboProgression = {
+  label: string
+  tournamentCount: number
+  typicalRank: number | null
+  typicalLabel: string | null
+  depthBarSegments: ProgressionDistributionRow[]
+  knockoutOrBetterPercent: number
 }
 
 export type ProgressionDistributionRow = {
@@ -106,6 +227,10 @@ export type TournamentProgressionStats = {
   /** Share of tournaments with best finish at knockout or deeper. */
   knockoutOrBetterPercent: number
   tournamentCount: number
+  /** Median depth scoped to the most-played tournament level + age combination. */
+  primaryCombo: PrimaryComboProgression | null
+  /** Best-ever milestones per tournament level + age combination. */
+  categoryCompletions: CategoryCompletionRow[]
 }
 
 /** Minimum stage rank counted as "knockout or better" for aspiration stats. */
@@ -535,22 +660,234 @@ export function tournamentKey(match: NormalizedMatch): string {
   return `${match.competitionName}\0${match.discipline}`
 }
 
+/** At least one competitive (non-walkover) match won at this event. */
+export function eventHasCompetitiveWin(matches: NormalizedMatch[]): boolean {
+  return matches.some((m) => isCompetitiveMatch(m) && m.outcome === 'win')
+}
+
+/** True when the event included a group, box, or round-robin phase. */
+export function hadGroupOrBoxPhase(matches: NormalizedMatch[]): boolean {
+  return matches.some((m) => parseRoundToStage(getMatchRound(m)) === 'group-stages')
+}
+
+/** Every parseable round at this event is a group-phase round (no knockout bracket). */
+export function isRoundRobinOnlyEvent(matches: NormalizedMatch[]): boolean {
+  let hasParsedRound = false
+  for (const match of matches) {
+    const stage = parseRoundToStage(getMatchRound(match))
+    if (stage == null) continue
+    hasParsedRound = true
+    if (stage !== 'group-stages') return false
+  }
+  return hasParsedRound
+}
+
+/** Estimate entrant count from unique group opponents (+ player). Null when no group matches. */
+export function inferGroupEntrantCount(matches: NormalizedMatch[]): number | null {
+  const opponents = new Set<string>()
+  for (const match of matches) {
+    if (parseRoundToStage(getMatchRound(match)) !== 'group-stages') continue
+    if (match.opponents.trim()) opponents.add(match.opponents.trim())
+  }
+  if (opponents.size === 0) return null
+  return opponents.size + 1
+}
+
+/** Small round-robin draw (≤3 teams) — no bronze medal path. */
+export function isSmallRoundRobinEvent(matches: NormalizedMatch[]): boolean {
+  if (!isRoundRobinOnlyEvent(matches)) return false
+  const count = inferGroupEntrantCount(matches)
+  return count != null && count <= 3
+}
+
+function isKnockoutMatchWin(match: NormalizedMatch, forAchievements: boolean): boolean {
+  const round = getMatchRound(match)
+  const stage = parseRoundToStage(round)
+  if (stage == null || STAGE_RANK[stage] < STAGE_RANK.knockout) return false
+  if (isMainFinalRound(round)) return false
+  if (match.nonCompetitiveReason === 'no_match') return false
+
+  if (forAchievements && match.nonCompetitiveReason === 'walkover') {
+    return isWalkoverWin(match)
+  }
+
+  return isCompetitiveMatch(match) && match.outcome === 'win'
+}
+
+function groupExitStage(matches: NormalizedMatch[], forAchievements: boolean): ProgressionStage {
+  return countGroupMatchWins(matches, forAchievements) > 0 ? 'group-wins' : 'group-stages'
+}
+
+/** Deepest knockout stage earned in a pure-knockout event (rule 6). */
+export function deepestEarnedKnockoutStage(
+  matches: NormalizedMatch[],
+  forAchievements: boolean,
+): ProgressionStage {
+  let deepestPlayedRank = 0
+  let deepestPlayed: ProgressionStage | null = null
+  let deepestWinRank = 0
+
+  for (const match of matches) {
+    const round = getMatchRound(match)
+    const stage = parseRoundToStage(round)
+    if (stage == null || STAGE_RANK[stage] < STAGE_RANK.knockout) continue
+    if (isMainFinalRound(round)) continue
+
+    const rank = STAGE_RANK[stage]
+    if (rank > deepestPlayedRank) {
+      deepestPlayedRank = rank
+      deepestPlayed = stage
+    }
+    if (isKnockoutMatchWin(match, forAchievements) && rank > deepestWinRank) {
+      deepestWinRank = rank
+    }
+  }
+
+  if (deepestPlayed == null) {
+    return groupExitStage(matches, forAchievements)
+  }
+
+  if (deepestWinRank >= deepestPlayedRank) {
+    return deepestPlayed
+  }
+
+  for (const match of matches) {
+    if (!isKnockoutMatchWin(match, forAchievements)) continue
+    const stage = parseRoundToStage(getMatchRound(match))
+    if (stage != null && STAGE_RANK[stage] < deepestPlayedRank) {
+      return deepestPlayed
+    }
+  }
+
+  return groupExitStage(matches, forAchievements)
+}
+
+/** Competitive win outside the bronze final (excludes walkovers). */
+export function hasCompetitiveNonWalkoverWinOutsideBronze(
+  matches: NormalizedMatch[],
+): boolean {
+  for (const match of matches) {
+    if (match.nonCompetitiveReason === 'walkover') continue
+    if (!isCompetitiveMatch(match) || match.outcome !== 'win') continue
+    if (isBronzeFinalRound(getMatchRound(match))) continue
+    return true
+  }
+  return false
+}
+
+/** RR-only event where every group match was won — counts as Winner (rule 1). */
+export function isRoundRobinChampion(
+  matches: NormalizedMatch[],
+  forAchievements: boolean,
+): boolean {
+  if (!isRoundRobinOnlyEvent(matches)) return false
+
+  const entrantCount = inferGroupEntrantCount(matches)
+  if (entrantCount == null || entrantCount < 3) return false
+
+  const groupMatches = matches.filter(
+    (m) => parseRoundToStage(getMatchRound(m)) === 'group-stages',
+  )
+  if (groupMatches.length === 0) return false
+  if (groupMatches.length < entrantCount - 1) return false
+  if (!groupMatches.every((m) => isGroupMatchWin(m, forAchievements))) return false
+
+  return forAchievements
+    ? groupMatches.some((m) => isGroupMatchWin(m, true))
+    : eventHasCompetitiveWin(matches)
+}
+
+/**
+ * Apply format rules: pure-knockout depth requires wins; box→KO keeps played depth;
+ * RR-only champions promote to winner.
+ */
+export function refineEarnedBestStage(
+  matches: NormalizedMatch[],
+  rawBest: ProgressionStage | null,
+  forAchievements: boolean,
+): ProgressionStage | null {
+  if (rawBest == null) return null
+
+  if (isRoundRobinChampion(matches, forAchievements)) {
+    return 'winner'
+  }
+
+  let best = rawBest
+
+  if (
+    !hadGroupOrBoxPhase(matches) &&
+    STAGE_RANK[rawBest] >= STAGE_RANK.knockout &&
+    rawBest !== 'winner' &&
+    rawBest !== 'runner-up'
+  ) {
+    const earned = deepestEarnedKnockoutStage(matches, forAchievements)
+    if (STAGE_RANK[earned] < STAGE_RANK[rawBest]) {
+      best = earned
+    }
+  }
+
+  if (best === 'group-stages' && countGroupMatchWins(matches, forAchievements) > 0) {
+    return 'group-wins'
+  }
+
+  return best
+}
+
+/** Whether a stage depth was genuinely earned (for celebrations / personal bests). */
+export function earnedKnockoutOrBetterDepth(
+  matches: NormalizedMatch[],
+  stage: ProgressionStage,
+  bestStage: ProgressionStage | null,
+): boolean {
+  if (bestStage == null) return false
+  if (STAGE_RANK[bestStage] < STAGE_RANK[stage]) return false
+
+  if (bestStage === 'winner' || bestStage === 'runner-up') {
+    return STAGE_RANK[stage] <= STAGE_RANK[bestStage]
+  }
+
+  if (stage === 'group-wins' || stage === 'group-stages') {
+    return false
+  }
+
+  if (!eventHasCompetitiveWin(matches)) return false
+
+  return true
+}
+
+/** Whether semi-final exit or bronze-final win qualifies for 3rd-place podium (rule 3). */
+export function qualifiesForThirdPlace(
+  matches: NormalizedMatch[],
+  bestStage: ProgressionStage,
+): boolean {
+  if (bestStage !== 'semi-final') return false
+  if (isSmallRoundRobinEvent(matches)) return false
+  if (!eventHasCompetitiveWin(matches)) return false
+  if (lostInSemiFinal(matches)) return true
+  if (wonBronzeFinal(matches)) {
+    return hasCompetitiveNonWalkoverWinOutsideBronze(matches)
+  }
+  return false
+}
+
 export function bestStageFromMatches(matches: NormalizedMatch[]): ProgressionStage | null {
-  return refineGroupExitStage(
+  const raw = refineGroupExitStage(
     matches,
     bestStageFromMatchStages(matches, (m) => stageFromMatch(getMatchRound(m), m.outcome)),
     false,
   )
+  return refineEarnedBestStage(matches, raw, false)
 }
 
 export function bestStageFromMatchesForAchievements(
   matches: NormalizedMatch[],
 ): ProgressionStage | null {
-  return refineGroupExitStage(
+  const raw = refineGroupExitStage(
     matches,
     bestStageFromMatchStages(matches, (m) => stageFromMatchForAchievements(m)),
     true,
   )
+  return refineEarnedBestStage(matches, raw, true)
 }
 
 function bestStageFromMatchStages(
@@ -618,6 +955,248 @@ export function isProgressionTournament(matches: NormalizedMatch[]): boolean {
   return matches.some((match) => parseRoundToStage(getMatchRound(match)) != null)
 }
 
+export function competitionAgeLabelFromMatch(match: NormalizedMatch): string | null {
+  return match.competitionSubAgeGroup ?? match.competitionAgeGroup ?? null
+}
+
+export function formatCategoryAgeLabel(
+  tournamentCategoryLabel: string,
+  competitionAgeLabel: string | null,
+): string {
+  if (competitionAgeLabel) {
+    return `${competitionAgeLabel} ${tournamentCategoryLabel}`
+  }
+  return tournamentCategoryLabel
+}
+
+export function categoryAgeComboKey(entry: Pick<TournamentEntry, 'tournamentCategoryLabel' | 'competitionAgeLabel'>): string {
+  return `${entry.tournamentCategoryLabel}\0${entry.competitionAgeLabel ?? ''}`
+}
+
+const TOURNAMENT_LEVEL_PRIORITY = new Map([
+  ['copper', 0],
+  ['bronze', 1],
+  ['silver', 2],
+  ['gold', 3],
+  ['other', 4],
+])
+
+function tournamentLevelSortRank(label: string): number {
+  const normalized = label.trim().toLowerCase()
+  if (normalized === 'county') return Number.POSITIVE_INFINITY
+  return TOURNAMENT_LEVEL_PRIORITY.get(normalized) ?? 4
+}
+
+function earliestMatchDate(matches: NormalizedMatch[]): string {
+  return matches.reduce(
+    (min, match) => (min === '' || match.date < min ? match.date : min),
+    '',
+  )
+}
+
+function latestMatchDate(matches: NormalizedMatch[]): string {
+  return matches.reduce((max, match) => (match.date > max ? match.date : max), '')
+}
+
+type EntryProgressionSlice = {
+  depthBarSegments: ProgressionDistributionRow[]
+  typicalRank: number | null
+  typicalLabel: string | null
+  knockoutOrBetterPercent: number
+  tournamentCount: number
+}
+
+function progressionSliceFromEntries(entries: TournamentEntry[]): EntryProgressionSlice {
+  const tournamentCount = entries.length
+  if (tournamentCount === 0) {
+    return {
+      depthBarSegments: [],
+      typicalRank: null,
+      typicalLabel: null,
+      knockoutOrBetterPercent: 0,
+      tournamentCount: 0,
+    }
+  }
+
+  const counts = new Map<ProgressionStage, number>()
+  for (const stage of PROGRESSION_STAGE_ORDER) {
+    counts.set(stage, 0)
+  }
+  for (const entry of entries) {
+    counts.set(entry.bestStage, (counts.get(entry.bestStage) ?? 0) + 1)
+  }
+
+  const ranks = entries.map((entry) => entry.bestStageRank)
+  const typicalRank = medianRank(ranks)
+
+  return {
+    depthBarSegments: progressionDepthBarSegments(counts, tournamentCount),
+    typicalRank,
+    typicalLabel: typicalRank != null ? describeTypicalRank(typicalRank) : null,
+    knockoutOrBetterPercent: percentAtOrBeyondRank(entries, KNOCKOUT_OR_BETTER_MIN_RANK),
+    tournamentCount,
+  }
+}
+
+function pickPrimaryComboKey(entries: TournamentEntry[]): string | null {
+  if (entries.length === 0) return null
+
+  const groups = new Map<string, TournamentEntry[]>()
+  for (const entry of entries) {
+    const key = categoryAgeComboKey(entry)
+    const bucket = groups.get(key) ?? []
+    bucket.push(entry)
+    groups.set(key, bucket)
+  }
+
+  let bestKey: string | null = null
+  let bestCount = 0
+  let bestRecent = ''
+  let bestLabel = ''
+
+  for (const [key, group] of groups) {
+    const count = group.length
+    const mostRecent = group.reduce(
+      (max, entry) => (entry.latestDate > max ? entry.latestDate : max),
+      '',
+    )
+    const label = formatCategoryAgeLabel(
+      group[0]!.tournamentCategoryLabel,
+      group[0]!.competitionAgeLabel,
+    )
+
+    if (
+      count > bestCount ||
+      (count === bestCount && mostRecent > bestRecent) ||
+      (count === bestCount && mostRecent === bestRecent && label.localeCompare(bestLabel) < 0)
+    ) {
+      bestKey = key
+      bestCount = count
+      bestRecent = mostRecent
+      bestLabel = label
+    }
+  }
+
+  return bestKey
+}
+
+function buildPrimaryCombo(
+  entries: TournamentEntry[],
+  comboKey: string | null,
+): PrimaryComboProgression | null {
+  if (comboKey == null) return null
+
+  const comboEntries = entries.filter((entry) => categoryAgeComboKey(entry) === comboKey)
+  if (comboEntries.length === 0) return null
+
+  const sample = comboEntries[0]!
+  const slice = progressionSliceFromEntries(comboEntries)
+
+  return {
+    label: formatCategoryAgeLabel(sample.tournamentCategoryLabel, sample.competitionAgeLabel),
+    tournamentCount: slice.tournamentCount,
+    typicalRank: slice.typicalRank,
+    typicalLabel: slice.typicalLabel,
+    depthBarSegments: slice.depthBarSegments,
+    knockoutOrBetterPercent: slice.knockoutOrBetterPercent,
+  }
+}
+
+function firstEntryReachingStage(
+  entries: TournamentEntry[],
+  minRank: number,
+): TournamentEntry | null {
+  let first: TournamentEntry | null = null
+
+  for (const entry of entries) {
+    if (entry.bestStageRank < minRank) continue
+    if (first == null || entry.eventDate < first.eventDate) {
+      first = entry
+    }
+  }
+
+  return first
+}
+
+export function buildCategoryCompletionMilestones(
+  entries: TournamentEntry[],
+): CategoryCompletionMilestone[] {
+  const bestStageRank = entries.reduce(
+    (max, entry) => Math.max(max, entry.bestStageRank),
+    0,
+  )
+
+  return CATEGORY_COMPLETION_STAGES.map((stage) => {
+    const minRank = STAGE_RANK[stage]
+    const achieved = bestStageRank >= minRank
+    const firstEntry = achieved ? firstEntryReachingStage(entries, minRank) : null
+
+    return {
+      stage,
+      label: CATEGORY_COMPLETION_STAGE_LABELS[stage],
+      achieved,
+      firstAchievement:
+        firstEntry == null
+          ? null
+          : {
+              competitionName: firstEntry.competitionName,
+              date: firstEntry.eventDate,
+              partnerName: firstEntry.partnerName,
+            },
+    }
+  })
+}
+
+function buildCategoryCompletions(entries: TournamentEntry[]): CategoryCompletionRow[] {
+  const groups = new Map<string, TournamentEntry[]>()
+
+  for (const entry of entries) {
+    const key = categoryAgeComboKey(entry)
+    const bucket = groups.get(key) ?? []
+    bucket.push(entry)
+    groups.set(key, bucket)
+  }
+
+  const rows: CategoryCompletionRow[] = []
+
+  for (const group of groups.values()) {
+    const sample = group[0]!
+    const bestStageRank = group.reduce(
+      (max, entry) => Math.max(max, entry.bestStageRank),
+      0,
+    )
+
+    rows.push({
+      label: formatCategoryAgeLabel(sample.tournamentCategoryLabel, sample.competitionAgeLabel),
+      tournamentCategoryLabel: sample.tournamentCategoryLabel,
+      competitionAgeLabel: sample.competitionAgeLabel,
+      tournamentCount: group.length,
+      bestStageRank,
+      milestones: buildCategoryCompletionMilestones(group),
+    })
+  }
+
+  return rows.sort((a, b) => {
+    const ageCompare = compareCompetitionAgeOldestFirst(
+      a.competitionAgeLabel,
+      b.competitionAgeLabel,
+    )
+    if (ageCompare !== 0) return ageCompare
+
+    const levelRankA = tournamentLevelSortRank(a.tournamentCategoryLabel)
+    const levelRankB = tournamentLevelSortRank(b.tournamentCategoryLabel)
+    if (levelRankA !== levelRankB) return levelRankA - levelRankB
+
+    return a.label.localeCompare(b.label)
+  })
+}
+
+export function computeCategoryMilestones(
+  matches: NormalizedMatch[],
+): CategoryCompletionRow[] {
+  return computeTournamentProgression(matches).categoryCompletions
+}
+
 export function computeTournamentProgression(
   matches: NormalizedMatch[],
 ): TournamentProgressionStats {
@@ -639,12 +1218,17 @@ export function computeTournamentProgression(
     const bestStage = bestStageFromMatches(tournamentMatches)
     if (bestStage == null) continue
 
-    const sample = tournamentMatches[0]
+    const sample = tournamentMatches[0]!
     entries.push({
       key,
       competitionName: sample.competitionName,
       discipline: sample.discipline,
       disciplineLabel: sample.disciplineLabel,
+      tournamentCategoryLabel: sample.tournamentCategoryLabel,
+      competitionAgeLabel: competitionAgeLabelFromMatch(sample),
+      eventDate: earliestMatchDate(tournamentMatches),
+      latestDate: latestMatchDate(tournamentMatches),
+      partnerName: sample.partnerName,
       bestStage,
       bestStageRank: STAGE_RANK[bestStage],
       matchCount: tournamentMatches.length,
@@ -653,7 +1237,31 @@ export function computeTournamentProgression(
 
   entries.sort((a, b) => b.bestStageRank - a.bestStageRank)
 
-  const tournamentCount = entries.length
+  const globalSlice = progressionSliceFromEntries(entries)
+  const distribution = progressionDistributionBar(
+    countStagesFromEntries(entries),
+    globalSlice.tournamentCount,
+  )
+
+  const bestEntry = entries[0] ?? null
+  const primaryComboKey = pickPrimaryComboKey(entries)
+
+  return {
+    entries,
+    depthBarSegments: globalSlice.depthBarSegments,
+    distribution,
+    typicalRank: globalSlice.typicalRank,
+    typicalLabel: globalSlice.typicalLabel,
+    bestStage: bestEntry?.bestStage ?? null,
+    bestLabel: bestEntry != null ? PROGRESSION_STAGE_LABELS[bestEntry.bestStage] : null,
+    knockoutOrBetterPercent: globalSlice.knockoutOrBetterPercent,
+    tournamentCount: globalSlice.tournamentCount,
+    primaryCombo: buildPrimaryCombo(entries, primaryComboKey),
+    categoryCompletions: buildCategoryCompletions(entries),
+  }
+}
+
+function countStagesFromEntries(entries: TournamentEntry[]): Map<ProgressionStage, number> {
   const counts = new Map<ProgressionStage, number>()
   for (const stage of PROGRESSION_STAGE_ORDER) {
     counts.set(stage, 0)
@@ -661,29 +1269,7 @@ export function computeTournamentProgression(
   for (const entry of entries) {
     counts.set(entry.bestStage, (counts.get(entry.bestStage) ?? 0) + 1)
   }
-
-  const depthBarSegments = progressionDepthBarSegments(counts, tournamentCount)
-  const distribution = progressionDistributionBar(counts, tournamentCount)
-
-  const ranks = entries.map((entry) => entry.bestStageRank)
-  const typicalRank = medianRank(ranks)
-
-  const typicalLabel =
-    typicalRank != null ? describeTypicalRank(typicalRank) : null
-
-  const bestEntry = entries[0] ?? null
-
-  return {
-    entries,
-    depthBarSegments,
-    distribution,
-    typicalRank,
-    typicalLabel,
-    bestStage: bestEntry?.bestStage ?? null,
-    bestLabel: bestEntry != null ? PROGRESSION_STAGE_LABELS[bestEntry.bestStage] : null,
-    knockoutOrBetterPercent: percentAtOrBeyondRank(entries, KNOCKOUT_OR_BETTER_MIN_RANK),
-    tournamentCount,
-  }
+  return counts
 }
 
 export function medianRank(values: number[]): number | null {

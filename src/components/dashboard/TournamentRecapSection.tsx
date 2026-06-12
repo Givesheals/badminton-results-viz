@@ -5,10 +5,10 @@ import { formatWholePercent } from '../../lib/formatNumbers'
 import { computeTournamentRecaps } from '../../lib/tournamentRecap'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
 import { RecapCelebrationHero } from './recap/RecapCelebrationHero'
-import { DisciplineRecapRow } from './recap/DisciplineRecapRow'
+import { DisciplineRecapBlock } from './recap/DisciplineRecapBlock'
+import { RecapSummaryCard } from './recap/RecapSummaryCard'
 import { FreakFlagCards } from './recap/FreakFlagCards'
 import { RecapEmojiInsightSection } from './recap/RecapEmojiInsightSection'
-import { RecapFactCard } from './recap/RecapFactCard'
 import { RecapRecordMilestoneCards } from './recap/RecapRecordMilestoneCards'
 import { RecapTournamentNav } from './recap/RecapTournamentNav'
 
@@ -80,14 +80,24 @@ export function TournamentRecapSection({ allMatches }: Props) {
             <h3 className="min-w-0 flex-1 text-xl font-semibold text-ink-900">
               {recap.competitionName}
             </h3>
-            {recap.weekendWinPercent != null && (
-              <div className="shrink-0 rounded-xl bg-white/80 px-3 py-2 text-center shadow-sm ring-1 ring-ink-100">
-                <p className="text-2xl font-semibold tabular-nums text-court-700">
-                  {formatWholePercent(recap.weekendWinPercent)}
-                </p>
-                <p className="text-xs text-ink-500">match wins</p>
-              </div>
-            )}
+            {recap.weekendWinPercent != null &&
+              (recap.weekendWinPercent === 100 ? (
+                <div className="perfect-record-border">
+                  <div className="perfect-record-inner px-3 py-2">
+                    <p className="text-2xl font-bold tabular-nums text-court-800">
+                      {formatWholePercent(recap.weekendWinPercent)}
+                    </p>
+                    <p className="text-xs font-medium text-court-700">all wins!</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="shrink-0 rounded-xl bg-white/80 px-3 py-2 text-center shadow-sm ring-1 ring-ink-100">
+                  <p className="text-2xl font-semibold tabular-nums text-court-700">
+                    {formatWholePercent(recap.weekendWinPercent)}
+                  </p>
+                  <p className="text-xs text-ink-500">match wins</p>
+                </div>
+              ))}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <TournamentCategoryChip label={recap.tournamentCategoryLabel} />
@@ -101,20 +111,20 @@ export function TournamentRecapSection({ allMatches }: Props) {
       <div className="space-y-4 border-t border-ink-100 px-4 py-4 sm:px-5 sm:py-5">
         <RecapCelebrationHero celebrations={recap.celebrations} />
 
-        {recap.disciplines.length > 0 && (
+        {recap.eventSummaries.length > 0 && (
           <div className="space-y-2">
+            {recap.eventSummaries.map((card) => (
+              <RecapSummaryCard key={card.id} card={card} />
+            ))}
+          </div>
+        )}
+
+        {recap.disciplines.length > 0 && (
+          <div className="space-y-3">
             <h4 className="text-sm font-medium text-ink-900">By discipline</h4>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-3">
               {recap.disciplines.map((d) => (
-                <div key={d.discipline} className="space-y-2">
-                  <DisciplineRecapRow recap={d} />
-                  {d.disciplineInsights.map((insight, index) => (
-                    <RecapFactCard
-                      key={`${insight.kind}-${index}`}
-                      insight={insight}
-                    />
-                  ))}
-                </div>
+                <DisciplineRecapBlock key={d.discipline} recap={d} />
               ))}
             </div>
           </div>

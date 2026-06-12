@@ -15,6 +15,25 @@ const LEVEL_STYLES: Record<string, string> = {
 
 const OTHER_CHIP_CLASS = 'bg-white font-semibold text-brand-700 ring-1 ring-inset ring-brand-200'
 
+const LEVEL_CHART_COLORS: Record<string, string> = {
+  gold: 'var(--color-level-gold)',
+  silver: 'var(--color-level-silver)',
+  bronze: 'var(--color-level-bronze)',
+  copper: 'var(--color-level-copper)',
+  county: 'var(--color-level-county)',
+}
+
+/** Fill colour for charts — matches tournament level chip colours. */
+export function getTournamentLevelChartColor(label: string): string {
+  const normalized = label.trim().toLowerCase()
+  return LEVEL_CHART_COLORS[normalized] ?? 'var(--color-brand-400)'
+}
+
+export function tournamentLevelChartNeedsStroke(label: string): boolean {
+  const normalized = label.trim().toLowerCase()
+  return normalized === 'gold' || normalized === 'silver' || normalized === 'other'
+}
+
 export function getTournamentCategoryChipStyle(label: string): TournamentCategoryChipStyle | null {
   const normalized = label.trim().toLowerCase()
   if (normalized === '') return null

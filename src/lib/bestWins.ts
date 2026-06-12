@@ -132,6 +132,40 @@ export function findBestWinInMatches(matches: NormalizedMatch[]): BestWinRow | n
   return best
 }
 
+/** Minimum opponent-minus-player rating gap to count as a "big upset" in the recap. */
+export const BIG_UPSET_MIN_RATING_GAP = 30
+
+/** Rated wins where the opponent was at least {@link BIG_UPSET_MIN_RATING_GAP} pts higher. */
+export function findBigUpsetWinsInMatches(matches: NormalizedMatch[]): BestWinRow[] {
+  const rows: BestWinRow[] = []
+  for (const match of matches) {
+    if (!isBestWinEligible(match)) continue
+    const row = buildBestWinRow(match)
+    if (row == null || row.ratingGap < BIG_UPSET_MIN_RATING_GAP) continue
+    rows.push(row)
+  }
+  return rows
+}
+
+/** Biggest underdog win in the given match set (max rating gap; underdog only). */
+export function findBiggestUpsetInMatches(matches: NormalizedMatch[]): BestWinRow | null {
+  let best: BestWinRow | null = null
+  for (const match of matches) {
+    if (!isBestWinEligible(match)) continue
+    const row = buildBestWinRow(match)
+    if (row == null || row.ratingGap <= 0) continue
+    if (
+      best == null ||
+      row.ratingGap > best.ratingGap ||
+      (row.ratingGap === best.ratingGap &&
+        compareByDateDesc(row.match, best.match) < 0)
+    ) {
+      best = row
+    }
+  }
+  return best
+}
+
 /** All-time ranks surfaced on the tournament recap (matches Best wins default list). */
 export const BEST_WIN_RECAP_TOP_N = 5
 

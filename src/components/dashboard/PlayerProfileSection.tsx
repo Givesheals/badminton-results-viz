@@ -4,6 +4,7 @@ import {
   getArchetype,
   getImprovementTips,
 } from '../../lib/playerArchetypes'
+import { useShareCapture } from '../../hooks/useShareCapture'
 import { filterMatches } from '../../lib/filterMatches'
 import {
   computePlayerProfile,
@@ -13,6 +14,7 @@ import {
   type PlayerCode,
 } from '../../lib/playerProfile'
 import type { NormalizedMatch } from '../../types/matchHistory'
+import { ShareButton } from '../ui/ShareButton'
 
 type Props = {
   allMatches: NormalizedMatch[]
@@ -138,6 +140,15 @@ export function PlayerProfileSection({ allMatches }: Props) {
 
   const viewLabel = view === 'all' ? 'All time' : 'Last 24 months'
 
+  const {
+    shareRef,
+    share: shareSection,
+    status: shareStatus,
+  } = useShareCapture({
+    filename: 'badminton-player-type.png',
+    title: 'Your player type',
+  })
+
   return (
     <section className="overflow-hidden rounded-2xl card-frame bg-ink-50/80 shadow-sm">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-ink-100 bg-white px-4 py-3 sm:px-5">
@@ -149,11 +160,18 @@ export function PlayerProfileSection({ allMatches }: Props) {
               ` · ${profile.ratedMatchCount} rated`}
           </p>
         </div>
-        <div
-          className="inline-flex rounded-lg border border-ink-100 bg-ink-50 p-0.5"
-          role="group"
-          aria-label="Profile time range"
-        >
+        <div className="flex items-center gap-2">
+          <ShareButton
+            onClick={() => void shareSection()}
+            status={shareStatus}
+            disabled={!profile.sufficientData || archetype == null}
+          />
+          <div
+            data-share-exclude
+            className="inline-flex rounded-lg border border-ink-100 bg-ink-50 p-0.5"
+            role="group"
+            aria-label="Profile time range"
+          >
           {(['all', '24m'] as const).map((key) => (
             <button
               key={key}
@@ -168,6 +186,7 @@ export function PlayerProfileSection({ allMatches }: Props) {
               {key === 'all' ? 'All time' : 'Last 24 months'}
             </button>
           ))}
+          </div>
         </div>
       </div>
 
@@ -177,11 +196,15 @@ export function PlayerProfileSection({ allMatches }: Props) {
         ) : archetype ? (
           <>
             {comparison.shifted && comparison.message && view === 'all' && (
-              <div className="rounded-xl border border-court-200 bg-court-50/80 px-3 py-2.5 text-sm text-ink-800">
+              <div
+                data-share-exclude
+                className="rounded-xl border border-court-200 bg-court-50/80 px-3 py-2.5 text-sm text-ink-800"
+              >
                 {comparison.message}
               </div>
             )}
 
+            <div ref={shareRef} data-share-root className="space-y-4">
             <div className="rounded-2xl border border-court-200 bg-gradient-to-br from-court-50 to-white px-4 py-4 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-wide text-court-700">
                 {viewLabel}
@@ -233,8 +256,9 @@ export function PlayerProfileSection({ allMatches }: Props) {
                 ))}
               </ul>
             </div>
+            </div>
 
-            <div>
+            <div data-share-exclude>
               <h4 className="text-sm font-medium text-ink-900">Ways to improve</h4>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 {tips.map((tip) => (
@@ -244,7 +268,7 @@ export function PlayerProfileSection({ allMatches }: Props) {
             </div>
 
             {profile.streaks.longestWinStreak >= 3 && (
-              <p className="text-xs text-ink-600">
+              <p className="text-xs text-ink-600" data-share-exclude>
                 Longest winning streak: {profile.streaks.longestWinStreak} matches
                 {profile.streaks.currentStreakType === 'win' &&
                   profile.streaks.currentStreak > 0 &&

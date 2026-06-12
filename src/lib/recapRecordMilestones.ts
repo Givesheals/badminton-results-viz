@@ -45,7 +45,7 @@ function bestWinTitle(kind: BestWinMetricKind): string {
 }
 
 function bestWinDetail(row: BestWinRecapMilestone['row']): string {
-  return `Beat ${row.match.opponents} — see Best wins below.`
+  return `Beat ${row.match.opponents}`
 }
 
 function opponentTitle(kind: OpponentMatchupRecapMilestone['kind'], rank: number): string {
@@ -61,7 +61,19 @@ function opponentDetail(
   name: string,
 ): string {
   const label = kind === 'nemesis' ? 'nemesis' : 'favourite opponents'
-  return `${name} joined your ${label} list — see Nemeses & favourite opponents below.`
+  return `${name} joined your ${label} list.`
+}
+
+function disciplineForWeekendOpponent(
+  weekendMatches: NormalizedMatch[],
+  opponentName: string,
+): string | undefined {
+  for (const match of weekendMatches) {
+    if (match.opponents === opponentName || match.opponents.includes(opponentName)) {
+      return match.discipline
+    }
+  }
+  return undefined
 }
 
 function toBestWinMilestone(raw: BestWinRecapMilestone): RecapRecordMilestone {
@@ -78,13 +90,17 @@ function toBestWinMilestone(raw: BestWinRecapMilestone): RecapRecordMilestone {
   }
 }
 
-function toOpponentMilestone(raw: OpponentMatchupRecapMilestone): RecapRecordMilestone {
+function toOpponentMilestone(
+  raw: OpponentMatchupRecapMilestone,
+  weekendMatches: NormalizedMatch[],
+): RecapRecordMilestone {
   const kind = raw.kind === 'nemesis' ? 'nemesis_top5' : 'scalp_top5'
   return {
     id: `${kind}-${raw.opponentName}`,
     kind,
     title: opponentTitle(raw.kind, raw.rank),
     detail: opponentDetail(raw.kind, raw.opponentName),
+    discipline: disciplineForWeekendOpponent(weekendMatches, raw.opponentName),
     sectionId: 'opponent-matchups',
   }
 }
@@ -99,7 +115,7 @@ export function buildRecapRecordMilestones(
   const opponents = detectOpponentMatchupRecapMilestones(
     weekendMatches,
     priorMatches,
-  ).map(toOpponentMilestone)
+  ).map((raw) => toOpponentMilestone(raw, weekendMatches))
 
   return [...bestWins, ...opponents]
 }

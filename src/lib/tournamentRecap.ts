@@ -1,33 +1,66 @@
-import type { NormalizedMatch } from '../types/matchHistory'
+import type { MatchOutcome, NormalizedMatch } from '../types/matchHistory'
 import {
-  bestWinRowKey,
-  detectBestWinRecapMilestones,
+  computeBestWins,
   findBestWinInMatches,
+  findBigUpsetWinsInMatches,
+  rankBestWinRow,
   type BestWinRow,
 } from './bestWins'
+import {
+  clampDisplayWinChance,
+  formatUpsetWinChanceDisplay,
+} from './ratingWinChance'
 import {
   buildRecapRecordMilestones,
   type RecapRecordMilestone,
 } from './recapRecordMilestones'
+import { sortMatchesChronologically } from './matchChronology'
 import { isCompetitiveMatch } from './matchExclusions'
 import { getMatchGames, getMatchVolume } from './matchScores'
 import { getMatchExpectedWinProbability, getPlayerRating } from './ratings'
 import {
   bestStageFromMatches,
+  earnedKnockoutOrBetterDepth,
+  eventHasCompetitiveWin,
   formatMatchStageLabel,
   getMatchRound,
   isCountyTournament,
   isProgressionTournament,
-  lostInSemiFinal,
   medianRank,
   parseRoundToStage,
   hasGroupMatchWins,
+  qualifiesForThirdPlace,
   PROGRESSION_STAGE_LABELS,
   STAGE_RANK,
   type ProgressionStage,
 } from './tournamentProgression'
 
 export type ComparisonLevel = 'above' | 'typical'
+
+export type RecapSummaryCard = {
+  id: string
+  icon: string
+  label: string
+  detail?: string
+}
+
+export type DisciplineMatchHighlight = {
+  id: string
+  label: string
+  /** When set, the chip opens a tap-friendly explanation popover. */
+  popoverText?: string
+}
+
+export type DisciplineMatchRecap = {
+  matchKey: string
+  date: string
+  opponents: string
+  partnerName: string | null
+  outcome: MatchOutcome
+  scoreSummary: string
+  roundLabel: string | null
+  highlights: DisciplineMatchHighlight[]
+}
 
 export type DisciplineRecap = {
   discipline: string
@@ -41,11 +74,18 @@ export type DisciplineRecap = {
   progressionVsTypical: ComparisonLevel | null
   matchWins: number
   matchLosses: number
-  disciplineInsights: RecapInsight[]
+  eventCallouts: RecapSummaryCard[]
+  matches: DisciplineMatchRecap[]
+}
+
+/** Stable identity for a recap match row (aligned with bestWinRowKey). */
+export function recapMatchKey(match: NormalizedMatch): string {
+  return `${match.competitionName}\0${match.date}\0${match.discipline}\0${match.opponents}`
 }
 
 export type PartnerChemistryHighlight = {
   partnerName: string
+  discipline: string
   priorOverperformance: number | null
   weekendOverperformance: number
   overallOverperformance: number
@@ -87,12 +127,16 @@ export type FreakFlag = {
 export type RecapInsightKind =
   | 'progression_above'
   | 'best_win'
+  | 'biggest_upset'
   | 'partner_chemistry'
   | 'win_rate_above'
   | 'busy_weekend'
 
+export type RecapInsightScope = 'yours' | 'event'
+
 export type RecapInsight = {
   kind: RecapInsightKind
+  scope?: RecapInsightScope
   title: string
   detail?: string
   discipline?: string
@@ -143,6 +187,7 @@ export type TournamentRecap = {
   dateTo: string
   tournamentCategoryLabel: string
   disciplines: DisciplineRecap[]
+  eventSummaries: RecapSummaryCard[]
   celebrations: RecapCelebrations
   emojiInsights: RecapInsight[]
   otherEventInsights: RecapInsight[]
@@ -160,7 +205,7 @@ export type TournamentRecapsResult = {
 
 const BUSY_TOURNAMENT_MIN_MATCHES = 7
 const RATING_TYPICAL_TOLERANCE = 2
-const MAX_EMOJI_CHEMISTRY_INSIGHTS = 1
+const MAX_PARTNER_CHEMISTRY_CALLOUTS_PER_DISCIPLINE = 1
 
 /** First-time depth milestones shown as podium cards (semi-final+ uses winner/runner-up/joint-3rd). */
 const STAGE_REACH_PODIUM_STAGES = [
@@ -211,11 +256,11 @@ function priorCategoryDisciplineMatches(
 function hasPriorCategoryDisciplineEvent(
   categoryLabel: string,
   discipline: string,
-  currentCompetitionName: string,
+  currentWeekendKey: string,
   allWeekends: WeekendBucket[],
 ): boolean {
   for (const weekend of allWeekends) {
-    if (weekend.competitionName === currentCompetitionName) continue
+    if (weekend.key === currentWeekendKey) continue
     if (
       priorCategoryDisciplineMatches(weekend, categoryLabel, discipline).length >
       0
@@ -229,13 +274,13 @@ function hasPriorCategoryDisciplineEvent(
 function priorMaxStageRank(
   categoryLabel: string,
   discipline: string,
-  currentCompetitionName: string,
+  currentWeekendKey: string,
   allWeekends: WeekendBucket[],
 ): number {
   let maxRank = 0
 
   for (const weekend of allWeekends) {
-    if (weekend.competitionName === currentCompetitionName) continue
+    if (weekend.key === currentWeekendKey) continue
     const disciplineMatches = disciplineHistoryMatches(
       weekend,
       categoryLabel,
@@ -255,9 +300,9 @@ function priorWeekendDisciplineMatches(
   weekend: WeekendBucket,
   categoryLabel: string,
   discipline: string | null,
-  currentCompetitionName: string,
+  currentWeekendKey: string,
 ): NormalizedMatch[] {
-  if (weekend.competitionName === currentCompetitionName) return []
+  if (weekend.key === currentWeekendKey) return []
 
   if (discipline == null) {
     const categoryMatches = weekend.matches.filter(
@@ -277,7 +322,7 @@ function countPriorFinishesAtStage(
   categoryLabel: string,
   discipline: string | null,
   stage: ProgressionStage,
-  currentCompetitionName: string,
+  currentWeekendKey: string,
   allWeekends: WeekendBucket[],
 ): number {
   let count = 0
@@ -287,7 +332,7 @@ function countPriorFinishesAtStage(
       weekend,
       categoryLabel,
       discipline,
-      currentCompetitionName,
+      currentWeekendKey,
     )
     if (matches.length === 0) continue
     if (bestStageFromMatches(matches) === stage) count += 1
@@ -329,51 +374,20 @@ function categoryDisciplineMatches(
   )
 }
 
-function eventHasWin(matches: NormalizedMatch[]): boolean {
-  return matches.some((m) => m.outcome === 'win')
-}
-
-function playedGroupOrKnockoutRound(matches: NormalizedMatch[]): boolean {
-  return matches.some((m) => {
-    const stage = parseRoundToStage(getMatchRound(m))
-    return stage === 'group-stages' || stage === 'knockout'
-  })
-}
-
-/** Knockout / QF depth only counts when the player won a match and did not start the event there. */
-function earnedKnockoutOrBetterDepth(
-  disciplineMatches: NormalizedMatch[],
-  stage: ProgressionStage,
-): boolean {
-  if (!eventHasWin(disciplineMatches)) return false
-
-  if (stage === 'knockout') {
-    if (!disciplineMatches.some((m) => parseRoundToStage(getMatchRound(m)) === 'knockout')) {
-      return false
-    }
-    return playedGroupOrKnockoutRound(disciplineMatches)
-  }
-
-  if (stage === 'quarter-final') {
-    return shouldCelebrateFirstQuarterFinal(disciplineMatches)
-  }
-
-  return true
-}
-
 function canCelebrateStageDepth(
   disciplineMatches: NormalizedMatch[],
   stage: StageReachCelebration['stage'],
   celebrateFirstGroupWins: boolean,
+  bestStage: ProgressionStage | null,
 ): boolean {
   if (stage === 'group-wins') {
     return celebrateFirstGroupWins
   }
   if (stage === 'knockout') {
-    return earnedKnockoutOrBetterDepth(disciplineMatches, 'knockout')
+    return earnedKnockoutOrBetterDepth(disciplineMatches, 'knockout', bestStage)
   }
   if (stage === 'quarter-final') {
-    return earnedKnockoutOrBetterDepth(disciplineMatches, 'quarter-final')
+    return earnedKnockoutOrBetterDepth(disciplineMatches, 'quarter-final', bestStage)
   }
   return false
 }
@@ -385,14 +399,14 @@ function canCelebratePersonalBest(
   priorMax: number,
 ): boolean {
   if (currentRank <= priorMax) return false
-  if (!eventHasWin(disciplineMatches)) return false
+  if (!eventHasCompetitiveWin(disciplineMatches)) return false
 
   if (bestStage === 'group-wins' || bestStage === 'group-stages') {
     return hasGroupMatchWins(disciplineMatches)
   }
 
   if (STAGE_RANK[bestStage] >= STAGE_RANK['knockout']) {
-    return earnedKnockoutOrBetterDepth(disciplineMatches, bestStage)
+    return earnedKnockoutOrBetterDepth(disciplineMatches, bestStage, bestStage)
   }
 
   return true
@@ -402,10 +416,10 @@ function canCelebrateMatchedBest(
   disciplineMatches: NormalizedMatch[],
   bestStage: ProgressionStage,
 ): boolean {
-  if (!eventHasWin(disciplineMatches)) return false
+  if (!eventHasCompetitiveWin(disciplineMatches)) return false
 
   if (STAGE_RANK[bestStage] >= STAGE_RANK['knockout']) {
-    return earnedKnockoutOrBetterDepth(disciplineMatches, bestStage)
+    return earnedKnockoutOrBetterDepth(disciplineMatches, bestStage, bestStage)
   }
 
   return hasGroupMatchWins(disciplineMatches)
@@ -416,7 +430,8 @@ function hasJointThirdPodium(
   weekendMatches: NormalizedMatch[],
 ): boolean {
   if (d.bestStage !== 'semi-final') return false
-  return lostInSemiFinal(weekendDisciplineMatches(weekendMatches, d.discipline))
+  const disciplineMatches = weekendDisciplineMatches(weekendMatches, d.discipline)
+  return qualifiesForThirdPlace(disciplineMatches, d.bestStage)
 }
 
 function hasPodiumCrowningDepth(
@@ -432,11 +447,11 @@ function hasPodiumCrowningDepth(
 function hadPriorWinAtCategoryDiscipline(
   categoryLabel: string,
   discipline: string,
-  currentCompetitionName: string,
+  currentWeekendKey: string,
   allWeekends: WeekendBucket[],
 ): boolean {
   for (const weekend of allWeekends) {
-    if (weekend.competitionName === currentCompetitionName) continue
+    if (weekend.key === currentWeekendKey) continue
     const matches = priorCategoryDisciplineMatches(
       weekend,
       categoryLabel,
@@ -464,6 +479,7 @@ function deepestNewStageReach(
   podiumRank: number,
   disciplineMatches: NormalizedMatch[],
   celebrateFirstGroupWins: boolean,
+  bestStage: ProgressionStage | null,
 ): StageReachCelebration['stage'] | null {
   let reached: StageReachCelebration['stage'] | null = null
   let reachedRank = 0
@@ -480,7 +496,7 @@ function deepestNewStageReach(
     if (!stagePlayedAtEvent(disciplineMatches, stage, celebrateFirstGroupWins)) {
       continue
     }
-    if (!canCelebrateStageDepth(disciplineMatches, stage, celebrateFirstGroupWins)) {
+    if (!canCelebrateStageDepth(disciplineMatches, stage, celebrateFirstGroupWins, bestStage)) {
       continue
     }
     if (stageRank > reachedRank) {
@@ -490,18 +506,6 @@ function deepestNewStageReach(
   }
 
   return reached
-}
-
-/** First QF is only celebrated when the player earned their way there with at least one win. */
-function shouldCelebrateFirstQuarterFinal(disciplineMatches: NormalizedMatch[]): boolean {
-  const wins = disciplineMatches.filter((m) => m.outcome === 'win').length
-  if (wins === 0) return false
-
-  const playedEarlierRound = disciplineMatches.some((m) => {
-    const stage = parseRoundToStage(getMatchRound(m))
-    return stage === 'group-stages' || stage === 'knockout'
-  })
-  return playedEarlierRound
 }
 
 function stagePlayedAtEvent(
@@ -524,7 +528,7 @@ function stagePlayedAtEvent(
 function buildCelebrations(
   disciplines: DisciplineRecap[],
   weekendMatches: NormalizedMatch[],
-  currentCompetitionName: string,
+  currentWeekendKey: string,
   allWeekends: WeekendBucket[],
 ): RecapCelebrations {
   const winners: PodiumCelebration[] = []
@@ -540,7 +544,7 @@ function buildCelebrations(
     const priorMax = priorMaxStageRank(
       categoryLabel,
       d.discipline,
-      currentCompetitionName,
+      currentWeekendKey,
       allWeekends,
     )
 
@@ -556,14 +560,14 @@ function buildCelebrations(
         categoryLabel,
         d.discipline,
         'winner',
-        currentCompetitionName,
+        currentWeekendKey,
         allWeekends,
       )
       const priorWinsInCategory = countPriorFinishesAtStage(
         categoryLabel,
         null,
         'winner',
-        currentCompetitionName,
+        currentWeekendKey,
         allWeekends,
       )
       const winNumber = priorWinsInDiscipline + 1
@@ -593,7 +597,7 @@ function buildCelebrations(
     const priorMax = priorMaxStageRank(
       categoryLabel,
       d.discipline,
-      currentCompetitionName,
+      currentWeekendKey,
       allWeekends,
     )
 
@@ -620,7 +624,7 @@ function buildCelebrations(
     const isCategoryDebut = !hasPriorCategoryDisciplineEvent(
       categoryLabel,
       d.discipline,
-      currentCompetitionName,
+      currentWeekendKey,
       allWeekends,
     )
 
@@ -654,17 +658,17 @@ function buildCelebrations(
     const hasPrior = hasPriorCategoryDisciplineEvent(
       categoryLabel,
       d.discipline,
-      currentCompetitionName,
+      currentWeekendKey,
       allWeekends,
     )
     const celebrateFirstGroupWins =
       hasPrior &&
-      eventHasWin(disciplineMatches) &&
+      eventHasCompetitiveWin(disciplineMatches) &&
       hasGroupMatchWins(disciplineMatches) &&
       !hadPriorWinAtCategoryDiscipline(
         categoryLabel,
         d.discipline,
-        currentCompetitionName,
+        currentWeekendKey,
         allWeekends,
       )
 
@@ -678,7 +682,7 @@ function buildCelebrations(
     const priorMax = priorMaxStageRank(
       categoryLabel,
       d.discipline,
-      currentCompetitionName,
+      currentWeekendKey,
       allWeekends,
     )
 
@@ -703,6 +707,7 @@ function buildCelebrations(
         podiumRank,
         disciplineMatches,
         celebrateFirstGroupWins,
+        d.bestStage,
       )
       if (newReach != null) {
         stageReaches.push({
@@ -859,60 +864,66 @@ function formatOrdinal(rank: number): string {
   }
 }
 
-function buildDisciplineInsights(
-  d: DisciplineRecap,
-  bestWin: BestWinRow | null,
-  strengthRank: number | null,
-): RecapInsight[] {
-  const insights: RecapInsight[] = []
+function allTimeStrengthRank(
+  row: BestWinRow,
+  weekendMatches: NormalizedMatch[],
+  priorMatches: NormalizedMatch[],
+): number | null {
+  const { byOpponentStrength } = computeBestWins([...priorMatches, ...weekendMatches])
+  return rankBestWinRow(row, byOpponentStrength)
+}
 
-  if (bestWin != null && bestWin.match.discipline === d.discipline) {
-    let detail = `Beat ${bestWin.match.opponents} (team rated ${bestWin.opponentTeamRating})`
-    if (strengthRank != null) {
-      detail += ` — ${formatOrdinal(strengthRank)} strongest beaten all time`
-    }
-    insights.push({
-      kind: 'best_win',
-      title: 'Best win of the competition',
-      detail,
-      discipline: d.discipline,
-    })
+function strongestBeatenPopoverText(
+  row: BestWinRow,
+  disciplineLabel: string,
+  allTimeRank: number | null,
+): string {
+  const context = `Your highest-rated opponent beaten in ${disciplineLabel} at this event.`
+  const rating = `Their team was rated ${row.opponentTeamRating}.`
+  if (allTimeRank != null) {
+    return `${context} ${rating} Among all your rated wins, that's your ${formatOrdinal(allTimeRank)} strongest beaten victory.`
   }
+  return `${context} ${rating}`
+}
+
+function bigUpsetExplanation(row: BestWinRow): string {
+  const chance = formatUpsetWinChanceDisplay(
+    clampDisplayWinChance(row.preMatchWinChancePercent),
+  )
+  return `You won this match even though your opponent was rated ${row.ratingGap} points higher on average beforehand — about a ${chance} chance of winning going in.`
+}
+
+type DisciplineTimeline = {
+  eventCallouts: RecapSummaryCard[]
+  matches: DisciplineMatchRecap[]
+}
+
+function buildDisciplineTimeline(
+  d: DisciplineRecap,
+  disciplineMatches: NormalizedMatch[],
+  weekendMatches: NormalizedMatch[],
+  priorMatches: NormalizedMatch[],
+  partnerChemistryHighlights: PartnerChemistryHighlight[],
+): DisciplineTimeline {
+  const eventCallouts: RecapSummaryCard[] = []
+  const bestWin = findBestWinInMatches(disciplineMatches)
 
   if (d.progressionVsTypical === 'above' && d.bestStageLabel) {
-    insights.push({
-      kind: 'progression_above',
-      title: `Great run in ${d.discipline}`,
+    eventCallouts.push({
+      id: 'great-run',
+      icon: '🏃',
+      label: 'Great run',
       detail: `Reached ${d.bestStageLabel} — further than you typically get in this event`,
-      discipline: d.discipline,
     })
   }
 
-  return insights
-}
-
-function attachDisciplineInsights(
-  disciplines: DisciplineRecap[],
-  bestWin: BestWinRow | null,
-  strengthRank: number | null,
-): DisciplineRecap[] {
-  return disciplines.map((d) => ({
-    ...d,
-    disciplineInsights: buildDisciplineInsights(d, bestWin, strengthRank),
-  }))
-}
-
-function buildEmojiInsights(
-  partnerHighlights: PartnerChemistryHighlight[],
-  weekendMatches: NormalizedMatch[],
-): RecapInsight[] {
-  const insights: RecapInsight[] = []
-
-  for (const highlight of partnerHighlights.slice(0, MAX_EMOJI_CHEMISTRY_INSIGHTS)) {
-    insights.push({
-      kind: 'partner_chemistry',
+  for (const highlight of partnerChemistryHighlights
+    .filter((h) => h.discipline === d.discipline)
+    .slice(0, MAX_PARTNER_CHEMISTRY_CALLOUTS_PER_DISCIPLINE)) {
+    eventCallouts.push({
+      id: `partner-chemistry-${highlight.partnerName}`,
       icon: '🤝',
-      title: `Even better with ${highlight.partnerName}`,
+      label: `Even better with ${highlight.partnerName}`,
       detail: partnerChemistryDetailShort(
         highlight.weekendOverperformance,
         highlight.overallOverperformance,
@@ -920,21 +931,77 @@ function buildEmojiInsights(
     })
   }
 
-  const competitive = weekendMatches.filter(isCompetitiveMatch)
-  if (competitive.length >= BUSY_TOURNAMENT_MIN_MATCHES) {
-    insights.push({
-      kind: 'busy_weekend',
-      icon: '🥵',
-      title: 'Busy tournament',
-      detail: `${competitive.length} competitive matches`,
+  const highlightsByKey = new Map<string, DisciplineMatchHighlight[]>()
+
+  function addHighlight(key: string, highlight: DisciplineMatchHighlight): void {
+    const list = highlightsByKey.get(key) ?? []
+    list.push(highlight)
+    highlightsByKey.set(key, list)
+  }
+
+  if (bestWin != null) {
+    const allTimeRank = allTimeStrengthRank(bestWin, weekendMatches, priorMatches)
+    addHighlight(recapMatchKey(bestWin.match), {
+      id: 'your-strongest-beaten',
+      label: 'Your strongest beaten',
+      popoverText: strongestBeatenPopoverText(
+        bestWin,
+        d.disciplineLabel,
+        allTimeRank,
+      ),
     })
   }
 
-  return insights
+  for (const upset of findBigUpsetWinsInMatches(disciplineMatches)) {
+    const key = recapMatchKey(upset.match)
+    addHighlight(key, {
+      id: `big-upset-${key}`,
+      label: 'Big upset!',
+      popoverText: bigUpsetExplanation(upset),
+    })
+  }
+
+  const matches = sortMatchesChronologically(disciplineMatches).map((match) => {
+      const key = recapMatchKey(match)
+      return {
+        matchKey: key,
+        date: match.date,
+        opponents: match.opponents,
+        partnerName: match.partnerName,
+        outcome: match.outcome,
+        scoreSummary: match.scoreSummary,
+        roundLabel: formatMatchStageLabel(getMatchRound(match)),
+        highlights: highlightsByKey.get(key) ?? [],
+      }
+    })
+
+  return {
+    eventCallouts,
+    matches,
+  }
 }
 
-function sortMatchesByDate(matches: NormalizedMatch[]): NormalizedMatch[] {
-  return [...matches].sort((a, b) => a.date.localeCompare(b.date))
+function calendarDaysBetween(earlier: string, later: string): number {
+  const start = new Date(`${earlier}T12:00:00`).getTime()
+  const end = new Date(`${later}T12:00:00`).getTime()
+  return Math.round((end - start) / 86_400_000)
+}
+
+function clusterConsecutiveDates(dates: string[]): string[][] {
+  const sorted = [...new Set(dates.filter((d) => d && d !== '—'))].sort()
+  if (sorted.length === 0) return []
+
+  const clusters: string[][] = [[sorted[0]!]]
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1]!
+    const curr = sorted[i]!
+    if (calendarDaysBetween(prev, curr) === 1) {
+      clusters[clusters.length - 1]!.push(curr)
+    } else {
+      clusters.push([curr])
+    }
+  }
+  return clusters
 }
 
 function groupWeekends(matches: NormalizedMatch[]): WeekendBucket[] {
@@ -948,11 +1015,22 @@ function groupWeekends(matches: NormalizedMatch[]): WeekendBucket[] {
     byCompetition.set(key, bucket)
   }
 
-  const buckets: WeekendBucket[] = [...byCompetition.entries()].map(([key, weekendMatches]) => ({
-    key,
-    competitionName: key,
-    matches: weekendMatches,
-  }))
+  const buckets: WeekendBucket[] = []
+
+  for (const [competitionName, competitionMatches] of byCompetition) {
+    const clusters = clusterConsecutiveDates(competitionMatches.map((m) => m.date))
+
+    for (const clusterDates of clusters) {
+      const dateSet = new Set(clusterDates)
+      const clusterMatches = competitionMatches.filter((m) => dateSet.has(m.date))
+      const clusterStart = clusterDates[0]!
+      buckets.push({
+        key: `${competitionName}\0${clusterStart}`,
+        competitionName,
+        matches: clusterMatches,
+      })
+    }
+  }
 
   buckets.sort((a, b) => {
     const dateA = a.matches.reduce((max, m) => (m.date > max ? m.date : max), '')
@@ -986,7 +1064,7 @@ function ratingDeltaForDiscipline(matches: NormalizedMatch[]): {
   ratingEnd: number | null
   ratingDelta: number | null
 } {
-  const sorted = sortMatchesByDate(matches.filter(isCompetitiveMatch))
+  const sorted = sortMatchesChronologically(matches.filter(isCompetitiveMatch))
   let ratingStart: number | null = null
   let ratingEnd: number | null = null
 
@@ -1153,6 +1231,8 @@ function buildDisciplineRecaps(
   weekendMatches: NormalizedMatch[],
   allWeekends: WeekendBucket[],
   currentKey: string,
+  priorMatches: NormalizedMatch[],
+  partnerChemistryHighlights: PartnerChemistryHighlight[],
 ): DisciplineRecap[] {
   const disciplines = new Map<string, NormalizedMatch[]>()
   for (const match of weekendMatches.filter(isCompetitiveMatch)) {
@@ -1220,7 +1300,7 @@ function buildDisciplineRecaps(
       const matchWins = disciplineMatches.filter((m) => m.outcome === 'win').length
       const matchLosses = disciplineMatches.filter((m) => m.outcome === 'loss').length
 
-      return {
+      const recap: DisciplineRecap = {
         discipline,
         disciplineLabel: sample.disciplineLabel,
         ratingStart,
@@ -1232,7 +1312,22 @@ function buildDisciplineRecaps(
         progressionVsTypical,
         matchWins,
         matchLosses,
-        disciplineInsights: [],
+        eventCallouts: [],
+        matches: [],
+      }
+
+      const timeline = buildDisciplineTimeline(
+        recap,
+        disciplineMatches,
+        weekendMatches,
+        priorMatches,
+        partnerChemistryHighlights,
+      )
+
+      return {
+        ...recap,
+        eventCallouts: timeline.eventCallouts,
+        matches: timeline.matches,
       }
     })
     .sort((a, b) => a.discipline.localeCompare(b.discipline))
@@ -1241,67 +1336,75 @@ function buildDisciplineRecaps(
 function buildPartnerChemistryHighlights(
   weekendMatches: NormalizedMatch[],
   allCompetitive: NormalizedMatch[],
-  competitionName: string,
+  weekendMatchKeys: Set<string>,
 ): PartnerChemistryHighlight[] {
   const weekendCompetitive = weekendMatches.filter(isCompetitiveMatch)
 
-  const partnersInWeekend = new Set<string>()
+  const partnersByDiscipline = new Map<string, Set<string>>()
   for (const match of weekendCompetitive) {
-    if (match.partnerName) partnersInWeekend.add(match.partnerName)
+    if (!match.partnerName) continue
+    const partners = partnersByDiscipline.get(match.discipline) ?? new Set<string>()
+    partners.add(match.partnerName)
+    partnersByDiscipline.set(match.discipline, partners)
   }
 
   const highlights: PartnerChemistryHighlight[] = []
 
-  for (const partnerName of partnersInWeekend) {
-    const weekendWithPartner = weekendCompetitive.filter(
-      (m) => m.partnerName === partnerName,
-    )
-    if (weekendWithPartner.length === 0) continue
+  for (const [discipline, partners] of partnersByDiscipline) {
+    for (const partnerName of partners) {
+      const weekendWithPartner = weekendCompetitive.filter(
+        (m) => m.discipline === discipline && m.partnerName === partnerName,
+      )
+      if (weekendWithPartner.length === 0) continue
 
-    const priorMatches = allCompetitive.filter(
-      (m) =>
-        m.partnerName === partnerName && m.competitionName !== competitionName,
-    )
+      const priorMatches = allCompetitive.filter(
+        (m) =>
+          m.discipline === discipline &&
+          m.partnerName === partnerName &&
+          !weekendMatchKeys.has(recapMatchKey(m)),
+      )
 
-    const priorCompetitive = priorMatches.filter(
-      (m) =>
-        isCompetitiveMatch(m) &&
-        (m.outcome === 'win' || m.outcome === 'loss'),
-    )
+      const priorCompetitive = priorMatches.filter(
+        (m) =>
+          isCompetitiveMatch(m) &&
+          (m.outcome === 'win' || m.outcome === 'loss'),
+      )
 
-    if (priorCompetitive.length === 0) continue
+      if (priorCompetitive.length === 0) continue
 
-    const priorOverperformance = computeOverperformance(priorCompetitive)
-    const weekendOverperformance = computeOverperformance(weekendWithPartner)
-    if (weekendOverperformance == null) continue
+      const priorOverperformance = computeOverperformance(priorCompetitive)
+      const weekendOverperformance = computeOverperformance(weekendWithPartner)
+      if (weekendOverperformance == null) continue
 
-    const improved =
-      priorOverperformance == null
-        ? weekendOverperformance > 0
-        : weekendOverperformance > priorOverperformance
+      const improved =
+        priorOverperformance == null
+          ? weekendOverperformance > 0
+          : weekendOverperformance > priorOverperformance
 
-    if (!improved || priorOverperformance == null) continue
+      if (!improved || priorOverperformance == null) continue
 
-    const allWithPartner = [...priorCompetitive, ...weekendWithPartner]
-    const overallOverperformance = computeOverperformance(allWithPartner)
-    if (overallOverperformance == null) continue
+      const allWithPartner = [...priorCompetitive, ...weekendWithPartner]
+      const overallOverperformance = computeOverperformance(allWithPartner)
+      if (overallOverperformance == null) continue
 
-    const positiveAtEvent = weekendOverperformance > 0
-    const positiveOverall = overallOverperformance > 0
-    if (!positiveAtEvent && !positiveOverall) continue
+      const positiveAtEvent = weekendOverperformance > 0
+      const positiveOverall = overallOverperformance > 0
+      if (!positiveAtEvent && !positiveOverall) continue
 
-    highlights.push({
-      partnerName,
-      priorOverperformance,
-      weekendOverperformance,
-      overallOverperformance,
-      detail: partnerChemistryDetail(
+      highlights.push({
         partnerName,
-        weekendOverperformance,
+        discipline,
         priorOverperformance,
+        weekendOverperformance,
         overallOverperformance,
-      ),
-    })
+        detail: partnerChemistryDetail(
+          partnerName,
+          weekendOverperformance,
+          priorOverperformance,
+          overallOverperformance,
+        ),
+      })
+    }
   }
 
   return highlights.sort(
@@ -1309,48 +1412,37 @@ function buildPartnerChemistryHighlights(
   )
 }
 
-function buildOtherEventInsights(
+function buildEventSummaries(
   weekendMatches: NormalizedMatch[],
   overallWinPercent: number | null,
-): RecapInsight[] {
-  const insights: RecapInsight[] = []
+): RecapSummaryCard[] {
+  const summaries: RecapSummaryCard[] = []
   const competitive = weekendMatches.filter(isCompetitiveMatch)
 
   if (overallWinPercent != null && competitive.length > 0) {
     const wins = competitive.filter((m) => m.outcome === 'win').length
     const weekendWinPercent = roundPercent((wins / competitive.length) * 100)
     if (weekendWinPercent > overallWinPercent) {
-      insights.push({
-        kind: 'win_rate_above',
+      summaries.push({
+        id: 'great-form',
         icon: '💪',
-        title: 'Great form at this event',
-        detail: `${weekendWinPercent}% match wins vs ${overallWinPercent}% overall`,
+        label: 'Great form',
+        detail: `${weekendWinPercent}% match wins at this event vs ${overallWinPercent}% overall`,
       })
     }
   }
 
-  return insights
+  if (competitive.length >= BUSY_TOURNAMENT_MIN_MATCHES) {
+    summaries.push({
+      id: 'busy-weekend',
+      icon: '🥵',
+      label: "You've been busy!",
+      detail: `${competitive.length} competitive matches at this event`,
+    })
+  }
+
+  return summaries
 }
-
-function shortenStrengthMilestoneDetails(
-  milestones: RecapRecordMilestone[],
-  bestWin: BestWinRow | null,
-  strengthRank: number | null,
-): RecapRecordMilestone[] {
-  if (bestWin == null || strengthRank == null) return milestones
-
-  const key = bestWinRowKey(bestWin)
-  return milestones.map((m) => {
-    if (m.kind !== 'best_win_strength' || m.id !== `best_win_strength-${key}`) {
-      return m
-    }
-    return {
-      ...m,
-      detail: `${formatOrdinal(strengthRank)} strongest beaten all time — see Best wins below.`,
-    }
-  })
-}
-
 
 function buildWeekendRecap(
   bucket: WeekendBucket,
@@ -1359,61 +1451,40 @@ function buildWeekendRecap(
   overallWinPercent: number | null,
 ): TournamentRecap {
   const { dateFrom, dateTo } = weekendDateRange(bucket.matches)
-  const disciplines = buildDisciplineRecaps(bucket.matches, allWeekends, bucket.key)
-  const bestWin = findBestWinInMatches(bucket.matches)
+  const weekendMatchKeys = new Set(bucket.matches.map((m) => recapMatchKey(m)))
+  const priorMatches = allCompetitive.filter(
+    (m) => !weekendMatchKeys.has(recapMatchKey(m)),
+  )
   const partnerChemistryHighlights = buildPartnerChemistryHighlights(
     bucket.matches,
     allCompetitive,
-    bucket.competitionName,
+    weekendMatchKeys,
   )
+  const disciplines = buildDisciplineRecaps(
+    bucket.matches,
+    allWeekends,
+    bucket.key,
+    priorMatches,
+    partnerChemistryHighlights,
+  )
+  const bestWin = findBestWinInMatches(bucket.matches)
   const freakFlags = detectFreakFlags(bucket.matches)
   const competitive = bucket.matches.filter(isCompetitiveMatch)
   const wins = competitive.filter((m) => m.outcome === 'win').length
   const weekendWinPercent =
     competitive.length > 0 ? roundPercent((wins / competitive.length) * 100) : null
 
-  const priorMatches = allCompetitive.filter(
-    (m) => m.competitionName !== bucket.competitionName,
-  )
-
-  const strengthRank =
-    bestWin != null
-      ? (detectBestWinRecapMilestones(bucket.matches, priorMatches).find(
-          (m) =>
-            m.kind === 'strength' &&
-            bestWinRowKey(m.row) === bestWinRowKey(bestWin),
-        )?.rank ?? null)
-      : null
-
-  const disciplinesWithInsights = attachDisciplineInsights(
-    disciplines,
-    bestWin,
-    strengthRank,
-  )
-
-  let recordMilestones = buildRecapRecordMilestones(
+  const recordMilestones = buildRecapRecordMilestones(
     bucket.matches,
     priorMatches,
   )
-  recordMilestones = shortenStrengthMilestoneDetails(
-    recordMilestones,
-    bestWin,
-    strengthRank,
-  )
 
-  const emojiInsights = buildEmojiInsights(
-    partnerChemistryHighlights,
-    bucket.matches,
-  )
-  const otherEventInsights = buildOtherEventInsights(
-    bucket.matches,
-    overallWinPercent,
-  )
+  const eventSummaries = buildEventSummaries(bucket.matches, overallWinPercent)
 
   const celebrations = buildCelebrations(
     disciplines,
     bucket.matches,
-    bucket.competitionName,
+    bucket.key,
     allWeekends,
   )
 
@@ -1423,10 +1494,11 @@ function buildWeekendRecap(
     dateFrom,
     dateTo,
     tournamentCategoryLabel: dominantCategoryLabel(bucket.matches),
-    disciplines: disciplinesWithInsights,
+    disciplines,
+    eventSummaries,
     celebrations,
-    emojiInsights,
-    otherEventInsights,
+    emojiInsights: [],
+    otherEventInsights: [],
     recordMilestones,
     freakFlags,
     bestWin,

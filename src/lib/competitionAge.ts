@@ -95,6 +95,33 @@ export function sortCompetitionSubAgeGroups(values: string[]): string[] {
   return [...values].sort(compareSubAge)
 }
 
+/** Higher rank = older age group — for sorting oldest-first in category milestones. */
+export function competitionAgeOldestFirstRank(value: string | null): number {
+  if (!value) return -1
+
+  const upper = value.toUpperCase()
+  const oMatch = /^O(\d+)$/.exec(upper)
+  if (oMatch) return 1000 + Number(oMatch[1])
+
+  if (value === 'Masters') return 900
+  if (value === 'Senior') return 800
+
+  const uMatch = /^U(\d+)$/.exec(upper)
+  if (uMatch) return 100 + Number(uMatch[1])
+
+  if (value === 'Junior') return 50
+  if (value === 'Other') return 10
+
+  return 25
+}
+
+export function compareCompetitionAgeOldestFirst(
+  valueA: string | null,
+  valueB: string | null,
+): number {
+  return competitionAgeOldestFirstRank(valueB) - competitionAgeOldestFirstRank(valueA)
+}
+
 export function buildCombinedCompetitionAgeValues(
   ageGroups: string[],
   subAges: string[],

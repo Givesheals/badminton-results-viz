@@ -95,7 +95,7 @@ describe('computeSeasonJourney', () => {
     expect(journey.weekendCount).toBe(2)
   })
 
-  it('includes trophy cabinet data', () => {
+  it('includes season accolades data', () => {
     const journey = computeSeasonJourney(
       [
         makeMatch({
@@ -107,8 +107,8 @@ describe('computeSeasonJourney', () => {
       ],
       ref,
     )
-    expect(journey.trophyCabinet).toBeDefined()
-    expect(journey.trophyCabinet.first).toHaveLength(1)
-    expect(journey.trophyCabinet.first[0]!.competitionName).toBe('Autumn Open')
+    expect(journey.accolades).toBeDefined()
+    expect(journey.accolades.podium.first).toHaveLength(1)
+    expect(journey.accolades.podium.first[0]!.competitionName).toBe('Autumn Open')
   })
 })

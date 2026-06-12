@@ -5,16 +5,12 @@ import {
   progressionBarMarkerPercentFromTypicalRank,
   progressionBarMarkerRankForUI,
   progressionBarMobileLabel,
+  type PrimaryComboProgression,
   type ProgressionDistributionRow,
 } from '../../lib/tournamentProgression'
 
 type Props = {
-  typicalLabel: string | null
-  typicalRank: number | null
-  bestLabel: string | null
-  knockoutOrBetterPercent: number
-  depthBarSegments: ProgressionDistributionRow[]
-  tournamentCount: number
+  primaryCombo: PrimaryComboProgression | null
 }
 
 function DistributionBar({
@@ -85,54 +81,49 @@ function DistributionBar({
   )
 }
 
-export function TournamentProgressionAverage({
-  typicalLabel,
-  typicalRank,
-  bestLabel,
-  knockoutOrBetterPercent,
-  depthBarSegments,
-  tournamentCount,
-}: Props) {
-  if (tournamentCount === 0 || typicalLabel == null || typicalRank == null) {
+export function TournamentProgressionAverage({ primaryCombo }: Props) {
+  if (
+    primaryCombo == null ||
+    primaryCombo.tournamentCount === 0 ||
+    primaryCombo.typicalLabel == null ||
+    primaryCombo.typicalRank == null
+  ) {
     return (
-      <p className="flex h-48 items-center justify-center text-sm text-ink-700">
+      <p className="text-sm text-ink-700">
         Typical depth appears once you have at least one classified progression tournament.
       </p>
     )
   }
 
-  return (
-    <div className="flex flex-col gap-4">
-      {bestLabel != null ? (
-        <div className="text-center">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-500">Personal best</p>
-          <p className="mt-0.5 text-3xl font-semibold text-brand-700">{bestLabel}</p>
-          {knockoutOrBetterPercent > 0 ? (
-            <p className="mt-1 text-sm text-ink-700">
-              Knockout or better in{' '}
-              <span className="font-medium text-ink-900">{knockoutOrBetterPercent}%</span> of{' '}
-              {tournamentCount} {tournamentCount === 1 ? 'tournament' : 'tournaments'}
-            </p>
-          ) : (
-            <p className="mt-1 text-sm text-ink-700">
-              Across {tournamentCount} {tournamentCount === 1 ? 'tournament' : 'tournaments'} — keep
-              pushing into the knockout rounds
-            </p>
-          )}
-        </div>
-      ) : null}
+  const { label, typicalLabel, typicalRank, depthBarSegments, knockoutOrBetterPercent, tournamentCount } =
+    primaryCombo
 
-      <div className="space-y-2">
-        <p className="text-center text-sm text-ink-700">
-          <span className="font-medium text-ink-900">Median depth:</span> {typicalLabel}
-          <span className="block text-xs text-ink-500">
-            In a typical draw, 66% of players do not get past the group stages.
-          </span>
+  return (
+    <div className="space-y-2">
+      <h4 className="text-sm font-medium text-ink-900">Typical run</h4>
+      <p className="text-center text-sm text-ink-700">
+        <span className="font-medium text-ink-900">{label}</span>
+        <span className="mt-0.5 block text-xs text-ink-500">
+          Your most-played level and age — {tournamentCount}{' '}
+          {tournamentCount === 1 ? 'event' : 'events'}
+        </span>
+      </p>
+      <p className="text-center text-sm text-ink-700">
+        <span className="font-medium text-ink-900">Median depth:</span> {typicalLabel}
+        <span className="block text-xs text-ink-500">
+          In a typical draw, 66% of players do not get past the group stages.
+        </span>
+      </p>
+      {knockoutOrBetterPercent > 0 ? (
+        <p className="text-center text-xs text-ink-500">
+          Knockout or better in{' '}
+          <span className="font-medium text-ink-700">{knockoutOrBetterPercent}%</span> of these
+          events
         </p>
-        {depthBarSegments.length > 0 ? (
-          <DistributionBar segments={depthBarSegments} typicalRank={typicalRank} />
-        ) : null}
-      </div>
+      ) : null}
+      {depthBarSegments.length > 0 ? (
+        <DistributionBar segments={depthBarSegments} typicalRank={typicalRank} />
+      ) : null}
     </div>
   )
 }

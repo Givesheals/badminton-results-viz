@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSectionMatches } from '../../hooks/useSectionMatches'
 import { useResetFiltersOnImport } from '../../hooks/useResetFiltersOnImport'
+import { useShareCapture } from '../../hooks/useShareCapture'
 import { countActiveSectionFilters } from '../../lib/filterCounts'
 import { competitiveMatches } from '../../lib/matchExclusions'
 import { computeTournamentProgression } from '../../lib/tournamentProgression'
@@ -14,6 +15,7 @@ import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
 import { TournamentProgressionAverage } from './TournamentProgressionAverage'
 import { tournamentProgressionInfo } from '../../content/sectionInfo'
 import { SectionHeading } from '../ui/SectionHeading'
+import { ShareButton } from '../ui/ShareButton'
 import { TournamentProgressionChart } from './TournamentProgressionChart'
 
 type Props = {
@@ -37,6 +39,15 @@ export function TournamentProgressionSection({
     [matches],
   )
 
+  const {
+    shareRef,
+    share: shareSection,
+    status: shareStatus,
+  } = useShareCapture({
+    filename: 'badminton-tournament-progression.png',
+    title: 'Tournament progression',
+  })
+
   return (
     <article className="rounded-2xl card-frame bg-white p-4 shadow-sm sm:p-5">
       <SectionHeaderWithFilters
@@ -51,6 +62,13 @@ export function TournamentProgressionSection({
         }
         description={
           <FilterMatchCount filteredCount={matches.length} totalCount={allMatches.length} />
+        }
+        titleActions={
+          <ShareButton
+            onClick={() => void shareSection()}
+            status={shareStatus}
+            disabled={progression.tournamentCount === 0}
+          />
         }
         filters={
           <CollapsibleFilters
@@ -69,23 +87,18 @@ export function TournamentProgressionSection({
         }
       />
 
-      <div className="py-3">
-        <TournamentProgressionAverage
-          typicalLabel={progression.typicalLabel}
-          typicalRank={progression.typicalRank}
-          bestLabel={progression.bestLabel}
-          knockoutOrBetterPercent={progression.knockoutOrBetterPercent}
-          depthBarSegments={progression.depthBarSegments}
-          tournamentCount={progression.tournamentCount}
-        />
-      </div>
-      <div className="border-t border-ink-100 pt-4">
-        <h4 className="text-sm font-medium text-ink-900">Finish distribution</h4>
-        <div className="mt-2">
-          <TournamentProgressionChart
-            data={progression.distribution}
-            tournamentCount={progression.tournamentCount}
-          />
+      <div ref={shareRef} data-share-root>
+        <div className="py-3">
+          <TournamentProgressionAverage primaryCombo={progression.primaryCombo} />
+        </div>
+        <div className="border-t border-ink-100 pt-4">
+          <h4 className="text-sm font-medium text-ink-900">Finish distribution</h4>
+          <div className="mt-2">
+            <TournamentProgressionChart
+              data={progression.distribution}
+              tournamentCount={progression.tournamentCount}
+            />
+          </div>
         </div>
       </div>
     </article>

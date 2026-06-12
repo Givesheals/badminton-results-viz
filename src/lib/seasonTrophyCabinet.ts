@@ -4,10 +4,16 @@ import { filterMatchesInSeason } from './season'
 import type { NormalizedMatch } from '../types/matchHistory'
 import {
   bestStageFromMatchesForAchievements,
-  lostInSemiFinal,
+  competitionAgeLabelFromMatch,
+  earnedKnockoutOrBetterDepth,
+  eventHasCompetitiveWin,
+  formatCategoryAgeLabel,
+  hasGroupMatchWins,
+  isProgressionTournament,
+  qualifiesForThirdPlace,
+  PROGRESSION_STAGE_LABELS,
   STAGE_RANK,
   tournamentKey,
-  wonBronzeFinal,
   type ProgressionStage,
 } from './tournamentProgression'
 
@@ -17,6 +23,7 @@ export type SeasonTrophyItem = {
   placement: TrophyPlacement
   placementLabel: string
   tournamentCategoryLabel: string
+  competitionAgeLabel: string | null
   discipline: string
   disciplineLabel: string
   competitionName: string
@@ -31,6 +38,30 @@ export type SeasonTrophyCabinetData = {
   totalCount: number
 }
 
+export type SeasonPersonalBestItem = {
+  tournamentCategoryLabel: string
+  competitionAgeLabel: string | null
+  discipline: string
+  disciplineLabel: string
+  competitionName: string
+  date: string
+  stage: ProgressionStage
+  stageLabel: string
+  detail: string
+}
+
+export type SeasonAccoladesData = {
+  podium: {
+    first: SeasonTrophyItem[]
+    second: SeasonTrophyItem[]
+    third: SeasonTrophyItem[]
+  }
+  personalBests: SeasonPersonalBestItem[]
+  totalPodiumCount: number
+}
+
+export const SEASON_PERSONAL_BEST_CAP = 6
+
 const PLACEMENT_LABELS: Record<TrophyPlacement, string> = {
   first: 'Winner',
   second: 'Runner-up',
@@ -43,8 +74,34 @@ type EventBucket = {
   discipline: string
   disciplineLabel: string
   categoryLabel: string
+  ageLabel: string | null
   date: string
   matches: NormalizedMatch[]
+}
+
+function eventBucketKey(match: NormalizedMatch): string {
+  const ageLabel = competitionAgeLabelFromMatch(match) ?? ''
+  return `${tournamentKey(match)}\0${ageLabel}`
+}
+
+function normalizeAgeLabel(label: string | null | undefined): string {
+  return label ?? ''
+}
+
+function eventMatchesScope(
+  event: EventBucket,
+  categoryLabel: string,
+  discipline: string | null,
+  ageLabel: string | null,
+): boolean {
+  if (event.categoryLabel !== categoryLabel) return false
+  if (discipline != null && event.discipline !== discipline) return false
+  if (normalizeAgeLabel(event.ageLabel) !== normalizeAgeLabel(ageLabel)) return false
+  return true
+}
+
+function categoryAgeLabel(categoryLabel: string, ageLabel: string | null): string {
+  return formatCategoryAgeLabel(categoryLabel, ageLabel)
 }
 
 function ordinalFinish(n: number): string {
@@ -60,11 +117,7 @@ export function placementFromBestStage(
 ): TrophyPlacement | null {
   if (bestStage === 'winner') return 'first'
   if (bestStage === 'runner-up') return 'second'
-  if (bestStage === 'semi-final') {
-    if (lostInSemiFinal(matches)) return 'third'
-    if (wonBronzeFinal(matches)) return 'third'
-    return null
-  }
+  if (qualifiesForThirdPlace(matches, bestStage)) return 'third'
   return null
 }
 
@@ -73,7 +126,7 @@ function buildEventBuckets(matches: NormalizedMatch[]): EventBucket[] {
 
   for (const match of matches) {
     if (!isCompetitiveMatch(match)) continue
-    const key = tournamentKey(match)
+    const key = eventBucketKey(match)
     const bucket = byKey.get(key) ?? []
     bucket.push(match)
     byKey.set(key, bucket)
@@ -92,6 +145,7 @@ function buildEventBuckets(matches: NormalizedMatch[]): EventBucket[] {
       discipline: sample.discipline,
       disciplineLabel: sample.disciplineLabel,
       categoryLabel: sample.tournamentCategoryLabel,
+      ageLabel: competitionAgeLabelFromMatch(sample),
       date,
       matches: eventMatches,
     }
@@ -102,13 +156,13 @@ function countPriorFinishesAtStage(
   priorEvents: EventBucket[],
   categoryLabel: string,
   discipline: string | null,
+  ageLabel: string | null,
   stage: ProgressionStage,
 ): number {
   let count = 0
 
   for (const event of priorEvents) {
-    if (event.categoryLabel !== categoryLabel) continue
-    if (discipline != null && event.discipline !== discipline) continue
+    if (!eventMatchesScope(event, categoryLabel, discipline, ageLabel)) continue
     const best = bestStageFromMatchesForAchievements(event.matches)
     if (best == null) continue
     if (best === stage) count += 1
@@ -121,12 +175,12 @@ function priorMaxStageRank(
   priorEvents: EventBucket[],
   categoryLabel: string,
   discipline: string,
+  ageLabel: string | null,
 ): number {
   let maxRank = 0
 
   for (const event of priorEvents) {
-    if (event.categoryLabel !== categoryLabel) continue
-    if (event.discipline !== discipline) continue
+    if (!eventMatchesScope(event, categoryLabel, discipline, ageLabel)) continue
     const best = bestStageFromMatchesForAchievements(event.matches)
     if (best == null) continue
     maxRank = Math.max(maxRank, STAGE_RANK[best])
@@ -140,43 +194,46 @@ function buildContextNote(
   event: EventBucket,
   priorEvents: EventBucket[],
 ): string | undefined {
-  const { categoryLabel, discipline, disciplineLabel } = event
+  const { categoryLabel, discipline, disciplineLabel, ageLabel } = event
+  const scopedCategoryLabel = categoryAgeLabel(categoryLabel, ageLabel)
 
   if (placement === 'first') {
     const priorWinsInDiscipline = countPriorFinishesAtStage(
       priorEvents,
       categoryLabel,
       discipline,
+      ageLabel,
       'winner',
     )
     const priorWinsInCategory = countPriorFinishesAtStage(
       priorEvents,
       categoryLabel,
       null,
+      ageLabel,
       'winner',
     )
     const winNumber = priorWinsInDiscipline + 1
 
     if (priorWinsInCategory === 0) {
-      return `Your first ${categoryLabel} title`
+      return `Your first ${scopedCategoryLabel} title`
     }
     if (priorWinsInDiscipline === 0) {
-      return `Your first ${categoryLabel} ${disciplineLabel} title`
+      return `Your first ${scopedCategoryLabel} ${disciplineLabel} title`
     }
-    return `Your ${ordinalFinish(winNumber)} ${categoryLabel} title`
+    return `Your ${ordinalFinish(winNumber)} ${scopedCategoryLabel} title`
   }
 
   if (placement === 'second') {
-    const priorMax = priorMaxStageRank(priorEvents, categoryLabel, discipline)
+    const priorMax = priorMaxStageRank(priorEvents, categoryLabel, discipline, ageLabel)
     if (priorMax < STAGE_RANK['runner-up']) {
-      return `Your first ${categoryLabel} runner-up finish`
+      return `Your first ${scopedCategoryLabel} runner-up finish`
     }
     return undefined
   }
 
-  const priorMax = priorMaxStageRank(priorEvents, categoryLabel, discipline)
+  const priorMax = priorMaxStageRank(priorEvents, categoryLabel, discipline, ageLabel)
   if (priorMax < STAGE_RANK['semi-final']) {
-    return `Your first ${categoryLabel} semi-final finish`
+    return `Your first ${scopedCategoryLabel} semi-final finish`
   }
   return undefined
 }
@@ -185,6 +242,159 @@ function compareEvents(a: EventBucket, b: EventBucket): number {
   const byDate = a.date.localeCompare(b.date)
   if (byDate !== 0) return byDate
   return a.key.localeCompare(b.key)
+}
+
+function effectiveStageRank(
+  bestStage: ProgressionStage,
+  disciplineMatches: NormalizedMatch[],
+): number {
+  const rank = STAGE_RANK[bestStage]
+  if (hasGroupMatchWins(disciplineMatches) && rank < STAGE_RANK['group-wins']) {
+    return STAGE_RANK['group-wins']
+  }
+  return rank
+}
+
+function canCelebratePersonalBest(
+  disciplineMatches: NormalizedMatch[],
+  bestStage: ProgressionStage,
+  currentRank: number,
+  priorMax: number,
+): boolean {
+  if (currentRank <= priorMax) return false
+  if (!eventHasCompetitiveWin(disciplineMatches)) return false
+
+  if (bestStage === 'group-wins' || bestStage === 'group-stages') {
+    return hasGroupMatchWins(disciplineMatches)
+  }
+
+  if (STAGE_RANK[bestStage] >= STAGE_RANK['knockout']) {
+    return earnedKnockoutOrBetterDepth(disciplineMatches, bestStage, bestStage)
+  }
+
+  return true
+}
+
+function hasPriorCategoryDisciplineEvent(
+  priorEvents: EventBucket[],
+  categoryLabel: string,
+  discipline: string,
+  ageLabel: string | null,
+): boolean {
+  return priorEvents.some((e) =>
+    eventMatchesScope(e, categoryLabel, discipline, ageLabel),
+  )
+}
+
+function buildPersonalBestDetail(
+  categoryLabel: string,
+  ageLabel: string | null,
+  disciplineLabel: string,
+  stageLabel: string,
+): string {
+  const scopedCategoryLabel = categoryAgeLabel(categoryLabel, ageLabel)
+  return `Your deepest ${scopedCategoryLabel} ${disciplineLabel} run — ${stageLabel}`
+}
+
+export function computeSeasonPersonalBests(
+  allMatches: NormalizedMatch[],
+  bounds: SeasonBounds,
+): SeasonPersonalBestItem[] {
+  const seasonMatches = filterMatchesInSeason(allMatches, bounds)
+  const allEvents = buildEventBuckets(allMatches).sort(compareEvents)
+  const seasonEvents = buildEventBuckets(seasonMatches).sort(compareEvents)
+  const items: SeasonPersonalBestItem[] = []
+
+  for (const event of seasonEvents) {
+    if (event.categoryLabel === 'Other') continue
+
+    const bestStage = bestStageFromMatchesForAchievements(event.matches)
+    if (bestStage == null) continue
+
+    const placement = placementFromBestStage(event.matches, bestStage)
+    if (placement != null) continue
+
+    if (!isProgressionTournament(event.matches)) continue
+
+    const priorEvents = allEvents.filter(
+      (e) => e.date < event.date || (e.date === event.date && e.key < event.key),
+    )
+
+    if (
+      !hasPriorCategoryDisciplineEvent(
+        priorEvents,
+        event.categoryLabel,
+        event.discipline,
+        event.ageLabel,
+      )
+    ) {
+      continue
+    }
+
+    const priorMax = priorMaxStageRank(
+      priorEvents,
+      event.categoryLabel,
+      event.discipline,
+      event.ageLabel,
+    )
+    const currentRank = effectiveStageRank(bestStage, event.matches)
+
+    if (
+      !canCelebratePersonalBest(event.matches, bestStage, currentRank, priorMax)
+    ) {
+      continue
+    }
+
+    const stageLabel = PROGRESSION_STAGE_LABELS[bestStage]
+    items.push({
+      tournamentCategoryLabel: event.categoryLabel,
+      competitionAgeLabel: event.ageLabel,
+      discipline: event.discipline,
+      disciplineLabel: event.disciplineLabel,
+      competitionName: event.competitionName,
+      date: event.date,
+      stage: bestStage,
+      stageLabel,
+      detail: buildPersonalBestDetail(
+        event.categoryLabel,
+        event.ageLabel,
+        event.disciplineLabel,
+        stageLabel,
+      ),
+    })
+  }
+
+  if (items.length <= SEASON_PERSONAL_BEST_CAP) {
+    return items.sort((a, b) => a.date.localeCompare(b.date))
+  }
+
+  const capped = [...items]
+    .sort((a, b) => {
+      const byRank = STAGE_RANK[b.stage] - STAGE_RANK[a.stage]
+      if (byRank !== 0) return byRank
+      return a.date.localeCompare(b.date)
+    })
+    .slice(0, SEASON_PERSONAL_BEST_CAP)
+
+  return capped.sort((a, b) => a.date.localeCompare(b.date))
+}
+
+export function computeSeasonAccolades(
+  allMatches: NormalizedMatch[],
+  bounds: SeasonBounds,
+): SeasonAccoladesData {
+  const podium = computeSeasonTrophyCabinet(allMatches, bounds)
+  const personalBests = computeSeasonPersonalBests(allMatches, bounds)
+
+  return {
+    podium: {
+      first: podium.first,
+      second: podium.second,
+      third: podium.third,
+    },
+    personalBests,
+    totalPodiumCount: podium.totalCount,
+  }
 }
 
 export function computeSeasonTrophyCabinet(
@@ -214,6 +424,7 @@ export function computeSeasonTrophyCabinet(
       placement,
       placementLabel: PLACEMENT_LABELS[placement],
       tournamentCategoryLabel: event.categoryLabel,
+      competitionAgeLabel: event.ageLabel,
       discipline: event.discipline,
       disciplineLabel: event.disciplineLabel,
       competitionName: event.competitionName,

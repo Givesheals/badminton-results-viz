@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
+import { useShareCapture } from '../../hooks/useShareCapture'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import {
   computeBestWins,
@@ -16,10 +17,12 @@ import { getTournamentCategoryChipStyle } from '../../lib/tournamentCategoryStyl
 import { DisciplineChip } from '../discipline/DisciplineChip'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
 import { biggestUpsetsInfo, strongestBeatenInfo } from '../../content/sectionInfo'
+import { SHARE_ROW_LIMIT, sliceRowsForShare } from '../../lib/shareLimits'
 import { CollapsibleFilters } from '../filters/CollapsibleFilters'
 import { FilterMatchCount } from '../filters/FilterMatchCount'
 import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
 import { SectionHeading } from '../ui/SectionHeading'
+import { ShareButton } from '../ui/ShareButton'
 
 const LIMIT_OPTIONS = [3, 5, 10] as const
 const DEFAULT_LIMIT = 5
@@ -141,7 +144,7 @@ export function BestWinsSection({ allMatches }: Props) {
                   className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-200"
                 />
                 <span className="text-xs font-medium text-ink-700">
-                  Include games already in strongest beaten
+                  Include matches already in strongest beaten
                 </span>
               </label>
             </fieldset>
@@ -161,11 +164,11 @@ export function BestWinsSection({ allMatches }: Props) {
             infoLabel="About Strongest beaten"
           />
           <BestWinsPanel
-            title="Biggest upsets"
+            title="Biggest upset wins"
             rows={upsetRows}
             metricKind="upset"
             info={biggestUpsetsInfo(limit, excludeStrengthDuplicates)}
-            infoLabel="About Biggest upsets"
+            infoLabel="About Biggest upset wins"
           />
         </div>
       )}
@@ -181,23 +184,56 @@ type PanelProps = {
   infoLabel: string
 }
 
+function shareFilenameForPanel(title: string): string {
+  const slug = title.toLowerCase().replace(/\s+/g, '-')
+  return `badminton-${slug}.png`
+}
+
 function BestWinsPanel({ title, rows, metricKind, info, infoLabel }: PanelProps) {
+  const {
+    shareRef,
+    share: sharePanel,
+    sharing: isSharing,
+    status: shareStatus,
+  } = useShareCapture({
+    filename: shareFilenameForPanel(title),
+    title,
+  })
+
+  const displayRows = isSharing ? sliceRowsForShare(rows, SHARE_ROW_LIMIT) : rows
+
   return (
     <section>
-      <SectionHeading size="panel" info={info} infoLabel={infoLabel}>
+      <SectionHeading
+        size="panel"
+        info={info}
+        infoLabel={infoLabel}
+        actions={
+          <ShareButton
+            onClick={() => void sharePanel()}
+            status={shareStatus}
+            size="sm"
+            disabled={rows.length === 0}
+          />
+        }
+      >
         <h4 className="text-xs font-medium uppercase tracking-wide text-ink-500">
           {title}
         </h4>
       </SectionHeading>
-      <ol className="mt-1.5 space-y-1">
-        {rows.map((row, index) => (
-          <BestWinRowItem
-            key={`${row.match.date}-${row.match.opponents}-${index}`}
-            row={row}
-            metricKind={metricKind}
-          />
-        ))}
-      </ol>
+      {rows.length === 0 ? null : (
+        <div ref={shareRef} data-share-root className="mt-1.5">
+          <ol className="space-y-1">
+            {displayRows.map((row, index) => (
+              <BestWinRowItem
+                key={`${row.match.date}-${row.match.opponents}-${index}`}
+                row={row}
+                metricKind={metricKind}
+              />
+            ))}
+          </ol>
+        </div>
+      )}
     </section>
   )
 }

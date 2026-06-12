@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useSectionMatches } from '../../hooks/useSectionMatches'
 import { useResetFiltersOnImport } from '../../hooks/useResetFiltersOnImport'
+import { useShareCapture } from '../../hooks/useShareCapture'
 import { countActiveSectionFilters } from '../../lib/filterCounts'
 import { getDisciplineStyle } from '../../lib/disciplineStyle'
 import {
@@ -25,7 +26,9 @@ import { FilterMatchCount } from '../filters/FilterMatchCount'
 import { SectionFilterBar } from '../filters/SectionFilterBar'
 import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
 import { favouriteOpponentsInfo, nemesesInfo } from '../../content/sectionInfo'
+import { SHARE_ROW_LIMIT, sliceRowsForShare } from '../../lib/shareLimits'
 import { SectionHeading } from '../ui/SectionHeading'
+import { ShareButton } from '../ui/ShareButton'
 
 const LIMIT_OPTIONS = [5, 10, 15] as const
 const DEFAULT_LIMIT = 5
@@ -248,6 +251,11 @@ type PanelProps = {
   onMinWinsChange?: (value: number) => void
 }
 
+function shareFilenameForPanel(title: string): string {
+  const slug = title.toLowerCase().replace(/\s+/g, '-')
+  return `badminton-${slug}.png`
+}
+
 function MatchupPanel({
   title,
   info,
@@ -263,16 +271,40 @@ function MatchupPanel({
   const showScalpControl =
     kind === 'scalp' && minWins != null && onMinWinsChange != null
 
+  const {
+    shareRef,
+    share: sharePanel,
+    sharing: isSharing,
+    status: shareStatus,
+  } = useShareCapture({
+    filename: shareFilenameForPanel(title),
+    title,
+  })
+
+  const displayRows = isSharing ? sliceRowsForShare(rows, SHARE_ROW_LIMIT) : rows
+
   return (
     <section className={panel.wrapper || undefined}>
       <div
         className={
           showScalpControl
             ? 'flex flex-wrap items-end justify-between gap-2'
-            : undefined
+            : 'flex items-start justify-between gap-2'
         }
       >
-        <SectionHeading size="panel" info={info} infoLabel={infoLabel}>
+        <SectionHeading
+          size="panel"
+          info={info}
+          infoLabel={infoLabel}
+          actions={
+            <ShareButton
+              onClick={() => void sharePanel()}
+              status={shareStatus}
+              size="sm"
+              disabled={rows.length === 0}
+            />
+          }
+        >
           <h4
             className={`text-xs font-medium uppercase tracking-wide ${
               panel.title
@@ -282,7 +314,7 @@ function MatchupPanel({
           </h4>
         </SectionHeading>
         {showScalpControl && (
-          <label className="block text-sm">
+          <label className="block text-sm" data-share-exclude>
             <span className="mb-1 block text-xs font-medium text-gain-700">
               Min. wins
             </span>
@@ -305,17 +337,20 @@ function MatchupPanel({
       {rows.length === 0 ? (
         <p className="mt-2 text-sm text-ink-700">{emptyMessage ?? 'None in this selection.'}</p>
       ) : (
-        <ol className={panel.list}>
-          {rows.map((row, index) => (
-            <MatchupRowItem
-              key={`${row.opponentName}-${index}`}
-              row={row}
-              kind={kind}
-              rank={index + 1}
-              matches={matches}
-            />
-          ))}
-        </ol>
+        <div ref={shareRef} data-share-root>
+          <ol className={panel.list}>
+            {displayRows.map((row, index) => (
+              <MatchupRowItem
+                key={`${row.opponentName}-${index}`}
+                row={row}
+                kind={kind}
+                rank={index + 1}
+                matches={matches}
+                shareMode={isSharing}
+              />
+            ))}
+          </ol>
+        </div>
       )}
     </section>
   )
@@ -326,13 +361,16 @@ function MatchupRowItem({
   kind,
   rank,
   matches,
+  shareMode = false,
 }: {
   row: OpponentH2HRow
   kind: MatchupKind
   rank: number
   matches: NormalizedMatch[]
+  shareMode?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const isOpen = shareMode ? false : open
   const record = formatWinLossRecord(row.wins, row.losses)
   const scalpGap = row.avgRatingGap
   const styles = ROW_STYLES[kind]
@@ -347,7 +385,7 @@ function MatchupRowItem({
         type="button"
         onClick={() => setOpen((value) => !value)}
         className={`flex w-full items-center gap-2.5 rounded-lg py-2.5 pr-3 pl-2.5 text-left transition focus:outline-none focus-visible:ring-2 ${styles.summaryButton}`}
-        aria-expanded={open}
+        aria-expanded={isOpen}
       >
         <span
           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums ${styles.rank}`}
@@ -408,10 +446,10 @@ function MatchupRowItem({
             </>
           ) : null}
         </p>
-        <ChevronIcon open={open} kind={kind} />
+        <ChevronIcon open={isOpen} kind={kind} />
       </button>
 
-      {open ? <OpponentH2HMatchList matches={h2hMatches} /> : null}
+      {isOpen ? <OpponentH2HMatchList matches={h2hMatches} /> : null}
     </li>
   )
 }
@@ -492,6 +530,7 @@ function ChevronIcon({ open, kind }: { open: boolean; kind: MatchupKind }) {
   const color = kind === 'nemesis' ? 'text-loss-600' : 'text-gain-700'
   return (
     <svg
+      data-share-exclude
       className={`h-3.5 w-3.5 shrink-0 transition ${color} ${open ? 'rotate-180' : ''}`}
       viewBox="0 0 20 20"
       fill="currentColor"

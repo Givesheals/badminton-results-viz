@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useShareCapture } from '../../hooks/useShareCapture'
 import type { DisciplineFamily } from '../../lib/disciplineStyle'
 import { getDisciplineStyle } from '../../lib/disciplineStyle'
+import { SHARE_PARTNER_LIMIT } from '../../lib/shareLimits'
 import type { PartnerAchievementsFamily } from '../../lib/partnerAchievements'
 import type { FilterOption } from '../../types/filters'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { CollapsibleFilters } from '../filters/CollapsibleFilters'
 import { FilterSelect } from '../filters/FilterSelect'
 import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
+import { ShareButton } from '../ui/ShareButton'
 import { PartnerHighlightCard } from './PartnerHighlightCard'
 import { PartnerTournamentHistoryPanel } from './PartnerTournamentHistoryPanel'
 
@@ -108,9 +111,24 @@ function PartnerHighlightsFamilyBlockBody({
   const disciplineCode = family === 'doubles' ? 'WD' : 'XD'
   const style = getDisciplineStyle(disciplineCode)
   const isSinglePartner = selectedPartner.length > 0
-  const visible = isSinglePartner
-    ? data.partners.filter((row) => row.partnerName === selectedPartner)
-    : data.partners.slice(0, visibleCount)
+
+  const {
+    shareRef,
+    share: shareSection,
+    sharing: isSharing,
+    status: shareStatus,
+  } = useShareCapture({
+    filename: `badminton-tournament-partners-${family}.png`,
+    title: `Tournament partners — ${title}`,
+  })
+
+  const visible = useMemo(() => {
+    if (isSinglePartner) {
+      return data.partners.filter((row) => row.partnerName === selectedPartner)
+    }
+    const count = isSharing ? SHARE_PARTNER_LIMIT : visibleCount
+    return data.partners.slice(0, count)
+  }, [data.partners, isSinglePartner, selectedPartner, isSharing, visibleCount])
   const hasPartners = data.totalPartnerCount > 0
   const remainingPartners = isSinglePartner
     ? 0
@@ -131,6 +149,13 @@ function PartnerHighlightsFamilyBlockBody({
           >
             {title}
           </h4>
+        }
+        titleActions={
+          <ShareButton
+            onClick={() => void shareSection()}
+            status={shareStatus}
+            disabled={!hasPartners && !isSinglePartner}
+          />
         }
         filters={
           <CollapsibleFilters
@@ -185,7 +210,7 @@ function PartnerHighlightsFamilyBlockBody({
               className="min-w-0"
             />
             {isSinglePartner ? (
-              <div className="col-span-2">
+              <div className="col-span-2" data-share-exclude>
                 <button
                   type="button"
                   onClick={() => onSelectedPartnerChange('')}
@@ -210,7 +235,7 @@ function PartnerHighlightsFamilyBlockBody({
           No progression tournaments with a partner in this category yet.
         </p>
       ) : (
-        <>
+        <div ref={shareRef} data-share-root>
           {isSinglePartner ? (
             visible.map((row) => (
               <div
@@ -243,7 +268,7 @@ function PartnerHighlightsFamilyBlockBody({
           )}
 
           {!isSinglePartner ? (
-            <div className="space-y-2 pt-1">
+            <div className="space-y-2 pt-1" data-share-exclude>
               {remainingPartners > 0 ? (
                 <button
                   type="button"
@@ -264,7 +289,7 @@ function PartnerHighlightsFamilyBlockBody({
               />
             </div>
           ) : null}
-        </>
+        </div>
       )}
     </div>
   )

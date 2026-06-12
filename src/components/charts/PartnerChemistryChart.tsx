@@ -16,7 +16,7 @@ import { formatPercent } from '../../lib/formatNumbers'
 type ChartRow = PartnerChemistryRow & {
   overperformanceValue: number
   barMagnitude: number
-  gamesLabel: string
+  matchesLabel: string
 }
 
 type Props = {
@@ -43,7 +43,7 @@ function toChartRows(data: PartnerChemistryRow[]): ChartRow[] {
         ...row,
         overperformanceValue,
         barMagnitude: Math.abs(overperformanceValue),
-        gamesLabel: `${row.games} game${row.games === 1 ? '' : 's'}`,
+        matchesLabel: `${row.games} match${row.games === 1 ? '' : 'es'}`,
       }
     })
     .sort((a, b) => b.overperformanceValue - a.overperformanceValue)
@@ -164,7 +164,7 @@ function PartnerTick({
         fill="var(--color-ink-500)"
         fontSize={10}
       >
-        {row.gamesLabel}
+        {row.matchesLabel}
       </text>
     </g>
   )

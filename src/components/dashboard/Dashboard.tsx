@@ -9,6 +9,7 @@ import { MatchesByDisciplineSection } from '../charts/MatchesByDisciplineSection
 import { PartnerHighlightsSection } from '../charts/PartnerHighlightsSection'
 import { PartnerChemistrySection } from '../charts/PartnerChemistrySection'
 import { ResultsOverTimeSection } from '../charts/ResultsOverTimeSection'
+import { CategoryMilestonesSection } from '../charts/CategoryMilestonesSection'
 import { TournamentProgressionSection } from '../charts/TournamentProgressionSection'
 import { OpponentMatchupsSection } from '../charts/OpponentMatchupsSection'
 import { DashboardTabs, TabSubgroupHeading } from './DashboardTabs'
@@ -85,6 +86,7 @@ export function Dashboard() {
                 importedAt={dataset.importedAt}
               />
               <MatchesByDisciplineSection {...sectionProps} />
+              <CategoryMilestonesSection {...sectionProps} />
               <TournamentProgressionSection {...sectionProps} />
               <PlayerProfileSection allMatches={allMatches} />
             </>

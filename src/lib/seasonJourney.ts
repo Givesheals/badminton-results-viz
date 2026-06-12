@@ -23,8 +23,8 @@ import {
   type SeasonQuarterPhase,
 } from './season'
 import {
-  computeSeasonTrophyCabinet,
-  type SeasonTrophyCabinetData,
+  computeSeasonAccolades,
+  type SeasonAccoladesData,
 } from './seasonTrophyCabinet'
 
 export const QUARTER_TOURNAMENT_THRESHOLD = 4
@@ -75,7 +75,7 @@ export type SeasonJourneyData = {
   quarters: SeasonQuarterJourney[]
   ratingSeries: SeasonRatingSeries[]
   weekends: SeasonWeekendStory[]
-  trophyCabinet: SeasonTrophyCabinetData
+  accolades: SeasonAccoladesData
   seasonStartMs: number
   seasonEndMs: number
 }
@@ -263,7 +263,7 @@ export function computeSeasonJourney(
     quarters,
     ratingSeries,
     weekends: buildWeekendStories(seasonMatches, bounds),
-    trophyCabinet: computeSeasonTrophyCabinet(matches, bounds),
+    accolades: computeSeasonAccolades(matches, bounds),
     seasonStartMs: parseSeasonMs(bounds.startDate),
     seasonEndMs: parseSeasonMs(bounds.endDate),
   }

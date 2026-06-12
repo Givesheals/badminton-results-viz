@@ -15,11 +15,17 @@ type Props = {
   series: SeasonRatingSeries[]
   seasonStartMs: number
   seasonEndMs: number
+  shareMode?: boolean
 }
 
 type ChartPoint = SeasonRatingPoint & { timestamp: number }
 
-export function SeasonRatingChart({ series, seasonStartMs, seasonEndMs }: Props) {
+export function SeasonRatingChart({
+  series,
+  seasonStartMs,
+  seasonEndMs,
+  shareMode = false,
+}: Props) {
   const [selected, setSelected] = useState<{
     family: string
     point: ChartPoint
@@ -74,7 +80,7 @@ export function SeasonRatingChart({ series, seasonStartMs, seasonEndMs }: Props)
             tickCount={6}
           />
           <YAxis domain={yDomain} tick={{ fontSize: 11 }} width={44} />
-          <Tooltip content={<RatingTooltip />} />
+          {!shareMode ? <Tooltip content={<RatingTooltip />} /> : null}
           {series.map((row) =>
             row.points.length > 0 ? (
               <Line
@@ -85,13 +91,17 @@ export function SeasonRatingChart({ series, seasonStartMs, seasonEndMs }: Props)
                 name={row.label}
                 stroke={row.color}
                 strokeWidth={2}
-                dot={(props) => (
-                  <SeasonRatingDot
-                    {...props}
-                    color={row.color}
-                    onSelect={(point) => setSelected({ family: row.family, point })}
-                  />
-                )}
+                dot={
+                  shareMode
+                    ? false
+                    : (props) => (
+                        <SeasonRatingDot
+                          {...props}
+                          color={row.color}
+                          onSelect={(point) => setSelected({ family: row.family, point })}
+                        />
+                      )
+                }
                 connectNulls
                 isAnimationActive={false}
               />
@@ -100,8 +110,11 @@ export function SeasonRatingChart({ series, seasonStartMs, seasonEndMs }: Props)
         </LineChart>
       </ResponsiveContainer>
 
-      {selected && (
-        <div className="rounded-lg border border-ink-100 bg-ink-50/80 px-3 py-2 text-sm text-ink-800">
+      {!shareMode && selected && (
+        <div
+          className="rounded-lg border border-ink-100 bg-ink-50/80 px-3 py-2 text-sm text-ink-800"
+          data-share-exclude
+        >
           <p className="font-medium text-ink-900">
             {formatDisplayDate(selected.point.date)} · {selected.point.rating}
           </p>

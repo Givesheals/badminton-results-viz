@@ -1,6 +1,6 @@
 # Rating difference → win chance
 
-Official lookup table mapping **absolute rating difference** (points) to the **favorite’s** pre-match win chance (%). Used for upset displays (e.g. Best wins → Biggest upsets).
+Official lookup table mapping **absolute rating difference** (points) to the **favorite’s** pre-match win chance (%). Used for upset displays (e.g. Best wins → Biggest upset wins).
 
 Partner Chemistry and player profile still use the separate logistic model in `src/lib/ratings.ts` (scale 100).
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSectionMatches } from '../../hooks/useSectionMatches'
 import { useResetFiltersOnImport } from '../../hooks/useResetFiltersOnImport'
+import { useShareCapture } from '../../hooks/useShareCapture'
 import { countActiveSectionFilters } from '../../lib/filterCounts'
 import {
   computePartnerChemistry,
@@ -15,6 +16,7 @@ import { SectionFilterBar } from '../filters/SectionFilterBar'
 import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
 import { partnerChemistryInfo } from '../../content/sectionInfo'
 import { SectionHeading } from '../ui/SectionHeading'
+import { ShareButton } from '../ui/ShareButton'
 import { PartnerChemistryChart } from './PartnerChemistryChart'
 
 const DEFAULT_MIN_THRESHOLD = 5
@@ -33,7 +35,7 @@ export function PartnerChemistrySection({
   const fields = ['time'] as const
   const [filters, setFilters] = useState<MatchFilters>(DEFAULT_MATCH_FILTERS)
   const [minThreshold, setMinThreshold] = useState(DEFAULT_MIN_THRESHOLD)
-  const [filterMode, setFilterMode] = useState<PartnerChemistryFilterMode>('games')
+  const [filterMode, setFilterMode] = useState<PartnerChemistryFilterMode>('matches')
 
   useResetFiltersOnImport(importedAt, setFilters)
 
@@ -44,11 +46,20 @@ export function PartnerChemistrySection({
     [matches, minThreshold, filterMode],
   )
 
-  const thresholdLabel = filterMode === 'games' ? 'games' : 'competitions'
+  const thresholdLabel = filterMode === 'matches' ? 'matches' : 'competitions'
   const activeCount =
     countActiveSectionFilters(filters, [...fields]) +
-    (filterMode !== 'games' ? 1 : 0) +
+    (filterMode !== 'matches' ? 1 : 0) +
     (minThreshold !== DEFAULT_MIN_THRESHOLD ? 1 : 0)
+
+  const {
+    shareRef,
+    share: shareSection,
+    status: shareStatus,
+  } = useShareCapture({
+    filename: 'badminton-partner-chemistry.png',
+    title: 'Partner chemistry',
+  })
 
   return (
     <article className="rounded-2xl card-frame bg-white p-4 shadow-sm">
@@ -64,6 +75,13 @@ export function PartnerChemistrySection({
         description={
           <FilterMatchCount filteredCount={matches.length} totalCount={allMatches.length} />
         }
+        titleActions={
+          <ShareButton
+            onClick={() => void shareSection()}
+            status={shareStatus}
+            disabled={chemistry.doublesMatchCount === 0}
+          />
+        }
         filters={
           <CollapsibleFilters
             storageKey="filters:partner-chemistry"
@@ -71,7 +89,7 @@ export function PartnerChemistrySection({
             onReset={() => {
               setFilters(DEFAULT_MATCH_FILTERS)
               setMinThreshold(DEFAULT_MIN_THRESHOLD)
-              setFilterMode('games')
+              setFilterMode('matches')
             }}
           >
             <fieldset className="flex flex-wrap items-end gap-3 text-sm">
@@ -93,7 +111,7 @@ export function PartnerChemistrySection({
                   }
                   className="w-full min-w-[9.5rem] appearance-none rounded-lg border border-ink-100 bg-white py-2 pl-3 pr-8 text-sm text-ink-900 shadow-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
                 >
-                  <option value="games">Matches played</option>
+                  <option value="matches">Matches played</option>
                   <option value="competitions">Competitions</option>
                 </select>
               </label>
@@ -125,8 +143,8 @@ export function PartnerChemistrySection({
           No doubles matches with a partner in the current selection.
         </p>
       ) : (
-        <>
-          <p className="mt-3 text-xs text-ink-500">
+        <div ref={shareRef} data-share-root>
+          <p className="mt-3 text-xs text-ink-500" data-share-exclude>
             Showing {chemistry.partners.length} of {chemistry.totalPartnerCount} partner
             {chemistry.totalPartnerCount === 1 ? '' : 's'}
             {chemistry.hiddenCount > 0 && (
@@ -139,7 +157,7 @@ export function PartnerChemistrySection({
           <div className="mt-2">
             <PartnerChemistryChart data={chemistry.partners} />
           </div>
-        </>
+        </div>
       )}
     </article>
   )

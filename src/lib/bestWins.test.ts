@@ -3,6 +3,10 @@ import type { NormalizedMatch } from '../types/matchHistory'
 import {
   computeBestWins,
   detectBestWinRecapMilestones,
+  findBiggestUpsetInMatches,
+  findBigUpsetWinsInMatches,
+  BIG_UPSET_MIN_RATING_GAP,
+  findBestWinInMatches,
   selectUpsetRows,
   selectUpsetRowsExcludingStrength,
   type BestWinRow,
@@ -184,6 +188,92 @@ describe('computeBestWins', () => {
     )
 
     expect(computeBestWins([walkoverWithScores]).ratedWinCount).toBe(0)
+  })
+})
+
+describe('findBigUpsetWinsInMatches', () => {
+  it('returns all wins where the opponent was at least 30 pts higher', () => {
+    const belowThreshold = ratedWin(
+      { competitionName: 'Cup', date: '2026-01-01', opponents: 'Mild' },
+      575,
+      550,
+    )
+    const big = ratedWin(
+      { competitionName: 'Cup', date: '2026-01-02', opponents: 'Giant' },
+      650,
+      540,
+    )
+    const notBigEnough = ratedWin(
+      { competitionName: 'Cup', date: '2026-01-03', opponents: 'Close' },
+      570,
+      550,
+    )
+
+    expect(
+      findBigUpsetWinsInMatches([belowThreshold, big, notBigEnough]).map(
+        (r) => r.match.opponents,
+      ),
+    ).toEqual(['Giant'])
+    expect(BIG_UPSET_MIN_RATING_GAP).toBe(30)
+  })
+})
+
+describe('findBiggestUpsetInMatches', () => {
+  it('returns the win with the largest rating gap when underdog', () => {
+    const mild = ratedWin(
+      { competitionName: 'Cup', date: '2026-01-01', opponents: 'Mild' },
+      580,
+      550,
+    )
+    const big = ratedWin(
+      { competitionName: 'Cup', date: '2026-01-02', opponents: 'Giant' },
+      650,
+      540,
+    )
+    const result = findBiggestUpsetInMatches([mild, big])
+    expect(result?.match.opponents).toBe('Giant')
+    expect(result?.ratingGap).toBe(110)
+  })
+
+  it('returns null when all wins were as favourite', () => {
+    const favourite = ratedWin(
+      { competitionName: 'Cup', date: '2026-01-01', opponents: 'Weaker' },
+      500,
+      600,
+    )
+    expect(findBiggestUpsetInMatches([favourite])).toBeNull()
+  })
+
+  it('prefers a later date when rating gaps tie', () => {
+    const earlier = ratedWin(
+      { competitionName: 'Cup', date: '2026-01-01', opponents: 'Earlier' },
+      620,
+      550,
+    )
+    const later = ratedWin(
+      { competitionName: 'Cup', date: '2026-02-01', opponents: 'Later' },
+      620,
+      550,
+    )
+    expect(findBiggestUpsetInMatches([earlier, later])?.match.opponents).toBe(
+      'Later',
+    )
+  })
+})
+
+describe('findBestWinInMatches', () => {
+  it('returns the win against the highest-rated opponent', () => {
+    const mild = ratedWin(
+      { competitionName: 'Cup', date: '2026-01-01', opponents: 'Mild' },
+      580,
+      550,
+    )
+    const strong = ratedWin(
+      { competitionName: 'Cup', date: '2026-01-02', opponents: 'Strong' },
+      650,
+      540,
+    )
+    expect(findBestWinInMatches([mild, strong])?.match.opponents).toBe('Strong')
   })
 })
 

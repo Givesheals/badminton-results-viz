@@ -402,7 +402,7 @@ function scoreClutchAxis(matches: NormalizedMatch[]): {
       sampleCount: close.length,
       detail:
         pole === 'high'
-          ? `You win ${closeMatchWinPercent}% of tight, three-game battles`
+          ? `You win ${closeMatchWinPercent}% of tight, three-game matches`
           : `You win ${closeMatchWinPercent}% of tight matches — composed wins may be your strength`,
     },
   }

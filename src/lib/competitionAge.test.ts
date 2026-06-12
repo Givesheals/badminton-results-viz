@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { SpreadsheetRow } from '../types/dataset'
 import {
   buildCombinedCompetitionAgeValues,
+  compareCompetitionAgeOldestFirst,
+  competitionAgeOldestFirstRank,
   normalizeCompetitionAgeToken,
   readCompetitionAgeGroup,
   readCompetitionSubAgeGroup,
@@ -42,6 +44,20 @@ describe('competitionAge normalization', () => {
         'O35',
       ]),
     ).toEqual(['U13', 'U17', 'Senior', 'Masters', 'O35', 'O40', 'Other'])
+  })
+
+  it('ranks ages for oldest-first sorting in category milestones', () => {
+    expect(competitionAgeOldestFirstRank('O40')).toBeGreaterThan(
+      competitionAgeOldestFirstRank('Senior'),
+    )
+    expect(competitionAgeOldestFirstRank('Senior')).toBeGreaterThan(
+      competitionAgeOldestFirstRank('U17'),
+    )
+    expect(competitionAgeOldestFirstRank('U17')).toBeGreaterThan(
+      competitionAgeOldestFirstRank('U15'),
+    )
+    expect(compareCompetitionAgeOldestFirst('Senior', 'U15')).toBeLessThan(0)
+    expect(compareCompetitionAgeOldestFirst('U15', 'Senior')).toBeGreaterThan(0)
   })
 
   it('builds one combined options list without duplicate top-level values', () => {

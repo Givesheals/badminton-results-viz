@@ -19,7 +19,7 @@ export const partnerChemistryInfo = (
   <div className={infoBlockClass}>
     <p>
       Actual win rate with each partner vs what match ratings predicted. Higher scores mean
-      you are winning games you were expected to lose.
+      you are winning matches you were expected to lose.
     </p>
     <p>
       Only competitive wins and losses with a partner count. Walkovers and &ldquo;no match&rdquo;
@@ -48,17 +48,17 @@ export function biggestUpsetsInfo(
   return (
     <div className={infoBlockClass}>
       <p>
-        Rated wins where you were the bigger underdog, ranked by rating gap and shown with your
-        pre-match win chance from the official rating-difference table.
+        Wins where you were the underdog — ranked by how much higher-rated the opposition was,
+        with your pre-match win chance from the official rating-difference table.
       </p>
       {excludeStrengthDuplicates ? (
         <p>
           Matches already in your top {limit} strongest beaten are skipped so the two lists do
-          not repeat the same game.
+          not repeat the same match.
         </p>
       ) : (
         <p>
-          Games can appear in both lists, including matches already shown in your strongest
+          Matches can appear in both lists, including those already shown in your strongest
           beaten highlights.
         </p>
       )}
@@ -70,11 +70,45 @@ export function biggestUpsetsInfo(
   )
 }
 
+export const categoryMilestonesInfo = (
+  <div className={infoBlockClass}>
+    <p>
+      Your best-ever finish at each tournament level and age combination, across all disciplines.
+      By default we show your two most relevant age bands, with Senior prioritised when you
+      have played at that level.
+    </p>
+    <p>
+      Tap <strong>Show earlier age groups</strong> to reveal younger age bands from further back
+      in your career. Within each age, rows are ordered Copper, Bronze, Silver, Gold, and Other.
+      Use the filters to narrow by discipline family or time period.
+    </p>
+    <p>
+      County events and tournaments without recognizable group or knockout rounds are excluded.
+      Only competitive matches count — walkovers and no-match rows are left out.
+    </p>
+    <p>
+      Milestones are cumulative: reaching runner-up also ticks off group wins, quarter-final,
+      and semi-final for that category — including when you skip a round (e.g. box straight to
+      semi-final). Tap a green tick to see when you first reached that stage — competition,
+      date, and partner.
+    </p>
+    <p>
+      In knockout-only events you must win a match to credit quarter-finals or deeper. A lone
+      quarter-final loss counts as a group exit. Round-robin-only winners (3+ teams, all group
+      matches won) count as Winner.
+    </p>
+  </div>
+)
+
 export const tournamentProgressionInfo = (
   <div className={infoBlockClass}>
     <p>
-      One entry per competition and discipline. Your best finish is the deepest round reached;
-      typical finish is the median across events.
+      One entry per competition and discipline. Typical depth is the median finish at your
+      most-played tournament level and age — so a harder Gold run does not pull down your Bronze
+      average.
+    </p>
+    <p>
+      Finish distribution covers every classified tournament in your current filter.
     </p>
     <p>
       County events and tournaments without recognizable group or knockout rounds are excluded.
@@ -84,6 +118,11 @@ export const tournamentProgressionInfo = (
       If you leave in the group phase, we distinguish exiting in group stages from exiting after
       at least one group match win. Early knockout rounds are grouped with quarter-finals on the
       depth bar.
+    </p>
+    <p>
+      Knockout-only draws require a win to reach that round; a single quarter-final loss without
+      a group phase stays at group depth. After a box or round-robin phase, reaching semi-finals
+      or finals counts even when quarter-finals were not played.
     </p>
   </div>
 )
@@ -117,9 +156,12 @@ export const seasonJourneyInfo = (
       Tap a dot on the season weekends strip to see results and how far you went at that event.
     </p>
     <p>
-      The trophy cabinet lists podium finishes this season — winners, runner-up, and 3rd place
-      (including semi-final exits). Tournament level chips show the event grade, not the medal
-      position.
+      This season&apos;s accolades lead with podium finishes — winners, runner-up, and 3rd place
+      (semi-final exits with at least one competitive win, or bronze finals after a real win
+      earlier in the event). Small round robins and walkover-only paths do not award 3rd place.
+      Personal bests list deeper non-podium runs that beat your prior best at that tournament
+      level, age group, and discipline. First-time and repeat titles use the same age grouping.
+      Tournament level chips show the event grade, not the medal position.
     </p>
   </div>
 )

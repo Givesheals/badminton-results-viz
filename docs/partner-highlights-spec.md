@@ -4,7 +4,7 @@
 **Document purpose:** Ranking and display rules for the Tournament partners dashboard section.  
 **Last verified against codebase:** May 2026  
 
-**Related:** [Partner chemistry](partner-chemistry-spec.md) (win rate vs expectation — separate feature).
+**Related:** [Partner chemistry](partner-chemistry-spec.md) (win rate vs expectation — separate feature). [Tournament progression](tournament-progression-spec.md) (depth and podium rules consumed here).
 
 ---
 

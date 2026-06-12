@@ -48,6 +48,112 @@ describe('computeTournamentRecaps', () => {
     expect(recaps[1]!.competitionName).toBe('Old Open')
   })
 
+  it('merges consecutive days in the same competition into one recap', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Senior County Championships',
+        date: '2025-11-08',
+        discipline: 'OD',
+        partnerName: 'Sam',
+        tournamentCategory: 'county',
+        tournamentCategoryLabel: 'County',
+      }),
+      makeMatch({
+        competitionName: 'Senior County Championships',
+        date: '2025-11-09',
+        discipline: 'WD',
+        partnerName: 'Sam',
+        tournamentCategory: 'county',
+        tournamentCategoryLabel: 'County',
+      }),
+    ]
+
+    const { recaps } = computeTournamentRecaps(matches)
+    expect(recaps).toHaveLength(1)
+    expect(recaps[0]!.competitionName).toBe('Senior County Championships')
+    expect(recaps[0]!.dateFrom).toBe('2025-11-08')
+    expect(recaps[0]!.dateTo).toBe('2025-11-09')
+    expect(recaps[0]!.disciplines).toHaveLength(2)
+  })
+
+  it('splits non-consecutive days in the same competition into separate recaps', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Senior County Championships',
+        date: '2025-11-08',
+        discipline: 'OD',
+        partnerName: 'Sam',
+        tournamentCategory: 'county',
+        tournamentCategoryLabel: 'County',
+      }),
+      makeMatch({
+        competitionName: 'Senior County Championships',
+        date: '2025-11-15',
+        discipline: 'WD',
+        partnerName: 'Sam',
+        tournamentCategory: 'county',
+        tournamentCategoryLabel: 'County',
+      }),
+    ]
+
+    const { recaps } = computeTournamentRecaps(matches)
+    expect(recaps).toHaveLength(2)
+    expect(recaps.every((r) => r.competitionName === 'Senior County Championships')).toBe(
+      true,
+    )
+    expect(recaps[0]!.dateFrom).toBe('2025-11-15')
+    expect(recaps[1]!.dateFrom).toBe('2025-11-08')
+  })
+
+  it('treats an earlier stint of the same competition as prior history', () => {
+    const firstStint = makeMatch({
+      competitionName: 'Senior County Championships',
+      date: '2025-10-04',
+      discipline: 'OD',
+      partnerName: 'Sam',
+      tournamentCategory: 'county',
+      tournamentCategoryLabel: 'County',
+      outcome: 'loss',
+      raw: {
+        Round: 'Division 1',
+        'Tournament Category': 'County',
+        'Player Game 1 Score': 15,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 12,
+        'Opponent Game 2 Score': 21,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+    const secondStint = makeMatch({
+      competitionName: 'Senior County Championships',
+      date: '2025-11-08',
+      discipline: 'OD',
+      partnerName: 'Sam',
+      tournamentCategory: 'county',
+      tournamentCategoryLabel: 'County',
+      outcome: 'loss',
+      raw: {
+        Round: 'Division 1',
+        'Tournament Category': 'County',
+        'Player Game 1 Score': 18,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 17,
+        'Opponent Game 2 Score': 21,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const { recaps } = computeTournamentRecaps([firstStint, secondStint])
+    expect(recaps).toHaveLength(2)
+
+    const laterRecap = recaps.find((r) => r.dateFrom === '2025-11-08')!
+    expect(laterRecap.celebrations.milestones.some((m) => m.variant === 'debut')).toBe(
+      false,
+    )
+  })
+
   it('computes rating delta from first to last match per discipline', () => {
     const matches = [
       makeMatch({
@@ -120,7 +226,7 @@ describe('computeTournamentRecaps', () => {
     expect(lostGame).toEqual({ player: 8, opponent: 21, highlight: 'lost_single_digit' })
   })
 
-  it('shows busy tournament only at 7+ competitive matches', () => {
+  it("shows You've been busy! only at 7+ competitive matches", () => {
     const row = {
       'Player Game 1 Score': 21,
       'Opponent Game 1 Score': 15,
@@ -147,15 +253,17 @@ describe('computeTournamentRecaps', () => {
     )
 
     expect(
-      computeTournamentRecaps(few).recaps[0]!.emojiInsights.some((i) =>
-        i.title.includes('Busy'),
+      computeTournamentRecaps(few).recaps[0]!.eventSummaries.some((c) =>
+        c.label.includes("You've been busy"),
       ),
     ).toBe(false)
+    const busy = computeTournamentRecaps(many).recaps[0]!
     expect(
-      computeTournamentRecaps(many).recaps[0]!.emojiInsights.some((i) =>
-        i.title.includes('Busy'),
-      ),
+      busy.eventSummaries.some((c) => c.label === "You've been busy!"),
     ).toBe(true)
+    expect(busy.eventSummaries.find((c) => c.id === 'busy-weekend')?.detail).toBe(
+      '7 competitive matches at this event',
+    )
   })
 
   it('uses nth win subtitle instead of personal best milestone for winners', () => {
@@ -451,6 +559,15 @@ describe('computeTournamentRecaps', () => {
     )!
     expect(recap.partnerChemistryHighlights.length).toBeGreaterThan(0)
     expect(recap.partnerChemistryHighlights[0]!.partnerName).toBe('Sam')
+    expect(recap.partnerChemistryHighlights[0]!.discipline).toBe('WD')
+
+    const wd = recap.disciplines.find((d) => d.discipline === 'WD')!
+    expect(
+      wd.eventCallouts.some((c) => c.label === 'Even better with Sam'),
+    ).toBe(true)
+    expect(recap.emojiInsights.some((i) => i.kind === 'partner_chemistry')).toBe(
+      false,
+    )
   })
 
   it('partner chemistry avoids "improved by 0%" when overall barely moves', () => {
@@ -560,31 +677,67 @@ describe('computeTournamentRecaps', () => {
   })
 
   it('celebrates joint third on semi-final loss', () => {
-    const semiLoss = makeMatch({
-      competitionName: 'Bronze Cup',
-      date: '2026-06-01',
-      discipline: 'WS',
-      tournamentCategoryLabel: 'Bronze',
-      outcome: 'loss',
-      raw: {
-        Round: 'Semi-final',
-        'Tournament Category': 'Bronze',
-        'Player Game 1 Score': 19,
-        'Opponent Game 1 Score': 21,
-        'Player Game 2 Score': 18,
-        'Opponent Game 2 Score': 21,
-        'Player Game 3 Score': null,
-        'Opponent Game 3 Score': null,
-      },
-    })
+    const semiExit = [
+      makeMatch({
+        competitionName: 'Bronze Cup',
+        date: '2026-06-01',
+        discipline: 'WS',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'win',
+        raw: {
+          Round: 'Quarter-final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 15,
+          'Player Game 2 Score': 21,
+          'Opponent Game 2 Score': 12,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+      makeMatch({
+        competitionName: 'Bronze Cup',
+        date: '2026-06-01',
+        discipline: 'WS',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'loss',
+        raw: {
+          Round: 'Semi-final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 19,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 18,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+    ]
 
-    const celebrations = computeTournamentRecaps([semiLoss]).recaps[0]!.celebrations
+    const celebrations = computeTournamentRecaps(semiExit).recaps[0]!.celebrations
     expect(celebrations.jointThirds).toHaveLength(1)
     expect(celebrations.jointThirds[0]!.kind).toBe('joint-third')
   })
 
   it('suppresses matched best when joint third covers repeat semi-final loss', () => {
-    const semiLoss = (comp: string, date: string) =>
+    const semiExit = (comp: string, date: string) => [
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'WS',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'win',
+        raw: {
+          Round: 'Quarter-final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 15,
+          'Player Game 2 Score': 21,
+          'Opponent Game 2 Score': 12,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
       makeMatch({
         competitionName: comp,
         date,
@@ -601,11 +754,12 @@ describe('computeTournamentRecaps', () => {
           'Player Game 3 Score': null,
           'Opponent Game 3 Score': null,
         },
-      })
+      }),
+    ]
 
     const celebrations = computeTournamentRecaps([
-      semiLoss('Earlier', '2025-06-01'),
-      semiLoss('Again', '2026-06-01'),
+      ...semiExit('Earlier', '2025-06-01'),
+      ...semiExit('Again', '2026-06-01'),
     ]).recaps.find((r) => r.competitionName === 'Again')!.celebrations
 
     expect(celebrations.jointThirds).toHaveLength(1)
@@ -1278,26 +1432,46 @@ describe('computeTournamentRecaps', () => {
   })
 
   it('shows joint third card instead of debut on semi-final loss category debut', () => {
-    const semiLoss = makeMatch({
-      competitionName: 'Bronze Cup',
-      date: '2026-06-01',
-      discipline: 'XD',
-      partnerName: 'Sam',
-      tournamentCategoryLabel: 'Bronze',
-      outcome: 'loss',
-      raw: {
-        Round: 'Semi-final',
-        'Tournament Category': 'Bronze',
-        'Player Game 1 Score': 19,
-        'Opponent Game 1 Score': 21,
-        'Player Game 2 Score': 18,
-        'Opponent Game 2 Score': 21,
-        'Player Game 3 Score': null,
-        'Opponent Game 3 Score': null,
-      },
-    })
+    const semiExit = [
+      makeMatch({
+        competitionName: 'Bronze Cup',
+        date: '2026-06-01',
+        discipline: 'XD',
+        partnerName: 'Sam',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'win',
+        raw: {
+          Round: 'Quarter-final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 15,
+          'Player Game 2 Score': 21,
+          'Opponent Game 2 Score': 12,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+      makeMatch({
+        competitionName: 'Bronze Cup',
+        date: '2026-06-01',
+        discipline: 'XD',
+        partnerName: 'Sam',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'loss',
+        raw: {
+          Round: 'Semi-final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 19,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 18,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+    ]
 
-    const celebrations = computeTournamentRecaps([semiLoss]).recaps[0]!.celebrations
+    const celebrations = computeTournamentRecaps(semiExit).recaps[0]!.celebrations
 
     expect(celebrations.jointThirds).toHaveLength(1)
     expect(celebrations.jointThirds[0]!.discipline).toBe('XD')
@@ -1386,26 +1560,46 @@ describe('computeTournamentRecaps', () => {
   })
 
   it('does not show depth milestones when joint third covers semi-final exit on debut', () => {
-    const semiLoss = makeMatch({
-      competitionName: 'Bronze Cup',
-      date: '2026-06-01',
-      discipline: 'XD',
-      partnerName: 'Sam',
-      tournamentCategoryLabel: 'Bronze',
-      outcome: 'loss',
-      raw: {
-        Round: 'Semi-final',
-        'Tournament Category': 'Bronze',
-        'Player Game 1 Score': 19,
-        'Opponent Game 1 Score': 21,
-        'Player Game 2 Score': 18,
-        'Opponent Game 2 Score': 21,
-        'Player Game 3 Score': null,
-        'Opponent Game 3 Score': null,
-      },
-    })
+    const semiExit = [
+      makeMatch({
+        competitionName: 'Bronze Cup',
+        date: '2026-06-01',
+        discipline: 'XD',
+        partnerName: 'Sam',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'win',
+        raw: {
+          Round: 'Quarter-final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 15,
+          'Player Game 2 Score': 21,
+          'Opponent Game 2 Score': 12,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+      makeMatch({
+        competitionName: 'Bronze Cup',
+        date: '2026-06-01',
+        discipline: 'XD',
+        partnerName: 'Sam',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'loss',
+        raw: {
+          Round: 'Semi-final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 19,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 18,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+    ]
 
-    const celebrations = computeTournamentRecaps([semiLoss]).recaps[0]!.celebrations
+    const celebrations = computeTournamentRecaps(semiExit).recaps[0]!.celebrations
 
     expect(celebrations.jointThirds).toHaveLength(1)
     expect(celebrations.milestones.some((m) => m.variant === 'debut')).toBe(false)
@@ -1430,25 +1624,44 @@ describe('computeTournamentRecaps', () => {
         'Opponent Game 3 Score': null,
       },
     })
-    const semiLoss = makeMatch({
-      competitionName: 'Bronze Cup',
-      date: '2026-06-01',
-      discipline: 'XD',
-      tournamentCategoryLabel: 'Bronze',
-      outcome: 'loss',
-      raw: {
-        Round: 'Semi-final',
-        'Tournament Category': 'Bronze',
-        'Player Game 1 Score': 19,
-        'Opponent Game 1 Score': 21,
-        'Player Game 2 Score': 18,
-        'Opponent Game 2 Score': 21,
-        'Player Game 3 Score': null,
-        'Opponent Game 3 Score': null,
-      },
-    })
+    const semiExit = [
+      makeMatch({
+        competitionName: 'Bronze Cup',
+        date: '2026-06-01',
+        discipline: 'XD',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'win',
+        raw: {
+          Round: 'Quarter-final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 15,
+          'Player Game 2 Score': 21,
+          'Opponent Game 2 Score': 12,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+      makeMatch({
+        competitionName: 'Bronze Cup',
+        date: '2026-06-01',
+        discipline: 'XD',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'loss',
+        raw: {
+          Round: 'Semi-final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 19,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 18,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+    ]
 
-    const celebrations = computeTournamentRecaps([priorQf, semiLoss]).recaps.find(
+    const celebrations = computeTournamentRecaps([priorQf, ...semiExit]).recaps.find(
       (r) => r.competitionName === 'Bronze Cup',
     )!.celebrations
 
@@ -1508,14 +1721,273 @@ describe('computeTournamentRecaps', () => {
     )
     expect(strength?.title).toMatch(/strongest beaten/i)
     expect(strength?.title).toMatch(/1st all time/i)
-    expect(strength?.detail).toMatch(/1st strongest beaten all time/)
-    expect(strength?.detail).not.toContain('New Giant')
+    expect(strength?.detail).toBe('Beat New Giant')
+    expect(strength?.detail).not.toContain('see Best wins')
     expect(strength?.sectionId).toBe('best-wins')
 
     const ws = recap.disciplines.find((d) => d.discipline === 'WS')!
-    const bestWinInsight = ws.disciplineInsights.find((i) => i.kind === 'best_win')
-    expect(bestWinInsight?.detail).toContain('New Giant')
-    expect(bestWinInsight?.detail).toMatch(/1st strongest beaten all time/)
+    const highlighted = ws.matches.find((m) =>
+      m.highlights.some((h) => h.id === 'your-strongest-beaten'),
+    )
+    expect(highlighted?.opponents).toBe('New Giant')
+    const popover = highlighted?.highlights.find(
+      (h) => h.id === 'your-strongest-beaten',
+    )?.popoverText
+    expect(popover).toMatch(/highest-rated opponent beaten/i)
+    expect(popover).toMatch(/rated 650/)
+    expect(popover).toMatch(/1st strongest beaten victory/)
+    expect(ws.eventCallouts.some((c) => c.id === 'event-strongest-scalp')).toBe(false)
+  })
+
+  it('surfaces per-match highlight pills for strongest beaten and big upsets', () => {
+    const underdogWin = makeMatch({
+      competitionName: 'Upset Cup',
+      date: '2026-04-01',
+      discipline: 'WS',
+      opponents: 'Giant',
+      outcome: 'win',
+      playerRating: 540,
+      raw: {
+        'Opponent 1 Rating': 650,
+        'Opponent 2 Rating': null,
+        'Player Game 1 Score': 21,
+        'Opponent Game 1 Score': 19,
+        'Player Game 2 Score': 21,
+        'Opponent Game 2 Score': 18,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const recap = computeTournamentRecaps([underdogWin]).recaps[0]!
+    const ws = recap.disciplines.find((d) => d.discipline === 'WS')!
+
+    expect(ws.eventCallouts.some((c) => c.id === 'event-strongest-scalp')).toBe(false)
+    expect(ws.eventCallouts.some((c) => c.id === 'event-biggest-upset')).toBe(false)
+
+    const match = ws.matches[0]!
+    expect(match.highlights.map((h) => h.label)).toEqual([
+      'Your strongest beaten',
+      'Big upset!',
+    ])
+    expect(match.highlights.find((h) => h.label === 'Big upset!')?.popoverText).toMatch(
+      /110 points higher/,
+    )
+  })
+
+  it('omits big upset pills when the rating gap is below 30', () => {
+    const narrowWin = makeMatch({
+      competitionName: 'Close Cup',
+      date: '2026-04-01',
+      discipline: 'WS',
+      opponents: 'Slightly Higher',
+      outcome: 'win',
+      playerRating: 550,
+      raw: {
+        'Opponent 1 Rating': 570,
+        'Opponent 2 Rating': null,
+        'Player Game 1 Score': 21,
+        'Opponent Game 1 Score': 15,
+        'Player Game 2 Score': 21,
+        'Opponent Game 2 Score': 12,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const ws = computeTournamentRecaps([narrowWin]).recaps[0]!.disciplines[0]!
+    expect(ws.matches.some((m) => m.highlights.some((h) => h.label === 'Big upset!'))).toBe(
+      false,
+    )
+  })
+
+  it('omits big upset pills when all wins were as favourite', () => {
+    const favouriteWin = makeMatch({
+      competitionName: 'Easy Cup',
+      date: '2026-04-01',
+      discipline: 'WS',
+      opponents: 'Weaker',
+      outcome: 'win',
+      playerRating: 600,
+      raw: {
+        'Opponent 1 Rating': 500,
+        'Opponent 2 Rating': null,
+        'Player Game 1 Score': 21,
+        'Opponent Game 1 Score': 15,
+        'Player Game 2 Score': 21,
+        'Opponent Game 2 Score': 12,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const ws = computeTournamentRecaps([favouriteWin]).recaps[0]!.disciplines[0]!
+    expect(
+      ws.matches.some((m) => m.highlights.some((h) => h.label === 'Big upset!')),
+    ).toBe(false)
+    expect(
+      ws.matches.some((m) => m.highlights.some((h) => h.id === 'your-strongest-beaten')),
+    ).toBe(true)
+  })
+
+  it('computes strongest-beaten highlights separately for each discipline', () => {
+    const wsWin = makeMatch({
+      competitionName: 'Multi Cup',
+      date: '2026-04-01',
+      discipline: 'WS',
+      opponents: 'WS Foe',
+      outcome: 'win',
+      playerRating: 550,
+      raw: {
+        'Opponent 1 Rating': 620,
+        'Opponent 2 Rating': null,
+        'Player Game 1 Score': 21,
+        'Opponent Game 1 Score': 15,
+        'Player Game 2 Score': 21,
+        'Opponent Game 2 Score': 12,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+    const wdWin = makeMatch({
+      competitionName: 'Multi Cup',
+      date: '2026-04-02',
+      discipline: 'WD',
+      partnerName: 'Sam',
+      opponents: 'WD Foe',
+      outcome: 'win',
+      playerRating: 560,
+      raw: {
+        'Opponent 1 Rating': 640,
+        'Opponent 2 Rating': 630,
+        'Player Game 1 Score': 21,
+        'Opponent Game 1 Score': 15,
+        'Player Game 2 Score': 21,
+        'Opponent Game 2 Score': 12,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const recap = computeTournamentRecaps([wsWin, wdWin]).recaps[0]!
+    const wsHighlight = recap.disciplines
+      .find((d) => d.discipline === 'WS')!
+      .matches.find((m) => m.highlights.some((h) => h.id === 'your-strongest-beaten'))
+    const wdHighlight = recap.disciplines
+      .find((d) => d.discipline === 'WD')!
+      .matches.find((m) => m.highlights.some((h) => h.id === 'your-strongest-beaten'))
+
+    expect(wsHighlight?.opponents).toBe('WS Foe')
+    expect(wdHighlight?.opponents).toBe('WD Foe')
+  })
+
+  it('computes same-day rating delta from chronological order, not upload order', () => {
+    const strongerLater = makeMatch({
+      competitionName: 'Same Day Cup',
+      date: '2026-01-17',
+      discipline: 'XD',
+      opponents: 'Stronger pair',
+      playerRating: 656,
+      outcome: 'win',
+      raw: { Round: 'Group A' },
+    })
+    const weakerEarlier = makeMatch({
+      competitionName: 'Same Day Cup',
+      date: '2026-01-17',
+      discipline: 'XD',
+      opponents: 'Weaker pair',
+      playerRating: 650,
+      outcome: 'win',
+      raw: { Round: 'Group A' },
+    })
+
+    const xd = computeTournamentRecaps([strongerLater, weakerEarlier]).recaps[0]!.disciplines[0]!
+    expect(xd.ratingStart).toBe(650)
+    expect(xd.ratingEnd).toBe(656)
+    expect(xd.ratingDelta).toBe(6)
+    expect(xd.matches.map((m) => m.opponents)).toEqual(['Weaker pair', 'Stronger pair'])
+  })
+
+  it('orders discipline matches chronologically', () => {
+    const early = makeMatch({
+      competitionName: 'Order Cup',
+      date: '2026-04-01',
+      discipline: 'WS',
+      opponents: 'Early',
+      outcome: 'loss',
+      playerRating: 550,
+      raw: {
+        'Opponent 1 Rating': 560,
+        'Opponent 2 Rating': null,
+        'Player Game 1 Score': 18,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 19,
+        'Opponent Game 2 Score': 21,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+    const late = makeMatch({
+      competitionName: 'Order Cup',
+      date: '2026-04-02',
+      discipline: 'WS',
+      opponents: 'Late',
+      outcome: 'win',
+      playerRating: 545,
+      raw: {
+        'Opponent 1 Rating': 600,
+        'Opponent 2 Rating': null,
+        'Player Game 1 Score': 21,
+        'Opponent Game 1 Score': 15,
+        'Player Game 2 Score': 21,
+        'Opponent Game 2 Score': 12,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const matches = computeTournamentRecaps([late, early]).recaps[0]!.disciplines[0]!
+      .matches
+    expect(matches.map((m) => m.opponents)).toEqual(['Early', 'Late'])
+  })
+
+  it('surfaces great form as a tournament summary card', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Bad Weekend',
+        date: '2026-05-01',
+        discipline: 'WS',
+        playerRating: 600,
+        outcome: 'loss',
+      }),
+      makeMatch({
+        competitionName: 'Bad Weekend',
+        date: '2026-05-02',
+        discipline: 'WS',
+        playerRating: 580,
+        outcome: 'loss',
+      }),
+      makeMatch({
+        competitionName: 'Good Weekend',
+        date: '2026-06-01',
+        discipline: 'WS',
+        playerRating: 570,
+        outcome: 'win',
+      }),
+      makeMatch({
+        competitionName: 'Good Weekend',
+        date: '2026-06-02',
+        discipline: 'WS',
+        playerRating: 590,
+        outcome: 'win',
+      }),
+    ]
+
+    const good = computeTournamentRecaps(matches).recaps.find(
+      (r) => r.competitionName === 'Good Weekend',
+    )!
+    expect(good.eventSummaries.some((c) => c.label === 'Great form')).toBe(true)
+    expect(good.otherEventInsights).toHaveLength(0)
   })
 
   it('omits negative rating comparison chips', () => {

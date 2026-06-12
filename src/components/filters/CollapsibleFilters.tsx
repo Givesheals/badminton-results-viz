@@ -52,6 +52,7 @@ export function CollapsibleFilters({
 
   return (
     <div
+      data-share-exclude
       className={`min-w-0 overflow-hidden rounded-xl border border-ink-200 bg-ink-50/60 shadow-sm ${className}`.trim()}
     >
       <div className="flex w-full items-center pr-2">
