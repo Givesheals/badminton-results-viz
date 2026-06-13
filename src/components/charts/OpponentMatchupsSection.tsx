@@ -3,13 +3,11 @@ import { useSectionMatches } from '../../hooks/useSectionMatches'
 import { useResetFiltersOnImport } from '../../hooks/useResetFiltersOnImport'
 import { useShareCapture } from '../../hooks/useShareCapture'
 import { countActiveSectionFilters } from '../../lib/filterCounts'
-import { getDisciplineStyle } from '../../lib/disciplineStyle'
 import {
   formatRatingGap,
   formatWholePercent,
   formatWinLossRecord,
 } from '../../lib/formatNumbers'
-import { getMatchGames } from '../../lib/matchScores'
 import {
   computeOpponentMatchups,
   DEFAULT_MIN_MEETINGS,
@@ -20,12 +18,12 @@ import {
 import type { FilterOptions } from '../../types/filters'
 import { DEFAULT_MATCH_FILTERS, type MatchFilters } from '../../types/filters'
 import type { NormalizedMatch } from '../../types/matchHistory'
-import { DisciplineChip } from '../discipline/DisciplineChip'
 import { CollapsibleFilters } from '../filters/CollapsibleFilters'
 import { FilterMatchCount } from '../filters/FilterMatchCount'
 import { SectionFilterBar } from '../filters/SectionFilterBar'
 import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
 import { favouriteOpponentsInfo, nemesesInfo } from '../../content/sectionInfo'
+import { MatchScoreboardRow } from '../match/MatchScoreboardRow'
 import { SHARE_ROW_LIMIT, sliceRowsForShare } from '../../lib/shareLimits'
 import { SectionHeading } from '../ui/SectionHeading'
 import { ShareButton } from '../ui/ShareButton'
@@ -285,13 +283,7 @@ function MatchupPanel({
 
   return (
     <section className={panel.wrapper || undefined}>
-      <div
-        className={
-          showScalpControl
-            ? 'flex flex-wrap items-end justify-between gap-2'
-            : 'flex items-start justify-between gap-2'
-        }
-      >
+      <div className="flex min-h-9 items-center justify-between gap-2">
         <SectionHeading
           size="panel"
           info={info}
@@ -313,11 +305,12 @@ function MatchupPanel({
             {title}
           </h4>
         </SectionHeading>
-        {showScalpControl && (
-          <label className="block text-sm" data-share-exclude>
-            <span className="mb-1 block text-xs font-medium text-gain-700">
-              Min. wins
-            </span>
+        {showScalpControl ? (
+          <label
+            className="flex shrink-0 items-center gap-2 text-sm"
+            data-share-exclude
+          >
+            <span className="text-xs font-medium text-gain-700">Min. wins</span>
             <input
               type="number"
               min={1}
@@ -332,6 +325,8 @@ function MatchupPanel({
               className="w-16 rounded-lg border border-gain-100 bg-white px-2 py-1.5 text-sm text-ink-900 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
             />
           </label>
+        ) : (
+          <span className="hidden w-[7.25rem] shrink-0 lg:block" aria-hidden />
         )}
       </div>
       {rows.length === 0 ? (
@@ -456,74 +451,15 @@ function MatchupRowItem({
 
 function OpponentH2HMatchList({ matches }: { matches: NormalizedMatch[] }) {
   return (
-    <ul className="space-y-1 border-t border-ink-50 bg-ink-50/40 px-2 py-2">
+    <ul className="grid grid-cols-[max-content_max-content_auto_max-content] items-center gap-x-2.5 gap-y-1 border-t border-ink-50 bg-ink-50/40 px-2 py-2">
       {matches.map((match, index) => (
-        <OpponentH2HMatchRow
+        <MatchScoreboardRow
           key={`${match.date}-${match.competitionName}-${index}`}
           match={match}
         />
       ))}
     </ul>
   )
-}
-
-function OpponentH2HMatchRow({ match }: { match: NormalizedMatch }) {
-  const style = getDisciplineStyle(match.discipline)
-  const games = getMatchGames(match)
-  const outcomeLabel =
-    match.outcome === 'win' ? 'Win' : match.outcome === 'loss' ? 'Loss' : null
-
-  return (
-    <li
-      className={`grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-0.5 rounded-r border-l-4 py-1.5 pl-2 pr-1 ${style.borderClass} bg-white`}
-    >
-      <DisciplineChip code={match.discipline} className="row-span-2 self-center" />
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-ink-900" title={match.competitionName}>
-          {match.competitionName}
-        </p>
-        <p className="text-xs text-ink-500">
-          {formatShortDate(match.date)}
-          {match.partnerName ? (
-            <>
-              <span className="text-ink-300"> · </span>
-              with {match.partnerName}
-            </>
-          ) : null}
-        </p>
-        <p className="text-xs text-ink-600">
-          {outcomeLabel != null && (
-            <span
-              className={
-                match.outcome === 'win'
-                  ? 'font-medium text-gain-700'
-                  : 'font-medium text-loss-700'
-              }
-            >
-              {outcomeLabel}
-              {match.scoreSummary ? ' · ' : ''}
-            </span>
-          )}
-          {match.scoreSummary || (games.length === 0 ? '—' : null)}
-        </p>
-      </div>
-      {games.length > 0 ? (
-        <div className="self-center text-right text-xs tabular-nums text-ink-800">
-          {games.map((game) => (
-            <p key={game.game}>
-              <ScoreSpan value={game.player} won={game.player > game.opponent} />
-              <span className="text-ink-400">-</span>
-              <ScoreSpan value={game.opponent} won={game.opponent > game.player} />
-            </p>
-          ))}
-        </div>
-      ) : null}
-    </li>
-  )
-}
-
-function ScoreSpan({ value, won }: { value: number; won: boolean }) {
-  return <span className={won ? 'font-bold' : ''}>{value}</span>
 }
 
 function ChevronIcon({ open, kind }: { open: boolean; kind: MatchupKind }) {
@@ -554,14 +490,4 @@ function ratingGapTitle(
     return `${upsetWins} win${upsetWins === 1 ? '' : 's'} vs higher-rated ${opponentName}`
   }
   return `Across ${upsetWins} win${upsetWins === 1 ? '' : 's'} vs ${opponentName}, they were rated ${gap} pts higher than you on average before the match`
-}
-
-function formatShortDate(isoDate: string): string {
-  const date = new Date(`${isoDate}T12:00:00`)
-  if (Number.isNaN(date.getTime())) return isoDate
-  return date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
 }

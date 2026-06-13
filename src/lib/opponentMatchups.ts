@@ -1,6 +1,6 @@
-import type { SpreadsheetRow } from '../types/dataset'
 import type { NormalizedMatch } from '../types/matchHistory'
 import { isCompetitiveMatch } from './matchExclusions'
+import { getOpponentAppearances } from './matchTeams'
 import { getPlayerRating, RATING_PROBABILITY_SCALE } from './ratings'
 
 export type OpponentH2HRow = {
@@ -105,29 +105,6 @@ type OpponentAccumulator = {
   ratedUpsetGapSum: number
   ratedLossCount: number
   ratedLossGapSum: number
-}
-
-function parseRating(value: string | number | boolean | null): number | null {
-  if (value == null || value === '') return null
-  const n = typeof value === 'number' ? value : Number(String(value).trim())
-  return Number.isFinite(n) ? n : null
-}
-
-function getOpponentAppearances(
-  row: SpreadsheetRow,
-): { name: string; rating: number | null }[] {
-  const appearances: { name: string; rating: number | null }[] = []
-
-  for (const slot of [1, 2] as const) {
-    const rawName = row[`Opponent ${slot} Name`]
-    if (rawName == null || String(rawName).trim() === '') continue
-    appearances.push({
-      name: String(rawName).trim(),
-      rating: parseRating(row[`Opponent ${slot} Rating`]),
-    })
-  }
-
-  return appearances
 }
 
 function matchIncludesOpponent(match: NormalizedMatch, opponentName: string): boolean {

@@ -173,8 +173,8 @@ export const favouriteOpponentsInfo = (
       narrow the list.
     </p>
     <p>
-      Only competitive wins and losses count. Walkovers and no-match rows are excluded. A scalp
-      win requires you to be rated lower than that opponent at the time.
+      Only competitive wins and losses count. Walkovers and no-match rows are excluded.
+      Only wins where they were rated higher than you at the time count toward this list.
     </p>
   </div>
 )
