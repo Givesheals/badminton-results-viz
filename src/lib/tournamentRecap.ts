@@ -37,11 +37,14 @@ import {
 
 export type ComparisonLevel = 'above' | 'typical'
 
+import type { DashboardSectionId } from './dashboardSections'
+
 export type RecapSummaryCard = {
   id: string
   icon: string
   label: string
   detail?: string
+  sectionId?: DashboardSectionId
 }
 
 export type DisciplineMatchHighlight = {
@@ -928,6 +931,7 @@ function buildDisciplineTimeline(
         highlight.weekendOverperformance,
         highlight.overallOverperformance,
       ),
+      sectionId: 'partner-chemistry',
     })
   }
 

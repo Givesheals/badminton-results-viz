@@ -242,7 +242,9 @@ export function computeOpponentMatchups(
   const scalps = qualifying
     .filter(
       (row) =>
-        row.ratedUpsetWins >= minScalpWins && row.avgRatingGap != null,
+        row.ratedUpsetWins >= minScalpWins &&
+        row.avgRatingGap != null &&
+        row.wins >= row.losses,
     )
     .sort((a, b) => {
       const gapA = a.avgRatingGap!

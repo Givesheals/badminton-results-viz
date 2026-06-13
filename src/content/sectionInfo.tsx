@@ -175,6 +175,7 @@ export const favouriteOpponentsInfo = (
     <p>
       Only competitive wins and losses count. Walkovers and no-match rows are excluded.
       Only wins where they were rated higher than you at the time count toward this list.
+      Your overall record against them must be even or ahead.
     </p>
   </div>
 )

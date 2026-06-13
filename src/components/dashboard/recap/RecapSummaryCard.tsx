@@ -1,3 +1,4 @@
+import { DashboardSectionLink } from '../../../context/DashboardNavigationContext'
 import type { RecapSummaryCard as RecapSummaryCardData } from '../../../lib/tournamentRecap'
 
 type Props = {
@@ -16,6 +17,7 @@ export function RecapSummaryCard({ card }: Props) {
           {card.detail && (
             <p className="mt-0.5 text-xs leading-snug text-ink-600">{card.detail}</p>
           )}
+          {card.sectionId && <DashboardSectionLink sectionId={card.sectionId} />}
         </div>
       </div>
     </div>

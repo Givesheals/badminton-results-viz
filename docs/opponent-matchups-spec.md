@@ -192,6 +192,7 @@ Colour theme: loss / red semantic tokens.
 games >= minMeetings
 AND ratedUpsetWins >= minScalpWins
 AND avgRatingGap != null
+AND wins >= losses
 ```
 
 Default `minScalpWins = 2`. Range **1–99**. This control sits **inline on the favourite opponents panel header row** (label + number input to the right of the title), not in the shared filter bar.
@@ -208,8 +209,8 @@ Default `minScalpWins = 2`. Range **1–99**. This control sits **inline on the 
 |---------|---------|
 | Rank badge | 1, 2, 3… |
 | Name | Opponent name |
-| Subtitle | `{ratedUpsetWins} win(s) when they were rated higher` · optional `avg {±N} pts` · full H2H record e.g. `3 wins, 1 loss` |
-| Primary metric (right) | Formatted average gap, e.g. `+42` with small label **“avg”** — only when `avgRatingGap != null` |
+| Subtitle | `{ratedUpsetWins} win(s) when they were rated higher` · full H2H record e.g. `3 wins, 1 loss` |
+| Primary metric (right) | Average gap as two lines: `{N}` then small label **“ahead of avg”** — only when `avgRatingGap != null` (no leading `+`) |
 | Tooltip on metric | e.g. “Across 3 wins vs {name}, they were rated 42 pts higher than you on average before the match” |
 
 **Rating gap display format:**
@@ -309,7 +310,7 @@ When opponents fail the meetings gate:
 Each list row is a **button** that toggles an expanded head-to-head block.
 
 - **Collapsed (default):** summary only  
-- **Expanded:** all competitive win/loss meetings vs that opponent in the **current filtered match set**, sorted **newest first**  
+- **Expanded:** all competitive win/loss meetings vs that opponent in the **current filtered match set**, grouped **wins first then losses**, each group sorted **newest first**  
 - Chevron icon rotates when open; use `aria-expanded` for accessibility  
 
 Expanded list **excludes** walkovers, no-match rows, and unknown outcomes — same rules as aggregation.
@@ -332,7 +333,7 @@ Each panel may offer a share/export action that captures the list as an image. W
 
 **Nemeses:** Opponents you have lost to more than you have beaten, ranked by a score that favours frequent losses and close rating gaps when there are enough rivals. Only competitive wins and losses count.
 
-**Favourite opponents:** Higher-rated opponents you have beaten repeatedly. Minimum wins narrows the list. Only wins where they were individually rated higher than you count.
+**Favourite opponents:** Higher-rated opponents you have beaten repeatedly. Minimum wins narrows the list. Only wins where they were individually rated higher than you count. Your overall record against them must be even or ahead.
 
 ---
 
@@ -342,7 +343,7 @@ Each panel may offer a share/export action that captures the list as an image. W
 |-----------|----------------|
 | No competitive wins or losses in filtered set | Centred message: **“No competitive wins or losses in the current selection.”** (both panels hidden) |
 | Nemesis candidates exist but none pass meetings threshold | Nemeses panel: **“No opponents you are behind on at this threshold.”** |
-| No favourite opponents at current min wins | **“No opponents with at least {minScalpWins} rated win(s) when they were higher.”** |
+| No favourite opponents at current min wins | **“No opponents with at least {minScalpWins} rated win(s) when they were higher and an even or winning record.”** |
 | Panel has rows but list empty after slice | Should not occur if logic is correct |
 | Generic fallback | **“None in this selection.”** |
 
@@ -430,7 +431,7 @@ FAVOURITE OPPONENTS:
   SORT avgRatingGap DESC, ratedUpsetWins DESC, games DESC
 
 DISPLAY first N rows per panel (default N=5)
-EXPAND row → H2H matches vs opponent, newest first
+EXPAND row → H2H matches vs opponent, wins first then losses, newest first within each group
 ```
 
 ---

@@ -62,7 +62,10 @@ export function PartnerChemistrySection({
   })
 
   return (
-    <article className="rounded-2xl card-frame bg-white p-4 shadow-sm">
+    <article
+      id="partner-chemistry"
+      className="scroll-mt-6 rounded-2xl card-frame bg-white p-4 shadow-sm"
+    >
       <SectionHeaderWithFilters
         title={
           <SectionHeading

@@ -1,16 +1,9 @@
+import { DashboardSectionLink } from '../../../context/DashboardNavigationContext'
 import type { RecapRecordMilestone } from '../../../lib/recapRecordMilestones'
 import { DisciplineChip } from '../../discipline/DisciplineChip'
 
 type Props = {
   milestones: RecapRecordMilestone[]
-}
-
-function sectionHref(sectionId: RecapRecordMilestone['sectionId']): string {
-  return `#${sectionId}`
-}
-
-function sectionLabel(sectionId: RecapRecordMilestone['sectionId']): string {
-  return sectionId === 'best-wins' ? 'Best wins' : 'Nemeses & favourite opponents'
 }
 
 export function RecapRecordMilestoneCards({ milestones }: Props) {
@@ -32,12 +25,7 @@ export function RecapRecordMilestoneCards({ milestones }: Props) {
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-brand-800">{milestone.title}</p>
                 <p className="mt-0.5 text-xs text-ink-600">{milestone.detail}</p>
-                <a
-                  href={sectionHref(milestone.sectionId)}
-                  className="mt-1.5 inline-block text-xs font-medium text-brand-700 underline decoration-brand-300 underline-offset-2 transition hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-                >
-                  View {sectionLabel(milestone.sectionId)} ↓
-                </a>
+                <DashboardSectionLink sectionId={milestone.sectionId} />
               </div>
             </div>
           </div>

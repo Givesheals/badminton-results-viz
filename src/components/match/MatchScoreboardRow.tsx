@@ -97,14 +97,14 @@ function MatchScores({
 }) {
   if (games.length === 0) {
     return (
-      <p className="text-center text-xs text-ink-500">
+      <p className="min-w-[3.25rem] shrink-0 whitespace-nowrap text-center text-xs text-ink-500">
         {scoreSummary || '—'}
       </p>
     )
   }
 
   return (
-    <div className="text-center text-xs tabular-nums text-ink-800">
+    <div className="min-w-[3.25rem] shrink-0 whitespace-nowrap text-center text-xs tabular-nums text-ink-800">
       {games.map((game) => (
         <p key={game.game}>
           <ScoreSpan value={game.player} won={game.player > game.opponent} />

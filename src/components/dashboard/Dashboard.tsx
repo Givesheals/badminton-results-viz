@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { DashboardNavigationProvider } from '../../context/DashboardNavigationContext'
 import { useDataset } from '../../context/DatasetContext'
 import { computeStatsFromMatches } from '../../lib/computeStats'
 import { formatDisplayDate } from '../../lib/formatDate'
@@ -51,7 +52,10 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-center justify-between gap-3">
+      <section
+        id="dashboard-results-header"
+        className="scroll-mt-4 flex flex-wrap items-center justify-between gap-3"
+      >
         <div>
           <h2 className="text-xl font-semibold text-ink-900">{title}</h2>
           {dateRange && (
@@ -67,9 +71,10 @@ export function Dashboard() {
         </button>
       </section>
 
-      <DashboardTabs
-        importedAt={dataset.importedAt}
-        panels={{
+      <DashboardNavigationProvider>
+        <DashboardTabs
+          importedAt={dataset.importedAt}
+          panels={{
           'latest-event': <TournamentRecapSection allMatches={allMatches} />,
           'this-season': <SeasonJourneySection allMatches={allMatches} />,
           'all-time': (
@@ -105,8 +110,9 @@ export function Dashboard() {
               </div>
             </>
           ),
-        }}
-      />
+          }}
+        />
+      </DashboardNavigationProvider>
     </div>
   )
 }

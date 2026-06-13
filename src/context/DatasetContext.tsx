@@ -21,6 +21,15 @@ type DatasetContextValue = {
 
 const DatasetContext = createContext<DatasetContextValue | null>(null)
 
+function clearDashboardSectionHash() {
+  if (typeof window === 'undefined' || !window.location.hash) return
+  window.history.replaceState(
+    null,
+    '',
+    window.location.pathname + window.location.search,
+  )
+}
+
 export function DatasetProvider({ children }: { children: ReactNode }) {
   const [dataset, setDataset] = useState<ParsedDataset | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -34,6 +43,7 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
       if (parsed.rows.length === 0) {
         throw new Error('No data rows found. Check that the first row contains column headers.')
       }
+      clearDashboardSectionHash()
       setDataset(parsed)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to read file.'
@@ -45,6 +55,7 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
 
   const loadSample = useCallback(() => {
     setError(null)
+    clearDashboardSectionHash()
     setDataset({ ...sampleDataset, importedAt: new Date().toISOString() })
   }, [])
 

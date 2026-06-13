@@ -4,7 +4,6 @@ import { useResetFiltersOnImport } from '../../hooks/useResetFiltersOnImport'
 import { useShareCapture } from '../../hooks/useShareCapture'
 import { countActiveSectionFilters } from '../../lib/filterCounts'
 import {
-  formatRatingGap,
   formatWholePercent,
   formatWinLossRecord,
 } from '../../lib/formatNumbers'
@@ -226,7 +225,7 @@ export function OpponentMatchupsSection({
               onMinWinsChange={setMinScalpWins}
               emptyMessage={
                 matchups.scalps.length === 0
-                  ? `No opponents with at least ${minScalpWins} rated win${minScalpWins === 1 ? '' : 's'} when they were higher.`
+                  ? `No opponents with at least ${minScalpWins} rated win${minScalpWins === 1 ? '' : 's'} when they were higher and an even or winning record.`
                   : undefined
               }
             />
@@ -407,12 +406,6 @@ function MatchupRowItem({
               <>
                 {row.ratedUpsetWins} win{row.ratedUpsetWins === 1 ? '' : 's'} when they were
                 rated higher
-                {scalpGap != null && (
-                  <>
-                    <span className="text-ink-400"> · </span>
-                    avg {formatRatingGap(scalpGap)} pts
-                  </>
-                )}
                 <span className="text-ink-400"> · </span>
                 {record}
               </>
@@ -435,10 +428,10 @@ function MatchupRowItem({
               </span>
             </>
           ) : scalpGap != null ? (
-            <>
-              {formatRatingGap(scalpGap)}
-              <span className={`ml-0.5 text-xs font-normal ${styles.metricLabel}`}>avg</span>
-            </>
+            <span className="flex flex-col items-end leading-tight">
+              <span>{Math.round(scalpGap)}</span>
+              <span className={`text-xs font-normal ${styles.metricLabel}`}>ahead of avg</span>
+            </span>
           ) : null}
         </p>
         <ChevronIcon open={isOpen} kind={kind} />
@@ -450,15 +443,60 @@ function MatchupRowItem({
 }
 
 function OpponentH2HMatchList({ matches }: { matches: NormalizedMatch[] }) {
+  const wins = matches
+    .filter((match) => match.outcome === 'win')
+    .sort((a, b) => b.date.localeCompare(a.date))
+  const losses = matches
+    .filter((match) => match.outcome === 'loss')
+    .sort((a, b) => b.date.localeCompare(a.date))
+
   return (
-    <ul className="grid grid-cols-[max-content_max-content_auto_max-content] items-center gap-x-2.5 gap-y-1 border-t border-ink-50 bg-ink-50/40 px-2 py-2">
-      {matches.map((match, index) => (
-        <MatchScoreboardRow
-          key={`${match.date}-${match.competitionName}-${index}`}
-          match={match}
+    <div className="border-t border-ink-50 bg-ink-50/40 py-2">
+      {wins.length > 0 ? (
+        <H2HOutcomeSection title="Wins" tone="gain" matches={wins} />
+      ) : null}
+      {losses.length > 0 ? (
+        <H2HOutcomeSection
+          title="Losses"
+          tone="loss"
+          matches={losses}
+          className={wins.length > 0 ? 'mt-2' : undefined}
         />
-      ))}
-    </ul>
+      ) : null}
+    </div>
+  )
+}
+
+function H2HOutcomeSection({
+  title,
+  tone,
+  matches,
+  className,
+}: {
+  title: string
+  tone: 'gain' | 'loss'
+  matches: NormalizedMatch[]
+  className?: string
+}) {
+  const bannerClass =
+    tone === 'gain' ? 'bg-gain-50 text-gain-700' : 'bg-loss-50 text-loss-700'
+
+  return (
+    <section className={className}>
+      <p
+        className={`px-2 py-1 text-[10px] font-medium uppercase tracking-wide ${bannerClass}`}
+      >
+        {title}
+      </p>
+      <ul className="mt-1 grid grid-cols-[max-content_minmax(0,1fr)_minmax(3.25rem,max-content)_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1 px-2">
+        {matches.map((match, index) => (
+          <MatchScoreboardRow
+            key={`${match.date}-${match.competitionName}-${index}`}
+            match={match}
+          />
+        ))}
+      </ul>
+    </section>
   )
 }
 

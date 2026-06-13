@@ -12,7 +12,11 @@ import {
 } from '../../lib/ratingWinChance'
 import { getDisciplineStyle } from '../../lib/disciplineStyle'
 import { matchesForDisciplineFamily } from '../../lib/partnerTournamentHistory'
-import { formatMatchStageLabel, getMatchRound } from '../../lib/tournamentProgression'
+import {
+  competitionAgeLabelFromMatch,
+  formatMatchStageLabel,
+  getMatchRound,
+} from '../../lib/tournamentProgression'
 import { getTournamentCategoryChipStyle } from '../../lib/tournamentCategoryStyle'
 import { DisciplineChip } from '../discipline/DisciplineChip'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
@@ -24,7 +28,8 @@ import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
 import { SectionHeading } from '../ui/SectionHeading'
 import { ShareButton } from '../ui/ShareButton'
 
-const LIMIT_OPTIONS = [3, 5, 10] as const
+const LIMIT_OPTIONS = [5, 10, 20] as const
+const MAX_LIMIT_OPTION = LIMIT_OPTIONS[LIMIT_OPTIONS.length - 1]
 const DEFAULT_LIMIT = 5
 
 const FILTER_SELECT_CLASS =
@@ -53,7 +58,7 @@ export function BestWinsSection({ allMatches }: Props) {
   )
 
   const limitOptions: number[] = [...LIMIT_OPTIONS]
-  if (bestWins.ratedWinCount > 10) {
+  if (bestWins.ratedWinCount > MAX_LIMIT_OPTION) {
     limitOptions.push(bestWins.ratedWinCount)
   }
 
@@ -129,7 +134,8 @@ export function BestWinsSection({ allMatches }: Props) {
                 >
                   {limitOptions.map((option) => (
                     <option key={option} value={option}>
-                      {option === bestWins.ratedWinCount && bestWins.ratedWinCount > 10
+                      {option === bestWins.ratedWinCount &&
+                      bestWins.ratedWinCount > MAX_LIMIT_OPTION
                         ? 'All'
                         : option}
                     </option>
@@ -144,7 +150,7 @@ export function BestWinsSection({ allMatches }: Props) {
                   className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-200"
                 />
                 <span className="text-xs font-medium text-ink-700">
-                  Include matches already in strongest beaten
+                  Biggest upset wins: Allow overlap with Strongest beaten
                 </span>
               </label>
             </fieldset>
@@ -248,70 +254,108 @@ function BestWinRowItem({
   const style = getDisciplineStyle(row.match.discipline)
   const partner = row.match.partnerName
   const stageLabel = formatMatchStageLabel(getMatchRound(row.match))
+  const competitionAgeLabel = competitionAgeLabelFromMatch(row.match)
   const categoryChip = getTournamentCategoryChipStyle(row.match.tournamentCategoryLabel)
   const disciplineRowSpan = partner ? 'row-span-3' : 'row-span-2'
 
   return (
     <li
-      className={`grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-0.5 rounded-r border-l-4 py-1.5 pl-2 pr-1 ${style.borderClass} ${style.rowBgClass}`}
+      className={`grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 rounded-r border-l-4 py-1.5 pl-2 pr-1 sm:grid-cols-[auto_1fr_auto] sm:gap-y-0.5 ${style.borderClass} ${style.rowBgClass}`}
     >
       <DisciplineChip
         code={row.match.discipline}
-        className={`${disciplineRowSpan} self-center`}
+        className={`${disciplineRowSpan} self-start sm:self-center`}
       />
       <div className="min-w-0">
-        <p className="truncate font-medium text-ink-900" title={row.match.opponents}>
+        <p
+          className="break-words font-medium leading-snug text-ink-900 sm:truncate"
+          title={row.match.opponents}
+        >
           {row.match.opponents}
         </p>
         {partner && (
-          <p className="truncate text-xs text-ink-600" title={`Partner: ${partner}`}>
+          <p
+            className="break-words text-xs leading-snug text-ink-600 sm:truncate"
+            title={`Partner: ${partner}`}
+          >
             with {partner}
           </p>
         )}
       </div>
-      {metricKind === 'strength' ? (
+      <BestWinMetric
+        row={row}
+        metricKind={metricKind}
+        className={`hidden shrink-0 sm:block ${metricKind === 'upset' ? 'sm:self-center' : 'sm:self-start'}`}
+      />
+      <div className="col-start-2 flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-0.5 sm:contents">
         <p
-          className="shrink-0 self-start tabular-nums text-sm font-semibold text-ink-900"
-          title="Average opponent team rating"
+          className="col-span-2 flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs leading-snug"
+          title={compactMetaTitle(row.match, stageLabel)}
         >
-          {row.opponentTeamRating}
-        </p>
-      ) : (
-        <div
-          className="shrink-0 self-center text-right tabular-nums"
-          title={upsetWinChanceTitle(row)}
-        >
-          <p className="text-base font-semibold leading-tight text-ink-900">
-            {formatUpsetWinChanceDisplay(
-              clampDisplayWinChance(row.preMatchWinChancePercent),
-            )}
-          </p>
-          <p className="text-xs font-normal text-ink-500">win chance</p>
-        </div>
-      )}
-      <p
-        className="col-span-2 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs leading-snug"
-        title={compactMetaTitle(row.match, stageLabel)}
-      >
-        {categoryChip != null && (
-          <TournamentCategoryChip label={row.match.tournamentCategoryLabel} />
-        )}
-        {stageLabel != null && (
-          <>
-            {categoryChip != null && <MetaDot />}
-            <span className="font-medium text-ink-600">{stageLabel}</span>
-          </>
-        )}
-        {(categoryChip != null || stageLabel != null) && <MetaDot />}
-        <span className="text-ink-500">{formatShortDate(row.match.date)}</span>
-        {row.match.scoreSummary && (
-          <>
+          {categoryChip != null && (
+            <TournamentCategoryChip label={row.match.tournamentCategoryLabel} />
+          )}
+          {competitionAgeLabel != null && (
+            <>
+              {categoryChip != null && <MetaDot />}
+              <span className="font-medium text-ink-600">{competitionAgeLabel}</span>
+            </>
+          )}
+          {stageLabel != null && (
+            <>
+              {(categoryChip != null || competitionAgeLabel != null) && <MetaDot />}
+              <span className="font-medium text-ink-600">{stageLabel}</span>
+            </>
+          )}
+          {(categoryChip != null || stageLabel != null || competitionAgeLabel != null) && (
             <MetaDot />
-            <span className="truncate text-ink-500">{row.match.scoreSummary}</span>
-          </>
+          )}
+          <span className="text-ink-500">{formatShortDate(row.match.date)}</span>
+          {row.match.scoreSummary && (
+            <>
+              <MetaDot />
+              <span className="break-words text-ink-500">{row.match.scoreSummary}</span>
+            </>
+          )}
+        </p>
+        <BestWinMetric row={row} metricKind={metricKind} className="shrink-0 sm:hidden" />
+      </div>
+    </li>
+  )
+}
+
+function BestWinMetric({
+  row,
+  metricKind,
+  className = '',
+}: {
+  row: BestWinRow
+  metricKind: 'strength' | 'upset'
+  className?: string
+}) {
+  if (metricKind === 'strength') {
+    return (
+      <p
+        className={`tabular-nums text-sm font-semibold text-ink-900 ${className}`}
+        title="Average opponent team rating"
+      >
+        {row.opponentTeamRating}
+      </p>
+    )
+  }
+
+  return (
+    <div
+      className={`text-right tabular-nums ${className}`}
+      title={upsetWinChanceTitle(row)}
+    >
+      <p className="text-base font-semibold leading-tight text-ink-900">
+        {formatUpsetWinChanceDisplay(
+          clampDisplayWinChance(row.preMatchWinChancePercent),
         )}
       </p>
-    </li>
+      <p className="text-xs font-normal text-ink-500">win chance</p>
+    </div>
   )
 }
 
@@ -333,7 +377,9 @@ function upsetWinChanceTitle(row: BestWinRow): string {
 
 function compactMetaTitle(match: NormalizedMatch, stageLabel: string | null): string {
   const parts = [match.competitionName, match.disciplineLabel]
+  const competitionAgeLabel = competitionAgeLabelFromMatch(match)
   if (match.tournamentCategoryLabel) parts.push(match.tournamentCategoryLabel)
+  if (competitionAgeLabel) parts.push(competitionAgeLabel)
   if (stageLabel) parts.push(stageLabel)
   if (match.partnerName) parts.push(`Partner: ${match.partnerName}`)
   if (match.scoreSummary) parts.push(match.scoreSummary)

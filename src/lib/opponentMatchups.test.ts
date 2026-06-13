@@ -173,6 +173,46 @@ describe('computeOpponentMatchups', () => {
     expect(nemeses[0]?.opponentName).toBe('Far Crusher')
     expect(nemeses[1]?.opponentName).toBe('Close Rival')
   })
+
+  it('excludes favourite opponents with a losing head-to-head record', () => {
+    const matches = [
+      ...Array.from({ length: 3 }, (_, i) =>
+        h2hMatch(
+          { competitionName: 'A', date: `2025-01-0${i + 1}`, outcome: 'win' },
+          'Summer Pearson',
+          600,
+          550,
+        ),
+      ),
+      ...Array.from({ length: 14 }, (_, i) =>
+        h2hMatch(
+          {
+            competitionName: 'B',
+            date: `2025-02-${String(i + 1).padStart(2, '0')}`,
+            outcome: 'loss',
+          },
+          'Summer Pearson',
+          600,
+          550,
+        ),
+      ),
+    ]
+
+    const { scalps } = computeOpponentMatchups(matches, DEFAULT_MIN_MEETINGS, 2)
+    expect(scalps.some((r) => r.opponentName === 'Summer Pearson')).toBe(false)
+  })
+
+  it('includes favourite opponents with an even head-to-head record', () => {
+    const matches = [
+      h2hMatch({ competitionName: 'A', date: '2025-01-01', outcome: 'win' }, 'Even Rival', 600, 550),
+      h2hMatch({ competitionName: 'A', date: '2025-02-01', outcome: 'win' }, 'Even Rival', 610, 550),
+      h2hMatch({ competitionName: 'A', date: '2025-03-01', outcome: 'loss' }, 'Even Rival', 600, 550),
+      h2hMatch({ competitionName: 'A', date: '2025-04-01', outcome: 'loss' }, 'Even Rival', 610, 550),
+    ]
+
+    const { scalps } = computeOpponentMatchups(matches, DEFAULT_MIN_MEETINGS, 2)
+    expect(scalps.some((r) => r.opponentName === 'Even Rival')).toBe(true)
+  })
 })
 
 describe('computeNemesisScore', () => {

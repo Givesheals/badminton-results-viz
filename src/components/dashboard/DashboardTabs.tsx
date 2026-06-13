@@ -7,6 +7,8 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react'
+import { useDashboardNavigation } from '../../context/DashboardNavigationContext'
+import { DASHBOARD_SECTIONS } from '../../lib/dashboardSections'
 
 export type DashboardTabId =
   | 'latest-event'
@@ -61,7 +63,10 @@ type Props = {
 export function DashboardTabs({ importedAt, panels }: Props) {
   const baseId = useId()
   const tabRefs = useRef<Partial<Record<DashboardTabId, HTMLButtonElement>>>({})
+  const suppressSectionScrollRef = useRef(false)
   const [activeTab, setActiveTab] = useState<DashboardTabId>(readStoredTab)
+  const { registerNavigator, scrollTarget, clearScrollTarget } =
+    useDashboardNavigation()
 
   const selectTab = useCallback((id: DashboardTabId) => {
     setActiveTab(id)
@@ -69,8 +74,42 @@ export function DashboardTabs({ importedAt, panels }: Props) {
   }, [])
 
   useEffect(() => {
+    registerNavigator({ selectTab, activeTab })
+    return () => registerNavigator(null)
+  }, [activeTab, registerNavigator, selectTab])
+
+  useEffect(() => {
+    suppressSectionScrollRef.current = true
     selectTab(DEFAULT_TAB)
-  }, [importedAt, selectTab])
+    clearScrollTarget()
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document
+          .getElementById('dashboard-results-header')
+          ?.scrollIntoView({ behavior: 'auto', block: 'start' })
+        suppressSectionScrollRef.current = false
+      })
+    })
+  }, [clearScrollTarget, importedAt, selectTab])
+
+  useEffect(() => {
+    if (!scrollTarget || suppressSectionScrollRef.current) return
+    const meta = DASHBOARD_SECTIONS[scrollTarget]
+    if (activeTab !== meta.tab) {
+      selectTab(meta.tab)
+      return
+    }
+
+    const sectionId = scrollTarget
+    clearScrollTarget()
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document
+          .getElementById(sectionId)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    })
+  }, [activeTab, clearScrollTarget, scrollTarget, selectTab])
 
   const activeMeta = TABS.find((tab) => tab.id === activeTab) ?? TABS[0]
 
