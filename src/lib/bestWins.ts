@@ -132,6 +132,17 @@ export function findBestWinInMatches(matches: NormalizedMatch[]): BestWinRow | n
   return best
 }
 
+/** Rated wins in the set that count toward strongest-beaten ranking. */
+export function countEligibleRatedWinsInMatches(matches: NormalizedMatch[]): number {
+  let count = 0
+  for (const match of matches) {
+    if (!isBestWinEligible(match)) continue
+    if (buildBestWinRow(match) == null) continue
+    count++
+  }
+  return count
+}
+
 /** Minimum opponent-minus-player rating gap to count as a "big upset" in the recap. */
 export const BIG_UPSET_MIN_RATING_GAP = 30
 

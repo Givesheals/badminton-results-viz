@@ -1,12 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { categoryMilestonesInfo } from '../../content/sectionInfo'
+import { useDashboardNavigation } from '../../context/DashboardNavigationContext'
+import { useCategoryMilestoneClaims } from '../../hooks/useCategoryMilestoneClaims'
 import { useSectionMatches } from '../../hooks/useSectionMatches'
 import { useResetFiltersOnImport } from '../../hooks/useResetFiltersOnImport'
 import { useShareCapture } from '../../hooks/useShareCapture'
+import { computeStatsFromMatches } from '../../lib/computeStats'
 import { countActiveSectionFilters } from '../../lib/filterCounts'
 import type { DisciplineFamily } from '../../lib/disciplineStyle'
 import { competitiveMatches } from '../../lib/matchExclusions'
 import { matchesForDisciplineFamily } from '../../lib/partnerTournamentHistory'
+import {
+  CATEGORY_MILESTONE_SECTION_ID,
+  categoryMilestoneRowId,
+  comboKeyFromRow,
+} from '../../lib/categoryMilestoneClaims'
 import {
   categoryCompletionAgeKey,
   computeCategoryMilestones,
@@ -47,6 +55,17 @@ export function CategoryMilestonesSection({
   const [showAllAges, setShowAllAges] = useState(false)
   const [disciplineFamily, setDisciplineFamily] = useState<DisciplineFamilyFilter>('all')
   const [filters, setFilters] = useState<MatchFilters>(DEFAULT_MATCH_FILTERS)
+  const { milestoneTarget, clearMilestoneTarget } = useDashboardNavigation()
+  const [highlightTarget, setHighlightTarget] = useState(milestoneTarget)
+
+  const playerName = useMemo(
+    () => computeStatsFromMatches(allMatches).playerName,
+    [allMatches],
+  )
+
+  const { claimedKeys, claimRound, claimCard, isRoundClaimed, isCardClaimed } =
+    useCategoryMilestoneClaims(playerName)
+
   useResetFiltersOnImport(importedAt, setFilters)
 
   useEffect(() => {
@@ -57,6 +76,11 @@ export function CategoryMilestonesSection({
   useEffect(() => {
     setShowAllAges(false)
   }, [filters, disciplineFamily])
+
+  useEffect(() => {
+    if (milestoneTarget == null) return
+    setHighlightTarget(milestoneTarget)
+  }, [milestoneTarget])
 
   const hasAnyMilestones = useMemo(() => {
     const rows = computeCategoryMilestones(competitiveMatches(allMatches))
@@ -88,6 +112,39 @@ export function CategoryMilestonesSection({
     return ageGroups.filter((group) => visibleKeys.has(categoryCompletionAgeKey(group.ageLabel)))
   }, [ageGroups])
 
+  useEffect(() => {
+    if (milestoneTarget == null) return
+
+    const targetRow = ageGroups
+      .flatMap((group) => group.rows)
+      .find(
+        (row) =>
+          comboKeyFromRow(row.tournamentCategoryLabel, row.competitionAgeLabel) ===
+          milestoneTarget.comboKey,
+      )
+
+    if (targetRow == null) return
+
+    const targetAgeKey = categoryCompletionAgeKey(targetRow.competitionAgeLabel)
+    const visibleKeys = new Set(pickDefaultVisibleAgeLabels(ageGroups))
+    if (!visibleKeys.has(targetAgeKey)) {
+      setShowAllAges(true)
+    }
+  }, [ageGroups, milestoneTarget])
+
+  useEffect(() => {
+    if (milestoneTarget == null) return
+
+    const rowId = categoryMilestoneRowId(milestoneTarget.comboKey)
+    const scrollToRow = () => {
+      document.getElementById(rowId)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollToRow)
+    })
+  }, [milestoneTarget, visibleAgeGroups, showAllAges])
+
   const {
     shareRef,
     share: shareSection,
@@ -103,12 +160,25 @@ export function CategoryMilestonesSection({
   const activeFilterCount =
     countActiveSectionFilters(filters, ['time']) + (disciplineFamily !== 'all' ? 1 : 0)
 
+  const claimsApi = useMemo(
+    () => ({
+      isRoundClaimed,
+      isCardClaimed,
+      onClaimRound: claimRound,
+      onClaimCard: claimCard,
+    }),
+    [claimCard, claimRound, isCardClaimed, isRoundClaimed],
+  )
+
   if (!hasAnyMilestones) {
     return null
   }
 
   return (
-    <article className="rounded-2xl card-frame bg-white p-4 shadow-sm sm:p-5">
+    <article
+      id={CATEGORY_MILESTONE_SECTION_ID}
+      className="scroll-mt-6 rounded-2xl card-frame bg-white p-4 shadow-sm sm:p-5"
+    >
       <SectionHeaderWithFilters
         bordered
         title={
@@ -170,7 +240,16 @@ export function CategoryMilestonesSection({
         </p>
       ) : (
         <div ref={shareRef} data-share-root>
-          <TournamentCategoryCompletion ageGroups={shareAgeGroups} />
+          <TournamentCategoryCompletion
+            ageGroups={shareAgeGroups}
+            claims={claimsApi}
+            claimedKeys={claimedKeys}
+            highlightTarget={highlightTarget}
+            onHighlightComplete={() => {
+              setHighlightTarget(null)
+              clearMilestoneTarget()
+            }}
+          />
 
           {!showAllAges && hiddenAgeGroupCount > 0 ? (
             <button

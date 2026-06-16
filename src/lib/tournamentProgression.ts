@@ -543,6 +543,19 @@ export function isCountyTournament(match: NormalizedMatch): boolean {
   return label === 'County'
 }
 
+/** County-level event at senior age (not junior or masters county). */
+export function isSeniorCountyMatch(match: NormalizedMatch): boolean {
+  if (!isCountyTournament(match)) return false
+  const ageLabel = competitionAgeLabelFromMatch(match)
+  return match.competitionAgeGroup === 'Senior' || ageLabel === 'Senior'
+}
+
+export const SENIOR_COUNTY_DEBUT_TITLE = 'First senior county appearance'
+
+/** Wording avoids implying squad selection — players may appear as subs. */
+export const SENIOR_COUNTY_DEBUT_DETAIL =
+  'Your first time playing at senior county level — a milestone many players work towards.'
+
 function normalizeRoundText(round: string): string {
   return round
     .trim()

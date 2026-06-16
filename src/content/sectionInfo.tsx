@@ -93,6 +93,11 @@ export const categoryMilestonesInfo = (
       date, and partner.
     </p>
     <p>
+      When you unlock a new round, tap the pulsing badge to claim it. Once every round is
+      claimed, tap <strong>Claim</strong> on the card to collapse it into a compact complete
+      row and cut down on visual clutter.
+    </p>
+    <p>
       In knockout-only events you must win a match to credit quarter-finals or deeper. A lone
       quarter-final loss counts as a group exit. Round-robin-only winners (3+ teams, all group
       matches won) count as Winner.
@@ -161,7 +166,9 @@ export const seasonJourneyInfo = (
       earlier in the event). Small round robins and walkover-only paths do not award 3rd place.
       Personal bests list deeper non-podium runs that beat your prior best at that tournament
       level, age group, and discipline. First-time and repeat titles use the same age grouping.
-      Tournament level chips show the event grade, not the medal position.
+      A senior county debut card celebrates the first time you ever played at senior county
+      level (not squad selection — subs count too). Tournament level chips show the event grade,
+      not the medal position.
     </p>
   </div>
 )

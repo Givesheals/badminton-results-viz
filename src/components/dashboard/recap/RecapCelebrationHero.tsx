@@ -1,7 +1,9 @@
+import { CategoryMilestoneClaimLink } from './CategoryMilestoneClaimLink'
 import type {
   MilestoneCelebration,
   PodiumCelebration,
   RecapCelebrations,
+  SeniorCountyDebutCelebration,
   StageReachCelebration,
 } from '../../../lib/tournamentRecap'
 import { getDisciplineStyle } from '../../../lib/disciplineStyle'
@@ -109,6 +111,11 @@ function WinnerCard({ podium }: { podium: PodiumCelebration }) {
             {podium.subtitle}
           </p>
         )}
+        <CategoryMilestoneClaimLink
+          tournamentCategoryLabel={podium.tournamentCategoryLabel}
+          competitionAgeLabel={podium.competitionAgeLabel}
+          stage="winner"
+        />
       </div>
     </article>
   )
@@ -133,6 +140,11 @@ function RunnerUpCard({ podium }: { podium: PodiumCelebration }) {
         {podium.subtitle && (
           <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
         )}
+        <CategoryMilestoneClaimLink
+          tournamentCategoryLabel={podium.tournamentCategoryLabel}
+          competitionAgeLabel={podium.competitionAgeLabel}
+          stage="runner-up"
+        />
       </div>
     </article>
   )
@@ -157,6 +169,11 @@ function ThirdPlaceCard({ podium }: { podium: PodiumCelebration }) {
         {podium.subtitle && (
           <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
         )}
+        <CategoryMilestoneClaimLink
+          tournamentCategoryLabel={podium.tournamentCategoryLabel}
+          competitionAgeLabel={podium.competitionAgeLabel}
+          stage="semi-final"
+        />
       </div>
     </article>
   )
@@ -221,6 +238,11 @@ function StageReachCard({ reach }: { reach: StageReachCelebration }) {
           <DisciplineChip code={reach.discipline} />
           <TournamentCategoryChip label={reach.tournamentCategoryLabel} />
         </div>
+        <CategoryMilestoneClaimLink
+          tournamentCategoryLabel={reach.tournamentCategoryLabel}
+          competitionAgeLabel={reach.competitionAgeLabel}
+          stage={reach.stage}
+        />
       </div>
     </article>
   )
@@ -243,6 +265,11 @@ function PersonalBestCard({ milestone }: { milestone: MilestoneCelebration }) {
           <DisciplineChip code={milestone.discipline} />
           <TournamentCategoryChip label={milestone.tournamentCategoryLabel} />
         </div>
+        <CategoryMilestoneClaimLink
+          tournamentCategoryLabel={milestone.tournamentCategoryLabel}
+          competitionAgeLabel={milestone.competitionAgeLabel}
+          stage={milestone.stage}
+        />
       </div>
     </article>
   )
@@ -261,6 +288,29 @@ function milestoneStyle(variant: MilestoneCelebration['variant']): {
     default:
       return { border: 'border-brand-200 bg-gradient-to-r from-brand-50 to-white', icon: '🏆' }
   }
+}
+
+function SeniorCountyDebutCard({ debut }: { debut: SeniorCountyDebutCelebration }) {
+  return (
+    <article className="relative overflow-hidden rounded-2xl border-2 border-level-county/50 border-l-4 bg-gradient-to-br from-level-county/15 via-white to-brand-50/40 px-4 py-5 shadow-md">
+      <Confetti density="light" />
+      <div className="relative z-10 mx-auto flex max-w-[90%] flex-col items-center text-center">
+        <span className="text-4xl leading-none" aria-hidden>
+          🎖️
+        </span>
+        <p className="mt-2 text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">
+          {debut.title}
+        </p>
+        <p className="mt-2 text-sm text-ink-700">{debut.detail}</p>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          <TournamentCategoryChip label="County" />
+          {debut.disciplines.map((d) => (
+            <DisciplineChip key={d.discipline} code={d.discipline} title={d.disciplineLabel} />
+          ))}
+        </div>
+      </div>
+    </article>
+  )
 }
 
 function MilestoneCard({ milestone }: { milestone: MilestoneCelebration }) {
@@ -288,7 +338,8 @@ function MilestoneCard({ milestone }: { milestone: MilestoneCelebration }) {
 }
 
 export function RecapCelebrationHero({ celebrations }: Props) {
-  const { winners, runnerUps, jointThirds, stageReaches, milestones } = celebrations
+  const { winners, runnerUps, jointThirds, stageReaches, milestones, seniorCountyDebut } =
+    celebrations
   const personalBests = milestones.filter((m) => m.variant === 'personal_best')
   const otherMilestones = milestones.filter((m) => m.variant !== 'personal_best')
   const hasContent =
@@ -296,12 +347,14 @@ export function RecapCelebrationHero({ celebrations }: Props) {
     runnerUps.length > 0 ||
     jointThirds.length > 0 ||
     stageReaches.length > 0 ||
-    milestones.length > 0
+    milestones.length > 0 ||
+    seniorCountyDebut != null
 
   if (!hasContent) return null
 
   return (
     <div className="space-y-4">
+      {seniorCountyDebut && <SeniorCountyDebutCard debut={seniorCountyDebut} />}
       {winners.length > 0 && (
         <div className={podiumGridClass(winners.length)}>
           {winners.map((podium) => (

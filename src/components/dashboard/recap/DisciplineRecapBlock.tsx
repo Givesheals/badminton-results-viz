@@ -28,9 +28,14 @@ function DisciplineRecapHeader({ recap }: Props) {
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <DisciplineChip code={recap.discipline} title={recap.disciplineLabel} />
-          <span className="text-sm text-ink-700">{recap.disciplineLabel}</span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <DisciplineChip code={recap.discipline} title={recap.disciplineLabel} />
+            <span className="text-sm text-ink-700">{recap.disciplineLabel}</span>
+          </div>
+          {recap.partnerName && (
+            <p className="mt-0.5 text-xs text-ink-600">with {recap.partnerName}</p>
+          )}
         </div>
         {recap.ratingDelta != null && (
           <div className="shrink-0 text-right">

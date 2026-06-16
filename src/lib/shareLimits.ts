@@ -17,15 +17,25 @@ export function sliceAccoladesForShare(
     return slice
   }
 
-  return {
+  const result = {
     podium: {
       first: takeFrom(accolades.podium.first),
       second: takeFrom(accolades.podium.second),
       third: takeFrom(accolades.podium.third),
     },
-    personalBests: takeFrom(accolades.personalBests),
+    personalBests: [] as SeasonAccoladesData['personalBests'],
+    seniorCountyDebut: null as SeasonAccoladesData['seniorCountyDebut'],
     totalPodiumCount: accolades.totalPodiumCount,
   }
+
+  if (remaining > 0 && accolades.seniorCountyDebut != null) {
+    result.seniorCountyDebut = accolades.seniorCountyDebut
+    remaining -= 1
+  }
+
+  result.personalBests = takeFrom(accolades.personalBests)
+
+  return result
 }
 
 export function sliceRowsForShare<T>(rows: T[], limit: number = SHARE_ROW_LIMIT): T[] {

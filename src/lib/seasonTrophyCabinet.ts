@@ -10,8 +10,11 @@ import {
   formatCategoryAgeLabel,
   hasGroupMatchWins,
   isProgressionTournament,
+  isSeniorCountyMatch,
   qualifiesForThirdPlace,
   PROGRESSION_STAGE_LABELS,
+  SENIOR_COUNTY_DEBUT_DETAIL,
+  SENIOR_COUNTY_DEBUT_TITLE,
   STAGE_RANK,
   tournamentKey,
   type ProgressionStage,
@@ -50,6 +53,13 @@ export type SeasonPersonalBestItem = {
   detail: string
 }
 
+export type SeasonSeniorCountyDebutItem = {
+  competitionName: string
+  date: string
+  title: string
+  detail: string
+}
+
 export type SeasonAccoladesData = {
   podium: {
     first: SeasonTrophyItem[]
@@ -57,6 +67,8 @@ export type SeasonAccoladesData = {
     third: SeasonTrophyItem[]
   }
   personalBests: SeasonPersonalBestItem[]
+  /** First-ever senior county appearance when it happened this season. */
+  seniorCountyDebut: SeasonSeniorCountyDebutItem | null
   totalPodiumCount: number
 }
 
@@ -379,12 +391,50 @@ export function computeSeasonPersonalBests(
   return capped.sort((a, b) => a.date.localeCompare(b.date))
 }
 
+function firstEverSeniorCountyEvent(
+  allMatches: NormalizedMatch[],
+): { competitionName: string; date: string } | null {
+  const seniorCounty = allMatches
+    .filter((m) => isCompetitiveMatch(m) && isSeniorCountyMatch(m))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.competitionName.localeCompare(b.competitionName))
+
+  const first = seniorCounty[0]
+  if (!first) return null
+
+  return { competitionName: first.competitionName, date: first.date }
+}
+
+export function computeSeasonSeniorCountyDebut(
+  allMatches: NormalizedMatch[],
+  bounds: SeasonBounds,
+): SeasonSeniorCountyDebutItem | null {
+  const debut = firstEverSeniorCountyEvent(allMatches)
+  if (!debut) return null
+
+  const seasonMatches = filterMatchesInSeason(allMatches, bounds)
+  const inSeason = seasonMatches.some(
+    (m) =>
+      isCompetitiveMatch(m) &&
+      isSeniorCountyMatch(m) &&
+      m.competitionName === debut.competitionName,
+  )
+  if (!inSeason) return null
+
+  return {
+    competitionName: debut.competitionName,
+    date: debut.date,
+    title: SENIOR_COUNTY_DEBUT_TITLE,
+    detail: SENIOR_COUNTY_DEBUT_DETAIL,
+  }
+}
+
 export function computeSeasonAccolades(
   allMatches: NormalizedMatch[],
   bounds: SeasonBounds,
 ): SeasonAccoladesData {
   const podium = computeSeasonTrophyCabinet(allMatches, bounds)
   const personalBests = computeSeasonPersonalBests(allMatches, bounds)
+  const seniorCountyDebut = computeSeasonSeniorCountyDebut(allMatches, bounds)
 
   return {
     podium: {
@@ -393,6 +443,7 @@ export function computeSeasonAccolades(
       third: podium.third,
     },
     personalBests,
+    seniorCountyDebut,
     totalPodiumCount: podium.totalCount,
   }
 }

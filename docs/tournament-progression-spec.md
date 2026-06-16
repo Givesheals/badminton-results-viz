@@ -157,6 +157,7 @@ unique opponents in group-phase matches + 1
 | `seasonJourney.ts` | Weekend dots via `bestStageFromMatchesForAchievements` |
 | `partnerAchievements.ts` | Partner depth via `bestStageFromMatchesForAchievements` |
 | Category milestones UI | `computeCategoryMilestones` → `buildCategoryCompletionMilestones` |
+| Category milestone claims | `categoryMilestoneClaims.ts`, `useCategoryMilestoneClaims` — see [category-milestone-claims-spec.md](category-milestone-claims-spec.md) |
 
 All depth consumers should use `bestStageFromMatches*` (not raw round labels per match).
 

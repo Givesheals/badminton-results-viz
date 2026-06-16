@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type {
   SeasonAccoladesData,
   SeasonPersonalBestItem,
+  SeasonSeniorCountyDebutItem,
   SeasonTrophyItem,
 } from '../../lib/seasonTrophyCabinet'
 import { sliceAccoladesForShare } from '../../lib/shareLimits'
@@ -131,6 +132,23 @@ function TrophyShelf({ title, items }: { title: string; items: SeasonTrophyItem[
   )
 }
 
+function SeniorCountyDebutCard({ item }: { item: SeasonSeniorCountyDebutItem }) {
+  return (
+    <article className="rounded-lg border border-level-county/40 border-l-4 border-l-level-county bg-gradient-to-br from-level-county/10 via-white to-brand-50/30 px-3 py-3 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-lg leading-none" aria-hidden>
+          🎖️
+        </span>
+        <span className="text-xs font-semibold text-ink-800">{item.title}</span>
+        <TournamentCategoryChip label="County" />
+      </div>
+      <p className="mt-2 text-xs text-ink-600">{item.detail}</p>
+      <p className="mt-2 text-sm font-medium text-ink-900">{item.competitionName}</p>
+      <p className="mt-0.5 text-xs text-ink-500">{formatDisplayDate(item.date)}</p>
+    </article>
+  )
+}
+
 function PersonalBestShelf({ items }: { items: SeasonPersonalBestItem[] }) {
   if (items.length === 0) return null
 
@@ -169,7 +187,8 @@ export function SeasonTrophyCabinet({ accolades, maxItems }: Props) {
   const visibleShelves = shelves.filter((shelf) => shelf.items.length > 0)
   const hasPodiums = visibleShelves.length > 0
   const hasPersonalBests = displayAccolades.personalBests.length > 0
-  const hasContent = hasPodiums || hasPersonalBests
+  const hasSeniorCountyDebut = displayAccolades.seniorCountyDebut != null
+  const hasContent = hasPodiums || hasPersonalBests || hasSeniorCountyDebut
 
   return (
     <div className="space-y-4">
@@ -179,6 +198,14 @@ export function SeasonTrophyCabinet({ accolades, maxItems }: Props) {
         </p>
       ) : (
         <div className="space-y-6 rounded-xl border border-ink-100 bg-gradient-to-b from-white to-ink-50/40 p-4">
+          {hasSeniorCountyDebut && displayAccolades.seniorCountyDebut && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-600">
+                Senior county
+              </p>
+              <SeniorCountyDebutCard item={displayAccolades.seniorCountyDebut} />
+            </div>
+          )}
           {hasPodiums &&
             visibleShelves.map((shelf) => (
               <TrophyShelf key={shelf.key} title={shelf.title} items={shelf.items} />

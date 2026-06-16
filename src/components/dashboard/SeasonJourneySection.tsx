@@ -121,7 +121,8 @@ export function SeasonJourneySection({ allMatches }: Props) {
             status={accoladesShareStatus}
             disabled={
               journey.accolades.totalPodiumCount === 0 &&
-              journey.accolades.personalBests.length === 0
+              journey.accolades.personalBests.length === 0 &&
+              journey.accolades.seniorCountyDebut == null
             }
           />
         </div>

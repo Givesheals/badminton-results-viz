@@ -9,6 +9,7 @@ import {
   groupCategoryCompletionsByAge,
   pickDefaultVisibleAgeLabels,
   isSemiFinalRound,
+  isSeniorCountyMatch,
   KNOCKOUT_OR_BETTER_MIN_RANK,
   isBronzeFinalRound,
   lostInSemiFinal,
@@ -807,5 +808,46 @@ describe('pickDefaultVisibleAgeLabels', () => {
     ).length
 
     expect(hiddenCount).toBe(1)
+  })
+})
+
+describe('isSeniorCountyMatch', () => {
+  function countyMatch(
+    ageGroup: string,
+    subAge: string | null = ageGroup,
+  ): NormalizedMatch {
+    return {
+      competitionName: 'County Event',
+      tournamentCategory: 'county',
+      tournamentCategoryLabel: 'County',
+      date: '2025-01-01',
+      discipline: 'WS',
+      disciplineLabel: "Women's singles",
+      playerName: 'Alex',
+      partnerName: null,
+      opponents: 'Opp',
+      outcome: 'loss',
+      nonCompetitiveReason: null,
+      scoreSummary: '15-21',
+      playerRating: 500,
+      competitionAgeGroup: ageGroup,
+      competitionSubAgeGroup: subAge,
+      raw: { 'Tournament Category': 'County', Round: 'Division 1' },
+    }
+  }
+
+  it('matches senior county events', () => {
+    expect(isSeniorCountyMatch(countyMatch('Senior'))).toBe(true)
+  })
+
+  it('does not match junior county', () => {
+    expect(isSeniorCountyMatch(countyMatch('Junior', 'U17'))).toBe(false)
+  })
+
+  it('does not match non-county senior events', () => {
+    const gold = countyMatch('Senior')
+    gold.tournamentCategoryLabel = 'Gold'
+    gold.raw = { 'Tournament Category': 'Gold', Round: 'QF' }
+    expect(isSeniorCountyMatch(gold)).toBe(false)
   })
 })

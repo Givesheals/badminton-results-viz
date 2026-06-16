@@ -859,6 +859,7 @@ describe('computeTournamentRecaps', () => {
       stage: 'quarter-final',
       discipline: 'WS',
       tournamentCategoryLabel: 'Silver',
+      competitionAgeLabel: null,
     })
     expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
       false,
@@ -1533,6 +1534,119 @@ describe('computeTournamentRecaps', () => {
     expect(milestones.some((m) => m.variant === 'debut')).toBe(false)
   })
 
+  it('shows senior county debut card on first-ever senior county appearance', () => {
+    const seniorCounty = makeMatch({
+      competitionName: 'Senior County Championships',
+      date: '2025-11-08',
+      discipline: 'OD',
+      disciplineLabel: 'Open doubles',
+      partnerName: 'Sam',
+      tournamentCategory: 'county',
+      tournamentCategoryLabel: 'County',
+      competitionAgeGroup: 'Senior',
+      competitionSubAgeGroup: 'Senior',
+      outcome: 'loss',
+      raw: {
+        Round: 'Division 1',
+        'Tournament Category': 'County',
+        'Player Game 1 Score': 18,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 17,
+        'Opponent Game 2 Score': 21,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const debut = computeTournamentRecaps([seniorCounty]).recaps[0]!.celebrations
+      .seniorCountyDebut
+
+    expect(debut).not.toBeNull()
+    expect(debut!.title).toBe('First senior county appearance')
+    expect(debut!.disciplines.map((d) => d.discipline)).toEqual(['OD'])
+  })
+
+  it('does not show senior county debut when prior senior county exists', () => {
+    const priorSeniorCounty = makeMatch({
+      competitionName: 'County League 2024',
+      date: '2024-11-01',
+      discipline: 'OD',
+      disciplineLabel: 'Open doubles',
+      partnerName: 'Sam',
+      tournamentCategory: 'county',
+      tournamentCategoryLabel: 'County',
+      competitionAgeGroup: 'Senior',
+      competitionSubAgeGroup: 'Senior',
+      outcome: 'loss',
+      raw: {
+        Round: 'Division 2',
+        'Tournament Category': 'County',
+        'Player Game 1 Score': 15,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 12,
+        'Opponent Game 2 Score': 21,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+    const currentSeniorCounty = makeMatch({
+      competitionName: 'Senior County Championships',
+      date: '2025-11-08',
+      discipline: 'OD',
+      disciplineLabel: 'Open doubles',
+      partnerName: 'Sam',
+      tournamentCategory: 'county',
+      tournamentCategoryLabel: 'County',
+      competitionAgeGroup: 'Senior',
+      competitionSubAgeGroup: 'Senior',
+      outcome: 'loss',
+      raw: {
+        Round: 'Division 1',
+        'Tournament Category': 'County',
+        'Player Game 1 Score': 18,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 17,
+        'Opponent Game 2 Score': 21,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const debut = computeTournamentRecaps([priorSeniorCounty, currentSeniorCounty]).recaps.find(
+      (r) => r.competitionName === 'Senior County Championships',
+    )!.celebrations.seniorCountyDebut
+
+    expect(debut).toBeNull()
+  })
+
+  it('does not treat non-senior county as senior county debut', () => {
+    const juniorCounty = makeMatch({
+      competitionName: 'U17 County',
+      date: '2025-11-08',
+      discipline: 'WS',
+      tournamentCategory: 'county',
+      tournamentCategoryLabel: 'County',
+      competitionAgeGroup: 'Junior',
+      competitionSubAgeGroup: 'U17',
+      outcome: 'loss',
+      raw: {
+        Round: 'Division 1',
+        'Tournament Category': 'County',
+        'Player Game 1 Score': 15,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 12,
+        'Opponent Game 2 Score': 21,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const debut = computeTournamentRecaps([juniorCounty]).recaps[0]!.celebrations
+      .seniorCountyDebut
+
+    expect(debut).toBeNull()
+  })
+
   it('does not show first tournament debut card for Other category', () => {
     const otherEvent = makeMatch({
       competitionName: 'Club Night',
@@ -1729,13 +1843,7 @@ describe('computeTournamentRecaps', () => {
     const highlighted = ws.matches.find((m) =>
       m.highlights.some((h) => h.id === 'your-strongest-beaten'),
     )
-    expect(highlighted?.opponents).toBe('New Giant')
-    const popover = highlighted?.highlights.find(
-      (h) => h.id === 'your-strongest-beaten',
-    )?.popoverText
-    expect(popover).toMatch(/highest-rated opponent beaten/i)
-    expect(popover).toMatch(/rated 650/)
-    expect(popover).toMatch(/1st strongest beaten victory/)
+    expect(highlighted).toBeUndefined()
     expect(ws.eventCallouts.some((c) => c.id === 'event-strongest-scalp')).toBe(false)
   })
 
@@ -1766,10 +1874,7 @@ describe('computeTournamentRecaps', () => {
     expect(ws.eventCallouts.some((c) => c.id === 'event-biggest-upset')).toBe(false)
 
     const match = ws.matches[0]!
-    expect(match.highlights.map((h) => h.label)).toEqual([
-      'Your strongest beaten',
-      'Big upset!',
-    ])
+    expect(match.highlights.map((h) => h.label)).toEqual(['Big upset!'])
     expect(match.highlights.find((h) => h.label === 'Big upset!')?.popoverText).toMatch(
       /110 points higher/,
     )
@@ -1827,13 +1932,76 @@ describe('computeTournamentRecaps', () => {
     ).toBe(false)
     expect(
       ws.matches.some((m) => m.highlights.some((h) => h.id === 'your-strongest-beaten')),
-    ).toBe(true)
+    ).toBe(false)
+  })
+
+  it('surfaces strongest-beaten highlight when there are multiple wins at the event', () => {
+    const weakerWin = makeMatch({
+      competitionName: 'Multi Win Cup',
+      date: '2026-04-01',
+      discipline: 'WS',
+      opponents: 'Weaker',
+      outcome: 'win',
+      playerRating: 550,
+      raw: {
+        'Opponent 1 Rating': 580,
+        'Opponent 2 Rating': null,
+        'Player Game 1 Score': 21,
+        'Opponent Game 1 Score': 15,
+        'Player Game 2 Score': 21,
+        'Opponent Game 2 Score': 12,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+    const strongerWin = makeMatch({
+      competitionName: 'Multi Win Cup',
+      date: '2026-04-02',
+      discipline: 'WS',
+      opponents: 'Stronger',
+      outcome: 'win',
+      playerRating: 550,
+      raw: {
+        'Opponent 1 Rating': 650,
+        'Opponent 2 Rating': null,
+        'Player Game 1 Score': 21,
+        'Opponent Game 1 Score': 19,
+        'Player Game 2 Score': 21,
+        'Opponent Game 2 Score': 18,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const ws = computeTournamentRecaps([weakerWin, strongerWin]).recaps[0]!.disciplines[0]!
+    const highlighted = ws.matches.find((m) =>
+      m.highlights.some((h) => h.id === 'your-strongest-beaten'),
+    )
+    expect(highlighted?.opponents).toBe('Stronger')
   })
 
   it('computes strongest-beaten highlights separately for each discipline', () => {
-    const wsWin = makeMatch({
+    const wsWeakerWin = makeMatch({
       competitionName: 'Multi Cup',
       date: '2026-04-01',
+      discipline: 'WS',
+      opponents: 'WS Easy',
+      outcome: 'win',
+      playerRating: 550,
+      raw: {
+        'Opponent 1 Rating': 580,
+        'Opponent 2 Rating': null,
+        'Player Game 1 Score': 21,
+        'Opponent Game 1 Score': 15,
+        'Player Game 2 Score': 21,
+        'Opponent Game 2 Score': 12,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+    const wsWin = makeMatch({
+      competitionName: 'Multi Cup',
+      date: '2026-04-02',
       discipline: 'WS',
       opponents: 'WS Foe',
       outcome: 'win',
@@ -1849,9 +2017,28 @@ describe('computeTournamentRecaps', () => {
         'Opponent Game 3 Score': null,
       },
     })
-    const wdWin = makeMatch({
+    const wdWeakerWin = makeMatch({
       competitionName: 'Multi Cup',
       date: '2026-04-02',
+      discipline: 'WD',
+      partnerName: 'Sam',
+      opponents: 'WD Easy',
+      outcome: 'win',
+      playerRating: 560,
+      raw: {
+        'Opponent 1 Rating': 600,
+        'Opponent 2 Rating': 590,
+        'Player Game 1 Score': 21,
+        'Opponent Game 1 Score': 15,
+        'Player Game 2 Score': 21,
+        'Opponent Game 2 Score': 12,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+    const wdWin = makeMatch({
+      competitionName: 'Multi Cup',
+      date: '2026-04-03',
       discipline: 'WD',
       partnerName: 'Sam',
       opponents: 'WD Foe',
@@ -1869,7 +2056,7 @@ describe('computeTournamentRecaps', () => {
       },
     })
 
-    const recap = computeTournamentRecaps([wsWin, wdWin]).recaps[0]!
+    const recap = computeTournamentRecaps([wsWeakerWin, wsWin, wdWeakerWin, wdWin]).recaps[0]!
     const wsHighlight = recap.disciplines
       .find((d) => d.discipline === 'WS')!
       .matches.find((m) => m.highlights.some((h) => h.id === 'your-strongest-beaten'))
@@ -2025,5 +2212,117 @@ describe('computeTournamentRecaps', () => {
     const ws = bad.disciplines[0]!
     expect(ws.ratingDelta).toBe(-20)
     expect(ws.ratingVsTypical).toBeNull()
+  })
+})
+
+describe('tournament recap display hierarchy', () => {
+  it('hoists a shared partner and hides match-level dates on single-day events', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'One Day Cup',
+        date: '2026-06-14',
+        discipline: 'OD',
+        partnerName: 'Sam',
+        opponents: 'Team A',
+      }),
+      makeMatch({
+        competitionName: 'One Day Cup',
+        date: '2026-06-14',
+        discipline: 'OD',
+        partnerName: 'Sam',
+        opponents: 'Team B',
+        outcome: 'loss',
+        scoreSummary: '15-21, 12-21',
+        raw: {
+          'Player Game 1 Score': 15,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 12,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+    ]
+
+    const od = computeTournamentRecaps(matches).recaps[0]!.disciplines[0]!
+    expect(od.partnerName).toBe('Sam')
+    expect(od.matches.every((m) => m.showPartnerName === false)).toBe(true)
+    expect(od.matches.every((m) => m.showDate === false)).toBe(true)
+    expect(od.matches.every((m) => m.partnerName === 'Sam')).toBe(true)
+  })
+
+  it('hoists a shared partner but shows match-level dates on multi-day events', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Weekend Cup',
+        date: '2026-06-14',
+        discipline: 'WD',
+        partnerName: 'Sam',
+        opponents: 'Team A',
+      }),
+      makeMatch({
+        competitionName: 'Weekend Cup',
+        date: '2026-06-15',
+        discipline: 'WD',
+        partnerName: 'Sam',
+        opponents: 'Team B',
+      }),
+    ]
+
+    const recap = computeTournamentRecaps(matches).recaps[0]!
+    expect(recap.dateFrom).toBe('2026-06-14')
+    expect(recap.dateTo).toBe('2026-06-15')
+
+    const wd = recap.disciplines[0]!
+    expect(wd.partnerName).toBe('Sam')
+    expect(wd.matches.every((m) => m.showPartnerName === false)).toBe(true)
+    expect(wd.matches.every((m) => m.showDate === true)).toBe(true)
+  })
+
+  it('shows partner on each match when partners vary within a discipline', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Mixed Partners',
+        date: '2026-06-14',
+        discipline: 'WD',
+        partnerName: 'Sam',
+        opponents: 'Team A',
+      }),
+      makeMatch({
+        competitionName: 'Mixed Partners',
+        date: '2026-06-14',
+        discipline: 'WD',
+        partnerName: 'Pat',
+        opponents: 'Team B',
+      }),
+    ]
+
+    const wd = computeTournamentRecaps(matches).recaps[0]!.disciplines[0]!
+    expect(wd.partnerName).toBeNull()
+    expect(wd.matches.map((m) => m.showPartnerName)).toEqual([true, true])
+    expect(wd.matches.map((m) => m.partnerName)).toEqual(['Sam', 'Pat'])
+    expect(wd.matches.every((m) => m.showDate === false)).toBe(true)
+  })
+
+  it('does not hoist partner for singles disciplines', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Singles Day',
+        date: '2026-06-14',
+        discipline: 'WS',
+        opponents: 'Player A',
+      }),
+      makeMatch({
+        competitionName: 'Singles Day',
+        date: '2026-06-14',
+        discipline: 'WS',
+        opponents: 'Player B',
+      }),
+    ]
+
+    const ws = computeTournamentRecaps(matches).recaps[0]!.disciplines[0]!
+    expect(ws.partnerName).toBeNull()
+    expect(ws.matches.every((m) => m.showPartnerName === false)).toBe(true)
+    expect(ws.matches.every((m) => m.showDate === false)).toBe(true)
   })
 })

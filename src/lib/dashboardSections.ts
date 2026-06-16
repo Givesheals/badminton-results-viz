@@ -2,8 +2,9 @@ export type DashboardSectionId =
   | 'best-wins'
   | 'opponent-matchups'
   | 'partner-chemistry'
+  | 'category-milestones'
 
-export type DashboardSectionTab = 'people'
+export type DashboardSectionTab = 'people' | 'all-time'
 
 export const DASHBOARD_SECTIONS: Record<
   DashboardSectionId,
@@ -15,6 +16,7 @@ export const DASHBOARD_SECTIONS: Record<
     label: 'Nemeses & favourite opponents',
   },
   'partner-chemistry': { tab: 'people', label: 'Partner chemistry' },
+  'category-milestones': { tab: 'all-time', label: 'Category milestones' },
 }
 
 export function isDashboardSectionId(value: string): value is DashboardSectionId {

@@ -48,8 +48,36 @@ Uploads expect the standard **Match History** export with columns like `Competit
 
 - Drag-and-drop or file picker for spreadsheets
 - **Load sample data** button for demos
-- Summary stats, player profile, season journey, tournament recap, partner chemistry, and more
+- Summary stats, player profile, season journey, tournament recap, partner chemistry, category milestones, and more
 - Data table preview of imported rows
+- Shareable PNG captures for several dashboard sections
+
+## Tech stack
+
+| Area | Choice |
+|------|--------|
+| UI | React 19, TypeScript, Tailwind CSS 4, Vite |
+| Charts | **Recharts** (most charts) and **@nivo/pie** (matches-by-level-and-age pie only) |
+| Spreadsheet parsing | SheetJS (`xlsx`) |
+| Share images | `html-to-image` |
+
+Chart library split is documented in [docs/charts.md](docs/charts.md) — including why the summary pie uses Nivo arc link labels instead of a Recharts legend.
+
+## Documentation
+
+Product and engineering specs live in [`docs/`](docs/):
+
+| Doc | Topic |
+|-----|--------|
+| [charts.md](docs/charts.md) | Recharts vs Nivo, pie callout behaviour |
+| [tournament-recap-spec.md](docs/tournament-recap-spec.md) | Weekend recap cards, partner/date display rules |
+| [tournament-progression-spec.md](docs/tournament-progression-spec.md) | Stage ladder, podium, milestones |
+| [category-milestone-claims-spec.md](docs/category-milestone-claims-spec.md) | Claim flow and localStorage |
+| [partner-chemistry-spec.md](docs/partner-chemistry-spec.md) | Partner chemistry chart |
+| [partner-highlights-spec.md](docs/partner-highlights-spec.md) | Partner highlights |
+| [opponent-matchups-spec.md](docs/opponent-matchups-spec.md) | Nemeses and favourite opponents |
+| [player-type-spec.md](docs/player-type-spec.md) | Player profile axes |
+| [rating-win-chance-table.md](docs/rating-win-chance-table.md) | Rating vs win chance reference |
 
 ## Scripts
 
@@ -70,12 +98,14 @@ Uploads expect the standard **Match History** export with columns like `Competit
 ## Project layout
 
 ```
+docs/             Product and engineering specs (see table above)
 src/
   components/     UI: upload, dashboard, charts, table
-  context/        Shared dataset state
+  content/        In-app help copy for dashboard sections
+  context/        Shared dataset and navigation state
   data/           Built-in sample dataset
-  hooks/          Chart data derived from rows
-  lib/            Spreadsheet parsing and stats
+  hooks/          Chart data, filters, milestone claims
+  lib/            Spreadsheet parsing, stats, recap logic
   types/          TypeScript types
 public/samples/   Example CSV you can upload
 ```

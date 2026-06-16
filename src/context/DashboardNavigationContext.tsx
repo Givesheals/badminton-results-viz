@@ -8,12 +8,19 @@ import {
   type ReactNode,
 } from 'react'
 import type { DashboardTabId } from '../components/dashboard/DashboardTabs'
+import { CATEGORY_MILESTONE_SECTION_ID } from '../lib/categoryMilestoneClaims'
 import {
   DASHBOARD_SECTIONS,
   dashboardSectionHref,
   isDashboardSectionId,
   type DashboardSectionId,
 } from '../lib/dashboardSections'
+import type { ProgressionStage } from '../lib/tournamentProgression'
+
+export type CategoryMilestoneNavigationTarget = {
+  comboKey: string
+  stage: ProgressionStage
+}
 
 type Navigator = {
   selectTab: (tab: DashboardTabId) => void
@@ -22,9 +29,12 @@ type Navigator = {
 
 type DashboardNavigationContextValue = {
   navigateToSection: (sectionId: DashboardSectionId) => void
+  navigateToCategoryMilestone: (comboKey: string, stage: ProgressionStage) => void
   registerNavigator: (navigator: Navigator | null) => void
   scrollTarget: DashboardSectionId | null
+  milestoneTarget: CategoryMilestoneNavigationTarget | null
   clearScrollTarget: () => void
+  clearMilestoneTarget: () => void
 }
 
 const DashboardNavigationContext =
@@ -32,6 +42,8 @@ const DashboardNavigationContext =
 
 export function DashboardNavigationProvider({ children }: { children: ReactNode }) {
   const [scrollTarget, setScrollTarget] = useState<DashboardSectionId | null>(null)
+  const [milestoneTarget, setMilestoneTarget] =
+    useState<CategoryMilestoneNavigationTarget | null>(null)
   const navigatorRef = useRef<Navigator | null>(null)
 
   const registerNavigator = useCallback((next: Navigator | null) => {
@@ -42,11 +54,30 @@ export function DashboardNavigationProvider({ children }: { children: ReactNode 
     const meta = DASHBOARD_SECTIONS[sectionId]
     window.history.replaceState(null, '', dashboardSectionHref(sectionId))
     setScrollTarget(sectionId)
+    setMilestoneTarget(null)
     navigatorRef.current?.selectTab(meta.tab)
   }, [])
 
+  const navigateToCategoryMilestone = useCallback(
+    (comboKey: string, stage: ProgressionStage) => {
+      window.history.replaceState(
+        null,
+        '',
+        dashboardSectionHref(CATEGORY_MILESTONE_SECTION_ID),
+      )
+      setScrollTarget(CATEGORY_MILESTONE_SECTION_ID)
+      setMilestoneTarget({ comboKey, stage })
+      navigatorRef.current?.selectTab(DASHBOARD_SECTIONS[CATEGORY_MILESTONE_SECTION_ID].tab)
+    },
+    [],
+  )
+
   const clearScrollTarget = useCallback(() => {
     setScrollTarget(null)
+  }, [])
+
+  const clearMilestoneTarget = useCallback(() => {
+    setMilestoneTarget(null)
   }, [])
 
   useEffect(() => {
@@ -62,6 +93,9 @@ export function DashboardNavigationProvider({ children }: { children: ReactNode 
       const hash = window.location.hash.slice(1)
       if (!isDashboardSectionId(hash)) return
       setScrollTarget(hash)
+      if (hash !== CATEGORY_MILESTONE_SECTION_ID) {
+        setMilestoneTarget(null)
+      }
       navigatorRef.current?.selectTab(DASHBOARD_SECTIONS[hash].tab)
     }
 
@@ -73,9 +107,12 @@ export function DashboardNavigationProvider({ children }: { children: ReactNode 
     <DashboardNavigationContext.Provider
       value={{
         navigateToSection,
+        navigateToCategoryMilestone,
         registerNavigator,
         scrollTarget,
+        milestoneTarget,
         clearScrollTarget,
+        clearMilestoneTarget,
       }}
     >
       {children}

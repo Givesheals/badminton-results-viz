@@ -4,6 +4,7 @@ import { getSeasonBounds } from './season'
 import {
   computeSeasonAccolades,
   computeSeasonPersonalBests,
+  computeSeasonSeniorCountyDebut,
   computeSeasonTrophyCabinet,
   placementFromBestStage,
 } from './seasonTrophyCabinet'
@@ -578,5 +579,92 @@ describe('computeSeasonAccolades', () => {
     expect(accolades.podium.first[0]!.competitionName).toBe('Winter Cup')
     expect(accolades.personalBests).toHaveLength(1)
     expect(accolades.personalBests[0]!.competitionName).toBe('Autumn Open')
+    expect(accolades.seniorCountyDebut).toBeNull()
+  })
+})
+
+function seniorCountyMatch(
+  overrides: Partial<NormalizedMatch> &
+    Pick<NormalizedMatch, 'competitionName' | 'date' | 'discipline'>,
+): NormalizedMatch {
+  return makeMatch({
+    tournamentCategory: 'county',
+    tournamentCategoryLabel: 'County',
+    competitionAgeGroup: 'Senior',
+    competitionSubAgeGroup: 'Senior',
+    raw: {
+      'Tournament Category': 'County',
+      Round: 'Division 1',
+      'Player Game 1 Score': 18,
+      'Opponent Game 1 Score': 21,
+      'Player Game 2 Score': 17,
+      'Opponent Game 2 Score': 21,
+      'Player Game 3 Score': null,
+      'Opponent Game 3 Score': null,
+      ...(overrides.raw ?? {}),
+    },
+    ...overrides,
+  })
+}
+
+describe('computeSeasonSeniorCountyDebut', () => {
+  it('returns debut when first-ever senior county event is in season', () => {
+    const debut = computeSeasonSeniorCountyDebut(
+      [
+        seniorCountyMatch({
+          competitionName: 'Senior County Championships',
+          date: '2025-11-08',
+          discipline: 'OD',
+          partnerName: 'Sam',
+        }),
+      ],
+      seasonBounds,
+    )
+
+    expect(debut).not.toBeNull()
+    expect(debut!.competitionName).toBe('Senior County Championships')
+    expect(debut!.title).toBe('First senior county appearance')
+  })
+
+  it('returns null when senior county debut was before the season', () => {
+    const debut = computeSeasonSeniorCountyDebut(
+      [
+        seniorCountyMatch({
+          competitionName: 'Senior County Championships',
+          date: '2024-11-08',
+          discipline: 'OD',
+        }),
+        seniorCountyMatch({
+          competitionName: 'Senior County League',
+          date: '2025-12-01',
+          discipline: 'WD',
+          partnerName: 'Sam',
+        }),
+      ],
+      seasonBounds,
+    )
+
+    expect(debut).toBeNull()
+  })
+
+  it('returns null when prior senior county exists in history', () => {
+    const debut = computeSeasonSeniorCountyDebut(
+      [
+        seniorCountyMatch({
+          competitionName: 'County League 2024',
+          date: '2024-06-01',
+          discipline: 'OD',
+        }),
+        seniorCountyMatch({
+          competitionName: 'Senior County Championships',
+          date: '2025-11-08',
+          discipline: 'WD',
+          partnerName: 'Sam',
+        }),
+      ],
+      seasonBounds,
+    )
+
+    expect(debut).toBeNull()
   })
 })

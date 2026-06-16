@@ -46,6 +46,7 @@ describe('sliceAccoladesForShare', () => {
         third: [trophy('third', 'Third A')],
       },
       personalBests: [personalBest('PB A'), personalBest('PB B')],
+      seniorCountyDebut: null,
       totalPodiumCount: 4,
     }
 
@@ -68,6 +69,7 @@ describe('sliceAccoladesForShare', () => {
         third: [],
       },
       personalBests: [personalBest('PB A'), personalBest('PB B')],
+      seniorCountyDebut: null,
       totalPodiumCount: 1,
     }
 

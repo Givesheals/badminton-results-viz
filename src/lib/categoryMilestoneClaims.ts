@@ -1,0 +1,82 @@
+import {
+  CATEGORY_COMPLETION_STAGES,
+  categoryAgeComboKey,
+  type CategoryCompletionMilestone,
+  type ProgressionStage,
+} from './tournamentProgression'
+
+export const CATEGORY_MILESTONE_SECTION_ID = 'category-milestones'
+
+export type RoundDisplayState = 'locked' | 'claimable' | 'claimed'
+
+export type CardDisplayState = 'active' | 'ready_to_claim' | 'complete'
+
+export type CategoryMilestoneClaimTarget = {
+  comboKey: string
+  stage: ProgressionStage
+}
+
+export function categoryMilestoneRoundKey(
+  comboKey: string,
+  stage: ProgressionStage,
+): string {
+  return `${comboKey}:${stage}`
+}
+
+export function categoryMilestoneCardKey(comboKey: string): string {
+  return `${comboKey}:card`
+}
+
+export function categoryMilestoneRowId(comboKey: string): string {
+  const encoded = encodeURIComponent(comboKey).replace(/%/g, '_')
+  return `category-milestone-row-${encoded}`
+}
+
+export function comboKeyFromRow(
+  tournamentCategoryLabel: string,
+  competitionAgeLabel: string | null,
+): string {
+  return categoryAgeComboKey({ tournamentCategoryLabel, competitionAgeLabel })
+}
+
+export function resolveRoundDisplayState(
+  achieved: boolean,
+  isClaimed: boolean,
+): RoundDisplayState {
+  if (!achieved) return 'locked'
+  if (!isClaimed) return 'claimable'
+  return 'claimed'
+}
+
+export function resolveCardDisplayState(
+  milestones: CategoryCompletionMilestone[],
+  comboKey: string,
+  claimedKeys: ReadonlySet<string>,
+): CardDisplayState {
+  if (claimedKeys.has(categoryMilestoneCardKey(comboKey))) return 'complete'
+
+  const allAchieved = milestones.every((milestone) => milestone.achieved)
+  if (!allAchieved) return 'active'
+
+  const allRoundsClaimed = milestones.every((milestone) =>
+    claimedKeys.has(categoryMilestoneRoundKey(comboKey, milestone.stage)),
+  )
+  if (allRoundsClaimed) return 'ready_to_claim'
+
+  return 'active'
+}
+
+export function buildCategoryMilestoneClaimTarget(
+  tournamentCategoryLabel: string,
+  competitionAgeLabel: string | null,
+  stage: ProgressionStage,
+): CategoryMilestoneClaimTarget | null {
+  if (!(CATEGORY_COMPLETION_STAGES as readonly ProgressionStage[]).includes(stage)) {
+    return null
+  }
+
+  return {
+    comboKey: categoryAgeComboKey({ tournamentCategoryLabel, competitionAgeLabel }),
+    stage,
+  }
+}

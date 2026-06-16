@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import type { LabelProps } from 'recharts'
 import { useProgressionChartLabels } from '../../hooks/useProgressionChartLabels'
 import {
   PROGRESSION_STAGE_COLORS,
@@ -26,6 +27,48 @@ type Row = {
 type Props = {
   data: Row[]
   tournamentCount: number
+}
+
+/** Scale the X-axis to the data so low distributions don't sit in a 0–100% gutter. */
+function percentDomain(rows: Row[]): [number, number] {
+  const maxPercent = Math.max(0, ...rows.map((row) => row.percent))
+  if (maxPercent >= 92 || maxPercent === 0) return [0, 100]
+
+  const padded = maxPercent * 1.05
+  const step = padded <= 25 ? 5 : padded <= 60 ? 10 : 5
+  return [0, Math.min(100, Math.ceil(padded / step) * step)]
+}
+
+function BarPercentLabel(props: LabelProps) {
+  const { x, y, width, height, value } = props
+  if (
+    x == null ||
+    y == null ||
+    width == null ||
+    height == null ||
+    typeof value !== 'number' ||
+    value <= 0
+  ) {
+    return null
+  }
+
+  const label = `${value}%`
+  const minWidth = 7 * label.length + 10
+  if (Number(width) < minWidth) return null
+
+  return (
+    <text
+      x={Number(x) + Number(width) - 8}
+      y={Number(y) + Number(height) / 2}
+      dy="0.35em"
+      textAnchor="end"
+      fill="var(--color-ink-50)"
+      fontSize={11}
+      fontWeight={500}
+    >
+      {label}
+    </text>
+  )
 }
 
 export function TournamentProgressionChart({ data, tournamentCount }: Props) {
@@ -60,7 +103,7 @@ export function TournamentProgressionChart({ data, tournamentCount }: Props) {
         <XAxis
           type="number"
           allowDecimals={false}
-          domain={[0, 100]}
+          domain={percentDomain(data)}
           tickFormatter={(value) => `${value}%`}
         />
         <YAxis
@@ -79,16 +122,7 @@ export function TournamentProgressionChart({ data, tournamentCount }: Props) {
           {data.map((entry) => (
             <Cell key={entry.stage} fill={PROGRESSION_STAGE_COLORS[entry.stage]} />
           ))}
-          <LabelList
-            dataKey="percent"
-            position="insideRight"
-            offset={8}
-            formatter={(value) =>
-              typeof value === 'number' && value >= 12 ? `${value}%` : ''
-            }
-            style={{ fontSize: 11, fontWeight: 500 }}
-            fill="var(--color-ink-50)"
-          />
+          <LabelList dataKey="percent" content={<BarPercentLabel />} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>

@@ -20,22 +20,26 @@ export function DisciplineMatchRow({ match }: Props) {
         }
       >
         <div className="min-w-0">
-          <p className="text-[10px] text-ink-500">
-            {formatDisplayDate(match.date)}
-            {match.roundLabel ? (
-              <>
-                <span aria-hidden className="text-ink-300">
-                  {' '}
-                  ·{' '}
-                </span>
+          {(match.showDate || match.roundLabel) && (
+            <p className="text-[10px] text-ink-500">
+              {match.showDate ? formatDisplayDate(match.date) : null}
+              {match.showDate && match.roundLabel ? (
+                <>
+                  <span aria-hidden className="text-ink-300">
+                    {' '}
+                    ·{' '}
+                  </span>
+                  <span className="italic">{match.roundLabel}</span>
+                </>
+              ) : match.roundLabel ? (
                 <span className="italic">{match.roundLabel}</span>
-              </>
-            ) : null}
-          </p>
+              ) : null}
+            </p>
+          )}
           <p className="truncate text-sm font-medium text-ink-900" title={match.opponents}>
             vs {match.opponents}
           </p>
-          {match.partnerName && (
+          {match.showPartnerName && match.partnerName && (
             <p className="truncate text-xs text-ink-600" title={`Partner: ${match.partnerName}`}>
               with {match.partnerName}
             </p>

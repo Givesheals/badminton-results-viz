@@ -1,6 +1,7 @@
 import type { MatchOutcome, NormalizedMatch } from '../types/matchHistory'
 import {
   computeBestWins,
+  countEligibleRatedWinsInMatches,
   findBestWinInMatches,
   findBigUpsetWinsInMatches,
   rankBestWinRow,
@@ -20,17 +21,21 @@ import { getMatchGames, getMatchVolume } from './matchScores'
 import { getMatchExpectedWinProbability, getPlayerRating } from './ratings'
 import {
   bestStageFromMatches,
+  competitionAgeLabelFromMatch,
   earnedKnockoutOrBetterDepth,
   eventHasCompetitiveWin,
   formatMatchStageLabel,
   getMatchRound,
   isCountyTournament,
   isProgressionTournament,
+  isSeniorCountyMatch,
   medianRank,
   parseRoundToStage,
   hasGroupMatchWins,
   qualifiesForThirdPlace,
   PROGRESSION_STAGE_LABELS,
+  SENIOR_COUNTY_DEBUT_DETAIL,
+  SENIOR_COUNTY_DEBUT_TITLE,
   STAGE_RANK,
   type ProgressionStage,
 } from './tournamentProgression'
@@ -59,6 +64,8 @@ export type DisciplineMatchRecap = {
   date: string
   opponents: string
   partnerName: string | null
+  showPartnerName: boolean
+  showDate: boolean
   outcome: MatchOutcome
   scoreSummary: string
   roundLabel: string | null
@@ -68,6 +75,7 @@ export type DisciplineMatchRecap = {
 export type DisciplineRecap = {
   discipline: string
   disciplineLabel: string
+  partnerName: string | null
   ratingStart: number | null
   ratingEnd: number | null
   ratingDelta: number | null
@@ -152,6 +160,7 @@ export type PodiumCelebration = {
   discipline: string
   disciplineLabel: string
   tournamentCategoryLabel: string
+  competitionAgeLabel: string | null
   subtitle?: string
 }
 
@@ -161,6 +170,7 @@ export type MilestoneCelebration = {
   discipline: string
   disciplineLabel: string
   tournamentCategoryLabel: string
+  competitionAgeLabel: string | null
   stage: ProgressionStage
   stageLabel: string
   title: string
@@ -173,6 +183,13 @@ export type StageReachCelebration = {
   discipline: string
   disciplineLabel: string
   tournamentCategoryLabel: string
+  competitionAgeLabel: string | null
+}
+
+export type SeniorCountyDebutCelebration = {
+  title: string
+  detail: string
+  disciplines: { discipline: string; disciplineLabel: string }[]
 }
 
 export type RecapCelebrations = {
@@ -181,6 +198,7 @@ export type RecapCelebrations = {
   jointThirds: PodiumCelebration[]
   stageReaches: StageReachCelebration[]
   milestones: MilestoneCelebration[]
+  seniorCountyDebut: SeniorCountyDebutCelebration | null
 }
 
 export type TournamentRecap = {
@@ -224,6 +242,14 @@ function historyKey(categoryLabel: string, discipline: string): string {
 function categoryLabelForDiscipline(matches: NormalizedMatch[], discipline: string): string {
   const sample = matches.find((m) => m.discipline === discipline)
   return sample?.tournamentCategoryLabel ?? 'Other'
+}
+
+function competitionAgeLabelForDiscipline(
+  matches: NormalizedMatch[],
+  discipline: string,
+): string | null {
+  const sample = matches.find((m) => m.discipline === discipline)
+  return sample ? competitionAgeLabelFromMatch(sample) : null
 }
 
 function disciplineHistoryMatches(
@@ -544,6 +570,7 @@ function buildCelebrations(
     if (d.bestStage !== 'winner' && d.bestStage !== 'runner-up') continue
 
     const categoryLabel = categoryLabelForDiscipline(weekendMatches, d.discipline)
+    const competitionAgeLabel = competitionAgeLabelForDiscipline(weekendMatches, d.discipline)
     const priorMax = priorMaxStageRank(
       categoryLabel,
       d.discipline,
@@ -556,6 +583,7 @@ function buildCelebrations(
       discipline: d.discipline,
       disciplineLabel: d.disciplineLabel,
       tournamentCategoryLabel: categoryLabel,
+      competitionAgeLabel,
     }
 
     if (d.bestStage === 'winner') {
@@ -597,6 +625,7 @@ function buildCelebrations(
     if (!hasJointThirdPodium(d, weekendMatches)) continue
 
     const categoryLabel = categoryLabelForDiscipline(weekendMatches, d.discipline)
+    const competitionAgeLabel = competitionAgeLabelForDiscipline(weekendMatches, d.discipline)
     const priorMax = priorMaxStageRank(
       categoryLabel,
       d.discipline,
@@ -609,6 +638,7 @@ function buildCelebrations(
       discipline: d.discipline,
       disciplineLabel: d.disciplineLabel,
       tournamentCategoryLabel: categoryLabel,
+      competitionAgeLabel,
     }
 
     if (priorMax < STAGE_RANK['semi-final']) {
@@ -622,6 +652,7 @@ function buildCelebrations(
 
   for (const d of disciplines) {
     const categoryLabel = categoryLabelForDiscipline(weekendMatches, d.discipline)
+    const competitionAgeLabel = competitionAgeLabelForDiscipline(weekendMatches, d.discipline)
     if (categoryLabel === 'Other') continue
 
     const isCategoryDebut = !hasPriorCategoryDisciplineEvent(
@@ -643,6 +674,7 @@ function buildCelebrations(
       discipline: d.discipline,
       disciplineLabel: d.disciplineLabel,
       tournamentCategoryLabel: categoryLabel,
+      competitionAgeLabel,
       stage: debutStage,
       stageLabel:
         d.bestStageLabel ?? PROGRESSION_STAGE_LABELS[debutStage],
@@ -653,6 +685,7 @@ function buildCelebrations(
 
   for (const d of disciplines) {
     const categoryLabel = categoryLabelForDiscipline(weekendMatches, d.discipline)
+    const competitionAgeLabel = competitionAgeLabelForDiscipline(weekendMatches, d.discipline)
     const disciplineMatches = categoryDisciplineMatches(
       weekendMatches,
       categoryLabel,
@@ -718,6 +751,7 @@ function buildCelebrations(
           discipline: d.discipline,
           disciplineLabel: d.disciplineLabel,
           tournamentCategoryLabel: categoryLabel,
+          competitionAgeLabel,
         })
         if (STAGE_RANK[newReach] >= currentRank) {
           depthCardCoversMilestones = true
@@ -739,6 +773,7 @@ function buildCelebrations(
           discipline: d.discipline,
           disciplineLabel: d.disciplineLabel,
           tournamentCategoryLabel: categoryLabel,
+          competitionAgeLabel,
           stage: d.bestStage,
           stageLabel,
           title: 'Personal best',
@@ -755,6 +790,7 @@ function buildCelebrations(
           discipline: d.discipline,
           disciplineLabel: d.disciplineLabel,
           tournamentCategoryLabel: categoryLabel,
+          competitionAgeLabel,
           stage: d.bestStage,
           stageLabel,
           title: 'Matched your best',
@@ -794,6 +830,67 @@ function buildCelebrations(
     jointThirds,
     stageReaches,
     milestones: dedupedMilestones,
+    seniorCountyDebut: buildSeniorCountyDebutCelebration(
+      weekendMatches,
+      allWeekends,
+      currentWeekendKey,
+    ),
+  }
+}
+
+function seniorCountyDisciplines(
+  weekendMatches: NormalizedMatch[],
+): { discipline: string; disciplineLabel: string }[] {
+  const seen = new Set<string>()
+  const disciplines: { discipline: string; disciplineLabel: string }[] = []
+
+  for (const match of weekendMatches) {
+    if (!isCompetitiveMatch(match) || !isSeniorCountyMatch(match)) continue
+    if (seen.has(match.discipline)) continue
+    seen.add(match.discipline)
+    disciplines.push({
+      discipline: match.discipline,
+      disciplineLabel: match.disciplineLabel,
+    })
+  }
+
+  disciplines.sort((a, b) => a.discipline.localeCompare(b.discipline))
+  return disciplines
+}
+
+function hasPriorSeniorCountyOutsideWeekend(
+  allWeekends: WeekendBucket[],
+  currentWeekendKey: string,
+): boolean {
+  for (const weekend of allWeekends) {
+    if (weekend.key === currentWeekendKey) continue
+    if (
+      weekend.matches.some(
+        (m) => isCompetitiveMatch(m) && isSeniorCountyMatch(m),
+      )
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+function buildSeniorCountyDebutCelebration(
+  weekendMatches: NormalizedMatch[],
+  allWeekends: WeekendBucket[],
+  currentWeekendKey: string,
+): SeniorCountyDebutCelebration | null {
+  const disciplines = seniorCountyDisciplines(weekendMatches)
+  if (disciplines.length === 0) return null
+
+  if (hasPriorSeniorCountyOutsideWeekend(allWeekends, currentWeekendKey)) {
+    return null
+  }
+
+  return {
+    title: SENIOR_COUNTY_DEBUT_TITLE,
+    detail: SENIOR_COUNTY_DEBUT_DETAIL,
+    disciplines,
   }
 }
 
@@ -907,6 +1004,8 @@ function buildDisciplineTimeline(
   weekendMatches: NormalizedMatch[],
   priorMatches: NormalizedMatch[],
   partnerChemistryHighlights: PartnerChemistryHighlight[],
+  sharedPartner: string | null,
+  showMatchDates: boolean,
 ): DisciplineTimeline {
   const eventCallouts: RecapSummaryCard[] = []
   const bestWin = findBestWinInMatches(disciplineMatches)
@@ -943,7 +1042,7 @@ function buildDisciplineTimeline(
     highlightsByKey.set(key, list)
   }
 
-  if (bestWin != null) {
+  if (bestWin != null && countEligibleRatedWinsInMatches(disciplineMatches) > 1) {
     const allTimeRank = allTimeStrengthRank(bestWin, weekendMatches, priorMatches)
     addHighlight(recapMatchKey(bestWin.match), {
       id: 'your-strongest-beaten',
@@ -972,6 +1071,8 @@ function buildDisciplineTimeline(
         date: match.date,
         opponents: match.opponents,
         partnerName: match.partnerName,
+        showPartnerName: match.partnerName != null && sharedPartner == null,
+        showDate: showMatchDates,
         outcome: match.outcome,
         scoreSummary: match.scoreSummary,
         roundLabel: formatMatchStageLabel(getMatchRound(match)),
@@ -1231,12 +1332,21 @@ function compareToTypical(
   return null
 }
 
+function uniformPartnerName(matches: NormalizedMatch[]): string | null {
+  const competitive = matches.filter(isCompetitiveMatch)
+  const partners = competitive.map((m) => m.partnerName).filter(Boolean)
+  if (partners.length === 0 || partners.length !== competitive.length) return null
+  const unique = new Set(partners)
+  return unique.size === 1 ? partners[0]! : null
+}
+
 function buildDisciplineRecaps(
   weekendMatches: NormalizedMatch[],
   allWeekends: WeekendBucket[],
   currentKey: string,
   priorMatches: NormalizedMatch[],
   partnerChemistryHighlights: PartnerChemistryHighlight[],
+  showMatchDates: boolean,
 ): DisciplineRecap[] {
   const disciplines = new Map<string, NormalizedMatch[]>()
   for (const match of weekendMatches.filter(isCompetitiveMatch)) {
@@ -1304,9 +1414,12 @@ function buildDisciplineRecaps(
       const matchWins = disciplineMatches.filter((m) => m.outcome === 'win').length
       const matchLosses = disciplineMatches.filter((m) => m.outcome === 'loss').length
 
+      const sharedPartner = uniformPartnerName(disciplineMatches)
+
       const recap: DisciplineRecap = {
         discipline,
         disciplineLabel: sample.disciplineLabel,
+        partnerName: sharedPartner,
         ratingStart,
         ratingEnd,
         ratingDelta,
@@ -1326,6 +1439,8 @@ function buildDisciplineRecaps(
         weekendMatches,
         priorMatches,
         partnerChemistryHighlights,
+        sharedPartner,
+        showMatchDates,
       )
 
       return {
@@ -1455,6 +1570,7 @@ function buildWeekendRecap(
   overallWinPercent: number | null,
 ): TournamentRecap {
   const { dateFrom, dateTo } = weekendDateRange(bucket.matches)
+  const showMatchDates = dateFrom !== dateTo
   const weekendMatchKeys = new Set(bucket.matches.map((m) => recapMatchKey(m)))
   const priorMatches = allCompetitive.filter(
     (m) => !weekendMatchKeys.has(recapMatchKey(m)),
@@ -1470,6 +1586,7 @@ function buildWeekendRecap(
     bucket.key,
     priorMatches,
     partnerChemistryHighlights,
+    showMatchDates,
   )
   const bestWin = findBestWinInMatches(bucket.matches)
   const freakFlags = detectFreakFlags(bucket.matches)

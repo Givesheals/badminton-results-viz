@@ -21,7 +21,7 @@ const TAB_STORAGE_KEY = 'dashboard-active-tab'
 const TABS: { id: DashboardTabId; label: string; subtitle: string }[] = [
   {
     id: 'latest-event',
-    label: 'Latest event',
+    label: 'Events',
     subtitle: 'How did my last tournament go?',
   },
   {
@@ -31,7 +31,7 @@ const TABS: { id: DashboardTabId; label: string; subtitle: string }[] = [
   },
   {
     id: 'all-time',
-    label: 'All time',
+    label: 'Player summary',
     subtitle: 'My career in numbers — and how I play',
   },
   {
@@ -65,7 +65,7 @@ export function DashboardTabs({ importedAt, panels }: Props) {
   const tabRefs = useRef<Partial<Record<DashboardTabId, HTMLButtonElement>>>({})
   const suppressSectionScrollRef = useRef(false)
   const [activeTab, setActiveTab] = useState<DashboardTabId>(readStoredTab)
-  const { registerNavigator, scrollTarget, clearScrollTarget } =
+  const { registerNavigator, scrollTarget, clearScrollTarget, clearMilestoneTarget } =
     useDashboardNavigation()
 
   const selectTab = useCallback((id: DashboardTabId) => {
@@ -82,6 +82,7 @@ export function DashboardTabs({ importedAt, panels }: Props) {
     suppressSectionScrollRef.current = true
     selectTab(DEFAULT_TAB)
     clearScrollTarget()
+    clearMilestoneTarget()
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         document
@@ -90,7 +91,7 @@ export function DashboardTabs({ importedAt, panels }: Props) {
         suppressSectionScrollRef.current = false
       })
     })
-  }, [clearScrollTarget, importedAt, selectTab])
+  }, [clearMilestoneTarget, clearScrollTarget, importedAt, selectTab])
 
   useEffect(() => {
     if (!scrollTarget || suppressSectionScrollRef.current) return
