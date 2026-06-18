@@ -57,11 +57,11 @@ Uploads expect the standard **Match History** export with columns like `Competit
 | Area | Choice |
 |------|--------|
 | UI | React 19, TypeScript, Tailwind CSS 4, Vite |
-| Charts | **Recharts** (most charts) and **@nivo/pie** (matches-by-level-and-age pie only) |
+| Charts | Recharts |
 | Spreadsheet parsing | SheetJS (`xlsx`) |
 | Share images | `html-to-image` |
 
-Chart library split is documented in [docs/charts.md](docs/charts.md) — including why the summary pie uses Nivo arc link labels instead of a Recharts legend.
+Chart usage is documented in [docs/charts.md](docs/charts.md).
 
 ## Documentation
 
@@ -69,7 +69,7 @@ Product and engineering specs live in [`docs/`](docs/):
 
 | Doc | Topic |
 |-----|--------|
-| [charts.md](docs/charts.md) | Recharts vs Nivo, pie callout behaviour |
+| [charts.md](docs/charts.md) | Recharts usage, summary pie layout |
 | [tournament-recap-spec.md](docs/tournament-recap-spec.md) | Weekend recap cards, partner/date display rules |
 | [tournament-progression-spec.md](docs/tournament-progression-spec.md) | Stage ladder, podium, milestones |
 | [category-milestone-claims-spec.md](docs/category-milestone-claims-spec.md) | Claim flow and localStorage |

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { NormalizedMatch } from '../types/matchHistory'
 import {
   computeSeasonJourney,
+  computeSeasonPlaySummary,
   formatClaimQuarterMessage,
   QUARTER_TOURNAMENT_THRESHOLD,
   resolveQuarterDisplayState,
@@ -65,8 +66,8 @@ describe('computeSeasonJourney', () => {
     const journey = computeSeasonJourney(matches, ref)
     const q1 = journey.quarters.find((q) => q.key === '2025-26-Q1')!
     const q2 = journey.quarters.find((q) => q.key === '2025-26-Q2')!
-    expect(q1.tournamentCount).toBe(3)
-    expect(q2.tournamentCount).toBe(1)
+    expect(q1.tournamentCount).toBe(2)
+    expect(q2.tournamentCount).toBe(2)
     expect(q1.displayState).toBe('closed')
     expect(q2.displayState).toBe('in_progress')
   })
@@ -83,7 +84,7 @@ describe('computeSeasonJourney', () => {
     expect(q1.displayState).toBe('claimed')
   })
 
-  it('builds weekend story strip entries', () => {
+  it('builds a play summary from distinct weekend counts', () => {
     const journey = computeSeasonJourney(
       [
         makeMatch({ competitionName: 'Spring Open', date: '2025-10-01' }),
@@ -91,8 +92,13 @@ describe('computeSeasonJourney', () => {
       ],
       ref,
     )
-    expect(journey.weekends).toHaveLength(2)
-    expect(journey.weekendCount).toBe(2)
+    expect(journey.playSummary).toEqual([
+      {
+        tournamentCategoryLabel: 'Bronze',
+        competitionAgeLabel: 'Senior',
+        count: 2,
+      },
+    ])
   })
 
   it('includes season accolades data', () => {
@@ -110,5 +116,79 @@ describe('computeSeasonJourney', () => {
     expect(journey.accolades).toBeDefined()
     expect(journey.accolades.podium.first).toHaveLength(1)
     expect(journey.accolades.podium.first[0]!.competitionName).toBe('Autumn Open')
+  })
+})
+
+describe('computeSeasonPlaySummary', () => {
+  it('counts distinct competitions per age and category', () => {
+    const summary = computeSeasonPlaySummary([
+      makeMatch({ competitionName: 'A', tournamentCategoryLabel: 'Bronze' }),
+      makeMatch({ competitionName: 'A', tournamentCategoryLabel: 'Bronze', date: '2025-10-16' }),
+      makeMatch({ competitionName: 'B', tournamentCategoryLabel: 'Bronze' }),
+      makeMatch({ competitionName: 'C', tournamentCategoryLabel: 'Bronze' }),
+      makeMatch({
+        competitionName: 'D',
+        tournamentCategoryLabel: 'Copper',
+        tournamentCategory: 'copper',
+      }),
+      makeMatch({
+        competitionName: 'E',
+        tournamentCategoryLabel: 'Gold',
+        tournamentCategory: 'gold',
+        competitionAgeGroup: 'Junior',
+        competitionSubAgeGroup: 'U17',
+      }),
+      makeMatch({
+        competitionName: 'F',
+        tournamentCategoryLabel: 'Gold',
+        tournamentCategory: 'gold',
+        competitionAgeGroup: 'Junior',
+        competitionSubAgeGroup: 'U17',
+      }),
+    ])
+    expect(summary).toEqual([
+      {
+        tournamentCategoryLabel: 'Copper',
+        competitionAgeLabel: 'Senior',
+        count: 1,
+      },
+      {
+        tournamentCategoryLabel: 'Bronze',
+        competitionAgeLabel: 'Senior',
+        count: 3,
+      },
+      {
+        tournamentCategoryLabel: 'Gold',
+        competitionAgeLabel: 'U17',
+        count: 2,
+      },
+    ])
+  })
+
+  it('formats county weekends as structured entries', () => {
+    const summary = computeSeasonPlaySummary([
+      makeMatch({
+        competitionName: 'County A',
+        tournamentCategoryLabel: 'County',
+        tournamentCategory: 'county',
+      }),
+      makeMatch({
+        competitionName: 'County B',
+        tournamentCategoryLabel: 'County',
+        tournamentCategory: 'county',
+        date: '2025-11-01',
+      }),
+    ])
+    expect(summary).toEqual([
+      {
+        tournamentCategoryLabel: 'County',
+        competitionAgeLabel: 'Senior',
+        count: 2,
+      },
+    ])
+  })
+
+  it('returns an empty array when there is no competitive activity', () => {
+    expect(computeSeasonPlaySummary([])).toEqual([])
   })
 })

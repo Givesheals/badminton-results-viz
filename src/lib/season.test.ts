@@ -5,7 +5,7 @@ import {
   getSeasonBounds,
   getSeasonForDate,
   getSeasonForReferenceDate,
-  getSeasonQuarterBounds,
+  getInSeasonQuarterSegments,
   getSeasonQuarterPhase,
   isDateInSeason,
   listSeasonQuarters,
@@ -50,46 +50,48 @@ describe('season quarters', () => {
   const seasonId = '2025-26'
 
   it('maps months to season quarters', () => {
+    expect(seasonQuarterNumber(new Date('2025-09-15T12:00:00'))).toBe(1)
     expect(seasonQuarterNumber(new Date('2025-10-15T12:00:00'))).toBe(1)
     expect(seasonQuarterNumber(new Date('2026-01-10T12:00:00'))).toBe(2)
     expect(seasonQuarterNumber(new Date('2026-04-01T12:00:00'))).toBe(3)
     expect(seasonQuarterNumber(new Date('2026-07-01T12:00:00'))).toBe(4)
+    expect(seasonQuarterNumber(new Date('2026-09-15T12:00:00'))).toBe(1)
   })
 
   it('lists four quarter slots with bounds', () => {
     const quarters = listSeasonQuarters(seasonId)
     expect(quarters).toHaveLength(4)
-    expect(quarters[0].startDate).toBe('2025-10-01')
-    expect(quarters[0].endDate).toBe('2025-12-31')
-    expect(quarters[1].startDate).toBe('2026-01-01')
-    expect(quarters[3].endDate).toBe('2026-09-30')
+    expect(quarters[0].label).toContain('Sep–Nov')
+    expect(quarters[1].label).toContain('Dec–Feb')
+    expect(quarters[2].label).toContain('Mar–May')
+    expect(quarters[3].label).toContain('Jun–Aug')
+    expect(quarters[0].startDate).toBe('2025-09-01')
+    expect(quarters[0].endDate).toBe('2025-11-30')
+    expect(quarters[1].startDate).toBe('2025-12-01')
+    expect(quarters[3].endDate).toBe('2026-08-31')
   })
 
   it('keys dates to season quarter ids', () => {
     expect(seasonQuarterKeyForDate('2025-10-01', seasonId)).toBe('2025-26-Q1')
     expect(seasonQuarterKeyForDate('2026-02-14', seasonId)).toBe('2025-26-Q2')
+    expect(seasonQuarterKeyForDate('2026-09-15', seasonId)).toBe('2025-26-Q1')
   })
 
   it('classifies quarter phase from reference date', () => {
-    const q1 = getSeasonQuarterBounds(seasonId, 1)!
-    expect(
-      getSeasonQuarterPhase(
-        { startDate: q1.startDate, endDate: q1.endDate },
-        new Date('2025-09-15'),
-      ),
-    ).toBe('future')
-    expect(
-      getSeasonQuarterPhase(
-        { startDate: q1.startDate, endDate: q1.endDate },
-        new Date('2025-10-01'),
-      ),
-    ).toBe('active')
-    expect(
-      getSeasonQuarterPhase(
-        { startDate: q1.startDate, endDate: q1.endDate },
-        new Date('2026-01-01'),
-      ),
-    ).toBe('past')
+    const q1 = listSeasonQuarters(seasonId)[0]!
+    expect(getSeasonQuarterPhase(q1, new Date('2025-09-15'))).toBe('future')
+    expect(getSeasonQuarterPhase(q1, new Date('2025-10-01'))).toBe('active')
+    expect(getSeasonQuarterPhase(q1, new Date('2026-01-01'))).toBe('past')
+    expect(getSeasonQuarterPhase(q1, new Date('2026-09-15'))).toBe('active')
+    expect(getSeasonQuarterPhase(q1, new Date('2026-10-01'))).toBe('past')
+  })
+
+  it('clips Q1 to in-season windows at the start and end of the season', () => {
+    const segments = getInSeasonQuarterSegments(seasonId, 1)
+    expect(segments).toEqual([
+      { startDate: '2025-10-01', endDate: '2025-11-30' },
+      { startDate: '2026-09-01', endDate: '2026-09-30' },
+    ])
   })
 })
 

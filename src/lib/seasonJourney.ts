@@ -1,15 +1,10 @@
+import { compareCompetitionAgeOldestFirst } from './competitionAge'
 import { isCompetitiveMatch } from './matchExclusions'
 import {
-  bestStageFromMatchesForAchievements,
-  PROGRESSION_STAGE_LABELS,
-  type ProgressionStage,
+  competitionAgeLabelFromMatch,
 } from './tournamentProgression'
 import type { NormalizedMatch } from '../types/matchHistory'
-import {
-  buildSeasonRatingSeries,
-  seasonRatingDeltaSinceStart,
-  type SeasonRatingSeries,
-} from './seasonRatings'
+import { buildSeasonRatingSeries, type SeasonRatingSeries } from './seasonRatings'
 import {
   filterMatchesInSeason,
   formatSeasonRangeSubtitle,
@@ -26,6 +21,7 @@ import {
   computeSeasonAccolades,
   type SeasonAccoladesData,
 } from './seasonTrophyCabinet'
+import { computeCountySeason, type CountySeasonData } from './countySeason'
 
 export const QUARTER_TOURNAMENT_THRESHOLD = 4
 export const QUARTER_ACHIEVEMENT_ID = 'quarter-on-board'
@@ -52,40 +48,37 @@ export type SeasonQuarterJourney = {
   closedMessage: string
 }
 
-export type SeasonWeekendStory = {
-  competitionName: string
-  date: string
-  matchCount: number
-  wins: number
-  losses: number
-  bestStage: ProgressionStage | null
-  bestStageLabel: string | null
-  /** 0–1 position on season timeline */
-  position: number
-}
-
 export type SeasonJourneyData = {
   seasonId: string
   bounds: SeasonBounds
   title: string
   rangeSubtitle: string
-  weekendCount: number
   matchCount: number
-  headline: string | null
+  playSummary: SeasonPlaySummaryEntry[]
   quarters: SeasonQuarterJourney[]
   ratingSeries: SeasonRatingSeries[]
-  weekends: SeasonWeekendStory[]
   accolades: SeasonAccoladesData
+  countySeason: CountySeasonData | null
   seasonStartMs: number
   seasonEndMs: number
 }
+
+const TOURNAMENT_LEVEL_PRIORITY = new Map([
+  ['copper', 0],
+  ['bronze', 1],
+  ['silver', 2],
+  ['gold', 3],
+  ['other', 4],
+])
 
 function parseSeasonMs(isoDate: string): number {
   return new Date(`${isoDate}T12:00:00`).getTime()
 }
 
-function countDistinctCompetitions(matches: NormalizedMatch[]): number {
-  return new Set(matches.map((m) => m.competitionName)).size
+function tournamentLevelSortRank(label: string): number {
+  const normalized = label.trim().toLowerCase()
+  if (normalized === 'county') return Number.POSITIVE_INFINITY
+  return TOURNAMENT_LEVEL_PRIORITY.get(normalized) ?? 4
 }
 
 function tournamentsByQuarter(
@@ -104,6 +97,71 @@ function tournamentsByQuarter(
   }
 
   return map
+}
+
+type PlaySummaryBucket = {
+  tournamentCategoryLabel: string
+  competitionAgeLabel: string | null
+  count: number
+}
+
+export type SeasonPlaySummaryEntry = PlaySummaryBucket
+
+export function seasonPlaySummaryEntryKey(
+  entry: Pick<SeasonPlaySummaryEntry, 'tournamentCategoryLabel' | 'competitionAgeLabel'>,
+): string {
+  return `${entry.tournamentCategoryLabel}\0${entry.competitionAgeLabel ?? ''}`
+}
+
+function comparePlaySummaryBuckets(a: PlaySummaryBucket, b: PlaySummaryBucket): number {
+  const ageCompare = compareCompetitionAgeOldestFirst(
+    a.competitionAgeLabel,
+    b.competitionAgeLabel,
+  )
+  if (ageCompare !== 0) return ageCompare
+
+  const levelRankA = tournamentLevelSortRank(a.tournamentCategoryLabel)
+  const levelRankB = tournamentLevelSortRank(b.tournamentCategoryLabel)
+  if (levelRankA !== levelRankB) return levelRankA - levelRankB
+
+  return a.tournamentCategoryLabel.localeCompare(b.tournamentCategoryLabel)
+}
+
+export function computeSeasonPlaySummary(
+  seasonMatches: NormalizedMatch[],
+): SeasonPlaySummaryEntry[] {
+  const competitive = seasonMatches.filter(isCompetitiveMatch)
+  if (competitive.length === 0) return []
+
+  const byCompetition = new Map<string, NormalizedMatch[]>()
+  for (const match of competitive) {
+    const bucket = byCompetition.get(match.competitionName) ?? []
+    bucket.push(match)
+    byCompetition.set(match.competitionName, bucket)
+  }
+
+  const comboCounts = new Map<string, PlaySummaryBucket>()
+
+  for (const eventMatches of byCompetition.values()) {
+    const sorted = [...eventMatches].sort((a, b) => a.date.localeCompare(b.date))
+    const sample = sorted[0]!
+    const tournamentCategoryLabel = sample.tournamentCategoryLabel
+    const competitionAgeLabel = competitionAgeLabelFromMatch(sample)
+    const comboKey = `${tournamentCategoryLabel}\0${competitionAgeLabel ?? ''}`
+
+    const existing = comboCounts.get(comboKey)
+    if (existing) {
+      existing.count += 1
+    } else {
+      comboCounts.set(comboKey, {
+        tournamentCategoryLabel,
+        competitionAgeLabel,
+        count: 1,
+      })
+    }
+  }
+
+  return [...comboCounts.values()].sort(comparePlaySummaryBuckets)
 }
 
 export function resolveQuarterDisplayState(
@@ -138,76 +196,6 @@ export function formatClosedQuarterMessage(tournamentCount: number): string {
   }
   const label = tournamentCount === 1 ? 'tournament' : 'tournaments'
   return `That's a wrap — ${tournamentCount} ${label} on the board this quarter.`
-}
-
-function buildHeadline(
-  seasonMatches: NormalizedMatch[],
-  ratingSeries: SeasonRatingSeries[],
-  matchCount: number,
-): string | null {
-  const weekends = countDistinctCompetitions(
-    seasonMatches.filter(isCompetitiveMatch),
-  )
-  const ratingGain = seasonRatingDeltaSinceStart(ratingSeries)
-
-  if (ratingGain && ratingGain.delta > 0) {
-    const sign = ratingGain.delta >= 0 ? '+' : ''
-    return `${sign}${Math.round(ratingGain.delta)} ${ratingGain.label.toLowerCase()} rating since October`
-  }
-
-  if (weekends > 0) {
-    const weekendLabel = weekends === 1 ? 'weekend' : 'weekends'
-    const matchLabel = matchCount === 1 ? 'match' : 'matches'
-    return `${weekends} ${weekendLabel} (${matchCount} ${matchLabel}) on the board this season`
-  }
-
-  return null
-}
-
-function buildWeekendStories(
-  seasonMatches: NormalizedMatch[],
-  bounds: SeasonBounds,
-): SeasonWeekendStory[] {
-  const competitive = seasonMatches.filter(isCompetitiveMatch)
-  const byCompetition = new Map<string, NormalizedMatch[]>()
-
-  for (const match of competitive) {
-    const bucket = byCompetition.get(match.competitionName) ?? []
-    bucket.push(match)
-    byCompetition.set(match.competitionName, bucket)
-  }
-
-  const startMs = parseSeasonMs(bounds.startDate)
-  const endMs = parseSeasonMs(bounds.endDate)
-  const span = Math.max(endMs - startMs, 1)
-
-  const stories: SeasonWeekendStory[] = [...byCompetition.entries()].map(
-    ([competitionName, eventMatches]) => {
-      const wins = eventMatches.filter((m) => m.outcome === 'win').length
-      const losses = eventMatches.filter((m) => m.outcome === 'loss').length
-      const date = eventMatches.reduce(
-        (max, m) => (m.date > max ? m.date : max),
-        eventMatches[0]?.date ?? '',
-      )
-      const bestStage = bestStageFromMatchesForAchievements(eventMatches)
-      const dateMs = parseSeasonMs(date)
-      const position = Math.min(1, Math.max(0, (dateMs - startMs) / span))
-
-      return {
-        competitionName,
-        date,
-        matchCount: eventMatches.length,
-        wins,
-        losses,
-        bestStage,
-        bestStageLabel: bestStage ? PROGRESSION_STAGE_LABELS[bestStage] : null,
-        position,
-      }
-    },
-  )
-
-  stories.sort((a, b) => a.date.localeCompare(b.date))
-  return stories
 }
 
 export function computeSeasonJourney(
@@ -257,13 +245,12 @@ export function computeSeasonJourney(
     bounds,
     title: formatSeasonTitle(seasonId),
     rangeSubtitle: formatSeasonRangeSubtitle(bounds),
-    weekendCount: countDistinctCompetitions(competitive),
     matchCount: competitive.length,
-    headline: buildHeadline(seasonMatches, ratingSeries, competitive.length),
+    playSummary: computeSeasonPlaySummary(seasonMatches),
     quarters,
     ratingSeries,
-    weekends: buildWeekendStories(seasonMatches, bounds),
     accolades: computeSeasonAccolades(matches, bounds),
+    countySeason: computeCountySeason(seasonMatches, seasonId),
     seasonStartMs: parseSeasonMs(bounds.startDate),
     seasonEndMs: parseSeasonMs(bounds.endDate),
   }

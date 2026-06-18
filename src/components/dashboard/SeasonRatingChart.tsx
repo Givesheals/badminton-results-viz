@@ -9,7 +9,14 @@ import {
   YAxis,
 } from 'recharts'
 import { formatDisplayDate } from '../../lib/formatDate'
-import type { SeasonRatingPoint, SeasonRatingSeries } from '../../lib/seasonRatings'
+import {
+  formatSeasonRatingDeltaInParens,
+  ratingAxisDomainAndTicks,
+  seasonRatingDeltaTone,
+  seasonRatingDeltas,
+  type SeasonRatingPoint,
+  type SeasonRatingSeries,
+} from '../../lib/seasonRatings'
 
 type Props = {
   series: SeasonRatingSeries[]
@@ -32,14 +39,11 @@ export function SeasonRatingChart({
   } | null>(null)
 
   const hasAnyPoints = series.some((s) => s.points.length > 0)
+  const deltas = useMemo(() => seasonRatingDeltas(series), [series])
 
-  const yDomain = useMemo(() => {
+  const { domain: yDomain, ticks: yTicks } = useMemo(() => {
     const ratings = series.flatMap((s) => s.points.map((p) => p.rating))
-    if (ratings.length === 0) return [0, 1000] as [number, number]
-    const min = Math.min(...ratings)
-    const max = Math.max(...ratings)
-    const pad = Math.max(20, Math.round((max - min) * 0.1) || 20)
-    return [Math.floor(min - pad), Math.ceil(max + pad)] as [number, number]
+    return ratingAxisDomainAndTicks(ratings)
   }, [series])
 
   if (!hasAnyPoints) {
@@ -52,19 +56,27 @@ export function SeasonRatingChart({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-4 text-sm">
-        {series.map((row) => (
-          <span key={row.family} className="inline-flex items-center gap-2 text-ink-700">
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: row.color }}
-            />
-            {row.label}
-            {row.points.length === 0 ? (
-              <span className="text-ink-500">· No data yet</span>
-            ) : null}
-          </span>
-        ))}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        {deltas.map((row) => {
+          const tone = seasonRatingDeltaTone(row.delta)
+          const toneClass =
+            tone === 'gain'
+              ? 'text-gain-700'
+              : tone === 'loss'
+                ? 'text-loss-700'
+                : 'text-ink-700'
+
+          return (
+            <span key={row.family} className={`inline-flex items-center gap-2 ${toneClass}`}>
+              <span
+                className="inline-block h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: row.color }}
+                aria-hidden
+              />
+              {row.label} {formatSeasonRatingDeltaInParens(row.delta)}
+            </span>
+          )
+        })}
       </div>
 
       <ResponsiveContainer width="100%" height={220}>
@@ -79,7 +91,13 @@ export function SeasonRatingChart({
             tickFormatter={(ms) => formatSeasonAxisTick(Number(ms))}
             tickCount={6}
           />
-          <YAxis domain={yDomain} tick={{ fontSize: 11 }} width={44} />
+          <YAxis
+            domain={yDomain}
+            ticks={yTicks}
+            allowDecimals={false}
+            tick={{ fontSize: 11 }}
+            width={44}
+          />
           {!shareMode ? <Tooltip content={<RatingTooltip />} /> : null}
           {series.map((row) =>
             row.points.length > 0 ? (

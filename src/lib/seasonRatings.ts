@@ -104,18 +104,71 @@ export function buildSeasonRatingSeries(
   })
 }
 
-export function seasonRatingDeltaSinceStart(
-  series: SeasonRatingSeries[],
-): { family: DisciplineFamily; label: string; delta: number } | null {
-  let best: { family: DisciplineFamily; label: string; delta: number } | null = null
+export type SeasonRatingDelta = {
+  family: DisciplineFamily
+  label: string
+  color: string
+  delta: number | null
+}
 
-  for (const row of series) {
-    if (row.points.length < 2) continue
-    const delta = row.points[row.points.length - 1]!.rating - row.points[0]!.rating
-    if (best == null || delta > best.delta) {
-      best = { family: row.family, label: row.label, delta }
+export function seasonRatingDeltas(series: SeasonRatingSeries[]): SeasonRatingDelta[] {
+  return series.map((row) => {
+    if (row.points.length < 2) {
+      return { family: row.family, label: row.label, color: row.color, delta: null }
     }
+    const delta =
+      row.points[row.points.length - 1]!.rating - row.points[0]!.rating
+    return { family: row.family, label: row.label, color: row.color, delta }
+  })
+}
+
+export function formatSeasonRatingDelta(delta: number): string {
+  const rounded = Math.round(delta)
+  if (rounded > 0) return `+${rounded}`
+  return String(rounded)
+}
+
+export type SeasonRatingDeltaTone = 'gain' | 'loss' | 'neutral'
+
+export function seasonRatingDeltaTone(delta: number | null): SeasonRatingDeltaTone {
+  if (delta == null) return 'neutral'
+  const rounded = Math.round(delta)
+  if (rounded > 0) return 'gain'
+  if (rounded < 0) return 'loss'
+  return 'neutral'
+}
+
+export function formatSeasonRatingDeltaInParens(delta: number | null): string {
+  if (delta == null) return '(—)'
+  const rounded = Math.round(delta)
+  if (rounded > 0) return `(+${rounded})`
+  if (rounded < 0) return `(${rounded})`
+  return '(±0)'
+}
+
+export function ratingAxisDomainAndTicks(
+  ratings: number[],
+): { domain: [number, number]; ticks: number[] } {
+  if (ratings.length === 0) {
+    return { domain: [0, 1000], ticks: [0, 250, 500, 750, 1000] }
   }
 
-  return best
+  const min = Math.min(...ratings)
+  const max = Math.max(...ratings)
+  const pad = Math.max(20, Math.round((max - min) * 0.1) || 20)
+  const rawMin = min - pad
+  const rawMax = max + pad
+
+  const domainMin = Math.floor(rawMin / 25) * 25
+  const domainMax = Math.ceil(rawMax / 25) * 25
+
+  const ticks: number[] = []
+  for (let tick = domainMin; tick <= domainMax; tick += 25) {
+    ticks.push(tick)
+  }
+
+  return {
+    domain: [domainMin, domainMax],
+    ticks: ticks.length > 0 ? ticks : [domainMin, domainMax],
+  }
 }

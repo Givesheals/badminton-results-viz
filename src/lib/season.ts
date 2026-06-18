@@ -20,7 +20,7 @@ export type SeasonQuarterSlot = {
   endDate: string
 }
 
-const QUARTER_SHORT_LABELS = ['Oct–Dec', 'Jan–Mar', 'Apr–Jun', 'Jul–Sep'] as const
+const QUARTER_SHORT_LABELS = ['Sep–Nov', 'Dec–Feb', 'Mar–May', 'Jun–Aug'] as const
 
 function parseIsoDate(isoDate: string): Date | null {
   const date = new Date(`${isoDate}T12:00:00`)
@@ -119,9 +119,9 @@ export function filterMatchesInSeason<T extends { date: string }>(
 /** Season quarter 1–4 for a date inside the season calendar. */
 export function seasonQuarterNumber(date: Date): 1 | 2 | 3 | 4 {
   const month = date.getMonth()
-  if (month >= 9 && month <= 11) return 1
-  if (month >= 0 && month <= 2) return 2
-  if (month >= 3 && month <= 5) return 3
+  if (month >= 8 && month <= 10) return 1
+  if (month === 11 || month <= 1) return 2
+  if (month >= 2 && month <= 4) return 3
   return 4
 }
 
@@ -147,27 +147,89 @@ export function getSeasonQuarterBounds(
   switch (quarter) {
     case 1:
       return {
-        startDate: toIsoDate(new Date(startYear, 9, 1, 12, 0, 0, 0)),
-        endDate: toIsoDate(lastDayOfMonth(startYear, 11)),
+        startDate: toIsoDate(new Date(startYear, 8, 1, 12, 0, 0, 0)),
+        endDate: toIsoDate(lastDayOfMonth(startYear, 10)),
       }
     case 2:
       return {
-        startDate: toIsoDate(new Date(startYear + 1, 0, 1, 12, 0, 0, 0)),
-        endDate: toIsoDate(lastDayOfMonth(startYear + 1, 2)),
+        startDate: toIsoDate(new Date(startYear, 11, 1, 12, 0, 0, 0)),
+        endDate: toIsoDate(lastDayOfMonth(startYear + 1, 1)),
       }
     case 3:
       return {
-        startDate: toIsoDate(new Date(startYear + 1, 3, 1, 12, 0, 0, 0)),
-        endDate: toIsoDate(lastDayOfMonth(startYear + 1, 5)),
+        startDate: toIsoDate(new Date(startYear + 1, 2, 1, 12, 0, 0, 0)),
+        endDate: toIsoDate(lastDayOfMonth(startYear + 1, 4)),
       }
     case 4:
       return {
-        startDate: toIsoDate(new Date(startYear + 1, 6, 1, 12, 0, 0, 0)),
-        endDate: toIsoDate(lastDayOfMonth(startYear + 1, 8)),
+        startDate: toIsoDate(new Date(startYear + 1, 5, 1, 12, 0, 0, 0)),
+        endDate: toIsoDate(lastDayOfMonth(startYear + 1, 7)),
       }
     default:
       return null
   }
+}
+
+function clipRangeToSeason(
+  rangeStart: Date,
+  rangeEnd: Date,
+  seasonBounds: SeasonBounds,
+): { startDate: string; endDate: string } | null {
+  const seasonStart = parseIsoDate(seasonBounds.startDate)
+  const seasonEnd = parseIsoDate(seasonBounds.endDate)
+  if (!seasonStart || !seasonEnd) return null
+
+  const start = rangeStart < seasonStart ? seasonStart : rangeStart
+  const end = rangeEnd > seasonEnd ? seasonEnd : rangeEnd
+  if (start > end) return null
+
+  return { startDate: toIsoDate(start), endDate: toIsoDate(end) }
+}
+
+/** In-season date windows for a quarter (Q1 can appear at the start and end of the season). */
+export function getInSeasonQuarterSegments(
+  seasonId: string,
+  quarter: 1 | 2 | 3 | 4,
+): { startDate: string; endDate: string }[] {
+  const startYear = parseSeasonId(seasonId)
+  const seasonBounds = getSeasonBounds(seasonId)
+  if (startYear == null || seasonBounds == null) return []
+
+  const ranges: { start: Date; end: Date }[] = []
+
+  switch (quarter) {
+    case 1:
+      ranges.push(
+        { start: new Date(startYear, 8, 1, 12, 0, 0, 0), end: lastDayOfMonth(startYear, 10) },
+        { start: new Date(startYear + 1, 8, 1, 12, 0, 0, 0), end: lastDayOfMonth(startYear + 1, 8) },
+      )
+      break
+    case 2:
+      ranges.push({
+        start: new Date(startYear, 11, 1, 12, 0, 0, 0),
+        end: lastDayOfMonth(startYear + 1, 1),
+      })
+      break
+    case 3:
+      ranges.push({
+        start: new Date(startYear + 1, 2, 1, 12, 0, 0, 0),
+        end: lastDayOfMonth(startYear + 1, 4),
+      })
+      break
+    case 4:
+      ranges.push({
+        start: new Date(startYear + 1, 5, 1, 12, 0, 0, 0),
+        end: lastDayOfMonth(startYear + 1, 7),
+      })
+      break
+    default:
+      break
+  }
+
+  return ranges
+    .map((range) => clipRangeToSeason(range.start, range.end, seasonBounds))
+    .filter((segment): segment is { startDate: string; endDate: string } => segment != null)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate))
 }
 
 export function listSeasonQuarters(seasonId: string): SeasonQuarterSlot[] {
@@ -194,18 +256,36 @@ export function seasonQuarterKeyForDate(dateText: string, seasonId: string): str
 export type SeasonQuarterPhase = 'future' | 'active' | 'past'
 
 export function getSeasonQuarterPhase(
-  quarter: Pick<SeasonQuarterSlot, 'startDate' | 'endDate'>,
+  quarter: Pick<SeasonQuarterSlot, 'quarter' | 'startDate' | 'endDate' | 'key'>,
   referenceDate = new Date(),
 ): SeasonQuarterPhase {
   const ref = new Date(referenceDate)
   ref.setHours(12, 0, 0, 0)
-  const start = parseIsoDate(quarter.startDate)
-  const end = parseIsoDate(quarter.endDate)
-  if (!start || !end) return 'past'
 
-  if (ref < start) return 'future'
-  if (ref > end) return 'past'
-  return 'active'
+  const seasonId = quarter.key.replace(/-Q\d$/, '')
+  const segments = getInSeasonQuarterSegments(seasonId, quarter.quarter)
+  const ranges =
+    segments.length > 0
+      ? segments
+      : [{ startDate: quarter.startDate, endDate: quarter.endDate }]
+
+  if (ranges.some((range) => {
+    const start = parseIsoDate(range.startDate)
+    const end = parseIsoDate(range.endDate)
+    return start != null && end != null && ref >= start && ref <= end
+  })) {
+    return 'active'
+  }
+
+  const firstStart = parseIsoDate(ranges[0]!.startDate)
+  const lastEnd = parseIsoDate(ranges[ranges.length - 1]!.endDate)
+  if (!firstStart || !lastEnd) return 'past'
+
+  if (ref < firstStart) return 'future'
+  if (ref > lastEnd) return 'past'
+
+  // Between non-contiguous segments for the same quarter (e.g. Q1 after Nov, before Sep).
+  return 'past'
 }
 
 export function dateToSeasonMs(isoDate: string): number | null {

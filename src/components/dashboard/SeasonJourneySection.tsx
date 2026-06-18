@@ -9,9 +9,10 @@ import { useShareCapture } from '../../hooks/useShareCapture'
 import { SHARE_ACCOLADE_LIMIT } from '../../lib/shareLimits'
 import { SectionHeading } from '../ui/SectionHeading'
 import { ShareButton } from '../ui/ShareButton'
+import { SeasonCountyCard } from './SeasonCountyCard'
+import { SeasonPlaySummary } from './SeasonPlaySummary'
 import { SeasonQuarterBadges } from './SeasonQuarterBadges'
 import { SeasonRatingChart } from './SeasonRatingChart'
-import { SeasonStoryStrip } from './SeasonStoryStrip'
 import { SeasonTrophyCabinet } from './SeasonTrophyCabinet'
 
 type Props = {
@@ -65,10 +66,6 @@ export function SeasonJourneySection({ allMatches }: Props) {
         </SectionHeading>
         <p className="mt-1 text-sm text-ink-600">{journey.rangeSubtitle}</p>
 
-        {journey.headline && (
-          <p className="mt-3 text-sm font-medium text-brand-700">{journey.headline}</p>
-        )}
-
         {!hasSeasonActivity && (
           <p className="mt-3 text-sm text-ink-700">
             Your season board is ready — play and re-upload your sheet to watch it fill in.
@@ -77,18 +74,32 @@ export function SeasonJourneySection({ allMatches }: Props) {
       </header>
 
       <section className={SEASON_CARD_CLASS}>
-        <h4 className="text-sm font-medium text-ink-800">Performance</h4>
-        <p className="mt-0.5 text-xs text-ink-500">Quarterly presence</p>
+        <h4 className="text-sm font-medium text-ink-800">Presence</h4>
+        <SeasonPlaySummary entries={journey.playSummary} />
+        <p
+          className={`text-xs text-ink-500 ${
+            journey.playSummary.length > 0 ? 'mt-6' : 'mt-0.5'
+          }`}
+        >
+          Quarterly presence
+        </p>
         <div className="mt-4">
           <SeasonQuarterBadges
             quarters={journey.quarters}
             onClaim={(key) => claimQuarter(key)}
           />
         </div>
-        <div className="mt-8">
-          <SeasonStoryStrip weekends={journey.weekends} />
-        </div>
       </section>
+
+      {journey.countySeason && (
+        <section className={SEASON_CARD_CLASS}>
+          <h4 className="text-sm font-medium text-ink-800">County season</h4>
+          <p className="mt-0.5 text-xs text-ink-500">Shires and senior county</p>
+          <div className="mt-4">
+            <SeasonCountyCard countySeason={journey.countySeason} />
+          </div>
+        </section>
+      )}
 
       <section className={SEASON_CARD_CLASS}>
         <div className="flex items-center justify-between gap-3">
@@ -136,4 +147,3 @@ export function SeasonJourneySection({ allMatches }: Props) {
     </div>
   )
 }
-

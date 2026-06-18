@@ -115,4 +115,4 @@ Shown when the player has **no prior senior county matches** anywhere in their u
 - [Category milestone claims](category-milestone-claims-spec.md) — claim flow from recap links
 - [Partner chemistry](partner-chemistry-spec.md) — overperformance math used for discipline callouts
 - [Opponent matchups](opponent-matchups-spec.md) — nemesis / favourite-opponent milestones in recap
-- [Charts](charts.md) — Recharts vs Nivo (summary pie is separate from recap UI)
+- [Charts](charts.md) — Recharts usage (summary pie is separate from recap UI)

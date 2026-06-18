@@ -30,7 +30,7 @@ function summaryStatus(displayState: SeasonQuarterDisplayState): SummaryStatus {
 }
 
 function isExpanded(quarter: SeasonQuarterJourney): boolean {
-  return quarter.displayState === 'ready_to_claim' || quarter.phase === 'active'
+  return quarter.displayState === 'in_progress' && quarter.phase === 'active'
 }
 
 export function SeasonQuarterBadges({ quarters, onClaim }: Props) {
@@ -69,9 +69,7 @@ export function SeasonQuarterBadges({ quarters, onClaim }: Props) {
   )
 
   const activeIndex = quarters.findIndex((q) => q.phase === 'active')
-  const expandedQuarters = quarters.filter(
-    (quarter) => isExpanded(quarter) || quarter.key === claimingKey,
-  )
+  const expandedQuarters = quarters.filter((quarter) => isExpanded(quarter))
 
   return (
     <div className="space-y-4">
@@ -96,6 +94,9 @@ export function SeasonQuarterBadges({ quarters, onClaim }: Props) {
                 <SummaryIcon
                   status={summaryStatus(quarter.displayState)}
                   celebrate={quarter.key === celebratingKey}
+                  quarterKey={quarter.key}
+                  shortLabel={quarter.shortLabel}
+                  onClaim={handleClaim}
                 />
               )}
             </div>
@@ -121,12 +122,7 @@ export function SeasonQuarterBadges({ quarters, onClaim }: Props) {
       {expandedQuarters.length > 0 && (
         <div className="space-y-2" role="list" aria-label="Quarter details">
           {expandedQuarters.map((quarter) => (
-            <QuarterCardExpanded
-              key={quarter.key}
-              quarter={quarter}
-              isExiting={quarter.key === claimingKey}
-              onClaim={() => handleClaim(quarter.key)}
-            />
+            <QuarterCardExpanded key={quarter.key} quarter={quarter} />
           ))}
         </div>
       )}
@@ -163,9 +159,15 @@ function ClaimingSummaryIcon() {
 function SummaryIcon({
   status,
   celebrate = false,
+  quarterKey,
+  shortLabel,
+  onClaim,
 }: {
   status: SummaryStatus
   celebrate?: boolean
+  quarterKey: string
+  shortLabel: string
+  onClaim: (quarterKey: string) => void
 }) {
   if (status === 'tick') {
     return (
@@ -190,12 +192,22 @@ function SummaryIcon({
 
   if (status === 'claimable') {
     return (
-      <span
-        className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-100 text-sm font-bold leading-none text-brand-700"
-        aria-label="Ready to claim"
+      <button
+        type="button"
+        className="rounded-full transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+        aria-label={`Claim ${shortLabel} quarter`}
+        onClick={() => onClaim(quarterKey)}
       >
-        ?
-      </span>
+        <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-brand-100 text-sm font-bold leading-none text-brand-700 ring-2 ring-brand-300">
+          <span
+            className="pointer-events-none absolute inset-0 rounded-full border-2 border-brand-400 animate-quarter-claim-ring"
+            aria-hidden
+          />
+          <span className="animate-milestone-claim-wobble" aria-hidden>
+            ?
+          </span>
+        </span>
+      </button>
     )
   }
 
@@ -217,37 +229,16 @@ function SummaryIcon({
   )
 }
 
-function QuarterCardExpanded({
-  quarter,
-  isExiting,
-  onClaim,
-}: {
-  quarter: SeasonQuarterJourney
-  isExiting: boolean
-  onClaim: () => void
-}) {
-  const { displayState, tournamentCount, threshold } = quarter
+function QuarterCardExpanded({ quarter }: { quarter: SeasonQuarterJourney }) {
+  const { tournamentCount, threshold } = quarter
   const progress = Math.min(1, tournamentCount / threshold)
-  const canClaim = displayState === 'ready_to_claim' && !isExiting
   const range = monthRangeFromLabel(quarter.label)
-
-  const ariaLabel =
-    displayState === 'ready_to_claim'
-      ? `${quarter.shortLabel} ${range} — ready to claim`
-      : `${quarter.shortLabel} ${range} — ${tournamentCount} of ${threshold} tournaments`
-
-  const frameClass = canClaim || isExiting
-    ? 'border-brand-400 bg-brand-50/80 ring-2 ring-brand-200'
-    : 'border-brand-300 bg-white ring-2 ring-brand-200'
 
   return (
     <div
       role="listitem"
-      className={`origin-center overflow-hidden rounded-xl border p-4 shadow-sm transition ${frameClass} ${
-        isExiting ? 'pointer-events-none animate-quarter-card-exit' : ''
-      }`}
-      aria-label={ariaLabel}
-      aria-busy={isExiting}
+      className="origin-center overflow-hidden rounded-xl border border-brand-300 bg-white p-4 shadow-sm ring-2 ring-brand-200"
+      aria-label={`${quarter.shortLabel} ${range} — ${tournamentCount} of ${threshold} tournaments`}
     >
       <p className="text-sm font-semibold text-ink-900">
         {quarter.shortLabel} · {range}
@@ -264,16 +255,6 @@ function QuarterCardExpanded({
           {tournamentCount}/{threshold}
         </span>
       </div>
-
-      {canClaim && (
-        <button
-          type="button"
-          onClick={onClaim}
-          className="mt-3 w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 sm:w-auto"
-        >
-          Claim
-        </button>
-      )}
     </div>
   )
 }

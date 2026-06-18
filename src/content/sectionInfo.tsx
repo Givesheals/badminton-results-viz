@@ -153,15 +153,16 @@ export const seasonJourneyInfo = (
       track how many distinct tournaments you played in each season quarter.
     </p>
     <p>
-      Play at least four tournaments in a quarter, then tap <strong>Claim</strong> to mark that
-      quarter on your board. Only competitive matches count; walkovers and no-match rows are
+      Play at least four tournaments in a quarter, then tap the <strong>?</strong> badge to mark
+      that quarter on your board. Only competitive matches count; walkovers and no-match rows are
       excluded.
     </p>
     <p>
-      Tap a dot on the season weekends strip to see results and how far you went at that event.
+      The county season card summarises shires and senior county fixtures from your sheet. Win and
+      loss records, partners, and standout wins are real; county team names and league-table
+      positions are illustrative because that data is not in the export.
     </p>
     <p>
-      This season&apos;s accolades lead with podium finishes — winners, runner-up, and 3rd place
       (semi-final exits with at least one competitive win, or bronze finals after a real win
       earlier in the event). Small round robins and walkover-only paths do not award 3rd place.
       Personal bests list deeper non-podium runs that beat your prior best at that tournament
