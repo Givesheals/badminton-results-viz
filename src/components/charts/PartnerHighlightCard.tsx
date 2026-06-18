@@ -49,12 +49,14 @@ export function PartnerHighlightCard({
     .filter(Boolean)
     .join(' ')
 
+  const eventCountLabel = `${row.eventCount} event${row.eventCount === 1 ? '' : 's'} together`
+
   const content = (
     <>
-      <h4 className="font-medium text-ink-900">{row.partnerName}</h4>
-      <p className="mt-0.5 text-xs text-ink-500">
-        {row.eventCount} event{row.eventCount === 1 ? '' : 's'} together
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <h4 className="min-w-0 font-medium text-ink-900">{row.partnerName}</h4>
+        <p className="shrink-0 text-right text-xs text-ink-500">{eventCountLabel}</p>
+      </div>
 
       {chips.length > 0 ? (
         <ul className="mt-3 flex flex-wrap gap-2">
@@ -65,13 +67,6 @@ export function PartnerHighlightCard({
       ) : (
         <p className="mt-3 text-sm text-ink-600">No classified finishes in this selection.</p>
       )}
-
-      {row.typicalLabel != null ? (
-        <p className="mt-3 text-sm text-ink-600">
-          Typical finish:{' '}
-          <span className="font-medium text-ink-800">{row.typicalLabel}</span>
-        </p>
-      ) : null}
     </>
   )
 

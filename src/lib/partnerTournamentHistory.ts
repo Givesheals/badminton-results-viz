@@ -39,9 +39,6 @@ export type PartnerTournamentStageGroup = {
 
 export const INITIAL_TOURNAMENTS_PER_STAGE = 8
 
-/** Stage groups at or above this rank start expanded in the history panel. */
-export const DEFAULT_EXPANDED_MIN_STAGE_RANK = STAGE_RANK['semi-final']
-
 export function matchesForDisciplineFamily(
   matches: NormalizedMatch[],
   family: DisciplineFamily,

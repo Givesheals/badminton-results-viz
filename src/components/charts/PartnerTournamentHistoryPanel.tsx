@@ -5,7 +5,6 @@ import { getMatchGames } from '../../lib/matchScores'
 import {
   buildPartnerTournamentHistory,
   countPartnerTournamentEvents,
-  DEFAULT_EXPANDED_MIN_STAGE_RANK,
   INITIAL_TOURNAMENTS_PER_STAGE,
   type PartnerTournamentEvent,
   type PartnerTournamentMatchRow,
@@ -14,7 +13,6 @@ import {
 import {
   isLightGroupProgressionStage,
   PROGRESSION_STAGE_COLORS,
-  STAGE_RANK,
 } from '../../lib/tournamentProgression'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { DisciplineChip } from '../discipline/DisciplineChip'
@@ -53,7 +51,7 @@ function PartnerTournamentHistoryPanelBody({
   disciplineCode,
   variant = 'standalone',
 }: Props) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(variant === 'embedded')
   const panelId = useId()
 
   const groups = useMemo(
@@ -158,8 +156,7 @@ function StageGroupSection({
   group: PartnerTournamentStageGroup
   disciplineCode: string
 }) {
-  const defaultOpen = STAGE_RANK[group.stage] >= DEFAULT_EXPANDED_MIN_STAGE_RANK
-  const [expanded, setExpanded] = useState(defaultOpen)
+  const [expanded, setExpanded] = useState(false)
   const [showAll, setShowAll] = useState(false)
 
   const visibleTournaments = showAll

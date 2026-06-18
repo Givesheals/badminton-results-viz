@@ -35,7 +35,7 @@ export const PROGRESSION_STAGE_LABELS: Record<ProgressionStage, string> = {
   knockout: 'Knockout',
   'quarter-final': 'Quarter-final',
   'semi-final': 'Semi-final',
-  'runner-up': 'Runner-up',
+  'runner-up': 'Final',
   winner: 'Winner',
 }
 
