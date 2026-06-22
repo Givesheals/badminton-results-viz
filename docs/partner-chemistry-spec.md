@@ -200,7 +200,7 @@ Track metadata for UI copy:
 
 ## Controls and filter options
 
-This section exposes **three** controls. Other global filters (competition, discipline, partner) exist elsewhere on the dashboard but are **not** wired here — always “all”.
+This section exposes **four** controls. Other global filters (competition, discipline, partner) exist elsewhere on the dashboard but are **not** wired here — always “all”.
 
 ### 1. Time
 
@@ -243,6 +243,17 @@ The minimum-threshold label should switch: “Minimum **games**” vs “Minimum
 - **Range:** integer **1–99** (clamp out-of-range input)  
 - **Purpose:** Hide partners with too little sample size
 
+### 4. Show
+
+Presentation mode for the chart. Default: **Chemistry**.
+
+| Value | Label | Chart behaviour |
+|-------|--------|-----------------|
+| `chemistry` | Chemistry | Bars = \|overperformance\|; sort by overperformance desc; axis “Wins vs Expected” |
+| `partnershipRating` | Partnership rating | Bars = avg team rating + chemistry (rating pts); sort by adjusted rating desc; axis “Partnership rating”; decomposition at bar end e.g. `663 (637+26)` |
+
+Partnership-rating mode only includes threshold-met partners with enough rating data for team rating and chemistry. Partners without rating data stay in the summary count but do not get a bar.
+
 ### Filter summary line
 
 Show how many partners are visible vs total, e.g.  
@@ -254,7 +265,9 @@ Also show match count for the **time-filtered full dataset** (all match types), 
 
 ## Chart UI specification
 
-### No gradient on bars
+### Chemistry mode (default)
+
+#### No gradient on bars
 
 Bars use **solid fills**, not a colour gradient. If you are comparing to another chart in the product that uses gradients, Partner Chemistry does not.
 
@@ -326,7 +339,25 @@ On hover:
 |-----------|---------|
 | No chemistry-eligible matches in filtered set | No doubles matches with a partner in the current selection. |
 | Eligible matches but no partner meets threshold | No partners meet the minimum threshold in this selection. |
-| Partners meet threshold but none have overperformance | No rated doubles matches to compare against expectation. |
+| Partners meet threshold but none have overperformance (chemistry mode only) | No rated doubles matches to compare against expectation. |
+
+### Partnership rating mode
+
+When **Show** = Partnership rating:
+
+| Aspect | Behaviour |
+|--------|-----------|
+| **Bar length** | `adjustedPartnershipRating` = average team rating + chemistry in rating points |
+| **Team rating** | Mean of `(player rating + partner rating) / 2` across rated matches |
+| **Chemistry adjustment** | Win-% overperformance converted to rating points (~0.6% per point near even matchups) |
+| **X-axis domain** | Data-driven floor/ceiling rounded to 25-point steps |
+| **Chart height** | `max(200px, numberOfBars × 52 + 48)` |
+| **Sort** | `adjustedPartnershipRating` desc, then `games` desc |
+| **Bar labels** | `{total} ({teamRating}{±chemistryPts})` e.g. **663** *(637+26)* — primary value semibold, parenthetical lighter |
+| **Y-axis subtitle** | Match count only (two lines) |
+| **Colours** | Green/red/grey from chemistry sign |
+| **Partners plotted** | Threshold-met partners with rated matches only |
+| **Tooltip** | `You {avg} · Partner {avg} · Chemistry {±%} ({±pts} pts) · Partnership {total}` |
 
 ### Section copy (reference)
 

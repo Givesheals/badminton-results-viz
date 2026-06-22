@@ -5,6 +5,7 @@ import { useShareCapture } from '../../hooks/useShareCapture'
 import { countActiveSectionFilters } from '../../lib/filterCounts'
 import {
   computePartnerChemistry,
+  type PartnerChemistryDisplayMode,
   type PartnerChemistryFilterMode,
 } from '../../lib/partnerChemistry'
 import type { FilterOptions } from '../../types/filters'
@@ -36,21 +37,23 @@ export function PartnerChemistrySection({
   const [filters, setFilters] = useState<MatchFilters>(DEFAULT_MATCH_FILTERS)
   const [minThreshold, setMinThreshold] = useState(DEFAULT_MIN_THRESHOLD)
   const [filterMode, setFilterMode] = useState<PartnerChemistryFilterMode>('matches')
+  const [displayMode, setDisplayMode] = useState<PartnerChemistryDisplayMode>('chemistry')
 
   useResetFiltersOnImport(importedAt, setFilters)
 
   const matches = useSectionMatches(allMatches, filters)
 
   const chemistry = useMemo(
-    () => computePartnerChemistry(matches, minThreshold, filterMode),
-    [matches, minThreshold, filterMode],
+    () => computePartnerChemistry(matches, minThreshold, filterMode, displayMode),
+    [matches, minThreshold, filterMode, displayMode],
   )
 
   const thresholdLabel = filterMode === 'matches' ? 'matches' : 'competitions'
   const activeCount =
     countActiveSectionFilters(filters, [...fields]) +
     (filterMode !== 'matches' ? 1 : 0) +
-    (minThreshold !== DEFAULT_MIN_THRESHOLD ? 1 : 0)
+    (minThreshold !== DEFAULT_MIN_THRESHOLD ? 1 : 0) +
+    (displayMode !== 'chemistry' ? 1 : 0)
 
   const {
     shareRef,
@@ -93,6 +96,7 @@ export function PartnerChemistrySection({
               setFilters(DEFAULT_MATCH_FILTERS)
               setMinThreshold(DEFAULT_MIN_THRESHOLD)
               setFilterMode('matches')
+              setDisplayMode('chemistry')
             }}
           >
             <fieldset className="flex flex-wrap items-end gap-3 text-sm">
@@ -105,6 +109,19 @@ export function PartnerChemistrySection({
                 idPrefix="chemistry"
                 className="contents"
               />
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-ink-700">Show</span>
+                <select
+                  value={displayMode}
+                  onChange={(e) =>
+                    setDisplayMode(e.target.value as PartnerChemistryDisplayMode)
+                  }
+                  className="w-full min-w-[9.5rem] appearance-none rounded-lg border border-ink-100 bg-white py-2 pl-3 pr-8 text-sm text-ink-900 shadow-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                >
+                  <option value="chemistry">Chemistry</option>
+                  <option value="partnershipRating">Partnership rating</option>
+                </select>
+              </label>
               <label className="block">
                 <span className="mb-1 block text-xs font-medium text-ink-700">Count by</span>
                 <select
@@ -158,7 +175,7 @@ export function PartnerChemistrySection({
             )}
           </p>
           <div className="mt-2">
-            <PartnerChemistryChart data={chemistry.partners} />
+            <PartnerChemistryChart data={chemistry.partners} displayMode={displayMode} />
           </div>
         </div>
       )}

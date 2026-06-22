@@ -68,3 +68,11 @@ export function getMatchExpectedWinProbability(match: NormalizedMatch): number |
   if (ourTeam == null || theirTeam == null) return null
   return expectedWinProbability(ourTeam, theirTeam)
 }
+
+/** Win-% change per rating point near even matchups (official table slope at diff 0–1). */
+const WIN_PERCENT_PER_RATING_POINT = 0.6
+
+/** Approximate rating-point equivalent of win-% overperformance near even matchups. */
+export function overperformancePercentToRatingPoints(overperformancePercent: number): number {
+  return Math.round(overperformancePercent / WIN_PERCENT_PER_RATING_POINT)
+}

@@ -25,6 +25,11 @@ export const partnerChemistryInfo = (
       Only competitive wins and losses with a partner count. Walkovers and &ldquo;no match&rdquo;
       rows are excluded. Any discipline with a partner name is included (doubles and mixed).
     </p>
+    <p>
+      Switch to <strong>Partnership rating</strong> in the filters to rank partners by average
+      team rating plus a chemistry adjustment, with your rating, their rating, and chemistry
+      shown in the breakdown.
+    </p>
     <p>For how far you go together in events, see Tournament partners above.</p>
   </div>
 )
