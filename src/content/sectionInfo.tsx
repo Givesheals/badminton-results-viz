@@ -141,7 +141,8 @@ export const nemesesInfo = (
   <div className={infoBlockClass}>
     <p>
       Opponents you have lost to more than you have beaten, ranked by a score that favours
-      frequent losses and close rating gaps when there are enough rivals.
+      frequent losses and close rating gaps when there are enough rivals. Uncheck{' '}
+      <strong>Prioritise close nemeses</strong> on the panel header to rank by loss record only.
     </p>
     <p>
       Only competitive wins and losses count. Walkovers and no-match rows are excluded.

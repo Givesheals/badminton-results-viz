@@ -16,6 +16,10 @@ import {
   type RecapRecordMilestone,
 } from './recapRecordMilestones'
 import { sortMatchesChronologically } from './matchChronology'
+import {
+  buildNoteContextFromMatch,
+  type OpponentNoteMatchContext,
+} from './opponentNotes'
 import { isCompetitiveMatch } from './matchExclusions'
 import { getMatchGames, getMatchVolume } from './matchScores'
 import { getMatchExpectedWinProbability, getPlayerRating } from './ratings'
@@ -70,6 +74,7 @@ export type DisciplineMatchRecap = {
   scoreSummary: string
   roundLabel: string | null
   highlights: DisciplineMatchHighlight[]
+  noteContext: OpponentNoteMatchContext
 }
 
 export type DisciplineRecap = {
@@ -1077,6 +1082,7 @@ function buildDisciplineTimeline(
         scoreSummary: match.scoreSummary,
         roundLabel: formatMatchStageLabel(getMatchRound(match)),
         highlights: highlightsByKey.get(key) ?? [],
+        noteContext: buildNoteContextFromMatch(match),
       }
     })
 

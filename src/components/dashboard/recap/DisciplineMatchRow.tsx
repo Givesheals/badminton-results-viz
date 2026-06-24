@@ -1,5 +1,6 @@
 import type { DisciplineMatchRecap } from '../../../lib/tournamentRecap'
 import { formatDisplayDate } from '../../../lib/formatDate'
+import { OpponentNoteButton } from '../../notes/OpponentNoteButton'
 import { MatchHighlightChip } from './MatchHighlightChip'
 
 type Props = {
@@ -12,13 +13,7 @@ export function DisciplineMatchRow({ match }: Props) {
 
   return (
     <li className="border-b border-ink-100/80 py-1.5 last:border-b-0">
-      <div
-        className={
-          match.highlights.length > 0
-            ? 'grid grid-cols-[1fr_auto] items-start gap-x-2 gap-y-0.5'
-            : undefined
-        }
-      >
+      <div className="grid grid-cols-[1fr_auto] items-start gap-x-2 gap-y-0.5">
         <div className="min-w-0">
           {(match.showDate || match.roundLabel) && (
             <p className="text-[10px] text-ink-500">
@@ -60,13 +55,16 @@ export function DisciplineMatchRow({ match }: Props) {
             {match.scoreSummary || '—'}
           </p>
         </div>
-        {match.highlights.length > 0 && (
-          <div className="flex max-w-[9.5rem] shrink-0 flex-col items-end gap-1 self-center">
-            {match.highlights.map((highlight) => (
-              <MatchHighlightChip key={highlight.id} highlight={highlight} />
-            ))}
-          </div>
-        )}
+        <div className="flex shrink-0 flex-col items-end gap-1 self-center">
+          {match.highlights.length > 0 && (
+            <div className="flex max-w-[9.5rem] flex-col items-end gap-1">
+              {match.highlights.map((highlight) => (
+                <MatchHighlightChip key={highlight.id} highlight={highlight} />
+              ))}
+            </div>
+          )}
+          <OpponentNoteButton context={match.noteContext} />
+        </div>
       </div>
     </li>
   )

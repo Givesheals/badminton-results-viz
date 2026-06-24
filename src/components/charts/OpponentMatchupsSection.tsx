@@ -93,14 +93,21 @@ export function OpponentMatchupsSection({
   const [limit, setLimit] = useState<number>(DEFAULT_LIMIT)
   const [minMeetings, setMinMeetings] = useState(DEFAULT_MIN_MEETINGS)
   const [minScalpWins, setMinScalpWins] = useState(DEFAULT_MIN_SCALP_WINS)
+  const [nemesisRatingProximity, setNemesisRatingProximity] = useState(true)
 
   useResetFiltersOnImport(importedAt, setFilters)
 
   const matches = useSectionMatches(allMatches, filters)
 
   const matchups = useMemo(
-    () => computeOpponentMatchups(matches, minMeetings, minScalpWins),
-    [matches, minMeetings, minScalpWins],
+    () =>
+      computeOpponentMatchups(
+        matches,
+        minMeetings,
+        minScalpWins,
+        nemesisRatingProximity,
+      ),
+    [matches, minMeetings, minScalpWins, nemesisRatingProximity],
   )
 
   const maxListLength = Math.max(matchups.nemeses.length, matchups.scalps.length)
@@ -115,7 +122,8 @@ export function OpponentMatchupsSection({
     countActiveSectionFilters(filters, [...fields]) +
     (limit !== DEFAULT_LIMIT ? 1 : 0) +
     (minMeetings !== DEFAULT_MIN_MEETINGS ? 1 : 0) +
-    (minScalpWins !== DEFAULT_MIN_SCALP_WINS ? 1 : 0)
+    (minScalpWins !== DEFAULT_MIN_SCALP_WINS ? 1 : 0) +
+    (!nemesisRatingProximity ? 1 : 0)
 
   return (
     <article
@@ -138,6 +146,7 @@ export function OpponentMatchupsSection({
               setLimit(DEFAULT_LIMIT)
               setMinMeetings(DEFAULT_MIN_MEETINGS)
               setMinScalpWins(DEFAULT_MIN_SCALP_WINS)
+              setNemesisRatingProximity(true)
             }}
           >
             <fieldset className="flex flex-wrap items-end gap-3 text-sm">
@@ -208,6 +217,8 @@ export function OpponentMatchupsSection({
               rows={nemesisRows}
               kind="nemesis"
               matches={matches}
+              ratingProximity={nemesisRatingProximity}
+              onRatingProximityChange={setNemesisRatingProximity}
               emptyMessage={
                 matchups.nemeses.length === 0
                   ? 'No opponents you are behind on at this threshold.'
@@ -246,6 +257,8 @@ type PanelProps = {
   emptyMessage?: string
   minWins?: number
   onMinWinsChange?: (value: number) => void
+  ratingProximity?: boolean
+  onRatingProximityChange?: (value: boolean) => void
 }
 
 function shareFilenameForPanel(title: string): string {
@@ -263,10 +276,16 @@ function MatchupPanel({
   emptyMessage,
   minWins,
   onMinWinsChange,
+  ratingProximity,
+  onRatingProximityChange,
 }: PanelProps) {
   const panel = PANEL_STYLES[kind]
   const showScalpControl =
     kind === 'scalp' && minWins != null && onMinWinsChange != null
+  const showNemesisControl =
+    kind === 'nemesis' &&
+    ratingProximity != null &&
+    onRatingProximityChange != null
 
   const {
     shareRef,
@@ -323,6 +342,22 @@ function MatchupPanel({
               }}
               className="w-16 rounded-lg border border-gain-100 bg-white px-2 py-1.5 text-sm text-ink-900 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
             />
+          </label>
+        ) : showNemesisControl ? (
+          <label
+            className="flex max-w-[11rem] shrink-0 items-center gap-1.5 text-sm lg:max-w-none"
+            data-share-exclude
+            title="When enough rivals qualify, opponents near your rating rank higher than those who beat you by a large margin with a similar record."
+          >
+            <input
+              type="checkbox"
+              checked={ratingProximity}
+              onChange={(e) => onRatingProximityChange(e.target.checked)}
+              className="h-3.5 w-3.5 shrink-0 rounded border-ink-300 text-loss-600 focus:ring-loss-100"
+            />
+            <span className="text-xs font-medium leading-tight text-loss-700">
+              Prioritise close nemeses
+            </span>
           </label>
         ) : (
           <span className="hidden w-[7.25rem] shrink-0 lg:block" aria-hidden />

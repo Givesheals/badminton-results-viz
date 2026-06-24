@@ -148,6 +148,94 @@ describe('computeOpponentMatchups', () => {
     expect(closeIndex).toBeLessThan(farIndex)
   })
 
+  it('ignores proximity when nemesisRatingProximity is false', () => {
+    const closeRivalMatches = [
+      ...Array.from({ length: 4 }, (_, i) =>
+        h2hMatch(
+          { competitionName: 'A', date: `2025-01-0${i + 1}`, outcome: 'loss' },
+          'Close Rival',
+          560,
+          550,
+        ),
+      ),
+      h2hMatch(
+        { competitionName: 'A', date: '2025-01-05', outcome: 'win' },
+        'Close Rival',
+        560,
+        550,
+      ),
+    ]
+    const farCrusherMatches = [
+      ...Array.from({ length: 5 }, (_, i) =>
+        h2hMatch(
+          { competitionName: 'B', date: `2025-02-0${i + 1}`, outcome: 'loss' },
+          'Far Crusher',
+          700,
+          550,
+        ),
+      ),
+      h2hMatch(
+        { competitionName: 'B', date: '2025-02-06', outcome: 'win' },
+        'Far Crusher',
+        700,
+        550,
+      ),
+    ]
+    const fillers = [
+      'Extra One',
+      'Extra Two',
+      'Extra Three',
+      'Extra Four',
+      'Extra Five',
+    ].flatMap((name, idx) =>
+      Array.from({ length: 3 }, (_, j) =>
+        h2hMatch(
+          {
+            competitionName: 'F',
+            date: `2024-${String(idx + 1).padStart(2, '0')}-${j + 1}`,
+            outcome: 'loss',
+          },
+          name,
+          555,
+          550,
+        ),
+      ),
+    )
+
+    const withProximity = computeOpponentMatchups(
+      [...closeRivalMatches, ...farCrusherMatches, ...fillers],
+      3,
+      2,
+      true,
+    )
+    const withoutProximity = computeOpponentMatchups(
+      [...closeRivalMatches, ...farCrusherMatches, ...fillers],
+      3,
+      2,
+      false,
+    )
+
+    const closeWith = withProximity.nemeses.findIndex(
+      (r) => r.opponentName === 'Close Rival',
+    )
+    const farWith = withProximity.nemeses.findIndex(
+      (r) => r.opponentName === 'Far Crusher',
+    )
+    expect(closeWith).toBeGreaterThanOrEqual(0)
+    expect(farWith).toBeGreaterThanOrEqual(0)
+    expect(closeWith).toBeLessThan(farWith)
+
+    const closeWithout = withoutProximity.nemeses.findIndex(
+      (r) => r.opponentName === 'Close Rival',
+    )
+    const farWithout = withoutProximity.nemeses.findIndex(
+      (r) => r.opponentName === 'Far Crusher',
+    )
+    expect(closeWithout).toBeGreaterThanOrEqual(0)
+    expect(farWithout).toBeGreaterThanOrEqual(0)
+    expect(farWithout).toBeLessThan(closeWithout)
+  })
+
   it('ignores proximity when fewer than five nemesis candidates', () => {
     const matches = [
       ...Array.from({ length: 4 }, (_, i) =>

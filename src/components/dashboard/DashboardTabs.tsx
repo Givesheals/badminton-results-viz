@@ -12,6 +12,7 @@ import { DASHBOARD_SECTIONS } from '../../lib/dashboardSections'
 
 export type DashboardTabId =
   | 'latest-event'
+  | 'notes'
   | 'this-season'
   | 'all-time'
   | 'people'
@@ -38,6 +39,11 @@ const TABS: { id: DashboardTabId; label: string; subtitle: string }[] = [
     id: 'people',
     label: 'People',
     subtitle: 'Who do I play with and against?',
+  },
+  {
+    id: 'notes',
+    label: 'Notes',
+    subtitle: 'Scouting notes on opponents from my matches',
   },
 ]
 

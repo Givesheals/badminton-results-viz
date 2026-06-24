@@ -168,6 +168,7 @@ export function computeOpponentMatchups(
   matches: NormalizedMatch[],
   minMeetings: number,
   minScalpWins: number,
+  nemesisRatingProximity: boolean = true,
 ): OpponentMatchupsResult {
   const competitive = matches.filter(
     (m) =>
@@ -225,7 +226,8 @@ export function computeOpponentMatchups(
   const qualifying = allRows.filter((row) => row.games >= minMeetings)
 
   const nemesisEligible = qualifying.filter((row) => row.losses > row.wins)
-  const applyProximity = nemesisEligible.length >= OPPONENT_MATCHUP_TOP_N
+  const applyProximity =
+    nemesisRatingProximity && nemesisEligible.length >= OPPONENT_MATCHUP_TOP_N
 
   const nemeses = nemesisEligible
     .map((row) => ({

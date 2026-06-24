@@ -13,11 +13,13 @@ import { ResultsOverTimeSection } from '../charts/ResultsOverTimeSection'
 import { CategoryMilestonesSection } from '../charts/CategoryMilestonesSection'
 import { TournamentProgressionSection } from '../charts/TournamentProgressionSection'
 import { OpponentMatchupsSection } from '../charts/OpponentMatchupsSection'
+import { OpponentNotesSection } from '../notes/OpponentNotesSection'
 import { DashboardTabs, TabSubgroupHeading } from './DashboardTabs'
 import { PlayerProfileSection } from './PlayerProfileSection'
 import { SummarySection } from './SummarySection'
 import { SeasonJourneySection } from './SeasonJourneySection'
 import { TournamentRecapSection } from './TournamentRecapSection'
+import { OpponentNotesProvider } from '../../context/OpponentNotesContext'
 
 export function Dashboard() {
   const { dataset, clearDataset } = useDataset()
@@ -72,11 +74,13 @@ export function Dashboard() {
       </section>
 
       <DashboardNavigationProvider>
-        <DashboardTabs
-          importedAt={dataset.importedAt}
-          panels={{
-          'latest-event': <TournamentRecapSection allMatches={allMatches} />,
-          'this-season': <SeasonJourneySection allMatches={allMatches} />,
+        <OpponentNotesProvider playerName={headerStats.playerName}>
+          <DashboardTabs
+            importedAt={dataset.importedAt}
+            panels={{
+            'latest-event': <TournamentRecapSection allMatches={allMatches} />,
+            notes: <OpponentNotesSection allMatches={allMatches} />,
+            'this-season': <SeasonJourneySection allMatches={allMatches} />,
           'all-time': (
             <>
               <SummarySection
@@ -111,7 +115,8 @@ export function Dashboard() {
             </>
           ),
           }}
-        />
+          />
+        </OpponentNotesProvider>
       </DashboardNavigationProvider>
     </div>
   )
