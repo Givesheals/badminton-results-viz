@@ -10,8 +10,7 @@ import { CollapsibleFilters } from '../filters/CollapsibleFilters'
 import { FilterSelect } from '../filters/FilterSelect'
 import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
 import { ShareButton } from '../ui/ShareButton'
-import { PartnerHighlightCard } from './PartnerHighlightCard'
-import { PartnerTournamentHistoryPanel } from './PartnerTournamentHistoryPanel'
+import { PartnerHighlightAccordionItem } from './PartnerHighlightAccordionItem'
 
 const SHOW_MORE_STEP = 3
 
@@ -110,7 +109,7 @@ function PartnerHighlightsFamilyBlockBody({
   const [visibleCount, setVisibleCount] = useState(initialVisibleCount)
   const disciplineCode = family === 'doubles' ? 'WD' : 'XD'
   const style = getDisciplineStyle(disciplineCode)
-  const isSinglePartner = selectedPartner.length > 0
+  const isPartnerFiltered = selectedPartner.length > 0
 
   const {
     shareRef,
@@ -122,17 +121,21 @@ function PartnerHighlightsFamilyBlockBody({
     title: `Tournament partners — ${title}`,
   })
 
+  const filteredPartners = useMemo(() => {
+    if (!isPartnerFiltered) return data.partners
+    return data.partners.filter((row) => row.partnerName === selectedPartner)
+  }, [data.partners, isPartnerFiltered, selectedPartner])
+
   const visible = useMemo(() => {
-    if (isSinglePartner) {
-      return data.partners.filter((row) => row.partnerName === selectedPartner)
-    }
-    const count = isSharing ? SHARE_PARTNER_LIMIT : visibleCount
-    return data.partners.slice(0, count)
-  }, [data.partners, isSinglePartner, selectedPartner, isSharing, visibleCount])
+    if (isSharing) return filteredPartners.slice(0, SHARE_PARTNER_LIMIT)
+    if (isPartnerFiltered) return filteredPartners
+    return filteredPartners.slice(0, visibleCount)
+  }, [filteredPartners, isPartnerFiltered, isSharing, visibleCount])
+
   const hasPartners = data.totalPartnerCount > 0
-  const remainingPartners = isSinglePartner
+  const remainingPartners = isPartnerFiltered
     ? 0
-    : Math.max(0, data.partners.length - visible.length)
+    : Math.max(0, filteredPartners.length - visible.length)
 
   const activeFilterCount =
     (time !== 'all' ? 1 : 0) +
@@ -154,7 +157,7 @@ function PartnerHighlightsFamilyBlockBody({
           <ShareButton
             onClick={() => void shareSection()}
             status={shareStatus}
-            disabled={!hasPartners && !isSinglePartner}
+            disabled={!hasPartners && !isPartnerFiltered}
           />
         }
         filters={
@@ -209,22 +212,11 @@ function PartnerHighlightsFamilyBlockBody({
               onChange={onCompetitionAgeChange}
               className="min-w-0"
             />
-            {isSinglePartner ? (
-              <div className="col-span-2" data-share-exclude>
-                <button
-                  type="button"
-                  onClick={() => onSelectedPartnerChange('')}
-                  className="text-sm font-medium text-brand-700 underline decoration-brand-200 underline-offset-2 transition hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-                >
-                  Show all partners
-                </button>
-              </div>
-            ) : null}
           </CollapsibleFilters>
         }
       />
 
-      {isSinglePartner && !partnerInPeriod ? (
+      {isPartnerFiltered && !partnerInPeriod ? (
         <PartnerPeriodEmptyState
           partnerName={selectedPartner}
           familyLabel={title.toLowerCase()}
@@ -236,45 +228,27 @@ function PartnerHighlightsFamilyBlockBody({
         </p>
       ) : (
         <div ref={shareRef} data-share-root>
-          {isSinglePartner ? (
-            visible.map((row) => (
-              <div
+          <ul className="grid items-start gap-3 sm:grid-cols-2">
+            {visible.map((row) => (
+              <PartnerHighlightAccordionItem
                 key={row.partnerName}
-                className="max-w-md overflow-hidden rounded-xl card-frame bg-white shadow-sm"
-              >
-                <PartnerHighlightCard row={row} isSelected variant="embedded" />
-                {partnerInPeriod ? (
-                  <PartnerTournamentHistoryPanel
-                    matches={familyMatches}
-                    partnerName={selectedPartner}
-                    family={family}
-                    disciplineCode={disciplineCode}
-                    variant="embedded"
-                  />
-                ) : null}
-              </div>
-            ))
-          ) : (
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {visible.map((row) => (
-                <li key={row.partnerName}>
-                  <PartnerHighlightCard
-                    row={row}
-                    onSelect={() => onSelectedPartnerChange(row.partnerName)}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
+                row={row}
+                family={family}
+                familyMatches={familyMatches}
+                disciplineCode={disciplineCode}
+                shareMode={isSharing}
+              />
+            ))}
+          </ul>
 
-          {!isSinglePartner ? (
+          {!isPartnerFiltered ? (
             <div className="space-y-2 pt-1" data-share-exclude>
               {remainingPartners > 0 ? (
                 <button
                   type="button"
                   onClick={() =>
                     setVisibleCount((count) =>
-                      Math.min(data.partners.length, count + SHOW_MORE_STEP),
+                      Math.min(filteredPartners.length, count + SHOW_MORE_STEP),
                     )
                   }
                   className="w-full rounded-lg border border-brand-200 bg-white px-4 py-2.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
@@ -283,7 +257,7 @@ function PartnerHighlightsFamilyBlockBody({
                 </button>
               ) : null}
               <PartnerHighlightsFooter
-                total={data.partners.length}
+                total={filteredPartners.length}
                 familyLabel={title.toLowerCase()}
                 hasMoreToShow={remainingPartners > 0}
               />

@@ -250,7 +250,7 @@ export function PartnerHighlightsSection({
           No doubles or mixed matches with a partner in the current selection.
         </p>
       ) : (
-        <div className="mt-4 grid gap-6 lg:grid-cols-2">
+        <div className="mt-4 grid gap-6">
           <section
             className={`rounded-xl border-l-4 p-4 ${getDisciplineStyle('WD').rowBgClass} ${getDisciplineStyle('WD').borderClass}`}
           >

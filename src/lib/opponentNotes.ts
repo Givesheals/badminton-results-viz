@@ -1,5 +1,12 @@
 import type { MatchOutcome } from '../types/matchHistory'
 import type { NormalizedMatch } from '../types/matchHistory'
+import { DISCIPLINE_LABELS } from '../types/matchHistory'
+import {
+  DISCIPLINE_FAMILY_LABELS,
+  getDisciplineFamily,
+  SELECTABLE_DISCIPLINE_FAMILIES,
+  type SelectableDisciplineFamily,
+} from './disciplineStyle'
 import { getOpponentTeamMembersFromRow } from './matchTeams'
 import { recapMatchKey } from './tournamentRecap'
 import { formatMatchStageLabel, getMatchRound } from './tournamentProgression'
@@ -28,11 +35,29 @@ export type OpponentNote = {
   body: string
   target: OpponentNoteTarget
   context: OpponentNoteMatchContext
+  /** Discipline codes this note applies to when facing the opponent. Optional for legacy notes. */
+  appliesToDisciplines?: string[]
   createdAt: string
   updatedAt: string
 }
 
+/** Stable display order for discipline scope selection. */
+export const ALL_DISCIPLINE_CODES = ['MS', 'WS', 'OS', 'MD', 'WD', 'OD', 'XD'] as const
+
+const CODES_BY_FAMILY: Record<SelectableDisciplineFamily, readonly string[]> = {
+  singles: ['MS', 'WS', 'OS'],
+  doubles: ['MD', 'WD', 'OD'],
+  mixed: ['XD'],
+}
+
 const STORAGE_PREFIX = 'opponent-notes:'
+
+/** Match keys for notes captured directly on the Notes tab (not from a specific game). */
+export const DIRECT_NOTE_MATCH_KEY_PREFIX = 'direct\0'
+
+export function isDirectNoteContext(context: OpponentNoteMatchContext): boolean {
+  return context.matchKey.startsWith(DIRECT_NOTE_MATCH_KEY_PREFIX)
+}
 
 export function opponentNotesStorageKey(playerName: string): string {
   return `${STORAGE_PREFIX}${playerName.trim().toLowerCase()}`
@@ -54,6 +79,66 @@ export function noteTargetsEqual(a: OpponentNoteTarget, b: OpponentNoteTarget): 
   return noteTargetKey(a) === noteTargetKey(b)
 }
 
+export function normalizeAppliesToDisciplines(codes: string[]): string[] {
+  const seen = new Set<string>()
+  const normalized: string[] = []
+  for (const code of ALL_DISCIPLINE_CODES) {
+    if (codes.includes(code) && !seen.has(code)) {
+      seen.add(code)
+      normalized.push(code)
+    }
+  }
+  return normalized
+}
+
+export function disciplineCodesFromFamilies(
+  families: SelectableDisciplineFamily[],
+): string[] {
+  const codes: string[] = []
+  for (const family of SELECTABLE_DISCIPLINE_FAMILIES) {
+    if (families.includes(family)) {
+      codes.push(...CODES_BY_FAMILY[family])
+    }
+  }
+  return normalizeAppliesToDisciplines(codes)
+}
+
+export function disciplineFamiliesFromCodes(codes: string[]): SelectableDisciplineFamily[] {
+  const families = new Set<SelectableDisciplineFamily>()
+  for (const code of normalizeAppliesToDisciplines(codes)) {
+    const family = getDisciplineFamily(code)
+    if (family !== 'unknown') families.add(family)
+  }
+  return SELECTABLE_DISCIPLINE_FAMILIES.filter((family) => families.has(family))
+}
+
+export function defaultAppliesToDisciplineFamilies(
+  context: OpponentNoteMatchContext,
+): SelectableDisciplineFamily[] {
+  if (isDirectNoteContext(context)) {
+    return [...SELECTABLE_DISCIPLINE_FAMILIES]
+  }
+  const family = getDisciplineFamily(context.discipline)
+  return family === 'unknown' ? [] : [family]
+}
+
+export function getNoteAppliesToDisciplineFamilies(
+  note: OpponentNote,
+): SelectableDisciplineFamily[] {
+  return disciplineFamiliesFromCodes(getNoteAppliesToDisciplines(note))
+}
+
+export function defaultAppliesToDisciplines(context: OpponentNoteMatchContext): string[] {
+  return disciplineCodesFromFamilies(defaultAppliesToDisciplineFamilies(context))
+}
+
+export function getNoteAppliesToDisciplines(note: OpponentNote): string[] {
+  if (note.appliesToDisciplines != null && note.appliesToDisciplines.length > 0) {
+    return normalizeAppliesToDisciplines(note.appliesToDisciplines)
+  }
+  return defaultAppliesToDisciplines(note.context)
+}
+
 export function buildNoteContextFromMatch(match: NormalizedMatch): OpponentNoteMatchContext {
   const opponentNames = getOpponentTeamMembersFromRow(match.raw).map((m) => m.name)
   return {
@@ -70,6 +155,36 @@ export function buildNoteContextFromMatch(match: NormalizedMatch): OpponentNoteM
     outcome: match.outcome,
     scoreSummary: match.scoreSummary,
   }
+}
+
+/** Context for a note added from the Notes tab about a single opponent (no source match). */
+export function buildDirectNoteContext(opponentName: string): OpponentNoteMatchContext {
+  const trimmed = opponentName.trim()
+  const date = new Date().toISOString().slice(0, 10)
+  return {
+    matchKey: `${DIRECT_NOTE_MATCH_KEY_PREFIX}${trimmed.toLowerCase()}\0${crypto.randomUUID()}`,
+    competitionName: 'Direct note',
+    date,
+    discipline: '—',
+    disciplineLabel: '—',
+    partnerName: null,
+    opponentNames: [trimmed],
+    opponentsDisplay: trimmed,
+    roundLabel: null,
+    outcome: 'unknown',
+    scoreSummary: '',
+  }
+}
+
+/** Unique opponent names from imported match history (prototype scope for player search). */
+export function collectKnownOpponentNames(matches: NormalizedMatch[]): string[] {
+  const names = new Set<string>()
+  for (const match of matches) {
+    for (const member of getOpponentTeamMembersFromRow(match.raw)) {
+      names.add(member.name)
+    }
+  }
+  return [...names].sort((a, b) => a.localeCompare(b, 'en'))
 }
 
 export function noteMatchesOpponent(note: OpponentNote, opponentName: string): boolean {
@@ -125,6 +240,7 @@ export function upsertNote(
   context: OpponentNoteMatchContext,
   body: string,
   target: OpponentNoteTarget,
+  appliesToDisciplineFamilies: SelectableDisciplineFamily[],
 ): OpponentNote[] {
   const trimmed = body.trim()
   if (trimmed === '') {
@@ -136,13 +252,14 @@ export function upsertNote(
     )
   }
 
+  const disciplines = disciplineCodesFromFamilies(appliesToDisciplineFamilies)
   const now = new Date().toISOString()
   const existing = getNoteForMatchTarget(notes, context.matchKey, target)
 
   if (existing != null) {
     return notes.map((note) =>
       note.id === existing.id
-        ? { ...note, body: trimmed, context, updatedAt: now }
+        ? { ...note, body: trimmed, context, appliesToDisciplines: disciplines, updatedAt: now }
         : note,
     )
   }
@@ -152,6 +269,7 @@ export function upsertNote(
     body: trimmed,
     target,
     context,
+    appliesToDisciplines: disciplines,
     createdAt: now,
     updatedAt: now,
   }
@@ -183,6 +301,10 @@ function isValidOpponentNote(value: unknown): value is OpponentNote {
   if (typeof note.context.matchKey !== 'string') return false
   if (note.target == null || typeof note.target !== 'object') return false
   if (note.target.kind === 'opponent' && typeof note.target.name !== 'string') return false
+  if (note.appliesToDisciplines != null) {
+    if (!Array.isArray(note.appliesToDisciplines)) return false
+    if (!note.appliesToDisciplines.every((code) => typeof code === 'string')) return false
+  }
   if (note.target.kind === 'pair') return true
   if (note.target.kind === 'opponent') return true
   return false
@@ -290,6 +412,12 @@ export function formatNoteContextSummary(context: OpponentNoteMatchContext): str
 export function noteMatchesSearch(note: OpponentNote, query: string): boolean {
   const q = query.trim().toLowerCase()
   if (q === '') return true
+  const disciplineLabels = getNoteAppliesToDisciplines(note).map(
+    (code) => DISCIPLINE_LABELS[code] ?? code,
+  )
+  const familyLabels = getNoteAppliesToDisciplineFamilies(note).map(
+    (family) => DISCIPLINE_FAMILY_LABELS[family],
+  )
   const haystack = [
     note.body,
     note.context.competitionName,
@@ -298,6 +426,10 @@ export function noteMatchesSearch(note: OpponentNote, query: string): boolean {
     note.context.disciplineLabel,
     formatNoteTargetLabel(note.target),
     ...note.context.opponentNames,
+    ...getNoteAppliesToDisciplines(note),
+    ...disciplineLabels,
+    ...getNoteAppliesToDisciplineFamilies(note),
+    ...familyLabels,
   ]
     .join(' ')
     .toLowerCase()

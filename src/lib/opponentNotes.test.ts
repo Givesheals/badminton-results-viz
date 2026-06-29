@@ -1,16 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildNoteContextFromMatch,
+  buildDirectNoteContext,
+  collectKnownOpponentNames,
+  defaultAppliesToDisciplineFamilies,
+  defaultAppliesToDisciplines,
   defaultNoteTarget,
   deleteNote,
+  disciplineCodesFromFamilies,
+  disciplineFamiliesFromCodes,
+  getNoteAppliesToDisciplineFamilies,
+  getNoteAppliesToDisciplines,
   getNoteForMatchTarget,
   groupNotesByOpponent,
+  isDirectNoteContext,
   formatNoteMatchTriggerLabel,
   formatNoteScopeInGroup,
   formatIsoTimestampShort,
   formatMatchDateShort,
   formatNoteRecordedSummary,
   getNotesForOpponent,
+  normalizeAppliesToDisciplines,
   noteMatchesSearch,
   opponentNotesStorageKey,
   sortNotesNewestFirst,
@@ -75,19 +85,20 @@ describe('opponentNotes', () => {
 
   it('upserts by matchKey and target, allowing separate notes per opponent', () => {
     const ctx = makeContext()
-    const pair = upsertNote([], ctx, 'Good rotation', { kind: 'pair' })
+    const families = ['mixed'] as const
+    const pair = upsertNote([], ctx, 'Good rotation', { kind: 'pair' }, [...families])
     expect(pair).toHaveLength(1)
 
     const both = upsertNote(pair, ctx, 'Weak backhand', {
       kind: 'opponent',
       name: 'Smith',
-    })
+    }, [...families])
     expect(both).toHaveLength(2)
 
     const allThree = upsertNote(both, ctx, 'Fast at net', {
       kind: 'opponent',
       name: 'Jones',
-    })
+    }, [...families])
     expect(allThree).toHaveLength(3)
 
     expect(
@@ -100,8 +111,49 @@ describe('opponentNotes', () => {
     const removedSmith = upsertNote(allThree, ctx, '   ', {
       kind: 'opponent',
       name: 'Smith',
-    })
+    }, [...families])
     expect(removedSmith).toHaveLength(2)
+  })
+
+  it('defaults discipline scope to the source match family', () => {
+    const ctx = makeContext({ discipline: 'MD', disciplineLabel: "Men's doubles" })
+    expect(defaultAppliesToDisciplineFamilies(ctx)).toEqual(['doubles'])
+    expect(defaultAppliesToDisciplines(ctx)).toEqual(['MD', 'WD', 'OD'])
+  })
+
+  it('falls back to match discipline family for legacy notes without appliesToDisciplines', () => {
+    const legacy = note({ appliesToDisciplines: undefined })
+    expect(getNoteAppliesToDisciplineFamilies(legacy)).toEqual(['mixed'])
+    expect(getNoteAppliesToDisciplines(legacy)).toEqual(['XD'])
+  })
+
+  it('stores and updates appliesToDisciplines from selected families on upsert', () => {
+    const ctx = makeContext()
+    const created = upsertNote([], ctx, 'Weak serve', { kind: 'pair' }, ['singles'])
+    expect(created[0]?.appliesToDisciplines).toEqual(['MS', 'WS', 'OS'])
+
+    const updated = upsertNote(created, ctx, 'Weak serve', { kind: 'pair' }, ['doubles', 'mixed'])
+    expect(updated[0]?.appliesToDisciplines).toEqual(['MD', 'WD', 'OD', 'XD'])
+  })
+
+  it('normalizes appliesToDisciplines to known codes in canonical order', () => {
+    expect(normalizeAppliesToDisciplines(['XD', 'MS', 'INVALID', 'MS'])).toEqual(['MS', 'XD'])
+  })
+
+  it('maps discipline families to codes and back', () => {
+    expect(disciplineCodesFromFamilies(['singles', 'mixed'])).toEqual(['MS', 'WS', 'OS', 'XD'])
+    expect(disciplineFamiliesFromCodes(['MS', 'WD', 'INVALID'])).toEqual(['singles', 'doubles'])
+  })
+
+  it('matches search queries against discipline families and codes', () => {
+    const scoped = note({
+      appliesToDisciplines: ['MS', 'WD'],
+      context: makeContext({ disciplineLabel: "Men's singles" }),
+    })
+    expect(noteMatchesSearch(scoped, 'singles')).toBe(true)
+    expect(noteMatchesSearch(scoped, 'doubles')).toBe(true)
+    expect(noteMatchesSearch(scoped, 'ms')).toBe(true)
+    expect(noteMatchesSearch(scoped, 'mixed')).toBe(false)
   })
 
   it('deletes by id', () => {
@@ -236,5 +288,26 @@ describe('opponentNotes', () => {
     expect(built.tournamentCategoryLabel).toBe('Bronze')
     expect(built.roundLabel).toBeTruthy()
     expect(built.matchKey).toContain('Open')
+  })
+
+  it('builds direct note context for notes tab capture', () => {
+    const context = buildDirectNoteContext('Taylor Swift')
+    expect(isDirectNoteContext(context)).toBe(true)
+    expect(context.opponentNames).toEqual(['Taylor Swift'])
+    expect(context.opponentsDisplay).toBe('Taylor Swift')
+    expect(defaultAppliesToDisciplineFamilies(context)).toEqual(['singles', 'doubles', 'mixed'])
+  })
+
+  it('collects unique opponent names from match history', () => {
+    const matches = [
+      {
+        raw: { 'Opponent 1 Name': 'Lee', 'Opponent 2 Name': 'Kim' },
+      },
+      {
+        raw: { 'Opponent 1 Name': 'Lee' },
+      },
+    ] as unknown as NormalizedMatch[]
+
+    expect(collectKnownOpponentNames(matches)).toEqual(['Kim', 'Lee'])
   })
 })

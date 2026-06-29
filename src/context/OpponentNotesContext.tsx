@@ -10,6 +10,7 @@ import type {
   OpponentNoteMatchContext,
   OpponentNoteTarget,
 } from '../lib/opponentNotes'
+import type { SelectableDisciplineFamily } from '../lib/disciplineStyle'
 
 type OpponentNotesContextValue = {
   allNotes: OpponentNote[]
@@ -21,6 +22,7 @@ type OpponentNotesContextValue = {
     context: OpponentNoteMatchContext,
     body: string,
     target: OpponentNoteTarget,
+    appliesToDisciplineFamilies: SelectableDisciplineFamily[],
   ) => void
   deleteNote: (id: string) => void
 }

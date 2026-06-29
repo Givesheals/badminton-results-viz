@@ -1,9 +1,19 @@
 import { useState } from 'react'
 import { useOpponentNotesContext } from '../../context/OpponentNotesContext'
 import {
+  DISCIPLINE_FAMILY_LABELS,
+  getDisciplineFamilyStyle,
+  SELECTABLE_DISCIPLINE_FAMILIES,
+  type SelectableDisciplineFamily,
+} from '../../lib/disciplineStyle'
+import {
+  defaultAppliesToDisciplineFamilies,
   defaultNoteTarget,
+  getNoteAppliesToDisciplineFamilies,
+  isDirectNoteContext,
   noteTargetKey,
   noteTargetsEqual,
+  type OpponentNote,
   type OpponentNoteMatchContext,
   type OpponentNoteTarget,
 } from '../../lib/opponentNotes'
@@ -18,7 +28,7 @@ type Props = {
 }
 
 function buildDraftsFromStored(
-  getNotesForMatch: (matchKey: string) => { target: OpponentNoteTarget; body: string }[],
+  getNotesForMatch: (matchKey: string) => OpponentNote[],
   matchKey: string,
 ): Record<string, string> {
   const drafts: Record<string, string> = {}
@@ -26,6 +36,17 @@ function buildDraftsFromStored(
     drafts[noteTargetKey(note.target)] = note.body
   }
   return drafts
+}
+
+function buildFamiliesFromStored(
+  getNotesForMatch: (matchKey: string) => OpponentNote[],
+  matchKey: string,
+): Record<string, SelectableDisciplineFamily[]> {
+  const families: Record<string, SelectableDisciplineFamily[]> = {}
+  for (const note of getNotesForMatch(matchKey)) {
+    families[noteTargetKey(note.target)] = getNoteAppliesToDisciplineFamilies(note)
+  }
+  return families
 }
 
 function TargetPicker({
@@ -83,6 +104,69 @@ function TargetPicker({
   )
 }
 
+function DisciplineFamilyPicker({
+  selected,
+  onChange,
+}: {
+  selected: SelectableDisciplineFamily[]
+  onChange: (families: SelectableDisciplineFamily[]) => void
+}) {
+  function toggle(family: SelectableDisciplineFamily) {
+    if (selected.includes(family)) {
+      onChange(selected.filter((item) => item !== family))
+    } else {
+      onChange([...selected, family])
+    }
+  }
+
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-xs font-medium text-ink-600">
+        Which disciplines does this note apply to?
+      </legend>
+      <div className="flex flex-wrap gap-1.5">
+        {SELECTABLE_DISCIPLINE_FAMILIES.map((family) => {
+          const isSelected = selected.includes(family)
+          const style = getDisciplineFamilyStyle(family)
+          const label = DISCIPLINE_FAMILY_LABELS[family]
+          return (
+            <button
+              key={family}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => toggle(family)}
+              className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
+                isSelected
+                  ? `${style.chipClass} border-transparent`
+                  : `${style.rowBgClass} border-ink-200 text-ink-700 hover:brightness-95`
+              }`}
+            >
+              {label}
+            </button>
+          )
+        })}
+        <span className="mx-0.5 self-center text-ink-300" aria-hidden="true">
+          |
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange([...SELECTABLE_DISCIPLINE_FAMILIES])}
+          className="px-1 py-0.5 text-xs font-medium text-brand-600 transition hover:text-brand-700 hover:underline"
+        >
+          Select all
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange([])}
+          className="px-1 py-0.5 text-xs font-medium text-brand-600 transition hover:text-brand-700 hover:underline"
+        >
+          Clear
+        </button>
+      </div>
+    </fieldset>
+  )
+}
+
 type FormProps = {
   context: OpponentNoteMatchContext
   initialTarget?: OpponentNoteTarget
@@ -99,30 +183,45 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
   const [draftsByTarget, setDraftsByTarget] = useState<Record<string, string>>(() =>
     buildDraftsFromStored(getNotesForMatch, context.matchKey),
   )
+  const [familiesByTarget, setFamiliesByTarget] = useState<
+    Record<string, SelectableDisciplineFamily[]>
+  >(() => buildFamiliesFromStored(getNotesForMatch, context.matchKey))
 
-  const body = draftsByTarget[noteTargetKey(target)] ?? ''
+  const targetKey = noteTargetKey(target)
+  const body = draftsByTarget[targetKey] ?? ''
   const existingNote = getNoteForMatchTarget(context.matchKey, target)
+  const appliesToDisciplineFamilies =
+    familiesByTarget[targetKey] ??
+    (existingNote != null
+      ? getNoteAppliesToDisciplineFamilies(existingNote)
+      : defaultAppliesToDisciplineFamilies(context))
+  const isDirectNote = isDirectNoteContext(context)
   const isEditing = existingNote != null || body.trim() !== ''
   const title = isEditing ? 'Edit opponent note' : 'Add opponent note'
+  const canSave = body.trim() !== '' && appliesToDisciplineFamilies.length > 0
 
   function setBody(text: string) {
-    setDraftsByTarget((prev) => ({ ...prev, [noteTargetKey(target)]: text }))
+    setDraftsByTarget((prev) => ({ ...prev, [targetKey]: text }))
+  }
+
+  function setAppliesToDisciplineFamilies(families: SelectableDisciplineFamily[]) {
+    setFamiliesByTarget((prev) => ({ ...prev, [targetKey]: families }))
   }
 
   function handleTargetChange(newTarget: OpponentNoteTarget) {
     if (noteTargetsEqual(target, newTarget)) return
-    const currentKey = noteTargetKey(target)
-    upsertNote(context, body, target)
+    upsertNote(context, body, target, appliesToDisciplineFamilies)
     setDraftsByTarget((prev) => {
-      const next = { ...prev, [currentKey]: body }
-      if (body.trim() === '') delete next[currentKey]
+      const next = { ...prev, [targetKey]: body }
+      if (body.trim() === '') delete next[targetKey]
       return next
     })
+    setFamiliesByTarget((prev) => ({ ...prev, [targetKey]: appliesToDisciplineFamilies }))
     setTarget(newTarget)
   }
 
   function handleSave() {
-    upsertNote(context, body, target)
+    upsertNote(context, body, target, appliesToDisciplineFamilies)
     onClose()
   }
 
@@ -130,7 +229,12 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
     if (existingNote != null) deleteNote(existingNote.id)
     setDraftsByTarget((prev) => {
       const next = { ...prev }
-      delete next[noteTargetKey(target)]
+      delete next[targetKey]
+      return next
+    })
+    setFamiliesByTarget((prev) => {
+      const next = { ...prev }
+      delete next[targetKey]
       return next
     })
     onClose()
@@ -162,7 +266,7 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
           <button
             type="button"
             onClick={handleSave}
-            disabled={body.trim() === ''}
+            disabled={!canSave}
             className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Save
@@ -171,11 +275,17 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
       }
     >
       <div className="space-y-4">
-        <TargetPicker
-          opponentNames={context.opponentNames}
-          target={target}
-          draftsByTarget={draftsByTarget}
-          onChange={handleTargetChange}
+        {!isDirectNote && (
+          <TargetPicker
+            opponentNames={context.opponentNames}
+            target={target}
+            draftsByTarget={draftsByTarget}
+            onChange={handleTargetChange}
+          />
+        )}
+        <DisciplineFamilyPicker
+          selected={appliesToDisciplineFamilies}
+          onChange={setAppliesToDisciplineFamilies}
         />
         <div className="space-y-1.5">
           <label htmlFor="opponent-note-body" className="text-xs font-medium text-ink-600">

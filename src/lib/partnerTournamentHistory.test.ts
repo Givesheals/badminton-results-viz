@@ -3,6 +3,7 @@ import type { NormalizedMatch } from '../types/matchHistory'
 import {
   buildPartnerTournamentHistory,
   countPartnerTournamentEvents,
+  partnerHistoryAutoExpandLevel,
 } from './partnerTournamentHistory'
 
 function makeMatch(
@@ -124,5 +125,64 @@ describe('buildPartnerTournamentHistory', () => {
     const groups = buildPartnerTournamentHistory(matches, 'Lucy', 'doubles')
     expect(countPartnerTournamentEvents(groups)).toBe(1)
     expect(groups[0]!.tournaments[0]!.competitionName).toBe('Doubles')
+  })
+})
+
+describe('partnerHistoryAutoExpandLevel', () => {
+  it('returns full when there is exactly one event', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Only Event',
+        date: '2026-01-01',
+        discipline: 'WD',
+        partnerName: 'Campbell',
+        raw: { Round: 'Semi Final' },
+      }),
+    ]
+    const groups = buildPartnerTournamentHistory(matches, 'Campbell', 'doubles')
+    expect(partnerHistoryAutoExpandLevel(groups)).toBe('full')
+  })
+
+  it('returns stages when multiple events share one stage', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Older SF',
+        date: '2025-01-01',
+        discipline: 'WD',
+        partnerName: 'Sam',
+        raw: { Round: 'Semi Final' },
+      }),
+      makeMatch({
+        competitionName: 'Newer SF',
+        date: '2026-03-01',
+        discipline: 'WD',
+        partnerName: 'Sam',
+        raw: { Round: 'Semi Final' },
+      }),
+    ]
+    const groups = buildPartnerTournamentHistory(matches, 'Sam', 'doubles')
+    expect(partnerHistoryAutoExpandLevel(groups)).toBe('stages')
+  })
+
+  it('returns none when events span multiple stages', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Group Event',
+        date: '2025-06-01',
+        discipline: 'WD',
+        partnerName: 'Lucy',
+        raw: { Round: 'Group A' },
+      }),
+      makeMatch({
+        competitionName: 'Final Event',
+        date: '2026-01-01',
+        discipline: 'WD',
+        partnerName: 'Lucy',
+        outcome: 'win',
+        raw: { Round: 'Final' },
+      }),
+    ]
+    const groups = buildPartnerTournamentHistory(matches, 'Lucy', 'doubles')
+    expect(partnerHistoryAutoExpandLevel(groups)).toBe('none')
   })
 })

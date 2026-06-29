@@ -10,7 +10,7 @@ export const partnerHighlightsInfo = (
     </p>
     <p>
       County events and events without knockout or group rounds in the data are not included.
-      Walkover finals can count toward how far you went if you were awarded the win.
+      Walkovers can count toward how far you went if you were awarded the win.
     </p>
   </div>
 )

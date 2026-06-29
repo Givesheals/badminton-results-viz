@@ -1,26 +1,37 @@
 import { useMemo, useState } from 'react'
 import { useOpponentNotesContext } from '../../context/OpponentNotesContext'
 import {
-  formatNoteMatchTriggerLabel,
+  buildDirectNoteContext,
+  collectKnownOpponentNames,
   formatNoteRecordedSummary,
   formatNoteScopeInGroup,
+  getNoteAppliesToDisciplineFamilies,
   groupNotesByOpponent,
+  isDirectNoteContext,
   noteMatchesSearch,
   type OpponentNote,
   type OpponentNoteGroup,
+  type OpponentNoteMatchContext,
 } from '../../lib/opponentNotes'
 import { recapMatchKey } from '../../lib/tournamentRecap'
 import type { NormalizedMatch } from '../../types/matchHistory'
+import { DisciplineFamilyChip } from '../discipline/DisciplineFamilyChip'
 import {
   FilePenIcon,
   OPPONENT_NOTE_ICON_BUTTON_CLASS,
 } from './OpponentNoteIcons'
 import { OpponentNoteMatchFooter } from './OpponentNoteMatchFooter'
 import { OpponentNoteModal } from './OpponentNoteModal'
+import { OpponentPickerModal } from './OpponentPickerModal'
 
 type Props = {
   allMatches: NormalizedMatch[]
 }
+
+type AddNoteState =
+  | { step: 'closed' }
+  | { step: 'pick-opponent' }
+  | { step: 'compose'; context: OpponentNoteMatchContext }
 
 function NoteEntry({
   note,
@@ -37,6 +48,8 @@ function NoteEntry({
   const scope = formatNoteScopeInGroup(note, groupOpponentName)
   const isPairScope = note.target.kind === 'pair'
   const matchDetailsId = `note-match-${note.id}`
+  const appliesToDisciplineFamilies = getNoteAppliesToDisciplineFamilies(note)
+  const isDirectNote = isDirectNoteContext(note.context)
 
   return (
     <li className="px-3 py-2.5">
@@ -46,28 +59,12 @@ function NoteEntry({
           {scope.detail != null ? ` · vs ${scope.detail}` : ''}
         </p>
       )}
-      <p className="text-sm leading-relaxed text-ink-900">
-        <span aria-hidden="true">&ldquo;</span>
-        {note.body}
-        <span aria-hidden="true">&rdquo;</span>
-      </p>
-      <p className="mt-1.5 text-xs text-ink-500">{formatNoteRecordedSummary(note)}</p>
-      <div className="mt-1.5 flex items-start justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setMatchOpen((value) => !value)}
-          aria-expanded={matchOpen}
-          aria-controls={matchDetailsId}
-          className="inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-ink-100 bg-ink-50/70 px-2.5 py-1.5 text-left text-xs font-medium text-ink-700 transition hover:border-ink-200 hover:bg-ink-100"
-        >
-          <span className="min-w-0 truncate">
-            {matchOpen ? 'Hide match result' : 'View match result'}
-            <span className="mt-0.5 block truncate font-normal text-ink-500">
-              {formatNoteMatchTriggerLabel(note.context)}
-            </span>
-          </span>
-          <ChevronIcon open={matchOpen} className="h-3.5 w-3.5 shrink-0" />
-        </button>
+      <div className="flex items-start gap-2">
+        <p className="min-w-0 flex-1 text-sm leading-relaxed text-ink-900">
+          <span aria-hidden="true">&ldquo;</span>
+          {note.body}
+          <span aria-hidden="true">&rdquo;</span>
+        </p>
         <button
           type="button"
           onClick={onOpen}
@@ -78,8 +75,35 @@ function NoteEntry({
           <FilePenIcon className="h-4 w-4" />
         </button>
       </div>
-      {matchOpen && (
-        <div id={matchDetailsId} className="mt-2">
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-500">
+        {appliesToDisciplineFamilies.length > 0 && (
+          <>
+            <span className="flex flex-wrap items-center gap-1">
+              {appliesToDisciplineFamilies.map((family) => (
+                <DisciplineFamilyChip key={family} family={family} />
+              ))}
+            </span>
+            <span aria-hidden="true">·</span>
+          </>
+        )}
+        <span>{formatNoteRecordedSummary(note)}</span>
+      </div>
+      {!isDirectNote && (
+        <button
+          type="button"
+          onClick={() => setMatchOpen((value) => !value)}
+          aria-expanded={matchOpen}
+          aria-controls={matchDetailsId}
+          className="mt-1 inline-flex w-full items-center gap-1 text-left text-xs text-ink-500 transition hover:text-ink-700"
+        >
+          <span className="min-w-0 flex-1">
+            {matchOpen ? 'Hide match result' : 'View match result'}
+          </span>
+          <ChevronIcon open={matchOpen} className="h-3 w-3 shrink-0 opacity-70" />
+        </button>
+      )}
+      {matchOpen && !isDirectNote && (
+        <div id={matchDetailsId} className="mt-1.5">
           <OpponentNoteMatchFooter context={note.context} match={match} />
         </div>
       )}
@@ -153,6 +177,9 @@ export function OpponentNotesSection({ allMatches }: Props) {
   const { allNotes } = useOpponentNotesContext()
   const [search, setSearch] = useState('')
   const [activeNote, setActiveNote] = useState<OpponentNote | null>(null)
+  const [addNoteState, setAddNoteState] = useState<AddNoteState>({ step: 'closed' })
+
+  const knownOpponents = useMemo(() => collectKnownOpponentNames(allMatches), [allMatches])
 
   const matchByKey = useMemo(() => {
     const map = new Map<string, NormalizedMatch>()
@@ -170,11 +197,16 @@ export function OpponentNotesSection({ allMatches }: Props) {
   return (
     <section className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
       <div className="border-b border-ink-100 px-4 py-4 sm:px-5">
-        <h3 className="text-lg font-semibold text-ink-900">Opponent notes</h3>
-        <p className="mt-1 text-sm text-ink-600">
-          Scouting notes grouped by opponent. Use <strong>View match result</strong> to see the
-          game a note came from.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold text-ink-900">Opponent notes</h3>
+          <button
+            type="button"
+            onClick={() => setAddNoteState({ step: 'pick-opponent' })}
+            className="shrink-0 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+          >
+            Add new note
+          </button>
+        </div>
         {allNotes.length > 0 && (
           <div className="mt-3">
             <label htmlFor="opponent-notes-search" className="sr-only">
@@ -197,8 +229,8 @@ export function OpponentNotesSection({ allMatches }: Props) {
           <div className="rounded-xl border border-dashed border-ink-200 bg-ink-50/50 px-4 py-8 text-center">
             <p className="text-sm font-medium text-ink-800">No notes yet</p>
             <p className="mt-1 text-sm text-ink-600">
-              Open the Events tab and tap the note icon beside a match to capture scouting
-              notes on your opponents.
+              Tap <strong>Add new note</strong> above, or open the Events tab and use the note icon
+              beside a match.
             </p>
           </div>
         ) : groups.length === 0 ? (
@@ -224,6 +256,27 @@ export function OpponentNotesSection({ allMatches }: Props) {
           onClose={() => setActiveNote(null)}
           context={activeNote.context}
           initialTarget={activeNote.target}
+        />
+      )}
+
+      <OpponentPickerModal
+        open={addNoteState.step === 'pick-opponent'}
+        onClose={() => setAddNoteState({ step: 'closed' })}
+        opponents={knownOpponents}
+        onSelect={(opponentName) => {
+          setAddNoteState({
+            step: 'compose',
+            context: buildDirectNoteContext(opponentName),
+          })
+        }}
+      />
+
+      {addNoteState.step === 'compose' && (
+        <OpponentNoteModal
+          open
+          onClose={() => setAddNoteState({ step: 'closed' })}
+          context={addNoteState.context}
+          initialTarget={{ kind: 'opponent', name: addNoteState.context.opponentNames[0]! }}
         />
       )}
     </section>

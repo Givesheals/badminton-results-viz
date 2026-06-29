@@ -1,11 +1,11 @@
-import { useId, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { DisciplineFamily } from '../../lib/disciplineStyle'
 import { getDisciplineStyle } from '../../lib/disciplineStyle'
-import { getMatchGames } from '../../lib/matchScores'
 import {
   buildPartnerTournamentHistory,
   countPartnerTournamentEvents,
   INITIAL_TOURNAMENTS_PER_STAGE,
+  partnerHistoryAutoExpandLevel,
   type PartnerTournamentEvent,
   type PartnerTournamentMatchRow,
   type PartnerTournamentStageGroup,
@@ -15,14 +15,13 @@ import {
   PROGRESSION_STAGE_COLORS,
 } from '../../lib/tournamentProgression'
 import type { NormalizedMatch } from '../../types/matchHistory'
-import { DisciplineChip } from '../discipline/DisciplineChip'
+import { AccordionChevron } from '../ui/AccordionChevron'
 
 type Props = {
   matches: NormalizedMatch[]
   partnerName: string
   family: DisciplineFamily
   disciplineCode: string
-  variant?: 'standalone' | 'embedded'
 }
 
 export function PartnerTournamentHistoryPanel({
@@ -30,121 +29,35 @@ export function PartnerTournamentHistoryPanel({
   partnerName,
   family,
   disciplineCode,
-  variant = 'standalone',
 }: Props) {
-  return (
-    <PartnerTournamentHistoryPanelBody
-      key={partnerName}
-      matches={matches}
-      partnerName={partnerName}
-      family={family}
-      disciplineCode={disciplineCode}
-      variant={variant}
-    />
-  )
-}
-
-function PartnerTournamentHistoryPanelBody({
-  matches,
-  partnerName,
-  family,
-  disciplineCode,
-  variant = 'standalone',
-}: Props) {
-  const [open, setOpen] = useState(variant === 'embedded')
-  const panelId = useId()
-
   const groups = useMemo(
     () => buildPartnerTournamentHistory(matches, partnerName, family),
     [matches, partnerName, family],
   )
   const eventCount = countPartnerTournamentEvents(groups)
+  const autoExpand = partnerHistoryAutoExpandLevel(groups)
 
   if (eventCount === 0) {
-    if (variant === 'embedded') {
-      return (
-        <div className="border-t border-ink-100 px-4 py-3">
-          <p className="text-sm text-ink-600">
-            No tournament progression events with {partnerName} in this selection.
-          </p>
-        </div>
-      )
-    }
-
     return (
-      <p className="text-sm text-ink-600">
-        No tournament progression events with {partnerName} in this selection.
-      </p>
-    )
-  }
-
-  const toggleLabel = open
-    ? 'Hide tournament history'
-    : `Explore ${eventCount} tournaments together`
-
-  const historyContent = (
-    <>
-      <p className="text-xs text-ink-500">
-        Grouped by how far you went together — deepest finishes first. Within each stage,
-        newest events appear first.
-      </p>
-      {groups.map((group) => (
-        <StageGroupSection
-          key={group.stage}
-          group={group}
-          disciplineCode={disciplineCode}
-        />
-      ))}
-    </>
-  )
-
-  if (variant === 'embedded') {
-    return (
-      <div className="border-t border-ink-100">
-        <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          className="flex w-full items-center justify-between gap-3 bg-brand-50/80 px-4 py-2.5 text-left text-sm font-medium text-brand-800 transition hover:bg-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200"
-          aria-expanded={open}
-          aria-controls={panelId}
-        >
-          <span>{toggleLabel}</span>
-          <ChevronIcon open={open} />
-        </button>
-
-        {open ? (
-          <div
-            id={panelId}
-            className="space-y-2 border-t border-ink-100 bg-ink-50/30 px-3 py-3"
-          >
-            {historyContent}
-          </div>
-        ) : null}
+      <div className="px-4 py-3">
+        <p className="text-sm text-ink-600">
+          No tournament progression events with {partnerName} in this selection.
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-3">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50/80 px-3 py-2 text-sm font-medium text-brand-800 shadow-sm transition hover:border-brand-300 hover:bg-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-        aria-expanded={open}
-        aria-controls={panelId}
-      >
-        {toggleLabel}
-        <ChevronIcon open={open} />
-      </button>
-
-      {open ? (
-        <div
-          id={panelId}
-          className="space-y-2 rounded-xl card-frame bg-white/80 p-3 shadow-inner"
-        >
-          {historyContent}
-        </div>
-      ) : null}
+    <div className="space-y-2 bg-ink-50/30 px-3 py-3">
+      {groups.map((group) => (
+        <StageGroupSection
+          key={group.stage}
+          group={group}
+          disciplineCode={disciplineCode}
+          defaultExpanded={autoExpand !== 'none'}
+          defaultTournamentsExpanded={autoExpand === 'full'}
+        />
+      ))}
     </div>
   )
 }
@@ -152,11 +65,15 @@ function PartnerTournamentHistoryPanelBody({
 function StageGroupSection({
   group,
   disciplineCode,
+  defaultExpanded = false,
+  defaultTournamentsExpanded = false,
 }: {
   group: PartnerTournamentStageGroup
   disciplineCode: string
+  defaultExpanded?: boolean
+  defaultTournamentsExpanded?: boolean
 }) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(defaultExpanded)
   const [showAll, setShowAll] = useState(false)
 
   const visibleTournaments = showAll
@@ -186,7 +103,7 @@ function StageGroupSection({
             {group.tournaments.length} event{group.tournaments.length === 1 ? '' : 's'}
           </span>
         </span>
-        <ChevronIcon open={expanded} />
+        <AccordionChevron open={expanded} />
       </button>
 
       {expanded ? (
@@ -196,6 +113,7 @@ function StageGroupSection({
               key={event.key}
               event={event}
               disciplineCode={disciplineCode}
+              defaultExpanded={defaultTournamentsExpanded}
             />
           ))}
           {hiddenCount > 0 && !showAll ? (
@@ -218,33 +136,34 @@ function StageGroupSection({
 function TournamentEventItem({
   event,
   disciplineCode,
+  defaultExpanded = false,
 }: {
   event: PartnerTournamentEvent
   disciplineCode: string
+  defaultExpanded?: boolean
 }) {
-  const [matchesOpen, setMatchesOpen] = useState(false)
-  const style = getDisciplineStyle(disciplineCode)
+  const [matchesOpen, setMatchesOpen] = useState(defaultExpanded)
 
   return (
     <li className="rounded-lg card-frame">
       <button
         type="button"
         onClick={() => setMatchesOpen((value) => !value)}
-        className="flex w-full items-start justify-between gap-2 px-3 py-2 text-left transition hover:bg-brand-50/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left transition hover:bg-brand-50/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
         aria-expanded={matchesOpen}
       >
-        <div className="min-w-0">
-          <p className="font-medium text-brand-800 underline decoration-brand-200 underline-offset-2">
-            {event.competitionName}
+        <div className="min-w-0 flex-1">
+          <p className="min-w-0 font-medium text-ink-900">{event.competitionName}</p>
+          <p className="text-xs text-ink-500">
+            {event.matches.length} match{event.matches.length === 1 ? '' : 'es'}
+            <span className="text-ink-400"> · </span>
+            {formatShortDate(event.sortDate)}
           </p>
-          <p className="text-xs text-ink-500">{formatShortDate(event.sortDate)}</p>
         </div>
-        <span className="shrink-0 text-xs text-ink-500">
-          {event.matches.length} match{event.matches.length === 1 ? '' : 'es'}
-        </span>
+        <AccordionChevron open={matchesOpen} className="h-5 w-5" />
       </button>
       {matchesOpen ? (
-        <ul className={`space-y-1 border-t border-ink-50 px-1 py-1 ${style.rowBgClass}`}>
+        <ul className="space-y-1 border-t border-ink-50 px-1 py-1">
           {event.matches.map((row, index) => (
             <PartnerHistoryMatchRow
               key={`${row.match.date}-${row.match.opponents}-${index}`}
@@ -266,73 +185,33 @@ function PartnerHistoryMatchRow({
   disciplineCode: string
 }) {
   const style = getDisciplineStyle(disciplineCode)
-  const games = getMatchGames(row.match)
   const outcomeLabel =
     row.match.outcome === 'win' ? 'Win' : row.match.outcome === 'loss' ? 'Loss' : null
 
   return (
-    <li
-      className={`grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-0.5 rounded-r border-l-4 py-1.5 pl-2 pr-1 ${style.borderClass} ${style.rowBgClass}`}
-    >
-      <DisciplineChip code={disciplineCode} className="row-span-2 self-center" />
-      <div className="min-w-0">
-        {row.stageLabel ? (
-          <p className="text-[10px] italic text-ink-500">{row.stageLabel}</p>
-        ) : null}
-        <p className="truncate text-sm font-medium text-ink-900" title={row.match.opponents}>
-          vs {row.match.opponents}
-        </p>
-        <p className="text-xs text-ink-500">
-          {outcomeLabel != null && (
-            <span
-              className={
-                row.match.outcome === 'win'
-                  ? 'font-medium text-gain-700'
-                  : 'font-medium text-loss-700'
-              }
-            >
-              {outcomeLabel}
-              {row.match.scoreSummary ? ' · ' : ''}
-            </span>
-          )}
-          {row.match.scoreSummary || (games.length === 0 ? '—' : null)}
-        </p>
-      </div>
-      {games.length > 0 ? (
-        <div className="self-center text-right text-xs tabular-nums text-ink-800">
-          {games.map((game) => (
-            <p key={game.game}>
-              <ScoreSpan value={game.player} won={game.player > game.opponent} />
-              <span className="text-ink-400">-</span>
-              <ScoreSpan value={game.opponent} won={game.opponent > game.player} />
-            </p>
-          ))}
-        </div>
-      ) : (
-        <p className="self-center text-xs text-ink-500">{row.match.scoreSummary}</p>
-      )}
+    <li className={`rounded-md px-2 py-1.5 ${style.rowBgClass}`}>
+      {row.stageLabel ? (
+        <p className="text-[10px] italic text-ink-500">{row.stageLabel}</p>
+      ) : null}
+      <p className="text-sm font-medium leading-snug text-ink-900">
+        vs {row.match.opponents}
+      </p>
+      <p className="text-xs text-ink-500">
+        {outcomeLabel != null && (
+          <span
+            className={
+              row.match.outcome === 'win'
+                ? 'font-medium text-gain-700'
+                : 'font-medium text-loss-700'
+            }
+          >
+            {outcomeLabel}
+            {row.match.scoreSummary ? ' · ' : ''}
+          </span>
+        )}
+        {row.match.scoreSummary || '—'}
+      </p>
     </li>
-  )
-}
-
-function ScoreSpan({ value, won }: { value: number; won: boolean }) {
-  return <span className={won ? 'font-bold' : ''}>{value}</span>
-}
-
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <svg
-      className={`h-4 w-4 shrink-0 text-brand-600 transition ${open ? 'rotate-180' : ''}`}
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path
-        fillRule="evenodd"
-        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z"
-        clipRule="evenodd"
-      />
-    </svg>
   )
 }
 

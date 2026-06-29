@@ -19,7 +19,10 @@ export type DashboardTabId =
 
 const TAB_STORAGE_KEY = 'dashboard-active-tab'
 
-const TABS: { id: DashboardTabId; label: string; subtitle: string }[] = [
+/** Hidden for MVP; set to true to restore the This season tab. */
+const THIS_SEASON_TAB_ENABLED = false
+
+const ALL_TABS: { id: DashboardTabId; label: string; subtitle: string }[] = [
   {
     id: 'latest-event',
     label: 'Events',
@@ -47,18 +50,22 @@ const TABS: { id: DashboardTabId; label: string; subtitle: string }[] = [
   },
 ]
 
+const TABS = THIS_SEASON_TAB_ENABLED
+  ? ALL_TABS
+  : ALL_TABS.filter((tab) => tab.id !== 'this-season')
+
 const TAB_IDS = TABS.map((tab) => tab.id)
 
 const DEFAULT_TAB: DashboardTabId = 'latest-event'
 
-function isDashboardTabId(value: string | null): value is DashboardTabId {
+function isVisibleTabId(value: string | null): value is DashboardTabId {
   return value != null && TAB_IDS.includes(value as DashboardTabId)
 }
 
 function readStoredTab(): DashboardTabId {
   if (typeof window === 'undefined') return DEFAULT_TAB
   const saved = window.sessionStorage.getItem(TAB_STORAGE_KEY)
-  return isDashboardTabId(saved) ? saved : DEFAULT_TAB
+  return isVisibleTabId(saved) ? saved : DEFAULT_TAB
 }
 
 type Props = {

@@ -14,6 +14,7 @@ import {
   type OpponentNoteMatchContext,
   type OpponentNoteTarget,
 } from '../lib/opponentNotes'
+import type { SelectableDisciplineFamily } from '../lib/disciplineStyle'
 
 function loadNotes(storageKey: string | null): OpponentNote[] {
   if (storageKey == null || typeof window === 'undefined') return []
@@ -60,8 +61,15 @@ export function useOpponentNotes(playerName: string | null) {
   )
 
   const upsertNote = useCallback(
-    (context: OpponentNoteMatchContext, body: string, target: OpponentNoteTarget) => {
-      setNotes((prev) => upsertNoteInList(prev, context, body, target))
+    (
+      context: OpponentNoteMatchContext,
+      body: string,
+      target: OpponentNoteTarget,
+      appliesToDisciplineFamilies: SelectableDisciplineFamily[],
+    ) => {
+      setNotes((prev) =>
+        upsertNoteInList(prev, context, body, target, appliesToDisciplineFamilies),
+      )
     },
     [],
   )

@@ -29,6 +29,31 @@ export function getDisciplineFamily(code: string): DisciplineFamily {
   return 'unknown'
 }
 
+export type SelectableDisciplineFamily = Exclude<DisciplineFamily, 'unknown'>
+
+export const SELECTABLE_DISCIPLINE_FAMILIES: SelectableDisciplineFamily[] = [
+  'singles',
+  'doubles',
+  'mixed',
+]
+
+export const DISCIPLINE_FAMILY_LABELS: Record<SelectableDisciplineFamily, string> = {
+  singles: 'Singles',
+  doubles: 'Doubles',
+  mixed: 'Mixed',
+}
+
+/** Representative code per family for styling helpers. */
+export const DISCIPLINE_FAMILY_REPRESENTATIVE: Record<SelectableDisciplineFamily, string> = {
+  singles: 'MS',
+  doubles: 'MD',
+  mixed: 'XD',
+}
+
+export function getDisciplineFamilyStyle(family: SelectableDisciplineFamily) {
+  return FAMILY_STYLES[family]
+}
+
 const FAMILY_STYLES: Record<
   DisciplineFamily,
   Pick<DisciplineStyle, 'chipClass' | 'borderClass' | 'rowBgClass'>
