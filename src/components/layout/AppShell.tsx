@@ -1,6 +1,11 @@
 import type { ReactNode } from 'react'
 
-export function AppShell({ children }: { children: ReactNode }) {
+type Props = {
+  children: ReactNode
+  headerRight?: ReactNode
+}
+
+export function AppShell({ children, headerRight }: Props) {
   return (
     <div className="min-h-screen">
       <header className="border-b border-brand-200/70 bg-brand-50/70 backdrop-blur">
@@ -21,9 +26,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               </h1>
             </div>
           </div>
-          <p className="hidden text-sm text-ink-700 sm:block">
-            Upload your sheet · Explore your stats
-          </p>
+          {headerRight ?? (
+            <p className="hidden text-sm text-ink-700 sm:block">
+              Upload your sheet · Explore your stats
+            </p>
+          )}
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
