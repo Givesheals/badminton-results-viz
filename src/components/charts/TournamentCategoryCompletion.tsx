@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import {
   comboKeyFromRow,
   resolveCardDisplayState,
@@ -17,6 +17,7 @@ import {
 import { formatDisplayDate } from '../../lib/formatDate'
 import { useDismissiblePopover } from '../../hooks/useDismissiblePopover'
 import { usePopoverPosition } from '../../hooks/usePopoverPosition'
+import { AccordionChevron } from '../ui/AccordionChevron'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
 
 const CLAIM_ANIMATION_MS = 650
@@ -249,32 +250,77 @@ function CompleteRow({
   row,
   showAgeInHeader,
   comboKey,
+  claims,
+  highlightStage,
 }: {
   row: CategoryCompletionRow
   showAgeInHeader: boolean
   comboKey: string
+  claims: ClaimsApi
+  highlightStage?: ProgressionStage | null
 }) {
+  const [expanded, setExpanded] = useState(false)
+  const panelId = useId()
   const eventLabel = row.tournamentCount === 1 ? 'event' : 'events'
+  const categoryLabel = row.tournamentCategoryLabel
+
+  useEffect(() => {
+    if (highlightStage != null) {
+      setExpanded(true)
+    }
+  }, [highlightStage])
 
   return (
     <li
       id={categoryMilestoneRowId(comboKey)}
-      className="scroll-mt-24 flex items-center justify-between gap-2 rounded-lg border border-gain-200/80 bg-gain-50/40 px-2.5 py-1.5 shadow-sm"
+      className="scroll-mt-24 overflow-hidden rounded-xl border border-ink-100 bg-gain-50/40 shadow-sm"
     >
-      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-        {showAgeInHeader && row.competitionAgeLabel ? (
-          <span className="truncate text-xs font-semibold text-ink-900">
-            {row.competitionAgeLabel}
+      <button
+        type="button"
+        onClick={() => setExpanded((value) => !value)}
+        className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left transition hover:bg-gain-50/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200"
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        aria-label={
+          expanded
+            ? `Hide milestones for ${categoryLabel}`
+            : `Show milestones for ${categoryLabel}`
+        }
+      >
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          {showAgeInHeader && row.competitionAgeLabel ? (
+            <span className="truncate text-xs font-semibold text-ink-900">
+              {row.competitionAgeLabel}
+            </span>
+          ) : null}
+          <TournamentCategoryChip label={row.tournamentCategoryLabel} />
+          <span className="text-[10px] font-medium uppercase tracking-wide text-gain-700">
+            Complete
           </span>
-        ) : null}
-        <TournamentCategoryChip label={row.tournamentCategoryLabel} />
-        <span className="text-[10px] font-medium uppercase tracking-wide text-gain-700">
-          Complete
-        </span>
-      </div>
-      <span className="shrink-0 text-[11px] tabular-nums text-ink-500">
-        {row.tournamentCount} {eventLabel}
-      </span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="text-[11px] tabular-nums text-ink-500">
+            {row.tournamentCount} {eventLabel}
+          </span>
+          <AccordionChevron open={expanded} className="h-4 w-4" />
+        </div>
+      </button>
+
+      {expanded ? (
+        <div id={panelId} className="border-t border-ink-100 px-2.5 pb-2.5 pt-2">
+          <div className="grid grid-cols-6 gap-0.5">
+            {row.milestones.map((milestone) => (
+              <MilestoneCell
+                key={milestone.stage}
+                milestone={milestone}
+                comboKey={comboKey}
+                claims={claims}
+                highlighted={highlightStage === milestone.stage}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
     </li>
   )
 }
@@ -322,7 +368,15 @@ function CompletionRow({
   }, [cardState, claimingCard, claims, comboKey])
 
   if (cardState === 'complete') {
-    return <CompleteRow row={row} showAgeInHeader={showAgeInHeader} comboKey={comboKey} />
+    return (
+      <CompleteRow
+        row={row}
+        showAgeInHeader={showAgeInHeader}
+        comboKey={comboKey}
+        claims={claims}
+        highlightStage={highlightStage}
+      />
+    )
   }
 
   const frameClass =

@@ -100,7 +100,8 @@ export const categoryMilestonesInfo = (
     <p>
       When you unlock a new round, tap the pulsing badge to claim it. Once every round is
       claimed, tap <strong>Claim</strong> on the card to collapse it into a compact complete
-      row and cut down on visual clutter.
+      row and cut down on visual clutter. Tap a complete row to expand it again and review
+      your milestone ticks.
     </p>
     <p>
       In knockout-only events you must win a match to credit quarter-finals or deeper. A lone
