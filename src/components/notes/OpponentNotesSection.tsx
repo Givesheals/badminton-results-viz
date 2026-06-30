@@ -197,7 +197,7 @@ export function OpponentNotesSection({ allMatches }: Props) {
   return (
     <section className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
       <div className="border-b border-ink-100 px-4 py-4 sm:px-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <h3 className="text-lg font-semibold text-ink-900">Opponent notes</h3>
           <button
             type="button"
@@ -207,6 +207,10 @@ export function OpponentNotesSection({ allMatches }: Props) {
             Add new note
           </button>
         </div>
+        <p className="mt-1 text-sm text-ink-600">
+          Leave notes on players you&apos;ve faced - we&apos;ll send them to you next time you draw
+          them, for a tactical headstart before the match.
+        </p>
         {allNotes.length > 0 && (
           <div className="mt-3">
             <label htmlFor="opponent-notes-search" className="sr-only">
