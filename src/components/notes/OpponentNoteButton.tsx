@@ -23,8 +23,8 @@ export function OpponentNoteButton({ context, className = '' }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={hasNote ? 'Edit opponent notes' : 'Add opponent note'}
-        title={hasNote ? 'Edit opponent notes' : 'Add opponent note'}
+        aria-label={hasNote ? 'Edit match notes' : 'Add match notes'}
+        title={hasNote ? 'Edit match notes' : 'Add match notes'}
         className={`${OPPONENT_NOTE_ICON_BUTTON_CLASS} ${className}`.trim()}
       >
         {hasNote ? (

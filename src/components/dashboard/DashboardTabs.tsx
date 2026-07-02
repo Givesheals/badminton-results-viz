@@ -46,7 +46,7 @@ const ALL_TABS: { id: DashboardTabId; label: string; subtitle: string }[] = [
   {
     id: 'notes',
     label: 'Notes',
-    subtitle: 'Scouting notes on opponents from my matches',
+    subtitle: 'Scouting notes & match journal',
   },
 ]
 

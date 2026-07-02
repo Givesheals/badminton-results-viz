@@ -112,7 +112,7 @@ Shown when the player has **no prior senior county matches** anywhere in their u
 ## Related specs
 
 - [Tournament progression](tournament-progression-spec.md) — stage labels, podium, progression charts
-- [Category milestone claims](category-milestone-claims-spec.md) — claim flow from recap links
+- [Category milestone claims](category-milestone-claims-spec.md) — deep links from recap to frontier claim badges
 - [Partner chemistry](partner-chemistry-spec.md) — overperformance math used for discipline callouts
 - [Opponent matchups](opponent-matchups-spec.md) — nemesis / favourite-opponent milestones in recap
 - [Charts](charts.md) — Recharts usage (summary pie is separate from recap UI)

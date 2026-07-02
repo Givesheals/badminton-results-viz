@@ -48,7 +48,7 @@ Uploads expect the standard **Match History** export with columns like `Competit
 
 - Drag-and-drop or file picker for spreadsheets
 - **Load sample data** button for demos
-- Summary stats, player profile, season journey, tournament recap, partner chemistry, category milestones, and more
+- Summary stats, player profile, season journey, tournament recap, partner chemistry, category milestones, opponent notes, and more
 - Data table preview of imported rows
 - Shareable PNG captures for several dashboard sections
 
@@ -72,10 +72,11 @@ Product and engineering specs live in [`docs/`](docs/):
 | [charts.md](docs/charts.md) | Recharts usage, summary pie layout |
 | [tournament-recap-spec.md](docs/tournament-recap-spec.md) | Weekend recap cards, partner/date display rules |
 | [tournament-progression-spec.md](docs/tournament-progression-spec.md) | Stage ladder, podium, milestones |
-| [category-milestone-claims-spec.md](docs/category-milestone-claims-spec.md) | Claim flow and localStorage |
+| [category-milestone-claims-spec.md](docs/category-milestone-claims-spec.md) | Claim flow, frontier auto-claim |
 | [partner-chemistry-spec.md](docs/partner-chemistry-spec.md) | Partner chemistry chart |
 | [partner-highlights-spec.md](docs/partner-highlights-spec.md) | Partner highlights |
 | [opponent-matchups-spec.md](docs/opponent-matchups-spec.md) | Nemeses and favourite opponents |
+| [opponent-notes-spec.md](docs/opponent-notes-spec.md) | Scouting notes, match journal, custom tags |
 | [player-type-spec.md](docs/player-type-spec.md) | Player profile axes |
 | [rating-win-chance-table.md](docs/rating-win-chance-table.md) | Rating vs win chance reference |
 

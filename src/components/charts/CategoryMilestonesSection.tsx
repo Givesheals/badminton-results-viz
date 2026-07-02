@@ -5,7 +5,6 @@ import { useCategoryMilestoneClaims } from '../../hooks/useCategoryMilestoneClai
 import { useSectionMatches } from '../../hooks/useSectionMatches'
 import { useResetFiltersOnImport } from '../../hooks/useResetFiltersOnImport'
 import { useShareCapture } from '../../hooks/useShareCapture'
-import { computeStatsFromMatches } from '../../lib/computeStats'
 import { countActiveSectionFilters } from '../../lib/filterCounts'
 import type { DisciplineFamily } from '../../lib/disciplineStyle'
 import { competitiveMatches } from '../../lib/matchExclusions'
@@ -58,13 +57,13 @@ export function CategoryMilestonesSection({
   const { milestoneTarget, clearMilestoneTarget } = useDashboardNavigation()
   const [highlightTarget, setHighlightTarget] = useState(milestoneTarget)
 
-  const playerName = useMemo(
-    () => computeStatsFromMatches(allMatches).playerName,
+  const milestoneRows = useMemo(
+    () => computeCategoryMilestones(competitiveMatches(allMatches)),
     [allMatches],
   )
 
   const { claimedKeys, claimRound, claimCard, isRoundClaimed, isCardClaimed } =
-    useCategoryMilestoneClaims(playerName)
+    useCategoryMilestoneClaims(milestoneRows)
 
   useResetFiltersOnImport(importedAt, setFilters)
 
@@ -82,10 +81,7 @@ export function CategoryMilestonesSection({
     setHighlightTarget(milestoneTarget)
   }, [milestoneTarget])
 
-  const hasAnyMilestones = useMemo(() => {
-    const rows = computeCategoryMilestones(competitiveMatches(allMatches))
-    return rows.length > 0
-  }, [allMatches])
+  const hasAnyMilestones = milestoneRows.length > 0
 
   const timeFilteredMatches = useSectionMatches(allMatches, filters)
   const matches = useMemo(() => {
