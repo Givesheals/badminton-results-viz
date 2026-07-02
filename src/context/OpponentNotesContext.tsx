@@ -11,8 +11,12 @@ import type {
   OpponentNoteTarget,
 } from '../lib/opponentNotes'
 import type { SelectableDisciplineFamily } from '../lib/disciplineStyle'
+import type { MatchJournalFields } from '../lib/opponentNotes'
+import type { NoteTags } from '../lib/noteTags'
+import type { CustomTagGroup } from '../lib/customNoteTags'
 
 type OpponentNotesContextValue = {
+  playerName: string | null
   allNotes: OpponentNote[]
   getNotesForMatch: (matchKey: string) => OpponentNote[]
   hasNotesForMatch: (matchKey: string) => boolean
@@ -23,8 +27,13 @@ type OpponentNotesContextValue = {
     body: string,
     target: OpponentNoteTarget,
     appliesToDisciplineFamilies: SelectableDisciplineFamily[],
+    tags?: NoteTags,
+    matchJournal?: MatchJournalFields,
+    appliesToDisciplineCodes?: string[],
   ) => void
   deleteNote: (id: string) => void
+  renameCustomTagEverywhere: (group: CustomTagGroup, oldLabel: string, newLabel: string) => void
+  removeCustomTagEverywhere: (group: CustomTagGroup, label: string) => void
 }
 
 const OpponentNotesContext = createContext<OpponentNotesContextValue | null>(null)
@@ -37,7 +46,10 @@ export function OpponentNotesProvider({
   children: ReactNode
 }) {
   const value = useOpponentNotes(playerName)
-  const memoized = useMemo(() => value, [value])
+  const memoized = useMemo(
+    () => ({ ...value, playerName }),
+    [value, playerName],
+  )
   return (
     <OpponentNotesContext.Provider value={memoized}>{children}</OpponentNotesContext.Provider>
   )

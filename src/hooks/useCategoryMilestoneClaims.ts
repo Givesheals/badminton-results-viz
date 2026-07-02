@@ -1,17 +1,25 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
+  buildFrontierAutoClaims,
   categoryMilestoneCardKey,
   categoryMilestoneRoundKey,
 } from '../lib/categoryMilestoneClaims'
-import type { ProgressionStage } from '../lib/tournamentProgression'
+import type { CategoryCompletionRow, ProgressionStage } from '../lib/tournamentProgression'
 
 /** In-memory only — claims reset on page reload (prototype). */
-export function useCategoryMilestoneClaims(_playerName: string | null) {
-  const [claimedKeys, setClaimedKeys] = useState<Set<string>>(() => new Set())
+export function useCategoryMilestoneClaims(rows: CategoryCompletionRow[]) {
+  const frontierClaims = useMemo(() => buildFrontierAutoClaims(rows), [rows])
+  const [manualClaims, setManualClaims] = useState<Set<string>>(() => new Set())
+
+  const claimedKeys = useMemo(() => {
+    const merged = new Set(frontierClaims)
+    for (const key of manualClaims) merged.add(key)
+    return merged
+  }, [frontierClaims, manualClaims])
 
   const claimRound = useCallback((comboKey: string, stage: ProgressionStage) => {
     const id = categoryMilestoneRoundKey(comboKey, stage)
-    setClaimedKeys((prev) => {
+    setManualClaims((prev) => {
       if (prev.has(id)) return prev
       const next = new Set(prev)
       next.add(id)
@@ -21,7 +29,7 @@ export function useCategoryMilestoneClaims(_playerName: string | null) {
 
   const claimCard = useCallback((comboKey: string) => {
     const id = categoryMilestoneCardKey(comboKey)
-    setClaimedKeys((prev) => {
+    setManualClaims((prev) => {
       if (prev.has(id)) return prev
       const next = new Set(prev)
       next.add(id)

@@ -2,6 +2,7 @@ import {
   CATEGORY_COMPLETION_STAGES,
   categoryAgeComboKey,
   type CategoryCompletionMilestone,
+  type CategoryCompletionRow,
   type ProgressionStage,
 } from './tournamentProgression'
 
@@ -64,6 +65,38 @@ export function resolveCardDisplayState(
   if (allRoundsClaimed) return 'ready_to_claim'
 
   return 'active'
+}
+
+/** Deepest achieved stage on a card (milestones are ordered shallow → deep). */
+export function deepestAchievedMilestone(
+  milestones: CategoryCompletionMilestone[],
+): CategoryCompletionMilestone | null {
+  let deepest: CategoryCompletionMilestone | null = null
+  for (const milestone of milestones) {
+    if (milestone.achieved) deepest = milestone
+  }
+  return deepest
+}
+
+/**
+ * Pre-claim every achieved round except the frontier (deepest) per card so first
+ * visit is not a wall of claimable badges.
+ */
+export function buildFrontierAutoClaims(rows: CategoryCompletionRow[]): Set<string> {
+  const claims = new Set<string>()
+
+  for (const row of rows) {
+    const comboKey = comboKeyFromRow(row.tournamentCategoryLabel, row.competitionAgeLabel)
+    const frontier = deepestAchievedMilestone(row.milestones)
+    if (frontier == null) continue
+
+    for (const milestone of row.milestones) {
+      if (!milestone.achieved || milestone.stage === frontier.stage) continue
+      claims.add(categoryMilestoneRoundKey(comboKey, milestone.stage))
+    }
+  }
+
+  return claims
 }
 
 export function buildCategoryMilestoneClaimTarget(

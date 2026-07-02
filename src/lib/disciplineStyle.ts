@@ -82,6 +82,12 @@ const FAMILY_STYLES: Record<
 
 export function getDisciplineStyle(code: string): DisciplineStyle {
   const key = code.trim().toUpperCase()
+  if (key === 'S') {
+    return { family: 'singles', chipLabel: 'S', ...FAMILY_STYLES.singles }
+  }
+  if (key === 'D') {
+    return { family: 'doubles', chipLabel: 'D', ...FAMILY_STYLES.doubles }
+  }
   const family = getDisciplineFamily(key)
   const base = FAMILY_STYLES[family]
   return {

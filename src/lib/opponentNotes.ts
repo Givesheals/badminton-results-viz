@@ -8,12 +8,33 @@ import {
   type SelectableDisciplineFamily,
 } from './disciplineStyle'
 import { getOpponentTeamMembersFromRow } from './matchTeams'
+import {
+  formatJournalTagsForDisplay,
+  formatNoteTagsForDisplay,
+  noteHasContent,
+  noteHasJournalTagContent,
+  normalizeNoteTags,
+  type NoteTags,
+} from './noteTags'
 import { recapMatchKey } from './tournamentRecap'
 import { formatMatchStageLabel, getMatchRound } from './tournamentProgression'
+
+export type { NoteTags } from './noteTags'
 
 export type OpponentNoteTarget =
   | { kind: 'pair' }
   | { kind: 'opponent'; name: string }
+  | { kind: 'match' }
+
+export const MATCH_NOTE_TARGET: OpponentNoteTarget = { kind: 'match' }
+
+export function isMatchNoteTarget(target: OpponentNoteTarget): boolean {
+  return target.kind === 'match'
+}
+
+export function isScoutingNote(note: OpponentNote): boolean {
+  return !isMatchNoteTarget(note.target)
+}
 
 export type OpponentNoteMatchContext = {
   matchKey: string
@@ -30,6 +51,11 @@ export type OpponentNoteMatchContext = {
   scoreSummary: string
 }
 
+export type MatchJournalFields = {
+  selfReflection?: string
+  gameEvents?: string
+}
+
 export type OpponentNote = {
   id: string
   body: string
@@ -37,12 +63,78 @@ export type OpponentNote = {
   context: OpponentNoteMatchContext
   /** Discipline codes this note applies to when facing the opponent. Optional for legacy notes. */
   appliesToDisciplines?: string[]
+  /** Optional tap-to-select tags (scouting styles or journal context). */
+  tags?: NoteTags
+  /** Split journal text for match notes (self vs game events). */
+  matchJournal?: MatchJournalFields
   createdAt: string
   updatedAt: string
 }
 
 /** Stable display order for discipline scope selection. */
 export const ALL_DISCIPLINE_CODES = ['MS', 'WS', 'OS', 'MD', 'WD', 'OD', 'XD'] as const
+
+/** Discipline codes offered when scoping opponent scouting notes (S / D / XD). */
+export const SCOUTING_APPLIES_TO_DISCIPLINE_CODES = ['S', 'D', 'XD'] as const
+
+export type ScoutingAppliesToDisciplineCode =
+  (typeof SCOUTING_APPLIES_TO_DISCIPLINE_CODES)[number]
+
+const SCOUTING_APPLIES_TO_SET = new Set<string>(SCOUTING_APPLIES_TO_DISCIPLINE_CODES)
+
+const SCOUTING_SCOPE_SINGLES = new Set(['S', 'MS', 'WS', 'OS'])
+const SCOUTING_SCOPE_DOUBLES = new Set(['D', 'MD', 'WD', 'OD'])
+
+export function isScoutingAppliesToDisciplineCode(
+  code: string,
+): code is ScoutingAppliesToDisciplineCode {
+  return SCOUTING_APPLIES_TO_SET.has(code.trim().toUpperCase())
+}
+
+/** Collapse stored or legacy discipline codes to scouting scope chips (S, D, XD). */
+export function collapseToScoutingScopeCodes(codes: string[]): string[] {
+  const upper = codes.map((code) => code.trim().toUpperCase())
+  const result: string[] = []
+  if (upper.some((code) => SCOUTING_SCOPE_SINGLES.has(code))) result.push('S')
+  if (upper.some((code) => SCOUTING_SCOPE_DOUBLES.has(code))) result.push('D')
+  if (upper.includes('XD')) result.push('XD')
+  return result
+}
+
+export function normalizeScoutingAppliesToDisciplineCodes(codes: string[]): string[] {
+  const collapsed = collapseToScoutingScopeCodes(codes)
+  return SCOUTING_APPLIES_TO_DISCIPLINE_CODES.filter((code) => collapsed.includes(code))
+}
+
+export function filterScoutingAppliesToDisciplineCodes(codes: string[]): string[] {
+  return normalizeScoutingAppliesToDisciplineCodes(codes)
+}
+
+export function mapToScoutingAppliesToCode(
+  code: string,
+): ScoutingAppliesToDisciplineCode | null {
+  const upper = code.trim().toUpperCase()
+  if (isScoutingAppliesToDisciplineCode(upper)) return upper
+  if (SCOUTING_SCOPE_SINGLES.has(upper)) return 'S'
+  if (SCOUTING_SCOPE_DOUBLES.has(upper)) return 'D'
+  return null
+}
+
+export function defaultScoutingAppliesToDisciplineCodes(
+  context: OpponentNoteMatchContext,
+): string[] {
+  if (isDirectNoteContext(context)) {
+    return [...SCOUTING_APPLIES_TO_DISCIPLINE_CODES]
+  }
+  const mapped = mapToScoutingAppliesToCode(context.discipline)
+  return mapped != null ? [mapped] : []
+}
+
+export function getNoteScoutingAppliesToDisciplineCodes(note: OpponentNote): string[] {
+  const collapsed = normalizeScoutingAppliesToDisciplineCodes(getNoteAppliesToDisciplines(note))
+  if (collapsed.length > 0) return collapsed
+  return defaultScoutingAppliesToDisciplineCodes(note.context)
+}
 
 const CODES_BY_FAMILY: Record<SelectableDisciplineFamily, readonly string[]> = {
   singles: ['MS', 'WS', 'OS'],
@@ -64,14 +156,16 @@ export function opponentNotesStorageKey(playerName: string): string {
 }
 
 export function defaultNoteTarget(opponentNames: string[]): OpponentNoteTarget {
-  if (opponentNames.length === 1) {
-    return { kind: 'opponent', name: opponentNames[0]! }
+  const first = opponentNames[0]
+  if (first == null || first === '') {
+    return { kind: 'pair' }
   }
-  return { kind: 'pair' }
+  return { kind: 'opponent', name: first }
 }
 
 export function noteTargetKey(target: OpponentNoteTarget): string {
   if (target.kind === 'pair') return 'pair'
+  if (target.kind === 'match') return 'match'
   return `opponent:${target.name}`
 }
 
@@ -188,6 +282,7 @@ export function collectKnownOpponentNames(matches: NormalizedMatch[]): string[] 
 }
 
 export function noteMatchesOpponent(note: OpponentNote, opponentName: string): boolean {
+  if (isMatchNoteTarget(note.target)) return false
   const normalized = opponentName.trim().toLowerCase()
   if (note.target.kind === 'opponent') {
     return note.target.name.trim().toLowerCase() === normalized
@@ -214,7 +309,7 @@ export function getNotesForMatch(notes: OpponentNote[], matchKey: string): Oppon
 }
 
 export function hasNotesForMatch(notes: OpponentNote[], matchKey: string): boolean {
-  return getNotesForMatch(notes, matchKey).length > 0
+  return getNotesForMatch(notes, matchKey).some(noteHasStoredContent)
 }
 
 export function getNoteForMatchTarget(
@@ -235,15 +330,66 @@ export function getNoteForMatch(notes: OpponentNote[], matchKey: string): Oppone
   return getNotesForMatch(notes, matchKey)[0] ?? null
 }
 
+export function normalizeMatchJournal(
+  fields?: MatchJournalFields,
+): MatchJournalFields | undefined {
+  if (fields == null) return undefined
+  const selfReflection = fields.selfReflection?.trim() ?? ''
+  const gameEvents = fields.gameEvents?.trim() ?? ''
+  if (selfReflection === '' && gameEvents === '') return undefined
+  return {
+    ...(selfReflection !== '' ? { selfReflection } : {}),
+    ...(gameEvents !== '' ? { gameEvents } : {}),
+  }
+}
+
+export function getMatchJournalFields(note: OpponentNote): {
+  selfReflection: string
+  gameEvents: string
+} {
+  const selfReflection = note.matchJournal?.selfReflection?.trim() ?? ''
+  const gameEvents = note.matchJournal?.gameEvents?.trim() ?? note.body.trim()
+  return { selfReflection, gameEvents }
+}
+
+export function matchJournalHasContent(
+  journal: { selfReflection: string; gameEvents: string },
+  tags?: NoteTags,
+): boolean {
+  return (
+    journal.selfReflection !== '' ||
+    journal.gameEvents !== '' ||
+    noteHasJournalTagContent(tags)
+  )
+}
+
 export function upsertNote(
   notes: OpponentNote[],
   context: OpponentNoteMatchContext,
   body: string,
   target: OpponentNoteTarget,
   appliesToDisciplineFamilies: SelectableDisciplineFamily[],
+  tags?: NoteTags,
+  matchJournal?: MatchJournalFields,
+  appliesToDisciplineCodes?: string[],
 ): OpponentNote[] {
   const trimmed = body.trim()
-  if (trimmed === '') {
+  const normalizedTags = normalizeNoteTags(tags)
+  const normalizedJournal = normalizeMatchJournal(matchJournal)
+  const journalFields =
+    target.kind === 'match'
+      ? {
+          selfReflection: normalizedJournal?.selfReflection ?? '',
+          gameEvents: normalizedJournal?.gameEvents ?? trimmed,
+        }
+      : { selfReflection: '', gameEvents: '' }
+
+  const hasContent =
+    target.kind === 'match'
+      ? matchJournalHasContent(journalFields, normalizedTags)
+      : noteHasContent(trimmed, normalizedTags)
+
+  if (!hasContent) {
     return notes.filter(
       (note) =>
         !(
@@ -252,24 +398,42 @@ export function upsertNote(
     )
   }
 
-  const disciplines = disciplineCodesFromFamilies(appliesToDisciplineFamilies)
+  const disciplines =
+    target.kind === 'match'
+      ? []
+      : appliesToDisciplineCodes != null
+        ? normalizeScoutingAppliesToDisciplineCodes(appliesToDisciplineCodes)
+        : normalizeAppliesToDisciplines(disciplineCodesFromFamilies(appliesToDisciplineFamilies))
   const now = new Date().toISOString()
   const existing = getNoteForMatchTarget(notes, context.matchKey, target)
+
+  const storedBody = target.kind === 'match' ? '' : trimmed
+  const storedJournal = target.kind === 'match' ? normalizedJournal : undefined
 
   if (existing != null) {
     return notes.map((note) =>
       note.id === existing.id
-        ? { ...note, body: trimmed, context, appliesToDisciplines: disciplines, updatedAt: now }
+        ? {
+            ...note,
+            body: storedBody,
+            context,
+            appliesToDisciplines: disciplines.length > 0 ? disciplines : undefined,
+            tags: normalizedTags,
+            matchJournal: storedJournal,
+            updatedAt: now,
+          }
         : note,
     )
   }
 
   const created: OpponentNote = {
     id: crypto.randomUUID(),
-    body: trimmed,
+    body: storedBody,
     target,
     context,
-    appliesToDisciplines: disciplines,
+    appliesToDisciplines: disciplines.length > 0 ? disciplines : undefined,
+    tags: normalizedTags,
+    matchJournal: storedJournal,
     createdAt: now,
     updatedAt: now,
   }
@@ -305,8 +469,11 @@ function isValidOpponentNote(value: unknown): value is OpponentNote {
     if (!Array.isArray(note.appliesToDisciplines)) return false
     if (!note.appliesToDisciplines.every((code) => typeof code === 'string')) return false
   }
+  if (note.tags != null && typeof note.tags !== 'object') return false
+  if (note.matchJournal != null && typeof note.matchJournal !== 'object') return false
   if (note.target.kind === 'pair') return true
   if (note.target.kind === 'opponent') return true
+  if (note.target.kind === 'match') return true
   return false
 }
 
@@ -316,7 +483,19 @@ export function serializeNotes(notes: OpponentNote[]): string {
 
 export function formatNoteTargetLabel(target: OpponentNoteTarget): string {
   if (target.kind === 'pair') return 'The pair'
+  if (target.kind === 'match') return 'About this game'
   return target.name
+}
+
+export function getMatchJournalNotes(notes: OpponentNote[]): OpponentNote[] {
+  return sortNotesNewestFirst(notes.filter((note) => isMatchNoteTarget(note.target)))
+}
+
+export function noteHasStoredContent(note: OpponentNote): boolean {
+  if (isMatchNoteTarget(note.target)) {
+    return matchJournalHasContent(getMatchJournalFields(note), note.tags)
+  }
+  return noteHasContent(note.body, note.tags)
 }
 
 export type OpponentNoteGroup = {
@@ -326,8 +505,9 @@ export type OpponentNoteGroup = {
 
 /** Groups notes under each opponent they relate to (including pair notes under both names). */
 export function groupNotesByOpponent(notes: OpponentNote[]): OpponentNoteGroup[] {
+  const scoutingNotes = notes.filter(isScoutingNote)
   const opponentNames = new Set<string>()
-  for (const note of notes) {
+  for (const note of scoutingNotes) {
     if (note.target.kind === 'opponent') opponentNames.add(note.target.name)
     for (const name of note.context.opponentNames) opponentNames.add(name)
   }
@@ -337,7 +517,7 @@ export function groupNotesByOpponent(notes: OpponentNote[]): OpponentNoteGroup[]
     .map((opponentName) => ({
       opponentName,
       notes: sortNotesNewestFirst(
-        notes.filter((note) => noteMatchesOpponent(note, opponentName)),
+        scoutingNotes.filter((note) => noteMatchesOpponent(note, opponentName)),
       ),
     }))
     .filter((group) => group.notes.length > 0)
@@ -418,8 +598,11 @@ export function noteMatchesSearch(note: OpponentNote, query: string): boolean {
   const familyLabels = getNoteAppliesToDisciplineFamilies(note).map(
     (family) => DISCIPLINE_FAMILY_LABELS[family],
   )
+  const journal = getMatchJournalFields(note)
   const haystack = [
     note.body,
+    journal.selfReflection,
+    journal.gameEvents,
     note.context.competitionName,
     note.context.opponentsDisplay,
     note.context.partnerName ?? '',
@@ -430,6 +613,8 @@ export function noteMatchesSearch(note: OpponentNote, query: string): boolean {
     ...disciplineLabels,
     ...getNoteAppliesToDisciplineFamilies(note),
     ...familyLabels,
+    ...formatNoteTagsForDisplay(note.tags),
+    ...formatJournalTagsForDisplay(note.tags),
   ]
     .join(' ')
     .toLowerCase()

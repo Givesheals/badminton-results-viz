@@ -1,20 +1,22 @@
-# Opponent scouting notes — Technical specification
+# Opponent notes — Technical specification
 
 **Product:** Badminton Results Viz  
 **Audience:** Engineers extending opponent note capture, review, or future rematch serving.  
-**Last updated:** June 2026  
+**Last updated:** July 2026  
 
 ---
 
 ## Summary
 
-Players can capture **free-text scouting notes** on opponents from tournament recap match rows. Notes are stored in **localStorage** per player name and can be reviewed on the **Notes** dashboard tab.
+Players can capture **opponent notes** (scouting) and optional **match journal** notes from tournament recap match rows. Notes are stored in **localStorage** per player name and can be reviewed on the **Notes** dashboard tab.
 
-Notes are tied to a specific match (competition, date, discipline, partner, opponents) and support ambiguous doubles targeting: notes can apply to **the pair** or be assigned to a **specific opponent** retrospectively. Each note also declares which **discipline(s)** the scouting insight applies to when facing that opponent again.
+Opponent notes are tied to a specific match and support doubles targeting: notes can apply to **the pair** or a **specific opponent**. Match journal notes apply to **the game itself** (how you played, conditions, partner context) and do not surface on future rematch prompts.
+
+**Tap-to-tag** inputs classify opponent playing styles, pair dynamics (doubles), and journal context. Users can also create **custom tags** remembered per player for quick-add.
 
 ---
 
-## Scope (v1)
+## Scope
 
 | In scope | Out of scope |
 |----------|--------------|
@@ -22,28 +24,36 @@ Notes are tied to a specific match (competition, date, discipline, partner, oppo
 | Notes dashboard tab with search | Inline notes on opponent matchups |
 | localStorage persistence per player | Server sync |
 | Pair vs individual opponent targeting | |
-| Discipline scope selection (all / some / one) | Discipline-filtered note lookup |
+| Match journal (`kind: 'match'`) per game | |
+| Built-in + custom tags | Discipline-filtered note lookup |
+| Discipline scope on opponent notes (`S` / `D` / `XD`) | |
+| Direct notes from Notes tab (no match context) | |
 
 ---
 
 ## Data model
 
-Defined in `src/lib/opponentNotes.ts`.
+Defined in `src/lib/opponentNotes.ts`, `src/lib/noteTags.ts`, and `src/lib/customNoteTags.ts`.
 
 ### `OpponentNoteTarget`
 
 | Variant | Meaning |
 |---------|---------|
-| `{ kind: 'pair' }` | Note applies to both opponents (default for doubles) |
+| `{ kind: 'pair' }` | Note applies to both opponents as a pair |
 | `{ kind: 'opponent', name }` | Note is about one named opponent only |
+| `{ kind: 'match' }` | Match journal note about this game (one per `matchKey`) |
 
-Singles matches auto-assign to the sole opponent.
+Singles matches auto-assign notes to the sole opponent.
+
+Use `MATCH_NOTE_TARGET` constant for the match journal slot.
+
+**Default doubles target:** first opponent name (not the pair).
 
 ### `OpponentNoteMatchContext`
 
 Structured match metadata attached to each note:
 
-- `matchKey` — stable identity aligned with `recapMatchKey()` (one note per match)
+- `matchKey` — stable identity aligned with `recapMatchKey()`; direct notes use `direct\0…` prefix
 - `competitionName`, `date`, `discipline`, `disciplineLabel`
 - `partnerName`, `opponentNames[]`, `opponentsDisplay`
 - `roundLabel`, `outcome`, `scoreSummary`
@@ -56,22 +66,86 @@ Structured match metadata attached to each note:
   body: string
   target: OpponentNoteTarget
   context: OpponentNoteMatchContext
-  appliesToDisciplines?: string[]  // discipline codes; optional for legacy notes
-  createdAt: string   // ISO timestamp
+  appliesToDisciplines?: string[]  // scouting only; S / D / XD (legacy codes collapsed on read)
+  tags?: NoteTags
+  matchJournal?: MatchJournalFields  // match target only
+  createdAt: string
   updatedAt: string
 }
 ```
 
-### `appliesToDisciplines`
+### `MatchJournalFields`
 
-- Array of discipline codes (`MS`, `WS`, `OS`, `MD`, `WD`, `OD`, `XD`) stored internally, derived from user-facing **Singles**, **Doubles**, and **Mixed** family selections.
-- **Default for new notes:** the family of the source match (e.g. an MD match defaults to Doubles).
-- **Legacy notes** without the field fall back to the source match discipline family via `getNoteAppliesToDisciplineFamilies(note)`.
-- Family selections expand to all codes in that family on save (`disciplineCodesFromFamilies()`).
+```typescript
+{
+  selfReflection?: string  // how I played / what to work on
+  gameEvents?: string      // what happened in the game
+}
+```
 
-**Multiple notes per match** — one note per `matchKey` + `target` combination. A doubles match can have separate notes for the pair and each individual opponent.
+Legacy match notes may store diary text in `body` only; readers fall back to `body` for `gameEvents` via `getMatchJournalFields()`.
 
-**One note per target slot.** Reopening the recap button edits notes for that match; switching the target picker loads that opponent's note independently.
+### `NoteTags`
+
+```typescript
+{
+  // Built-in (enum-backed)
+  opponentStyles?: OpponentStyleTag[]    // opponent target
+  pairStyles?: PairStyleTag[]            // pair target (doubles)
+  selfFeel?: SelfFeelTag[]              // journal: I was tired, I felt sharp, …
+  partnerContext?: PartnerContextTag[]   // journal: partner injured (doubles)
+  matchFlow?: MatchFlowTag[]            // journal: we came back, we lost a lead
+
+  // Custom (free-text, per note)
+  customOpponentStyles?: string[]
+  customPairStyles?: string[]
+  customSelfFeel?: string[]
+  customGameEvents?: string[]
+}
+```
+
+Legacy `gameContext` tags are migrated on read to `selfFeel` / `partnerContext`.
+
+**Content rule:** Opponent notes use `noteHasContent(body, tags)`. Match journal notes use `matchJournalHasContent()` across `matchJournal` fields, journal tags, and legacy `body`.
+
+### Discipline scope (`appliesToDisciplines`)
+
+Scouting notes can be scoped to which discipline types the observation applies to when facing that opponent again.
+
+| Scope code | Meaning | Chip styling |
+|------------|---------|--------------|
+| `S` | Singles (any of MS, WS, OS) | Singles colour |
+| `D` | Doubles (any of MD, WD, OD) | Doubles colour |
+| `XD` | Mixed doubles | Mixed colour |
+
+**Offered codes:** `SCOUTING_APPLIES_TO_DISCIPLINE_CODES = ['S', 'D', 'XD']`
+
+- Direct notes default to all three.
+- Notes from a match row default to the scope matching that match’s discipline family.
+- Legacy stored codes (`OS`, `WS`, `OD`, `WD`, `MS`, `MD`, etc.) collapse to `S` / `D` / `XD` on read via `collapseToScoutingScopeCodes()`.
+- New saves store `S` / `D` / `XD` only.
+
+Helpers: `getNoteScoutingAppliesToDisciplineCodes()`, `normalizeScoutingAppliesToDisciplineCodes()`, `mapToScoutingAppliesToCode()`.
+
+### Custom tag library (quick-add)
+
+Separate from per-note tag storage. Remembered per player for the `+` quick-add row.
+
+| Key | Value |
+|-----|-------|
+| `badminton-custom-note-tags:{playerName}` | JSON map of `CustomTagGroup` → `string[]` |
+
+Groups: `opponentStyles`, `pairStyles`, `selfFeel`, `gameEvents`.
+
+| Rule | Value |
+|------|-------|
+| Max tags per group | 6 |
+| Max label length | 24 characters |
+| Deduping | Case-insensitive |
+
+Implemented in `src/lib/customNoteTags.ts`.
+
+Bulk updates when renaming or removing a library tag (optional, user-confirmed) are in `src/lib/customTagNoteUpdates.ts` and exposed via `renameCustomTagEverywhere` / `removeCustomTagEverywhere` on the notes context.
 
 ---
 
@@ -81,9 +155,7 @@ Structured match metadata attached to each note:
 |-----|-------|
 | `opponent-notes:{playerName}` (lowercased, trimmed) | JSON array of `OpponentNote` |
 
-- Re-importing the same player retains notes.
-- Clearing site data resets notes.
-- Implemented in `src/hooks/useOpponentNotes.ts`.
+Implemented in `src/hooks/useOpponentNotes.ts`.
 
 ---
 
@@ -93,48 +165,84 @@ Structured match metadata attached to each note:
 getNotesForOpponent(allNotes, drawnOpponentName)
 ```
 
-Returns notes where:
+Returns **scouting notes only** (`target.kind !== 'match'`) where:
 
 1. `target.kind === 'opponent'` and `target.name` matches, **or**
 2. `target.kind === 'pair'` and `opponentNames` includes the name.
 
-Pair-targeted notes surface when **either** opponent is redrawn. Users can refine assignment via the modal target picker without breaking lookup.
+Match journal notes are excluded from rematch lookup.
+
+```typescript
+getMatchJournalNotes(allNotes)  // all notes with target.kind === 'match'
+```
 
 ---
 
 ## UI
 
-### Capture entry point
+### Capture entry points
 
-`DisciplineMatchRow` shows an `OpponentNoteButton` on every match row in the tournament recap. Filled icon when a note exists; outline when empty.
-
-The **Notes** tab header includes an **Add note** button that opens `OpponentPickerModal` → `OpponentNoteModal` for direct notes about a single opponent (see [future global player search backlog](./future/backlog-opponent-notes-global-player-search.md)).
+1. **Events tab** — `DisciplineMatchRow` shows `OpponentNoteButton` on every match row (pen icon when notes exist, plus icon when empty). Opens modal with match context.
+2. **Notes tab** — **Add note** → opponent picker → modal with `buildDirectNoteContext()` (opponent-notes only; no **My game** tab).
 
 ### Modal (`OpponentNoteModal`)
 
-| State | Behaviour |
-|-------|-----------|
-| Create | Empty textarea; target picker (doubles only); discipline picker defaulting to source match discipline; switching targets loads that target's note |
-| Edit | Pre-filled body and discipline selection for selected target; Save / Cancel / Delete |
-| Target picker | “The pair” / individual opponent names; dot indicates another target already has a note |
-| Discipline picker | Toggle buttons for **Singles**, **Doubles**, and **Mixed** using discipline family colours; **Select all** / **Clear** shortcuts; at least one family required to save |
+Title: **Add match notes** / **Edit match notes**.
 
-Uses centered `Modal` component (`src/components/ui/Modal.tsx`).
+Top-level mode tabs: **About them** | **My game** (game tab hidden for direct notes from the Notes tab).
 
-### Notes tab
+#### About them tab
 
-Dashboard tab **Notes** (`OpponentNotesSection`):
+- Segmented opponent control (doubles): opponent names first, **The pair** last
+- **Combo note box** — textarea with selected tag chips inside the bordered area (tap chip to remove from this note)
+- **Quick-add row** below the box: `+ {tag label}` buttons for unselected built-in and remembered custom tags
+- **`···` button** at end of quick-add row — opens **Your tags** management panel (see below)
+- **Applies to:** collapsed discipline scope — selected `S` / `D` / `XD` chips + **Change** link; expanded picker toggles all three scope chips + **Done**
 
-- Notes grouped by opponent name (pair notes appear under each player in the pair)
-- Each note shows **discipline family badges** (`DisciplineFamilyChip`: Singles / Doubles / Mixed) inline on the **Recorded** metadata line
-- Each note shows the note body in quotation marks with minimal chrome; pair notes include a muted **About the pair** line
-- **Recorded** line shows create/edit timestamps; a **View match result** control expands the full match scoreboard
-- **Edit** uses the same purple note icon as the Events tab
-- Match footer uses tournament category chip, source-match discipline chip, and nemeses-style scoreboard row
-- Search by opponent, competition, note text, or discipline code/label
-- **Edit** opens the same modal used from recap match rows
+Playing style tags (built-in + custom) are scoped to opponent vs pair target.
 
-Tab order: Events → This season → Player summary → People → Notes.
+#### My game tab
+
+Two sections, each with the same combo-box + quick-add pattern:
+
+| Section | Text field | Built-in tag groups |
+|---------|------------|---------------------|
+| **How I played** | Self-reflection textarea | `selfFeel` |
+| **What happened** | Game events textarea | `matchFlow` + `partnerContext` (doubles) |
+
+#### Tag interaction model
+
+| Action | Behaviour |
+|--------|-----------|
+| Tap `+ {label}` below box | Add tag to this note (chip appears inside combo box) |
+| Tap chip inside combo box | Remove tag from **this note only** |
+| Tap `···` | Open tag management panel |
+
+#### Your tags panel (`···`)
+
+Inline panel for managing the **custom tag library** (not built-in tags):
+
+- **Add** new custom tag (subject to per-group limit)
+- **Rename** a custom tag — optional checkbox to also rename on all saved notes that use it (shows count)
+- **Remove** from quick-add — optional checkbox to also remove from all saved notes (shows count)
+
+Footer copy explains that removing from quick-add does not change saved notes unless the user opts in.
+
+Save persists both modal modes. Delete is mode-specific: **Delete opponent note** / **Delete game note**.
+
+### Notes tab (`OpponentNotesSection`)
+
+Two areas:
+
+1. **Opponent notes** — grouped by opponent name (pair-scoped notes appear under each player in the pair)
+2. **Match journal** — chronological game notes (`getMatchJournalNotes()`), not grouped by opponent
+
+**Review layout:**
+
+- Opponent notes: tag chips above quote text; discipline scope chips (`S` / `D` / `XD`) in metadata row
+- Journal entries: **How I played** and **What happened** blocks each show tag chips above quote text when present
+
+Search matches body, journal fields, opponents, competition, disciplines, scope codes, and tag labels.
 
 ---
 
@@ -142,27 +250,32 @@ Tab order: Events → This season → Player summary → People → Notes.
 
 | Concern | Location |
 |---------|----------|
-| Types, CRUD, lookup | `src/lib/opponentNotes.ts` |
-| Match context builder | `buildNoteContextFromMatch()` |
-| Recap data extension | `DisciplineMatchRecap.noteContext` in `src/lib/tournamentRecap.ts` |
-| Persistence hook | `src/hooks/useOpponentNotes.ts` |
-| React context | `src/context/OpponentNotesContext.tsx` |
+| Types, CRUD, lookup, discipline scope | `src/lib/opponentNotes.ts` |
+| Tag catalogues, normalization, display | `src/lib/noteTags.ts` |
+| Custom tag library (localStorage) | `src/lib/customNoteTags.ts` |
+| Bulk tag rename/remove on notes | `src/lib/customTagNoteUpdates.ts` |
+| Tag picker + combo box UI | `src/components/notes/NoteTagPicker.tsx` |
 | Modal UI | `src/components/notes/OpponentNoteModal.tsx` |
-| Recap button | `src/components/notes/OpponentNoteButton.tsx` |
 | Notes tab | `src/components/notes/OpponentNotesSection.tsx` |
-| Dashboard wiring | `src/components/dashboard/Dashboard.tsx` |
+| Persistence hook + bulk tag ops | `src/hooks/useOpponentNotes.ts` |
+| Discipline chip styling (`S`, `D`, match codes) | `src/lib/disciplineStyle.ts` |
 
 ---
 
 ## Tests
 
-- `src/lib/opponentNotes.test.ts` — storage key, targeting, upsert, discipline scope, lookup, search
+| File | Coverage |
+|------|----------|
+| `src/lib/opponentNotes.test.ts` | Targeting, match journal, discipline scope (`S`/`D`/`XD`), grouping, upsert |
+| `src/lib/noteTags.test.ts` | Normalization, display, scouting tag scoping, custom tags |
+| `src/lib/customNoteTags.test.ts` | Library storage, limits, deduping |
+| `src/lib/customTagNoteUpdates.test.ts` | Bulk rename/remove on saved notes |
 
 ---
 
 ## Future integration
 
-When a draw/rematch feature exists (possibly outside this app):
+When a draw/rematch feature exists:
 
 ```typescript
 const relevant = sortNotesNewestFirst(
@@ -170,4 +283,6 @@ const relevant = sortNotesNewestFirst(
 )
 ```
 
-Show `relevant` in a notification or pre-match prompt. No v1 UI for this path is required; the lookup contract is stable.
+Match journal notes are intentionally omitted from this path.
+
+See also: [Backlog: global player search for direct opponent notes](future/backlog-opponent-notes-global-player-search.md).

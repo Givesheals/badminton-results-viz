@@ -8,7 +8,7 @@
 
 ## Context
 
-The Notes tab now supports **Add note** → pick an opponent → write a scouting note without tying it to a specific match (`buildDirectNoteContext()` in `src/lib/opponentNotes.ts`).
+The Notes tab supports **Add note** → pick an opponent → write an opponent note without tying it to a specific match (`buildDirectNoteContext()` in `src/lib/opponentNotes.ts`). Direct notes default discipline scope to **S**, **D**, and **XD**.
 
 In the prototype, the opponent picker (`OpponentPickerModal`) only lists players who appear in the user’s imported match history (`collectKnownOpponentNames()`).
 
@@ -49,7 +49,7 @@ Examples:
 
 - [ ] Opponent picker searches beyond imported match history
 - [ ] Results show players the user has never played
-- [ ] Selected player opens the existing note compose modal (single-player target, discipline families)
+- [ ] Selected player opens the existing note compose modal (single-player target; discipline scope S / D / XD)
 - [ ] Empty search state explains difference between “no history” vs “no registry match”
 - [ ] Document sync behaviour if player later appears in imported results
 

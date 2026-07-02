@@ -14,7 +14,14 @@ import {
   type OpponentNoteMatchContext,
   type OpponentNoteTarget,
 } from '../lib/opponentNotes'
+import {
+  removeCustomTagFromAllNotes,
+  renameCustomTagOnAllNotes,
+} from '../lib/customTagNoteUpdates'
+import type { CustomTagGroup } from '../lib/customNoteTags'
 import type { SelectableDisciplineFamily } from '../lib/disciplineStyle'
+import type { MatchJournalFields } from '../lib/opponentNotes'
+import type { NoteTags } from '../lib/noteTags'
 
 function loadNotes(storageKey: string | null): OpponentNote[] {
   if (storageKey == null || typeof window === 'undefined') return []
@@ -66,9 +73,21 @@ export function useOpponentNotes(playerName: string | null) {
       body: string,
       target: OpponentNoteTarget,
       appliesToDisciplineFamilies: SelectableDisciplineFamily[],
+      tags?: NoteTags,
+      matchJournal?: MatchJournalFields,
+      appliesToDisciplineCodes?: string[],
     ) => {
       setNotes((prev) =>
-        upsertNoteInList(prev, context, body, target, appliesToDisciplineFamilies),
+        upsertNoteInList(
+          prev,
+          context,
+          body,
+          target,
+          appliesToDisciplineFamilies,
+          tags,
+          matchJournal,
+          appliesToDisciplineCodes,
+        ),
       )
     },
     [],
@@ -76,6 +95,17 @@ export function useOpponentNotes(playerName: string | null) {
 
   const deleteNote = useCallback((id: string) => {
     setNotes((prev) => deleteNoteInList(prev, id))
+  }, [])
+
+  const renameCustomTagEverywhere = useCallback(
+    (group: CustomTagGroup, oldLabel: string, newLabel: string) => {
+      setNotes((prev) => renameCustomTagOnAllNotes(prev, group, oldLabel, newLabel))
+    },
+    [],
+  )
+
+  const removeCustomTagEverywhere = useCallback((group: CustomTagGroup, label: string) => {
+    setNotes((prev) => removeCustomTagFromAllNotes(prev, group, label))
   }, [])
 
   return {
@@ -86,5 +116,7 @@ export function useOpponentNotes(playerName: string | null) {
     notesForOpponent,
     upsertNote,
     deleteNote,
+    renameCustomTagEverywhere,
+    removeCustomTagEverywhere,
   }
 }

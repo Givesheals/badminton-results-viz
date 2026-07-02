@@ -36,6 +36,8 @@ Stages are ordered by `STAGE_RANK` (1 = shallowest):
 
 **Category milestones** (`Grp`, `GW`, `QF`, `SF`, `RU`, `W`) are **cumulative by rank**: reaching runner-up ticks all shallower milestones for that tournament level + age combination.
 
+In the dashboard UI, shallower achieved rounds are **auto-claimed on load**; only the deepest achieved round per card stays claimable until the player taps it. See [category-milestone-claims-spec.md](category-milestone-claims-spec.md).
+
 **Progression UI** merges `knockout` into `quarter-final` on the depth bar only.
 
 **County** events and events with no parseable round labels are excluded from progression stats.
@@ -157,7 +159,7 @@ unique opponents in group-phase matches + 1
 | `seasonJourney.ts` | Weekend dots via `bestStageFromMatchesForAchievements` |
 | `partnerAchievements.ts` | Partner depth via `bestStageFromMatchesForAchievements` |
 | Category milestones UI | `computeCategoryMilestones` → `buildCategoryCompletionMilestones` |
-| Category milestone claims | `categoryMilestoneClaims.ts`, `useCategoryMilestoneClaims` — see [category-milestone-claims-spec.md](category-milestone-claims-spec.md) |
+| Category milestone claims | `buildFrontierAutoClaims`, `categoryMilestoneClaims.ts`, `useCategoryMilestoneClaims` — see [category-milestone-claims-spec.md](category-milestone-claims-spec.md) |
 
 All depth consumers should use `bestStageFromMatches*` (not raw round labels per match).
 

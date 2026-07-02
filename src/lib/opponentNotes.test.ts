@@ -5,14 +5,22 @@ import {
   collectKnownOpponentNames,
   defaultAppliesToDisciplineFamilies,
   defaultAppliesToDisciplines,
+  defaultScoutingAppliesToDisciplineCodes,
   defaultNoteTarget,
   deleteNote,
   disciplineCodesFromFamilies,
   disciplineFamiliesFromCodes,
   getNoteAppliesToDisciplineFamilies,
   getNoteAppliesToDisciplines,
+  getNoteScoutingAppliesToDisciplineCodes,
+  getMatchJournalFields,
   getNoteForMatchTarget,
+  getMatchJournalNotes,
   groupNotesByOpponent,
+  isMatchNoteTarget,
+  MATCH_NOTE_TARGET,
+  matchJournalHasContent,
+  noteHasStoredContent,
   isDirectNoteContext,
   formatNoteMatchTriggerLabel,
   formatNoteScopeInGroup,
@@ -66,7 +74,7 @@ describe('opponentNotes', () => {
   })
 
   it('defaults target to pair for doubles and opponent for singles', () => {
-    expect(defaultNoteTarget(['Smith', 'Jones'])).toEqual({ kind: 'pair' })
+    expect(defaultNoteTarget(['Smith', 'Jones'])).toEqual({ kind: 'opponent', name: 'Smith' })
     expect(defaultNoteTarget(['Smith'])).toEqual({ kind: 'opponent', name: 'Smith' })
   })
 
@@ -81,6 +89,95 @@ describe('opponentNotes', () => {
     const notes = [note({ target: { kind: 'opponent', name: 'Smith' } })]
     expect(getNotesForOpponent(notes, 'Smith')).toHaveLength(1)
     expect(getNotesForOpponent(notes, 'Jones')).toHaveLength(0)
+  })
+
+  it('excludes match journal notes from opponent lookup', () => {
+    const scouting = note()
+    const journal = note({
+      id: 'journal',
+      body: 'I was exhausted',
+      target: MATCH_NOTE_TARGET,
+    })
+    const notes = [scouting, journal]
+    expect(getNotesForOpponent(notes, 'Smith')).toHaveLength(1)
+    expect(getNotesForOpponent(notes, 'Jones')).toHaveLength(1)
+    expect(getMatchJournalNotes(notes)).toHaveLength(1)
+    expect(isMatchNoteTarget(journal.target)).toBe(true)
+    expect(noteHasStoredContent(journal)).toBe(true)
+  })
+
+  it('upserts match journal notes separately from scouting targets', () => {
+    const ctx = makeContext()
+    const families = ['mixed'] as const
+    const withScouting = upsertNote([], ctx, 'Weak serve', { kind: 'pair' }, [...families])
+    const withJournal = upsertNote(
+      withScouting,
+      ctx,
+      '',
+      MATCH_NOTE_TARGET,
+      [],
+      { selfFeel: ['tired'], matchFlow: ['comeback_us'] },
+      { selfReflection: 'Faded in game 2', gameEvents: 'Long day' },
+    )
+    expect(withJournal).toHaveLength(2)
+    const journal = getNoteForMatchTarget(withJournal, ctx.matchKey, MATCH_NOTE_TARGET)
+    expect(journal?.tags).toEqual({
+      selfFeel: ['tired'],
+      matchFlow: ['comeback_us'],
+    })
+    expect(journal?.matchJournal).toEqual({
+      selfReflection: 'Faded in game 2',
+      gameEvents: 'Long day',
+    })
+    expect(journal?.body).toBe('')
+  })
+
+  it('reads legacy match journal body as game events', () => {
+    const legacy = note({
+      body: 'Partner got injured',
+      target: MATCH_NOTE_TARGET,
+    })
+    expect(getMatchJournalFields(legacy)).toEqual({
+      selfReflection: '',
+      gameEvents: 'Partner got injured',
+    })
+    expect(matchJournalHasContent(getMatchJournalFields(legacy), legacy.tags)).toBe(true)
+  })
+
+  it('allows tags-only scouting notes without body text', () => {
+    const ctx = makeContext({ discipline: 'MS', disciplineLabel: "Men's singles" })
+    const created = upsertNote(
+      [],
+      ctx,
+      '',
+      { kind: 'opponent', name: 'Smith' },
+      ['singles'],
+      { opponentStyles: ['front_court', 'flat_pace'] },
+    )
+    expect(created).toHaveLength(1)
+    expect(created[0]?.body).toBe('')
+    expect(created[0]?.tags).toEqual({
+      opponentStyles: ['front_court', 'flat_pace'],
+    })
+    expect(noteHasStoredContent(created[0]!)).toBe(true)
+  })
+
+  it('groups only scouting notes under opponents', () => {
+    const pairNote = note({
+      id: 'pair-1',
+      body: 'Strong rotation',
+      target: { kind: 'pair' },
+    })
+    const journal = note({
+      id: 'journal',
+      body: 'Partner injured',
+      target: MATCH_NOTE_TARGET,
+    })
+    const groups = groupNotesByOpponent([pairNote, journal])
+    expect(groups).toHaveLength(2)
+    expect(groups.every((group) => group.notes.every((n) => !isMatchNoteTarget(n.target)))).toBe(
+      true,
+    )
   })
 
   it('upserts by matchKey and target, allowing separate notes per opponent', () => {
@@ -113,6 +210,32 @@ describe('opponentNotes', () => {
       name: 'Smith',
     }, [...families])
     expect(removedSmith).toHaveLength(2)
+  })
+
+  it('defaults scouting discipline scope to S, D, and XD for direct notes', () => {
+    const ctx = buildDirectNoteContext('Smith')
+    expect(defaultScoutingAppliesToDisciplineCodes(ctx)).toEqual(['S', 'D', 'XD'])
+  })
+
+  it('maps match discipline to scouting scope codes S, D, or XD', () => {
+    expect(defaultScoutingAppliesToDisciplineCodes(makeContext({ discipline: 'MD' }))).toEqual(['D'])
+    expect(defaultScoutingAppliesToDisciplineCodes(makeContext({ discipline: 'MS' }))).toEqual(['S'])
+    expect(defaultScoutingAppliesToDisciplineCodes(makeContext({ discipline: 'WS' }))).toEqual(['S'])
+    expect(defaultScoutingAppliesToDisciplineCodes(makeContext({ discipline: 'XD' }))).toEqual(['XD'])
+  })
+
+  it('collapses legacy stored codes to scouting scope chips', () => {
+    const legacy = note({ appliesToDisciplines: ['MS', 'WS', 'OS', 'MD', 'WD'] })
+    expect(getNoteScoutingAppliesToDisciplineCodes(legacy)).toEqual(['S', 'D'])
+  })
+
+  it('stores scouting appliesToDisciplines as S, D, XD scope codes on upsert', () => {
+    const ctx = makeContext()
+    const created = upsertNote([], ctx, 'Weak serve', { kind: 'pair' }, [], undefined, undefined, [
+      'S',
+      'XD',
+    ])
+    expect(created[0]?.appliesToDisciplines).toEqual(['S', 'XD'])
   })
 
   it('defaults discipline scope to the source match family', () => {

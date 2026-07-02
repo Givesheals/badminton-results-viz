@@ -94,14 +94,15 @@ export const categoryMilestonesInfo = (
     <p>
       Milestones are cumulative: reaching runner-up also ticks off group wins, quarter-final,
       and semi-final for that category — including when you skip a round (e.g. box straight to
-      semi-final). Tap a green tick to see when you first reached that stage — competition,
-      date, and partner.
+      semi-final).
     </p>
     <p>
-      When you unlock a new round, tap the pulsing badge to claim it. Once every round is
-      claimed, tap <strong>Claim</strong> on the card to collapse it into a compact complete
-      row and cut down on visual clutter. Tap a complete row to expand it again and review
-      your milestone ticks.
+      Shallower milestones on each card are filled in automatically — only your best achieved
+      finish in that category shows a pulsing badge to claim. Tap it to acknowledge that peak,
+      then tap <strong>Claim</strong> on the card once every round is claimed to collapse it into
+      a compact complete row and cut down on visual clutter. Tap a complete row to expand it
+      again and review your milestone ticks. Tap a green tick to see when you first reached that
+      stage — competition, date, and partner.
     </p>
     <p>
       In knockout-only events you must win a match to credit quarter-finals or deeper. A lone

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildCategoryMilestoneClaimTarget,
+  buildFrontierAutoClaims,
   categoryMilestoneCardKey,
   categoryMilestoneRoundKey,
   categoryMilestoneRowId,
   comboKeyFromRow,
+  deepestAchievedMilestone,
   resolveCardDisplayState,
   resolveRoundDisplayState,
 } from './categoryMilestoneClaims'
@@ -79,5 +81,61 @@ describe('categoryMilestoneClaims', () => {
       stage: 'quarter-final',
     })
     expect(buildCategoryMilestoneClaimTarget('Silver', 'Senior', 'knockout')).toBeNull()
+  })
+
+  it('finds the deepest achieved milestone on a card', () => {
+    const milestones = [
+      milestone('group-stages', true),
+      milestone('group-wins', true),
+      milestone('quarter-final', true),
+      milestone('semi-final', false),
+      milestone('runner-up', false),
+      milestone('winner', false),
+    ]
+
+    expect(deepestAchievedMilestone(milestones)?.stage).toBe('quarter-final')
+    expect(deepestAchievedMilestone([milestone('group-stages', false)])).toBeNull()
+  })
+
+  it('auto-claims achieved rounds except the frontier per card', () => {
+    const partialRow = {
+      tournamentCategoryLabel: 'Silver',
+      competitionAgeLabel: 'Senior',
+      label: 'Senior · Silver',
+      tournamentCount: 3,
+      milestones: [
+        milestone('group-stages', true),
+        milestone('group-wins', true),
+        milestone('quarter-final', false),
+        milestone('semi-final', false),
+        milestone('runner-up', false),
+        milestone('winner', false),
+      ],
+    }
+
+    const completeRow = {
+      tournamentCategoryLabel: 'Bronze',
+      competitionAgeLabel: 'Senior',
+      label: 'Senior · Bronze',
+      tournamentCount: 5,
+      milestones: [
+        milestone('group-stages', true),
+        milestone('group-wins', true),
+        milestone('quarter-final', true),
+        milestone('semi-final', true),
+        milestone('runner-up', true),
+        milestone('winner', true),
+      ],
+    }
+
+    const claims = buildFrontierAutoClaims([partialRow, completeRow])
+    const silverKey = comboKeyFromRow('Silver', 'Senior')
+    const bronzeKey = comboKeyFromRow('Bronze', 'Senior')
+
+    expect(claims.has(categoryMilestoneRoundKey(silverKey, 'group-stages'))).toBe(true)
+    expect(claims.has(categoryMilestoneRoundKey(silverKey, 'group-wins'))).toBe(false)
+    expect(claims.has(categoryMilestoneRoundKey(bronzeKey, 'winner'))).toBe(false)
+    expect(claims.has(categoryMilestoneRoundKey(bronzeKey, 'runner-up'))).toBe(true)
+    expect(claims.has(categoryMilestoneRoundKey(bronzeKey, 'group-stages'))).toBe(true)
   })
 })
