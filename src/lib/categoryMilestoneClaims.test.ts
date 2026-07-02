@@ -103,6 +103,7 @@ describe('categoryMilestoneClaims', () => {
       competitionAgeLabel: 'Senior',
       label: 'Senior · Silver',
       tournamentCount: 3,
+      bestStageRank: 2,
       milestones: [
         milestone('group-stages', true),
         milestone('group-wins', true),
@@ -118,6 +119,7 @@ describe('categoryMilestoneClaims', () => {
       competitionAgeLabel: 'Senior',
       label: 'Senior · Bronze',
       tournamentCount: 5,
+      bestStageRank: 7,
       milestones: [
         milestone('group-stages', true),
         milestone('group-wins', true),
