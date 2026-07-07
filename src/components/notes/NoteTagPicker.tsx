@@ -439,6 +439,7 @@ function TagAddRow({
   onRememberedChange,
   selectedCustom,
   onSelectedCustomChange,
+  emphasizeAddLabel,
 }: {
   unselectedOptions: { label: string; hint?: string }[]
   onAdd: (label: string) => void
@@ -448,6 +449,7 @@ function TagAddRow({
   onRememberedChange: (tags: string[]) => void
   selectedCustom: string[]
   onSelectedCustomChange: (values: string[]) => void
+  emphasizeAddLabel?: string | null
 }) {
   const [manageOpen, setManageOpen] = useState(false)
 
@@ -460,7 +462,11 @@ function TagAddRow({
             type="button"
             title={option.hint}
             onClick={() => onAdd(option.label)}
-            className={ADD_TAG_CLASS}
+            className={`${ADD_TAG_CLASS} ${
+              emphasizeAddLabel === option.label
+                ? 'premium-notes-demo-chip-press scale-95 border-brand-300 bg-brand-50 text-brand-800 ring-2 ring-brand-200'
+                : ''
+            }`}
           >
             <span aria-hidden="true">+</span>
             {option.label}
@@ -506,6 +512,7 @@ function TaggedNoteSection<T extends string>({
   onSelectedCustomChange,
   customTagGroup,
   playerName,
+  emphasizeAddLabel,
 }: {
   sectionTitle?: string
   textareaId: string
@@ -520,6 +527,7 @@ function TaggedNoteSection<T extends string>({
   onSelectedCustomChange: (values: string[]) => void
   customTagGroup: CustomTagGroup
   playerName: string | null
+  emphasizeAddLabel?: string | null
 }) {
   const [rememberedCustom, setRememberedCustom] = useState(
     () => loadRememberedCustomTags(playerName)[customTagGroup],
@@ -591,6 +599,7 @@ function TaggedNoteSection<T extends string>({
         onRememberedChange={setRememberedCustom}
         selectedCustom={selectedCustom}
         onSelectedCustomChange={onSelectedCustomChange}
+        emphasizeAddLabel={emphasizeAddLabel}
       />
     </section>
   )
@@ -634,6 +643,7 @@ export function OpponentStyleNoteSection({
   selectedCustom,
   onSelectedCustomChange,
   playerName,
+  emphasizeAddLabel,
 }: {
   body: string
   onBodyChange: (value: string) => void
@@ -642,6 +652,7 @@ export function OpponentStyleNoteSection({
   selectedCustom: string[]
   onSelectedCustomChange: (values: string[]) => void
   playerName: string | null
+  emphasizeAddLabel?: string | null
 }) {
   return (
     <TaggedNoteSection
@@ -657,6 +668,7 @@ export function OpponentStyleNoteSection({
       onSelectedCustomChange={onSelectedCustomChange}
       customTagGroup="opponentStyles"
       playerName={playerName}
+      emphasizeAddLabel={emphasizeAddLabel}
     />
   )
 }

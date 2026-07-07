@@ -21,7 +21,11 @@ import { SeasonJourneySection } from './SeasonJourneySection'
 import { TournamentRecapSection } from './TournamentRecapSection'
 import { OpponentNotesProvider } from '../../context/OpponentNotesContext'
 
-export function Dashboard() {
+type Props = {
+  showcaseMode?: boolean
+}
+
+export function Dashboard({ showcaseMode = false }: Props) {
   const { dataset, clearDataset } = useDataset()
 
   const allMatches = useMemo(
@@ -64,13 +68,15 @@ export function Dashboard() {
             <p className="text-sm text-ink-700">{dateRange}</p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={clearDataset}
-          className="rounded-lg border border-ink-100 bg-white px-3 py-1.5 text-sm text-ink-700 hover:bg-ink-50"
-        >
-          Clear & upload another
-        </button>
+        {!showcaseMode && (
+          <button
+            type="button"
+            onClick={clearDataset}
+            className="rounded-lg border border-ink-100 bg-white px-3 py-1.5 text-sm text-ink-700 hover:bg-ink-50"
+          >
+            Clear & upload another
+          </button>
+        )}
       </section>
 
       <DashboardNavigationProvider>

@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local showcase source data (screenshots in public/premium-showcase/ are committed)
+marketing/*.xlsx
+public/premium-showcase/dataset.json

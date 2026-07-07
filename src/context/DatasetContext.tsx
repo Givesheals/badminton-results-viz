@@ -16,6 +16,7 @@ type DatasetContextValue = {
   error: string | null
   loadFile: (file: File) => Promise<void>
   loadSample: () => void
+  loadParsed: (parsed: ParsedDataset) => void
   clearDataset: () => void
 }
 
@@ -59,6 +60,12 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
     setDataset({ ...sampleDataset, importedAt: new Date().toISOString() })
   }, [])
 
+  const loadParsed = useCallback((parsed: ParsedDataset) => {
+    setError(null)
+    clearDashboardSectionHash()
+    setDataset(parsed)
+  }, [])
+
   const clearDataset = useCallback(() => {
     setDataset(null)
     setError(null)
@@ -71,9 +78,10 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
       error,
       loadFile,
       loadSample,
+      loadParsed,
       clearDataset,
     }),
-    [dataset, isLoading, error, loadFile, loadSample, clearDataset],
+    [dataset, isLoading, error, loadFile, loadSample, loadParsed, clearDataset],
   )
 
   return (

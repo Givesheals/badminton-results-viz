@@ -14,6 +14,7 @@ import {
   type PremiumPlan,
 } from '../../lib/premiumPricing'
 import { BePlayerSearch } from './BePlayerSearch'
+import { PremiumShowcaseCarousel } from './PremiumShowcaseCarousel'
 
 type Step = 'value' | 'details' | 'payment' | 'success'
 
@@ -25,11 +26,11 @@ type Props = {
 }
 
 const PREMIUM_BENEFITS = [
-  'Tournament partners — how far you run together',
+  'Tournament recaps & weekend performance',
   'Partner chemistry & opponent matchups',
-  'Tournament progression & category milestones',
-  'Player type profile & season journey',
-  'Deeper insights from your match history',
+  'Category milestones & tournament progression',
+  'Scouting notes & match journal',
+  'Player profile & season journey',
 ]
 
 export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerification }: Props) {
@@ -105,7 +106,7 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
     }
 
     const email = receiptEmail.trim()
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setEmailError('Enter a valid email address for receipts.')
       valid = false
     }
@@ -115,10 +116,12 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
 
   function handleSubscribe() {
     if (!selectedPlayer) return
+    const resolvedReceiptEmail =
+      receiptEmail.trim() || selectedPlayer.maskedEmail
     const code = subscribe({
       playerName: selectedPlayer.name,
       beNumber: selectedPlayer.beNumber,
-      receiptEmail,
+      receiptEmail: resolvedReceiptEmail,
       plan,
     })
     setLastDevCode(code)
@@ -153,7 +156,11 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="card-frame fixed left-1/2 top-1/2 z-[70] flex max-h-[min(92vh,720px)] w-[min(100vw-2rem,32rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-2 ring-brand-200 outline-none"
+        className={`card-frame fixed left-1/2 top-1/2 z-[70] flex max-h-[min(92vh,720px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-2 ring-brand-200 outline-none ${
+          step === 'value'
+            ? 'w-[min(100vw-2rem,42rem)]'
+            : 'w-[min(100vw-2rem,32rem)]'
+        }`}
       >
         <div className="border-b border-ink-100 px-4 py-3 sm:px-5">
           <div className="flex items-center gap-2">
@@ -172,9 +179,11 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
           {step === 'value' && (
             <div className="space-y-5">
+              <PremiumShowcaseCarousel />
+
               <p className="text-sm text-ink-700">
-                Unlock deeper insights from match history — advanced stats, progression tracking,
-                and more.
+                Unlock deeper insights from your match history — analytics, progression, and
+                tools to prepare for your next game.
               </p>
 
               <ul className="space-y-2">
@@ -188,13 +197,9 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
                 ))}
               </ul>
 
-              <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
-                <p className="font-medium">Private Discord</p>
-                <p className="mt-1 text-brand-700">
-                  Talk directly to the team and shape the product — available right after you
-                  subscribe.
-                </p>
-              </div>
+              <p className="text-xs text-ink-500">
+                Beta subscribers also get access to a private Discord for feedback.
+              </p>
 
               <fieldset>
                 <legend className="sr-only">Choose a plan</legend>
@@ -269,7 +274,8 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
               />
 
               <label className="block text-sm font-medium text-ink-900">
-                Receipt email
+                Receipt email{' '}
+                <span className="font-normal text-ink-500">(optional)</span>
                 <input
                   type="email"
                   autoComplete="email"
@@ -282,6 +288,11 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
                   placeholder="you@example.com"
                 />
               </label>
+              <p className="text-xs text-ink-500">
+                {selectedPlayer
+                  ? `Leave blank to send receipts to your Badminton England email (${selectedPlayer.maskedEmail}).`
+                  : 'Leave blank to send receipts to the email on your Badminton England record.'}
+              </p>
               {emailError && <p className="text-sm text-loss-600">{emailError}</p>}
             </div>
           )}
@@ -391,15 +402,6 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
               </p>
               <p>Advanced stats are now unlocked for this player on your account.</p>
 
-              <a
-                href="https://discord.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center rounded-xl bg-[#5865F2] px-4 py-3 font-semibold text-white hover:bg-[#4752c4]"
-              >
-                Join private Discord
-              </a>
-
               <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
                 <p className="font-medium text-brand-900">Activate your subscription</p>
                 <p className="mt-1 text-brand-800">
@@ -418,6 +420,15 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
                   Enter activation code →
                 </button>
               </div>
+
+              <a
+                href="https://discord.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center rounded-xl border border-ink-200 bg-white px-4 py-2.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+              >
+                Join private Discord
+              </a>
             </div>
           )}
         </div>

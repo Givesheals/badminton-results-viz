@@ -63,7 +63,7 @@ export function TournamentRecapSection({ allMatches }: Props) {
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
+    <section id="tournament-recap" className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
       <div className="bg-gradient-to-br from-brand-50 via-white to-court-50/40 px-4 py-4 sm:px-5 sm:py-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
           Tournament recap

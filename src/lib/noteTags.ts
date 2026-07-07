@@ -5,6 +5,7 @@ export const OPPONENT_STYLE_TAGS = [
   'all_rounder',
   'flat_pace',
   'defensive_counter',
+  'soft_placement',
 ] as const
 
 export type OpponentStyleTag = (typeof OPPONENT_STYLE_TAGS)[number]
@@ -14,7 +15,8 @@ export const OPPONENT_STYLE_LABELS: Record<OpponentStyleTag, string> = {
   rear_court_attacker: 'Rear-court attacker',
   all_rounder: 'All-rounder',
   flat_pace: 'Flat-pace specialist',
-  defensive_counter: 'Defensive / counter-attacker',
+  defensive_counter: 'Strong defence',
+  soft_placement: 'Soft & controlled',
 }
 
 export const OPPONENT_STYLE_HINTS: Record<OpponentStyleTag, string> = {
@@ -23,6 +25,7 @@ export const OPPONENT_STYLE_HINTS: Record<OpponentStyleTag, string> = {
   all_rounder: 'Comfortable front and back',
   flat_pace: 'Drives, fast exchanges, less lift',
   defensive_counter: 'Retrieves, turns defence into attack',
+  soft_placement: 'Takes pace off; delicate, accurate placement',
 }
 
 /** Pair-level scouting tags when target is the pair (doubles). */
