@@ -1,0 +1,42 @@
+{
+  "recipientFirstName": "Simon",
+  "competitionName": "Cambridgeshire Senior Bronze July 2026",
+  "competitionUrl": "https://badminfo.com/competition/cambridgeshire-senior-bronze-july-2026",
+  "notificationSettingsUrl": "https://badminfo.com/settings/notifications",
+  "unsubscribeUrl": "https://badminfo.com/settings/notifications/unsubscribe",
+  "matches": [
+    {
+      "disciplineLabel": "Mixed doubles",
+      "disciplineColor": "#7acfd2",
+      "roundLabel": "Group A",
+      "isWin": true,
+      "outcomeLabel": "Won",
+      "scoreSummary": "21-15, 21-18",
+      "playerSide": "Simon Parker & Sara Moore",
+      "opponentSide": "Murray Wright & Corinna Wong",
+      "addNotesUrl": "https://badminfo.com/player/91e9ff09-0fe3-4ac2-b281-8609219900d6?tab=results&note=m1"
+    },
+    {
+      "disciplineLabel": "Mixed doubles",
+      "disciplineColor": "#7acfd2",
+      "roundLabel": "Group A",
+      "isWin": false,
+      "outcomeLabel": "Lost",
+      "scoreSummary": "18-21, 21-19, 17-21",
+      "playerSide": "Simon Parker & Sara Moore",
+      "opponentSide": "Dan Martyres & Alisha Johnson",
+      "addNotesUrl": "https://badminfo.com/player/91e9ff09-0fe3-4ac2-b281-8609219900d6?tab=results&note=m2"
+    },
+    {
+      "disciplineLabel": "Open doubles",
+      "disciplineColor": "#a0acda",
+      "roundLabel": "Semi-final",
+      "isWin": false,
+      "outcomeLabel": "Lost",
+      "scoreSummary": "19-21, 21-17, 18-21",
+      "playerSide": "Martin Crossley & Simon Parker",
+      "opponentSide": "Daniel Hughes & Morgan Taylor",
+      "addNotesUrl": "https://badminfo.com/player/91e9ff09-0fe3-4ac2-b281-8609219900d6?tab=results&note=m3"
+    }
+  ]
+}

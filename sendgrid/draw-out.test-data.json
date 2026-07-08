@@ -1,0 +1,123 @@
+{
+  "recipientFirstName": "Simon",
+  "competitionName": "Cambridgeshire Senior Bronze July 2026",
+  "competitionUrl": "https://badminfo.com/competition/cambridgeshire-senior-bronze-july-2026",
+  "favouritesCount": 9,
+  "notificationSettingsUrl": "https://badminfo.com/settings/notifications",
+  "unsubscribeUrl": "https://badminfo.com/settings/notifications/unsubscribe",
+  "seeAllDrawNotesUrl": "https://badminfo.com/player/91e9ff09-0fe3-4ac2-b281-8609219900d6?tab=notes&draw=cambridgeshire-senior-bronze-july-2026",
+  "disciplineGroups": [
+    {
+      "disciplineCode": "XD",
+      "disciplineLabel": "Mixed Doubles",
+      "dotColor": "#7acfd2",
+      "matchups": [
+        {
+          "roundLabel": "Group A",
+          "yourSide": [
+            { "name": "Simon Parker", "url": "https://badminfo.com/player?name=Simon%20Parker" },
+            { "name": "Sara Moore", "url": "https://badminfo.com/player?name=Sara%20Moore" }
+          ],
+          "opponentSide": [
+            { "name": "Murray Wright", "url": "https://badminfo.com/player?name=Murray%20Wright" },
+            { "name": "Corinna Wong", "url": "https://badminfo.com/player?name=Corinna%20Wong" }
+          ],
+          "notes": [
+            {
+              "opponentName": "Murray Wright",
+              "tags": ["Aggressive", "Strong at the net"],
+              "body": "Loves to intercept at the net — keep lifts tight and deep. Struggles when pushed to his rear forehand corner.",
+              "competition": "Norfolk Restricted 2025",
+              "date": "14 Sep 2025",
+              "disciplineChip": { "label": "MD", "color": "#a0acda" }
+            }
+          ]
+        },
+        {
+          "roundLabel": "Group A",
+          "yourSide": [
+            { "name": "Simon Parker", "url": "https://badminfo.com/player?name=Simon%20Parker" },
+            { "name": "Sara Moore", "url": "https://badminfo.com/player?name=Sara%20Moore" }
+          ],
+          "opponentSide": [
+            { "name": "Dan Martyres", "url": "https://badminfo.com/player?name=Dan%20Martyres", "seedLabel": "[1]" },
+            { "name": "Alisha Johnson", "url": "https://badminfo.com/player?name=Alisha%20Johnson" }
+          ],
+          "notes": [
+            {
+              "opponentName": "Dan Martyres",
+              "tags": ["Fast, flat attack"],
+              "body": "Big flat game, rushes you early. Slow to the net though — drops off the serve caused problems.",
+              "competition": "Suffolk Bronze 2026",
+              "date": "2 Feb 2026",
+              "pairingCaveat": "noted with Jane Smith"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "disciplineCode": "OD",
+      "disciplineLabel": "Open Doubles",
+      "dotColor": "#a0acda",
+      "matchups": [
+        {
+          "roundLabel": "Group G",
+          "yourSide": [
+            { "name": "Martin Crossley", "url": "https://badminfo.com/player?name=Martin%20Crossley" },
+            { "name": "Simon Parker", "url": "https://badminfo.com/player?name=Simon%20Parker" }
+          ],
+          "opponentSide": [
+            { "name": "Simon Gilhooly", "url": "https://badminfo.com/player?name=Simon%20Gilhooly" },
+            { "name": "Paul Andrew Mayfield", "url": "https://badminfo.com/player?name=Paul%20Andrew%20Mayfield" }
+          ],
+          "notes": []
+        },
+        {
+          "roundLabel": "Group G",
+          "yourSide": [
+            { "name": "Martin Crossley", "url": "https://badminfo.com/player?name=Martin%20Crossley" },
+            { "name": "Simon Parker", "url": "https://badminfo.com/player?name=Simon%20Parker" }
+          ],
+          "opponentSide": [
+            { "name": "Daniel Hughes", "url": "https://badminfo.com/player?name=Daniel%20Hughes" },
+            { "name": "Morgan Taylor", "url": "https://badminfo.com/player?name=Morgan%20Taylor" }
+          ],
+          "notes": [
+            {
+              "opponentName": "Daniel Hughes",
+              "tags": ["Big smash", "Slow around the court"],
+              "body": "Huge smash but predictable — defend cross-court and he tires. Weak backhand under pressure.",
+              "competition": "Cambridgeshire Bronze 2025",
+              "date": "9 Nov 2025"
+            },
+            {
+              "opponentName": "Daniel Hughes",
+              "tags": [],
+              "body": "Serves short almost every time — stand in and attack it.",
+              "competition": "Cambridgeshire Bronze 2025",
+              "date": "9 Nov 2025"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "laterNotes": [
+    {
+      "opponentName": "Ben Carter",
+      "tags": ["Deceptive", "Weak backhand clear"],
+      "body": "Great deception at the net, sells the dummy. Backhand clear is short — attack it early.",
+      "competition": "Essex Bronze 2026",
+      "date": "18 Jan 2026",
+      "facingLabel": "Open Doubles · Quarter-finals"
+    },
+    {
+      "opponentName": "Tom Fielding",
+      "tags": ["Defensive"],
+      "body": "Very patient defender, happy to rally all day. Force the pace and bring him to the net.",
+      "date": "3 Mar 2026",
+      "facingLabel": "Mixed Doubles · Semi-finals"
+    }
+  ]
+}

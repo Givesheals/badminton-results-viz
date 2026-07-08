@@ -11,6 +11,7 @@ type Props = {
   onSignUpPremium: () => void
   onVerifyEmail: () => void
   onManageSubscription: () => void
+  onOpenNotifications: () => void
 }
 
 function InertLink({ children }: { children: ReactNode }) {
@@ -32,6 +33,7 @@ export function UserMenuDrawer({
   onSignUpPremium,
   onVerifyEmail,
   onManageSubscription,
+  onOpenNotifications,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -160,7 +162,16 @@ export function UserMenuDrawer({
                 <InertLink>Favourites</InertLink>
               </li>
               <li>
-                <InertLink>Notifications</InertLink>
+                <button
+                  type="button"
+                  className="text-left text-base font-medium text-brand-700 hover:text-brand-600"
+                  onClick={() => {
+                    onClose()
+                    onOpenNotifications()
+                  }}
+                >
+                  Notifications
+                </button>
               </li>
               <li>
                 <button

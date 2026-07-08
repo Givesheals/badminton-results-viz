@@ -9,6 +9,7 @@ import {
 import { BeEmailVerification } from './BeEmailVerification'
 import { PremiumSignupFlow } from './PremiumSignupFlow'
 import { UserMenuDrawer } from './UserMenuDrawer'
+import { NotificationsPreview } from '../notifications/NotificationsPreview'
 import { getPlayerInitials } from '../../lib/getPlayerInitials'
 
 type Props = {
@@ -21,6 +22,7 @@ export function PremiumUserMenu({ playerName }: Props) {
   const [signupOpen, setSignupOpen] = useState(false)
   const [verifyOpen, setVerifyOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [devCode, setDevCode] = useState<string | null>(null)
 
   const initials = getPlayerInitials(playerName)
@@ -43,6 +45,12 @@ export function PremiumUserMenu({ playerName }: Props) {
         onSignUpPremium={() => setSignupOpen(true)}
         onVerifyEmail={() => setVerifyOpen(true)}
         onManageSubscription={() => setManageOpen(true)}
+        onOpenNotifications={() => setNotificationsOpen(true)}
+      />
+
+      <NotificationsPreview
+        open={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
       />
 
       <PremiumSignupFlow

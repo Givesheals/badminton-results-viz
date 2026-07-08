@@ -13,12 +13,11 @@ export function AppShell({ children, headerRight, minimal = false }: Props) {
         <header className="border-b border-brand-200/70 bg-brand-50/70 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <div className="flex items-center gap-3">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-lg text-white shadow-sm ring-1 ring-brand-300/50"
-                aria-hidden
-              >
-                🏸
-              </div>
+              <img
+                src={`${import.meta.env.BASE_URL}badminfo-icon.png`}
+                alt="Badminfo"
+                className="h-10 w-10 object-contain"
+              />
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">
                   Prototype

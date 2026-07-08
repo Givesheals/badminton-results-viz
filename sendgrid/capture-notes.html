@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Capture your notes</title>
+  </head>
+  <body
+    style="margin:0; padding:0; background:#f8f8fb; font-family:'Segoe UI', Helvetica, Arial, sans-serif; color:#141926;"
+  >
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8f8fb;">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <table
+            role="presentation"
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            style="max-width:600px; width:100%; background:#ffffff; border:1px solid #d8d9e2; border-radius:12px; overflow:hidden;"
+          >
+            <!-- Header. Swap the wordmark for a hosted logo if you prefer:
+                 <img src="{{logoUrl}}" alt="Badminfo" height="32" style="display:block;" /> -->
+            <tr>
+              <td style="padding:32px 24px 24px 24px;">
+                <span style="font-size:26px; font-weight:800; font-style:italic; letter-spacing:-0.5px; color:#41016f;">BADMINFO</span>
+              </td>
+            </tr>
+
+            <!-- Intro -->
+            <tr>
+              <td style="padding:0 24px 8px 24px;">
+                <p style="margin:0; font-size:14px; color:#343a48;">Hi {{recipientFirstName}},</p>
+                <p style="margin:16px 0 0 0; font-size:14px; line-height:1.5; color:#343a48;">
+                  While
+                  <a href="{{competitionUrl}}" style="color:#41016f; text-decoration:underline;">{{competitionName}}</a>
+                  is still fresh, jot down a few notes on your opponents — and give yourself the tactical edge next time
+                  you're drawn against them.
+                </p>
+                <h2 style="margin:24px 0 4px 0; font-size:18px; color:#141926;">Your matches</h2>
+              </td>
+            </tr>
+
+            <!-- Matches -->
+            {{#each matches}}
+            <tr>
+              <td style="padding:0 24px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #ececf2;">
+                  <tr>
+                    <td style="padding:16px 0; vertical-align:middle;">
+                      <p style="margin:0; font-size:12px; color:#626979;">
+                        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:{{disciplineColor}}; vertical-align:middle;"></span>
+                        <span style="vertical-align:middle;">&nbsp;{{disciplineLabel}}</span>
+                        <span style="color:#bcc0cc;">&nbsp;&middot;&nbsp;</span>
+                        <span style="font-style:italic; vertical-align:middle;">{{roundLabel}}</span>
+                      </p>
+                      <p style="margin:6px 0 0 0; font-size:14px; color:#4b5260;">{{playerSide}}</p>
+                      <p style="margin:0; font-size:14px; color:#343a48;">
+                        <span style="color:#8d93a3;">vs</span> <strong style="color:#141926;">{{opponentSide}}</strong>
+                      </p>
+                      <p style="margin:8px 0 0 0; font-size:12px; color:#626979;">
+                        <strong style="color:{{#if isWin}}#04670d{{else}}#850000{{/if}};">{{outcomeLabel}}</strong>
+                        &middot; {{scoreSummary}}
+                      </p>
+                    </td>
+                    <td width="120" align="right" style="padding:16px 0; vertical-align:middle;">
+                      <a
+                        href="{{addNotesUrl}}"
+                        style="display:inline-block; background:#f6effb; color:#35015b; font-size:14px; font-weight:600; text-decoration:none; padding:8px 14px; border-radius:8px;"
+                        >Add notes</a
+                      >
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            {{/each}}
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:24px;">
+                <div style="height:1px; background:#ececf2; margin-bottom:20px;"></div>
+                <p style="margin:0; font-size:14px; color:#343a48;">
+                  You can turn these notifications on or off in
+                  <a href="{{notificationSettingsUrl}}" style="color:#41016f; text-decoration:underline;">notification settings</a>.
+                </p>
+                <p style="margin:20px 0 0 0; font-size:14px; color:#343a48;">
+                  Hope you had some good games!<br /><strong>Badminfo</strong> Team
+                </p>
+                <p style="margin:20px 0 0 0; font-size:12px; color:#8d93a3;">
+                  To unsubscribe from all notifications,
+                  <a href="{{unsubscribeUrl}}" style="color:#8d93a3;">click here</a>.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
