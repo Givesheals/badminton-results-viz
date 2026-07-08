@@ -63,7 +63,7 @@ export function CaptureNotesEmail({ data }: { data: CaptureNotesEmailData }) {
         <p className="mt-4 text-sm text-ink-700">
           While{' '}
           <EmailLink href={data.competitionUrl}>{data.competitionName}</EmailLink> is still
-          fresh, jot down a few notes on your opponents — and give yourself the tactical edge
+          fresh, jot down a few notes on your opponents - and give yourself the tactical edge
           next time you're drawn against them.
         </p>
 

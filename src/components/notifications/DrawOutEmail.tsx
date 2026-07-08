@@ -93,16 +93,10 @@ function MatchupBlock({ label, matchup }: { label: string; matchup: DrawMatchup 
   )
 }
 
-function DisciplineBlock({
-  group,
-  isLast,
-}: {
-  group: DrawDisciplineGroup
-  isLast: boolean
-}) {
+function DisciplineBlock({ group }: { group: DrawDisciplineGroup }) {
   const dotClass = DISCIPLINE_DOT[getDisciplineFamily(group.disciplineCode)]
   return (
-    <div>
+    <div className="mt-6 first:mt-0">
       <div className="flex items-center gap-2">
         <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} aria-hidden />
         <h3 className="text-sm font-bold text-ink-900">{group.disciplineLabel}</h3>
@@ -116,7 +110,6 @@ function DisciplineBlock({
           />
         ))}
       </div>
-      {!isLast && <div className="my-5 h-px bg-ink-100" />}
     </div>
   )
 }
@@ -133,7 +126,7 @@ function LaterNotes({
     <div className="mt-8 rounded-xl bg-ink-50 px-5 py-4">
       <h3 className="text-sm font-semibold text-ink-700">You may also meet</h3>
       <p className="mb-3 mt-0.5 text-xs text-ink-500">
-        Entered this draw but not in your group — you could face them in the knockouts.
+        Entered this draw but not in your group - you could face them in the knockouts.
       </p>
       <div className="grid grid-cols-[5rem_1fr] items-start gap-x-3 gap-y-2">
         {notes.map((note, index) => (
@@ -161,12 +154,8 @@ export function DrawOutEmail({ data }: { data: DrawOutEmailData }) {
 
         <div className="mt-6">
           <EmailSectionHeading>Your draw preview</EmailSectionHeading>
-          {data.disciplineGroups.map((group, index) => (
-            <DisciplineBlock
-              key={group.disciplineCode}
-              group={group}
-              isLast={index === data.disciplineGroups.length - 1}
-            />
+          {data.disciplineGroups.map((group) => (
+            <DisciplineBlock key={group.disciplineCode} group={group} />
           ))}
         </div>
 

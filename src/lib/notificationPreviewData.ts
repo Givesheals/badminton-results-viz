@@ -3,7 +3,7 @@
  *
  * These types intentionally mirror a flat, loop-friendly shape so that a real
  * implementation can map them almost 1:1 onto SendGrid dynamic-template
- * (Handlebars) contexts. Nothing here talks to a backend or to SendGrid — the
+ * (Handlebars) contexts. Nothing here talks to a backend or to SendGrid - the
  * preview page renders these objects exactly as an inbox would render the sent
  * email.
  *
@@ -20,7 +20,7 @@ const PLAYER_PROFILE_URL = `https://badminfo.com/player/${PLAYER_ID}`
 export type NotificationPreviewKind = 'captureNotes' | 'drawOut'
 
 // ---------------------------------------------------------------------------
-// Email 1 — "Capture your notes" (post-competition digest)
+// Email 1 - "Capture your notes" (post-competition digest)
 // ---------------------------------------------------------------------------
 
 export type CaptureNoteMatch = {
@@ -48,7 +48,7 @@ export type CaptureNotesEmailData = {
 }
 
 // ---------------------------------------------------------------------------
-// Email 2 — "Your draw is out" (enhanced with notes)
+// Email 2 - "Your draw is out" (enhanced with notes)
 // ---------------------------------------------------------------------------
 
 /**
@@ -206,7 +206,7 @@ export const drawOutPreview: DrawOutEmailData = {
             {
               opponentName: 'Murray Wright',
               tags: ['Aggressive', 'Strong at the net'],
-              body: 'Loves to intercept at the net — keep lifts tight and deep. Struggles when pushed to his rear forehand corner.',
+              body: 'Loves to intercept at the net - keep lifts tight and deep. Struggles when pushed to his rear forehand corner.',
               competition: 'Norfolk Restricted 2025',
               date: '14 Sep 2025',
               // Note captured in men's doubles; this matchup is mixed.
@@ -223,7 +223,7 @@ export const drawOutPreview: DrawOutEmailData = {
             {
               opponentName: 'Dan Martyres',
               tags: ['Fast, flat attack'],
-              body: 'Big flat game, rushes you early. Slow to the net though — drops off the serve caused problems.',
+              body: 'Big flat game, rushes you early. Slow to the net though - drops off the serve caused problems.',
               competition: 'Suffolk Bronze 2026',
               date: '2 Feb 2026',
               // Original note was about the pair Dan + Jane, not Dan + Alisha.
@@ -253,14 +253,14 @@ export const drawOutPreview: DrawOutEmailData = {
             {
               opponentName: 'Daniel Hughes',
               tags: ['Big smash', 'Slow around the court'],
-              body: 'Huge smash but predictable — defend cross-court and he tires. Weak backhand under pressure.',
+              body: 'Huge smash but predictable - defend cross-court and he tires. Weak backhand under pressure.',
               competition: 'Cambridgeshire Bronze 2025',
               date: '9 Nov 2025',
             },
             {
               opponentName: 'Daniel Hughes',
               tags: [],
-              body: 'Serves short almost every time — stand in and attack it.',
+              body: 'Serves short almost every time - stand in and attack it.',
               competition: 'Cambridgeshire Bronze 2025',
               date: '9 Nov 2025',
             },
@@ -273,7 +273,7 @@ export const drawOutPreview: DrawOutEmailData = {
     {
       opponentName: 'Ben Carter',
       tags: ['Deceptive', 'Weak backhand clear'],
-      body: 'Great deception at the net, sells the dummy. Backhand clear is short — attack it early.',
+      body: 'Great deception at the net, sells the dummy. Backhand clear is short - attack it early.',
       competition: 'Essex Bronze 2026',
       date: '18 Jan 2026',
       facingLabel: 'Open Doubles \u00b7 Quarter-finals',

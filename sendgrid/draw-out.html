@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Your draw is out</title>
+    <!-- SendGrid subject line: {{competitionName}} draw out! -->
   </head>
   <body
     style="margin:0; padding:0; background:#f8f8fb; font-family:'Segoe UI', Helvetica, Arial, sans-serif; color:#141926;"
@@ -52,8 +53,8 @@
                 {{#each matchups}}
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #ececf2;">
                   <tr>
-                    <td width="80" valign="top" style="padding:12px 8px 4px 0; font-size:12px; font-weight:500; color:#626979;">
-                      {{../disciplineCode}}: {{roundLabel}}
+                    <td width="44" valign="top" style="padding:12px 8px 4px 0; font-size:12px; font-weight:500; color:#626979;">
+                      {{../disciplineCode}}:<br />{{roundLabel}}
                     </td>
                     <td valign="top" style="padding:12px 8px 4px 0; font-size:14px; color:#141926; line-height:1.4;">
                       {{#each yourSide}}
@@ -85,7 +86,7 @@
                       {{opponentName}}
                     </td>
                     <td colspan="2" valign="top" style="padding:0 0 12px 0; font-size:14px; line-height:1.45; color:#343a48;">
-                      {{#if disciplineChip}}<span style="display:inline-block; margin-right:4px; padding:1px 6px; border-radius:4px; font-size:10px; font-weight:700; color:#ffffff; background:{{disciplineChip.color}};">{{disciplineChip.label}}</span>{{/if}}{{#each tags}}<span style="display:inline-block; margin-right:4px; padding:1px 6px; border:1px solid #7030a5; border-radius:9999px; font-size:12px; font-weight:500; color:#35015b; background:#ffffff;">{{this}}</span>{{/each}}<span>{{body}}</span>{{#if pairingCaveat}}<span style="color:#8d93a3;"> ({{pairingCaveat}})</span>{{/if}}
+                      {{#if disciplineChip}}<span style="display:inline-block; white-space:nowrap; margin:0 4px 4px 0; padding:3px 6px; border-radius:4px; font-size:10px; font-weight:700; line-height:1; color:#ffffff; background:{{disciplineChip.color}};">{{disciplineChip.label}}</span>{{/if}}{{#each tags}}<span style="display:inline-block; white-space:nowrap; margin:0 4px 4px 0; padding:3px 8px; border:1px solid #7030a5; border-radius:9999px; font-size:12px; font-weight:500; line-height:1; color:#35015b; background:#ffffff;">{{this}}</span>{{/each}}<span>{{body}}</span>{{#if pairingCaveat}}<span style="color:#8d93a3;"> ({{pairingCaveat}})</span>{{/if}}
                       <span style="display:block; margin-top:2px; font-size:12px; color:#8d93a3;">
                         {{#if competition}}{{competition}} &middot; {{/if}}{{date}}
                       </span>
@@ -94,8 +95,6 @@
                   {{/each}}
                 </table>
                 {{/each}}
-
-                {{#unless @last}}<div style="height:1px; background:#ececf2; margin:20px 0 0 0;"></div>{{/unless}}
               </td>
             </tr>
             {{/each}}
@@ -109,7 +108,7 @@
                     <td style="padding:16px 20px;">
                       <p style="margin:0; font-size:14px; font-weight:600; color:#343a48;">You may also meet</p>
                       <p style="margin:2px 0 12px 0; font-size:12px; color:#626979;">
-                        Entered this draw but not in your group — you could face them in the knockouts.
+                        Entered this draw but not in your group - you could face them in the knockouts.
                       </p>
                       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                         {{#each laterNotes}}
@@ -118,7 +117,7 @@
                             {{opponentName}}
                           </td>
                           <td valign="top" style="padding:0 0 8px 0; font-size:14px; line-height:1.45; color:#343a48;">
-                            {{#each tags}}<span style="display:inline-block; margin-right:4px; padding:1px 6px; border:1px solid #7030a5; border-radius:9999px; font-size:12px; font-weight:500; color:#35015b; background:#ffffff;">{{this}}</span>{{/each}}<span>{{body}}</span>
+                            {{#each tags}}<span style="display:inline-block; white-space:nowrap; margin:0 4px 4px 0; padding:3px 8px; border:1px solid #7030a5; border-radius:9999px; font-size:12px; font-weight:500; line-height:1; color:#35015b; background:#ffffff;">{{this}}</span>{{/each}}<span>{{body}}</span>
                             <span style="display:block; margin-top:2px; font-size:12px; color:#8d93a3;">
                               {{#if facingLabel}}{{facingLabel}} &middot; {{/if}}{{#if competition}}{{competition}} &middot; {{/if}}{{date}}
                             </span>

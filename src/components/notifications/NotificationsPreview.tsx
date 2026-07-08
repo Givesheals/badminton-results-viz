@@ -26,9 +26,9 @@ const TABS: Tab[] = [
   {
     kind: 'captureNotes',
     label: 'Capture your notes',
-    subject: 'How did it go? Capture your notes',
+    subject: 'How did you get on? Capture your notes',
     trigger:
-      'Sends once per competition when results suggest you are done — knocked out or victorious.',
+      'Sends once per competition when results suggest you are done - knocked out or victorious.',
     payload: captureNotesPreview,
   },
   {
@@ -96,7 +96,7 @@ export function NotificationsPreview({ open, onClose }: Props) {
           <h1 id={titleId} className="text-base font-semibold text-ink-900">
             Notifications
           </h1>
-          <p className="text-xs text-ink-500">Email previews — not sent, dummy data</p>
+          <p className="text-xs text-ink-500">Email previews - not sent, dummy data</p>
         </div>
         <button
           type="button"
