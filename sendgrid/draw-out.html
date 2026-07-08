@@ -33,6 +33,9 @@
          text onto its own line beneath the badges. */
       @media (max-width: 480px) {
         .note-body { display: block; margin-top: 5px; }
+        /* Keep the discipline/round column tight on mobile (it's wider on
+           desktop where there's room for the round label to breathe). */
+        .label-col { width: 48px !important; }
       }
     </style>
   </head>
@@ -88,7 +91,7 @@
                 {{#each matchups}}
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="dm-divtop" style="border-top:1px solid #ececf2; table-layout:fixed;">
                   <tr>
-                    <td width="48" valign="top" class="dm-muted" style="padding:12px 8px 4px 0; font-size:12px; font-weight:500; color:#626979;">
+                    <td width="84" valign="top" class="dm-muted label-col" style="padding:12px 8px 4px 0; font-size:12px; font-weight:500; color:#626979;">
                       {{../disciplineCode}}:<br />{{roundLabel}}
                     </td>
                     <td valign="top" class="dm-text" style="padding:12px 8px 4px 0; font-size:14px; color:#141926; line-height:1.4;">
