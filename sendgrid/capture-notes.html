@@ -31,6 +31,16 @@
         .dm-win { color: #59d98a !important; }
         .dm-loss { color: #f5837f !important; }
       }
+      /* On narrow screens the full "Add notes" button steals width from the
+         match details, so shrink its column and collapse the label to a
+         compact "+" pill. (Honoured by clients that support media queries;
+         elsewhere the full button is shown, which is a fine fallback.) */
+      @media (max-width: 480px) {
+        .cta-cell { width: 44px !important; padding-left: 6px !important; }
+        .cta-full { display: none !important; }
+        .cta-mini { display: inline-block !important; }
+        .cta-btn { padding: 8px 12px !important; }
+      }
     </style>
   </head>
   <body
@@ -96,12 +106,13 @@
                         &middot; {{scoreSummary}}
                       </p>
                     </td>
-                    <td width="120" align="right" style="padding:16px 0; vertical-align:middle;">
+                    <td class="cta-cell" width="120" align="right" style="padding:16px 0; vertical-align:middle;">
                       <a
                         href="{{addNotesUrl}}"
-                        class="dm-btn"
-                        style="display:inline-block; background:#f6effb; color:#35015b; font-size:14px; font-weight:600; text-decoration:none; padding:8px 14px; border-radius:8px;"
-                        >Add notes</a
+                        title="Add notes"
+                        class="dm-btn cta-btn"
+                        style="display:inline-block; background:#f6effb; color:#35015b; font-size:14px; font-weight:600; text-decoration:none; padding:8px 14px; border-radius:8px; white-space:nowrap;"
+                        ><span class="cta-full">Add notes</span><span class="cta-mini" style="display:none; font-size:18px; line-height:1; font-weight:700;">+</span></a
                       >
                     </td>
                   </tr>
