@@ -24,9 +24,10 @@ template engine.
 
 ## Notes for wiring it up for real
 
-- The header uses a text wordmark so it renders with no setup. To use the real
-  logo, host `public/badminfo-logo.png` and swap the wordmark for the commented
-  `<img src="{{logoUrl}}" ...>` (pass `logoUrl` in the data).
+- The header logo is embedded as a base64 data URI so the template previews with
+  no setup. For production sends, host `public/badminfo-logo.png` and replace the
+  `data:image/png;base64,...` `src` with the hosted URL (some clients, e.g. Gmail,
+  do not render data-URI images).
 - The JSON shapes match the typed payloads in
   `src/lib/notificationPreviewData.ts` — a couple of presentation-only fields are
   added for the template (`disciplineColor`, `dotColor`, `isWin`,
