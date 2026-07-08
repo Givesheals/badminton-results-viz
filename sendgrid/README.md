@@ -41,6 +41,11 @@ Both templates support dark-mode inboxes:
   Image pixels aren't inverted by any client, so on a dark background the glow
   keeps the purple wordmark legible and fades softly into the dark; on the white
   card it's invisible. Re-run `python3 _make_logo.py` if the source logo changes.
+- On mobile, `capture-notes.html` collapses each "Add notes" button to the app's
+  add-notes icon (the same `FileCirclePlusIcon` used in the events section).
+  Email clients can't be trusted to render inline SVG, so the icon is embedded as
+  a PNG with light and dark variants (swapped by the dark media query). Regenerate
+  with `node _make_icon.mjs` if the icon changes.
 
 ## Notes for wiring it up for real
 
