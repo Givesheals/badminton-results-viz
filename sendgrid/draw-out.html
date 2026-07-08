@@ -28,6 +28,12 @@
         .dm-tag { background: transparent !important; border-color: #c9a9ee !important; color: #ecdcff !important; }
         .dm-panel { background: #232735 !important; }
       }
+      /* On narrow screens the tag badges and note text sit awkwardly on the
+         same line (the badges' padding throws off the baseline). Drop the note
+         text onto its own line beneath the badges. */
+      @media (max-width: 480px) {
+        .note-body { display: block; margin-top: 5px; }
+      }
     </style>
   </head>
   <body
@@ -117,7 +123,7 @@
                       {{opponentName}}
                     </td>
                     <td colspan="2" valign="top" class="dm-text" style="padding:0 0 12px 0; font-size:14px; line-height:1.45; color:#343a48;">
-                      {{#if disciplineChip}}<span style="display:inline-block; white-space:nowrap; margin:0 4px 4px 0; padding:3px 6px; border-radius:4px; font-size:10px; font-weight:700; line-height:1; color:#ffffff; background:{{disciplineChip.color}};">{{disciplineChip.label}}</span>{{/if}}{{#each tags}}<span class="dm-tag" style="display:inline-block; white-space:nowrap; margin:0 4px 4px 0; padding:3px 8px; border:1px solid #7030a5; border-radius:9999px; font-size:12px; font-weight:500; line-height:1; color:#35015b; background:#ffffff;">{{this}}</span>{{/each}}<span>{{body}}</span>{{#if pairingCaveat}}<span class="dm-muted" style="color:#8d93a3;"> ({{pairingCaveat}})</span>{{/if}}
+                      {{#if disciplineChip}}<span style="display:inline-block; white-space:nowrap; margin:0 4px 4px 0; padding:3px 6px; border-radius:4px; font-size:10px; font-weight:700; line-height:1; color:#ffffff; background:{{disciplineChip.color}};">{{disciplineChip.label}}</span>{{/if}}{{#each tags}}<span class="dm-tag" style="display:inline-block; white-space:nowrap; margin:0 4px 4px 0; padding:3px 8px; border:1px solid #7030a5; border-radius:9999px; font-size:12px; font-weight:500; line-height:1; color:#35015b; background:#ffffff;">{{this}}</span>{{/each}}<span class="note-body">{{body}}{{#if pairingCaveat}}<span class="dm-muted" style="color:#8d93a3;"> ({{pairingCaveat}})</span>{{/if}}</span>
                       <span class="dm-muted" style="display:block; margin-top:2px; font-size:12px; color:#8d93a3;">
                         {{#if competition}}{{competition}} &middot; {{/if}}{{date}}
                       </span>
@@ -148,7 +154,7 @@
                             {{opponentName}}
                           </td>
                           <td valign="top" class="dm-text" style="padding:0 0 8px 0; font-size:14px; line-height:1.45; color:#343a48;">
-                            {{#each tags}}<span class="dm-tag" style="display:inline-block; white-space:nowrap; margin:0 4px 4px 0; padding:3px 8px; border:1px solid #7030a5; border-radius:9999px; font-size:12px; font-weight:500; line-height:1; color:#35015b; background:#ffffff;">{{this}}</span>{{/each}}<span>{{body}}</span>
+                            {{#each tags}}<span class="dm-tag" style="display:inline-block; white-space:nowrap; margin:0 4px 4px 0; padding:3px 8px; border:1px solid #7030a5; border-radius:9999px; font-size:12px; font-weight:500; line-height:1; color:#35015b; background:#ffffff;">{{this}}</span>{{/each}}<span class="note-body">{{body}}</span>
                             <span class="dm-muted" style="display:block; margin-top:2px; font-size:12px; color:#8d93a3;">
                               {{#if facingLabel}}{{facingLabel}} &middot; {{/if}}{{#if competition}}{{competition}} &middot; {{/if}}{{date}}
                             </span>
