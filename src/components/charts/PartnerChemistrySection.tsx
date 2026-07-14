@@ -26,16 +26,22 @@ type Props = {
   allMatches: NormalizedMatch[]
   filterOptions: FilterOptions
   importedAt: string | undefined
+  /** Cap partners shown on the chart (premium showcase). */
+  maxPartners?: number
+  /** Optional starting minimum-matches threshold (premium showcase). */
+  initialMinThreshold?: number
 }
 
 export function PartnerChemistrySection({
   allMatches,
   filterOptions,
   importedAt,
+  maxPartners,
+  initialMinThreshold = DEFAULT_MIN_THRESHOLD,
 }: Props) {
   const fields = ['time'] as const
   const [filters, setFilters] = useState<MatchFilters>(DEFAULT_MATCH_FILTERS)
-  const [minThreshold, setMinThreshold] = useState(DEFAULT_MIN_THRESHOLD)
+  const [minThreshold, setMinThreshold] = useState(initialMinThreshold)
   const [filterMode, setFilterMode] = useState<PartnerChemistryFilterMode>('matches')
   const [displayMode, setDisplayMode] = useState<PartnerChemistryDisplayMode>('chemistry')
 
@@ -43,10 +49,17 @@ export function PartnerChemistrySection({
 
   const matches = useSectionMatches(allMatches, filters)
 
-  const chemistry = useMemo(
-    () => computePartnerChemistry(matches, minThreshold, filterMode, displayMode),
-    [matches, minThreshold, filterMode, displayMode],
-  )
+  const chemistry = useMemo(() => {
+    const full = computePartnerChemistry(matches, minThreshold, filterMode, displayMode)
+    if (maxPartners == null || maxPartners <= 0 || full.partners.length <= maxPartners) {
+      return full
+    }
+    return {
+      ...full,
+      partners: full.partners.slice(0, maxPartners),
+      hiddenCount: full.hiddenCount + (full.partners.length - maxPartners),
+    }
+  }, [matches, minThreshold, filterMode, displayMode, maxPartners])
 
   const thresholdLabel = filterMode === 'matches' ? 'matches' : 'competitions'
   const activeCount =
@@ -94,7 +107,7 @@ export function PartnerChemistrySection({
             activeCount={activeCount}
             onReset={() => {
               setFilters(DEFAULT_MATCH_FILTERS)
-              setMinThreshold(DEFAULT_MIN_THRESHOLD)
+              setMinThreshold(initialMinThreshold)
               setFilterMode('matches')
               setDisplayMode('chemistry')
             }}

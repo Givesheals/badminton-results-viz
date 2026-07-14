@@ -72,5 +72,10 @@ export function usePremiumShowcase() {
 function PremiumShowcaseNotesProvider({ children }: { children: ReactNode }) {
   const data = usePremiumShowcase()
   if (!data) return children
-  return <OpponentNotesProvider playerName={data.playerName}>{children}</OpponentNotesProvider>
+  // Isolate seeded demo notes from the viewer's real localStorage notebook.
+  return (
+    <OpponentNotesProvider playerName={`__premium_showcase__:${data.playerName ?? 'preview'}`}>
+      {children}
+    </OpponentNotesProvider>
+  )
 }

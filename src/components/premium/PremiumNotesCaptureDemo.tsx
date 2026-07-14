@@ -10,8 +10,9 @@ const TAG_SEQUENCE = [SCOUTING_STARTER_CHIPS[0], SCOUTING_STARTER_CHIPS[1]] as c
 
 const TYPED_BODY = 'Flicks a lot, stand slightly back.'
 
-const CYCLE_MS = 7500
-const START_DELAY_MS = 120
+const CYCLE_MS = 8500
+/** Hold the empty notes UI briefly before the demo starts typing/tapping. */
+const START_DELAY_MS = 1000
 
 const EMPTY_DEMO = {
   body: '',

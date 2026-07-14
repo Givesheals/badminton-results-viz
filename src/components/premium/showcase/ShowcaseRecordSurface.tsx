@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { PremiumNotesCaptureDemo } from '../PremiumNotesCaptureDemo'
 import { PremiumShowcaseProvider, usePremiumShowcase } from './PremiumShowcaseContext'
+import { ShowcaseRecapNotesBootstrap } from './ShowcaseRecapNotesBootstrap'
 import {
   PeopleShowcaseSlide,
   PlayerSummaryShowcaseSlide,
@@ -34,12 +35,15 @@ function markDataReady() {
 function RecordGate({
   children,
   waitForData,
+  seedRecapNotes = false,
 }: {
   children: (active: boolean) => ReactNode
   waitForData: boolean
+  seedRecapNotes?: boolean
 }) {
   const data = usePremiumShowcase()
   const [active, setActive] = useState(false)
+  const [notesReady, setNotesReady] = useState(!seedRecapNotes)
 
   useEffect(() => {
     window.__startShowcaseRecord = () => setActive(true)
@@ -49,8 +53,12 @@ function RecordGate({
   }, [])
 
   useEffect(() => {
-    if (!waitForData || data) markDataReady()
-  }, [waitForData, data])
+    if (!waitForData) {
+      markDataReady()
+      return
+    }
+    if (data && notesReady) markDataReady()
+  }, [waitForData, data, notesReady])
 
   if (waitForData && !data) {
     return (
@@ -60,7 +68,14 @@ function RecordGate({
     )
   }
 
-  return children(active)
+  return (
+    <>
+      {seedRecapNotes ? (
+        <ShowcaseRecapNotesBootstrap onReady={() => setNotesReady(true)} />
+      ) : null}
+      {children(active)}
+    </>
+  )
 }
 
 /**
@@ -80,7 +95,9 @@ export function ShowcaseRecordSurface({ slideId }: Props) {
 
   const body = needsDataset ? (
     <PremiumShowcaseProvider>
-      <RecordGate waitForData>{renderSlide}</RecordGate>
+      <RecordGate waitForData seedRecapNotes={slideId === 'recap'}>
+        {renderSlide}
+      </RecordGate>
     </PremiumShowcaseProvider>
   ) : (
     <RecordGate waitForData={false}>{renderSlide}</RecordGate>

@@ -10,26 +10,29 @@ export type ShowcaseVideoSlide = {
 /** Breakpoint matching Tailwind `sm` — phone bucket below, desktop at/above. */
 export const SHOWCASE_DESKTOP_MIN_WIDTH_PX = 640
 
+/** Hold before motion begins on every clip. */
+export const SHOWCASE_CLIP_HOLD_MS = 1000
+
 export const SHOWCASE_VIDEO_SLIDES: ShowcaseVideoSlide[] = [
   {
     id: 'notes',
-    caption: 'Personal notes & match journal',
-    displayMs: 7500,
+    caption: 'Personal notes',
+    displayMs: SHOWCASE_CLIP_HOLD_MS + 7500,
   },
   {
     id: 'recap',
     caption: 'Tournament recaps',
-    displayMs: 3500,
+    displayMs: SHOWCASE_CLIP_HOLD_MS + 7000,
   },
   {
     id: 'summary',
     caption: 'Player summary & milestones',
-    displayMs: 3500,
+    displayMs: SHOWCASE_CLIP_HOLD_MS + 7000,
   },
   {
     id: 'people',
     caption: 'Partner chemistry & matchups',
-    displayMs: 6500,
+    displayMs: SHOWCASE_CLIP_HOLD_MS + 7000,
   },
 ]
 

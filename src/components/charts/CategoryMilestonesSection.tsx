@@ -36,6 +36,8 @@ type Props = {
   allMatches: NormalizedMatch[]
   filterOptions: FilterOptions
   importedAt: string | undefined
+  /** Cap how many category cards render (premium showcase). */
+  maxMilestoneCards?: number
 }
 
 type DisciplineFamilyFilter = 'all' | DisciplineFamily
@@ -50,6 +52,7 @@ export function CategoryMilestonesSection({
   allMatches,
   filterOptions,
   importedAt,
+  maxMilestoneCards,
 }: Props) {
   const [showAllAges, setShowAllAges] = useState(false)
   const [disciplineFamily, setDisciplineFamily] = useState<DisciplineFamilyFilter>('all')
@@ -95,11 +98,24 @@ export function CategoryMilestonesSection({
   }, [matches])
 
   const visibleAgeGroups = useMemo(() => {
-    if (showAllAges) return ageGroups
+    const base = (() => {
+      if (showAllAges) return ageGroups
+      const visibleKeys = new Set(pickDefaultVisibleAgeLabels(ageGroups))
+      return ageGroups.filter((group) => visibleKeys.has(categoryCompletionAgeKey(group.ageLabel)))
+    })()
 
-    const visibleKeys = new Set(pickDefaultVisibleAgeLabels(ageGroups))
-    return ageGroups.filter((group) => visibleKeys.has(categoryCompletionAgeKey(group.ageLabel)))
-  }, [ageGroups, showAllAges])
+    if (maxMilestoneCards == null || maxMilestoneCards <= 0) return base
+
+    let remaining = maxMilestoneCards
+    const limited: typeof base = []
+    for (const group of base) {
+      if (remaining <= 0) break
+      const rows = group.rows.slice(0, remaining)
+      remaining -= rows.length
+      if (rows.length > 0) limited.push({ ...group, rows })
+    }
+    return limited
+  }, [ageGroups, showAllAges, maxMilestoneCards])
 
   const hiddenAgeGroupCount = ageGroups.length - visibleAgeGroups.length
 
@@ -247,7 +263,7 @@ export function CategoryMilestonesSection({
             }}
           />
 
-          {!showAllAges && hiddenAgeGroupCount > 0 ? (
+          {!showAllAges && hiddenAgeGroupCount > 0 && maxMilestoneCards == null ? (
             <button
               type="button"
               onClick={() => setShowAllAges(true)}

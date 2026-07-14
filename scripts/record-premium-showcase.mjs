@@ -23,7 +23,8 @@ const OUT_DIR = path.join(root, 'public', 'premium-showcase')
 const TMP_DIR = path.join(root, '.tmp-showcase-record')
 const PORT = 5199
 const BASE = `http://localhost:${PORT}`
-const FPS = 12
+/** Smooth enough for scroll pans; 12fps looked janky on product slides. */
+const FPS = 24
 
 const BUCKETS = [
   { id: 'phone', width: 390, height: 320 },
@@ -31,10 +32,10 @@ const BUCKETS = [
 ]
 
 const SLIDES = [
-  { id: 'notes', durationMs: 7500 },
-  { id: 'recap', durationMs: 3500 },
-  { id: 'summary', durationMs: 3500 },
-  { id: 'people', durationMs: 6500 },
+  { id: 'notes', durationMs: 8500 },
+  { id: 'recap', durationMs: 8000 },
+  { id: 'summary', durationMs: 8000 },
+  { id: 'people', durationMs: 8000 },
 ]
 
 function waitForServer(url, timeoutMs = 60_000) {
@@ -127,7 +128,8 @@ async function encodeFromFrames(framePattern, outWebm, outMp4, outPoster) {
     outMp4,
   ])
 
-  await runFfmpeg(['-y', '-ss', '0.8', '-i', outMp4, '-frames:v', '1', '-q:v', '3', outPoster])
+  // Poster after the opening hold so it shows real content, not the empty start frame.
+  await runFfmpeg(['-y', '-ss', '1.2', '-i', outMp4, '-frames:v', '1', '-q:v', '3', outPoster])
 }
 
 async function recordAll() {
@@ -161,13 +163,13 @@ async function recordAll() {
         await page.goto(`${BASE}/?showcase-record=${slide.id}`, { waitUntil: 'networkidle' })
         await page.waitForSelector('[data-showcase-record-ready="true"]', { timeout: 90_000 })
         // Charts/layout settle after data arrives.
-        await page.waitForTimeout(700)
+        await page.waitForTimeout(900)
 
         await page.evaluate(() => {
           window.__startShowcaseRecord?.()
         })
-        // One frame of head-start so the first screenshot is not empty.
-        await page.waitForTimeout(120)
+        // Capture from the held opening frame.
+        await page.waitForTimeout(80)
 
         const frameCount = Math.max(8, Math.round((slide.durationMs / 1000) * FPS))
         const frameIntervalMs = 1000 / FPS

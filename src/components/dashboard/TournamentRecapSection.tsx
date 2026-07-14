@@ -14,6 +14,8 @@ import { RecapTournamentNav } from './recap/RecapTournamentNav'
 
 type Props = {
   allMatches: NormalizedMatch[]
+  /** Optional starting tournament (0 = newest). Used by premium showcase recording. */
+  initialIndex?: number
 }
 
 function formatDateRange(from: string, to: string): string {
@@ -21,17 +23,19 @@ function formatDateRange(from: string, to: string): string {
   return `${formatDisplayDate(from)} → ${formatDisplayDate(to)}`
 }
 
-export function TournamentRecapSection({ allMatches }: Props) {
+export function TournamentRecapSection({ allMatches, initialIndex = 0 }: Props) {
   const { recaps } = useMemo(
     () => computeTournamentRecaps(allMatches),
     [allMatches],
   )
 
-  const [index, setIndex] = useState(0)
+  const [index, setIndex] = useState(() =>
+    Math.min(Math.max(0, initialIndex), Math.max(0, recaps.length - 1)),
+  )
 
   useEffect(() => {
-    setIndex(0)
-  }, [allMatches])
+    setIndex(Math.min(Math.max(0, initialIndex), Math.max(0, recaps.length - 1)))
+  }, [allMatches, initialIndex, recaps.length])
 
   useEffect(() => {
     if (index >= recaps.length) setIndex(Math.max(0, recaps.length - 1))

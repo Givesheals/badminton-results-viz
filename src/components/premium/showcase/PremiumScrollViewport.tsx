@@ -10,15 +10,21 @@ import {
 
 const SHOWCASE_SCALE = 0.46
 const FOOTER_RESERVE_PX = 44
-const DEFAULT_SCROLL_START_DELAY_MS = 480
+/** Pause before scroll so the opening frame reads clearly. */
+export const SHOWCASE_SCROLL_HOLD_MS = 1000
+/** Leave this much content below the fold so the clip implies more to see. */
+const DEFAULT_SCROLL_LEAVE_HIDDEN_PX = 360
 
 type Props = {
   children: ReactNode
   active: boolean
   durationMs?: number
-  /** Extra unscaled pixels to scroll past the bottom edge. */
-  scrollOvershoot?: number
-  /** Wait before scroll begins (e.g. for crossfade or chart layout). */
+  /**
+   * Unscaled pixels of content to leave unseen at the bottom.
+   * Higher = stop further from the true end.
+   */
+  scrollLeaveHiddenPx?: number
+  /** Wait before scroll begins (e.g. opening hold or chart layout). */
   scrollStartDelayMs?: number
 }
 
@@ -26,8 +32,8 @@ export function PremiumScrollViewport({
   children,
   active,
   durationMs = 15000,
-  scrollOvershoot = 100,
-  scrollStartDelayMs = DEFAULT_SCROLL_START_DELAY_MS,
+  scrollLeaveHiddenPx = DEFAULT_SCROLL_LEAVE_HIDDEN_PX,
+  scrollStartDelayMs = SHOWCASE_SCROLL_HOLD_MS,
 }: Props) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -44,10 +50,11 @@ export function PremiumScrollViewport({
       0,
       (viewport.clientHeight - FOOTER_RESERVE_PX) / SHOWCASE_SCALE,
     )
-    const distance = Math.max(0, content.scrollHeight - visibleUnscaled + scrollOvershoot)
+    const maxTravel = Math.max(0, content.scrollHeight - visibleUnscaled)
+    const distance = Math.max(0, maxTravel - Math.max(0, scrollLeaveHiddenPx))
     setScrollY(distance)
     setCanScroll(distance > 12)
-  }, [scrollOvershoot])
+  }, [scrollLeaveHiddenPx])
 
   useLayoutEffect(() => {
     measure()
