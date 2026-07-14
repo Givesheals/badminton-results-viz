@@ -2,12 +2,15 @@ import { describe, expect, it, beforeEach } from 'vitest'
 import {
   CUSTOM_TAG_MAX_LENGTH,
   CUSTOM_TAG_MAX_PER_GROUP,
+  ensureScoutingChipLibrary,
   loadRememberedCustomTags,
   normalizeCustomTagLabel,
   parseRememberedCustomTags,
   removeRememberedCustomTag,
   renameRememberedCustomTag,
   rememberCustomTag,
+  SCOUTING_STARTER_CHIPS,
+  scoutingChipsSeededStorageKey,
 } from './customNoteTags'
 
 function installLocalStorageMock() {
@@ -71,5 +74,22 @@ describe('customNoteTags', () => {
       expect(rememberCustomTag('Alex', 'selfFeel', `Tag ${i}`)).not.toBeNull()
     }
     expect(rememberCustomTag('Alex', 'selfFeel', 'One too many')).toBeNull()
+  })
+
+  it('seeds scouting starter chips once per player', () => {
+    const first = ensureScoutingChipLibrary('Alex')
+    expect(first.opponentStyles).toEqual([...SCOUTING_STARTER_CHIPS])
+    expect(first.pairStyles).toEqual([...SCOUTING_STARTER_CHIPS])
+    expect(window.localStorage.getItem(scoutingChipsSeededStorageKey('Alex'))).toBe('1')
+
+    removeRememberedCustomTag('Alex', 'opponentStyles', SCOUTING_STARTER_CHIPS[0])
+    const afterDelete = ensureScoutingChipLibrary('Alex')
+    expect(afterDelete.opponentStyles).toEqual([SCOUTING_STARTER_CHIPS[1]])
+  })
+
+  it('returns in-memory starters when player name is missing', () => {
+    const tags = ensureScoutingChipLibrary(null)
+    expect(tags.opponentStyles).toEqual([...SCOUTING_STARTER_CHIPS])
+    expect(tags.pairStyles).toEqual([...SCOUTING_STARTER_CHIPS])
   })
 })

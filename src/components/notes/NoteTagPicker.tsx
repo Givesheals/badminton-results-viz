@@ -4,6 +4,7 @@ import { countNotesWithCustomTag } from '../../lib/customTagNoteUpdates'
 import {
   CUSTOM_TAG_MAX_LENGTH,
   CUSTOM_TAG_MAX_PER_GROUP,
+  ensureScoutingChipLibrary,
   loadRememberedCustomTags,
   normalizeCustomTagLabel,
   rememberCustomTag,
@@ -100,6 +101,9 @@ function TaggedNoteComboBox({
 const MORE_BUTTON_CLASS =
   'inline-flex items-center rounded-lg border border-ink-100 bg-white px-2.5 py-1 text-xs font-medium text-ink-600 transition hover:bg-ink-50'
 
+const EDIT_CHIPS_BUTTON_CLASS =
+  'inline-flex items-center gap-1 rounded-lg border border-brand-300 bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-800 shadow-sm transition hover:bg-brand-100'
+
 function CustomTagManagePanel({
   customTagGroup,
   playerName,
@@ -108,6 +112,7 @@ function CustomTagManagePanel({
   selectedCustom,
   onSelectedCustomChange,
   onClose,
+  diyLibrary = false,
 }: {
   customTagGroup: CustomTagGroup
   playerName: string | null
@@ -116,6 +121,7 @@ function CustomTagManagePanel({
   selectedCustom: string[]
   onSelectedCustomChange: (values: string[]) => void
   onClose: () => void
+  diyLibrary?: boolean
 }) {
   const { allNotes, renameCustomTagEverywhere, removeCustomTagEverywhere } =
     useOpponentNotesContext()
@@ -133,6 +139,15 @@ function CustomTagManagePanel({
   const [renameOnNotes, setRenameOnNotes] = useState(true)
 
   const atLimit = rememberedTags.length >= CUSTOM_TAG_MAX_PER_GROUP
+  const panelTitle = diyLibrary ? 'Your scouting chips' : 'Your tags'
+  const newLabel = diyLibrary ? 'New chip' : 'New tag'
+  const emptyCopy = diyLibrary
+    ? 'No chips yet. Add one above.'
+    : 'No custom tags yet. Add one above.'
+  const removeCopy = diyLibrary ? 'quick-add chips' : 'quick-add tags'
+  const footerCopy = diyLibrary
+    ? 'Removing a chip hides it from quick-add. Saved notes keep the chip unless you choose to remove it from them too.'
+    : 'Removing a tag hides it from quick-add. Saved notes keep the tag unless you choose to remove it from them too.'
 
   function syncSelectedCustom(oldLabel: string, newLabel?: string) {
     const oldKey = oldLabel.toLowerCase()
@@ -151,7 +166,11 @@ function CustomTagManagePanel({
     if (label == null) return
     const updated = rememberCustomTag(playerName, customTagGroup, label)
     if (updated == null) {
-      setMessage(`You can save up to ${CUSTOM_TAG_MAX_PER_GROUP} custom tags`)
+      setMessage(
+        diyLibrary
+          ? `You can save up to ${CUSTOM_TAG_MAX_PER_GROUP} chips`
+          : `You can save up to ${CUSTOM_TAG_MAX_PER_GROUP} custom tags`,
+      )
       return
     }
     onRememberedChange(updated)
@@ -245,7 +264,7 @@ function CustomTagManagePanel({
   return (
     <div className="rounded-lg border border-ink-200 bg-ink-50/80 p-3">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-ink-700">Your tags</p>
+        <p className="text-xs font-medium text-ink-700">{panelTitle}</p>
         <button
           type="button"
           onClick={onClose}
@@ -257,7 +276,7 @@ function CustomTagManagePanel({
 
       <form onSubmit={handleAdd} className="mb-3 flex items-center gap-1.5">
         <label htmlFor={addInputId} className="sr-only">
-          New tag
+          {newLabel}
         </label>
         <input
           id={addInputId}
@@ -265,21 +284,21 @@ function CustomTagManagePanel({
           value={addDraft}
           maxLength={CUSTOM_TAG_MAX_LENGTH}
           disabled={atLimit}
-          placeholder={atLimit ? 'Tag limit reached' : 'New tag'}
+          placeholder={atLimit ? (diyLibrary ? 'Chip limit reached' : 'Tag limit reached') : newLabel}
           onChange={(event) => setAddDraft(event.target.value)}
           className="min-w-0 flex-1 rounded-lg border border-ink-200 bg-white px-2.5 py-1.5 text-xs text-ink-900 focus:border-brand-300 focus:outline-none focus:ring-1 focus:ring-brand-100 disabled:bg-ink-50"
         />
         <button
           type="submit"
           disabled={atLimit || normalizeCustomTagLabel(addDraft) == null}
-          className="rounded-lg border border-ink-100 bg-white px-2.5 py-1.5 text-xs font-medium text-ink-700 hover:bg-white disabled:opacity-40"
+          className="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-800 hover:bg-brand-100 disabled:opacity-40"
         >
           Add
         </button>
       </form>
 
       {rememberedTags.length === 0 ? (
-        <p className="text-xs text-ink-500">No custom tags yet. Add one above.</p>
+        <p className="text-xs text-ink-500">{emptyCopy}</p>
       ) : (
         <ul className="space-y-2">
           {rememberedTags.map((label) => (
@@ -318,7 +337,7 @@ function CustomTagManagePanel({
               ) : pendingRemove === label ? (
                 <div className="space-y-2">
                   <p className="text-xs text-ink-700">
-                    Remove &ldquo;{label}&rdquo; from your quick-add tags?
+                    Remove &ldquo;{label}&rdquo; from your {removeCopy}?
                   </p>
                   {countNotesWithCustomTag(allNotes, customTagGroup, label) > 0 && (
                     <label className="flex items-start gap-2 text-xs text-ink-600">
@@ -422,10 +441,7 @@ function CustomTagManagePanel({
       )}
 
       {message != null && <p className="mt-2 text-xs text-ink-500">{message}</p>}
-      <p className="mt-3 text-[11px] leading-relaxed text-ink-500">
-        Removing a tag hides it from quick-add. Saved notes keep the tag unless you choose to
-        remove it from them too.
-      </p>
+      <p className="mt-3 text-[11px] leading-relaxed text-ink-500">{footerCopy}</p>
     </div>
   )
 }
@@ -440,6 +456,7 @@ function TagAddRow({
   selectedCustom,
   onSelectedCustomChange,
   emphasizeAddLabel,
+  diyLibrary = false,
 }: {
   unselectedOptions: { label: string; hint?: string }[]
   onAdd: (label: string) => void
@@ -450,6 +467,7 @@ function TagAddRow({
   selectedCustom: string[]
   onSelectedCustomChange: (values: string[]) => void
   emphasizeAddLabel?: string | null
+  diyLibrary?: boolean
 }) {
   const [manageOpen, setManageOpen] = useState(false)
 
@@ -472,16 +490,29 @@ function TagAddRow({
             {option.label}
           </button>
         ))}
-        <button
-          type="button"
-          onClick={() => setManageOpen((open) => !open)}
-          aria-expanded={manageOpen}
-          aria-label={manageOpen ? 'Close tag manager' : 'Manage your tags'}
-          title="Manage your tags"
-          className={MORE_BUTTON_CLASS}
-        >
-          <span aria-hidden="true">···</span>
-        </button>
+        {diyLibrary ? (
+          <button
+            type="button"
+            onClick={() => setManageOpen((open) => !open)}
+            aria-expanded={manageOpen}
+            aria-label={manageOpen ? 'Close chip editor' : 'Edit chips'}
+            title="Edit chips"
+            className={EDIT_CHIPS_BUTTON_CLASS}
+          >
+            Edit chips
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setManageOpen((open) => !open)}
+            aria-expanded={manageOpen}
+            aria-label={manageOpen ? 'Close tag manager' : 'Manage your tags'}
+            title="Manage your tags"
+            className={MORE_BUTTON_CLASS}
+          >
+            <span aria-hidden="true">···</span>
+          </button>
+        )}
       </div>
       {manageOpen && (
         <CustomTagManagePanel
@@ -492,6 +523,7 @@ function TagAddRow({
           selectedCustom={selectedCustom}
           onSelectedCustomChange={onSelectedCustomChange}
           onClose={() => setManageOpen(false)}
+          diyLibrary={diyLibrary}
         />
       )}
     </div>
@@ -513,6 +545,7 @@ function TaggedNoteSection<T extends string>({
   customTagGroup,
   playerName,
   emphasizeAddLabel,
+  diyLibrary = false,
 }: {
   sectionTitle?: string
   textareaId: string
@@ -528,20 +561,30 @@ function TaggedNoteSection<T extends string>({
   customTagGroup: CustomTagGroup
   playerName: string | null
   emphasizeAddLabel?: string | null
+  /** About them: library-only quick-add + Edit chips CTA. Built-ins stay for legacy note display. */
+  diyLibrary?: boolean
 }) {
-  const [rememberedCustom, setRememberedCustom] = useState(
-    () => loadRememberedCustomTags(playerName)[customTagGroup],
+  const [rememberedCustom, setRememberedCustom] = useState(() =>
+    diyLibrary
+      ? ensureScoutingChipLibrary(playerName)[customTagGroup]
+      : loadRememberedCustomTags(playerName)[customTagGroup],
   )
 
   useEffect(() => {
-    setRememberedCustom(loadRememberedCustomTags(playerName)[customTagGroup])
-  }, [playerName, customTagGroup])
+    setRememberedCustom(
+      diyLibrary
+        ? ensureScoutingChipLibrary(playerName)[customTagGroup]
+        : loadRememberedCustomTags(playerName)[customTagGroup],
+    )
+  }, [playerName, customTagGroup, diyLibrary])
 
   const builtInLabelByValue = new Map(builtInOptions.map((option) => [option.value, option.label]))
   const selectedBuiltInLabels = selectedBuiltIn.map((value) => builtInLabelByValue.get(value)!)
   const selectedLabels = [...selectedBuiltInLabels, ...selectedCustom]
 
-  const unselectedBuiltIn = builtInOptions.filter((option) => !selectedBuiltIn.includes(option.value))
+  const unselectedBuiltIn = diyLibrary
+    ? []
+    : builtInOptions.filter((option) => !selectedBuiltIn.includes(option.value))
   const unselectedRememberedCustom = rememberedCustom
     .filter((tag) => !selectedCustom.some((selected) => selected.toLowerCase() === tag.toLowerCase()))
     .map((label) => ({ label }))
@@ -551,12 +594,14 @@ function TaggedNoteSection<T extends string>({
   ]
 
   function addByLabel(label: string) {
-    const builtIn = builtInOptions.find((option) => option.label === label)
-    if (builtIn != null) {
-      if (!selectedBuiltIn.includes(builtIn.value)) {
-        onSelectedBuiltInChange([...selectedBuiltIn, builtIn.value])
+    if (!diyLibrary) {
+      const builtIn = builtInOptions.find((option) => option.label === label)
+      if (builtIn != null) {
+        if (!selectedBuiltIn.includes(builtIn.value)) {
+          onSelectedBuiltInChange([...selectedBuiltIn, builtIn.value])
+        }
+        return
       }
-      return
     }
     const normalized = normalizeCustomTagLabel(label)
     if (normalized == null) return
@@ -567,7 +612,7 @@ function TaggedNoteSection<T extends string>({
 
   function removeByLabel(label: string) {
     const builtIn = builtInOptions.find((option) => option.label === label)
-    if (builtIn != null) {
+    if (builtIn != null && selectedBuiltIn.includes(builtIn.value)) {
       onSelectedBuiltInChange(selectedBuiltIn.filter((value) => value !== builtIn.value))
       return
     }
@@ -600,6 +645,7 @@ function TaggedNoteSection<T extends string>({
         selectedCustom={selectedCustom}
         onSelectedCustomChange={onSelectedCustomChange}
         emphasizeAddLabel={emphasizeAddLabel}
+        diyLibrary={diyLibrary}
       />
     </section>
   )
@@ -669,6 +715,7 @@ export function OpponentStyleNoteSection({
       customTagGroup="opponentStyles"
       playerName={playerName}
       emphasizeAddLabel={emphasizeAddLabel}
+      diyLibrary
     />
   )
 }
@@ -704,6 +751,7 @@ export function PairStyleNoteSection({
       onSelectedCustomChange={onSelectedCustomChange}
       customTagGroup="pairStyles"
       playerName={playerName}
+      diyLibrary
     />
   )
 }

@@ -3,7 +3,14 @@ export type CustomTagGroup = 'opponentStyles' | 'pairStyles' | 'selfFeel' | 'gam
 export const CUSTOM_TAG_MAX_PER_GROUP = 6
 export const CUSTOM_TAG_MAX_LENGTH = 24
 
+/** Seed chips for scouting (About them). Seeded once per player; stay until deleted. */
+export const SCOUTING_STARTER_CHIPS = [
+  'Flat-pace specialist',
+  'Weak forehand defence',
+] as const
+
 const STORAGE_PREFIX = 'badminton-custom-note-tags:'
+const SCOUTING_SEED_FLAG_PREFIX = 'badminton-scouting-chips-seeded:'
 
 const EMPTY_REMEMBERED: Record<CustomTagGroup, string[]> = {
   opponentStyles: [],
@@ -12,8 +19,55 @@ const EMPTY_REMEMBERED: Record<CustomTagGroup, string[]> = {
   gameEvents: [],
 }
 
+const SCOUTING_LIBRARY_GROUPS: CustomTagGroup[] = ['opponentStyles', 'pairStyles']
+
 export function rememberedCustomTagsStorageKey(playerName: string): string {
   return `${STORAGE_PREFIX}${playerName.trim().toLowerCase()}`
+}
+
+export function scoutingChipsSeededStorageKey(playerName: string): string {
+  return `${SCOUTING_SEED_FLAG_PREFIX}${playerName.trim().toLowerCase()}`
+}
+
+function mergeScoutingStarters(existing: string[]): string[] {
+  const merged = [...existing]
+  for (const starter of SCOUTING_STARTER_CHIPS) {
+    if (merged.some((tag) => tag.toLowerCase() === starter.toLowerCase())) continue
+    if (merged.length >= CUSTOM_TAG_MAX_PER_GROUP) break
+    merged.push(starter)
+  }
+  return merged
+}
+
+/**
+ * Ensures opponent/pair scouting chip libraries include the starter chips once per player.
+ * If the user later deletes every chip, starters are not re-added.
+ * With no player name (e.g. premium demo), returns starters in memory only.
+ */
+export function ensureScoutingChipLibrary(
+  playerName: string | null,
+): Record<CustomTagGroup, string[]> {
+  if (playerName == null || typeof window === 'undefined') {
+    return {
+      ...EMPTY_REMEMBERED,
+      opponentStyles: [...SCOUTING_STARTER_CHIPS],
+      pairStyles: [...SCOUTING_STARTER_CHIPS],
+    }
+  }
+
+  const current = loadRememberedCustomTags(playerName)
+  const seededKey = scoutingChipsSeededStorageKey(playerName)
+  if (window.localStorage.getItem(seededKey) === '1') {
+    return current
+  }
+
+  const next = { ...current }
+  for (const group of SCOUTING_LIBRARY_GROUPS) {
+    next[group] = mergeScoutingStarters(current[group])
+  }
+  saveRememberedCustomTags(playerName, next)
+  window.localStorage.setItem(seededKey, '1')
+  return next
 }
 
 export function normalizeCustomTagLabel(input: string): string | null {

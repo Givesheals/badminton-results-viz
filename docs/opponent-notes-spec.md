@@ -12,7 +12,7 @@ Players can capture **opponent notes** (scouting) and optional **match journal**
 
 Opponent notes are tied to a specific match and support doubles targeting: notes can apply to **the pair** or a **specific opponent**. Match journal notes apply to **the game itself** (how you played, conditions, partner context) and do not surface on future rematch prompts.
 
-**Tap-to-tag** inputs classify opponent playing styles, pair dynamics (doubles), and journal context. Users can also create **custom tags** remembered per player for quick-add.
+**About them** uses a **build-your-own chip library** (two starter chips + Edit chips). **My game** keeps built-in + custom quick-add tags.
 
 ---
 
@@ -20,12 +20,12 @@ Opponent notes are tied to a specific match and support doubles targeting: notes
 
 | In scope | Out of scope |
 |----------|--------------|
-| Capture/edit modal from recap match rows | Draw/rematch notification prompts |
+| Capture/edit modal from recap match rows | Draw scout card (see [draw scout spec](./draw-scout-spec.md)) |
 | Notes dashboard tab with search | Inline notes on opponent matchups |
 | localStorage persistence per player | Server sync |
 | Pair vs individual opponent targeting | |
 | Match journal (`kind: 'match'`) per game | |
-| Built-in + custom tags | Discipline-filtered note lookup |
+| Built-in journal tags + DIY scouting chips | Discipline-filtered note lookup |
 | Discipline scope on opponent notes (`S` / `D` / `XD`) | |
 | Direct notes from Notes tab (no match context) | |
 
@@ -134,6 +134,7 @@ Separate from per-note tag storage. Remembered per player for the `+` quick-add 
 | Key | Value |
 |-----|-------|
 | `badminton-custom-note-tags:{playerName}` | JSON map of `CustomTagGroup` → `string[]` |
+| `badminton-scouting-chips-seeded:{playerName}` | `'1'` after scouting starters have been applied once |
 
 Groups: `opponentStyles`, `pairStyles`, `selfFeel`, `gameEvents`.
 
@@ -142,6 +143,13 @@ Groups: `opponentStyles`, `pairStyles`, `selfFeel`, `gameEvents`.
 | Max tags per group | 6 |
 | Max label length | 24 characters |
 | Deduping | Case-insensitive |
+
+**Scouting starters (About them):** On first load for a player, `ensureScoutingChipLibrary()` seeds `opponentStyles` and `pairStyles` with:
+
+1. Flat-pace specialist  
+2. Weak forehand defence  
+
+Starters stay until the user removes them; they are **not** re-seeded after deletion. Built-in enum opponent/pair style codes remain valid on saved notes for display/removal, but are **not** offered in the DIY quick-add row.
 
 Implemented in `src/lib/customNoteTags.ts`.
 
@@ -195,15 +203,15 @@ Top-level mode tabs: **About them** | **My game** (game tab hidden for direct no
 
 - Segmented opponent control (doubles): opponent names first, **The pair** last
 - **Combo note box** — textarea with selected tag chips inside the bordered area (tap chip to remove from this note)
-- **Quick-add row** below the box: `+ {tag label}` buttons for unselected built-in and remembered custom tags
-- **`···` button** at end of quick-add row — opens **Your tags** management panel (see below)
+- **Quick-add row** below the box: `+ {chip}` for chips in the player's scouting library that are not already on the note
+- **Edit chips** — high-weight CTA at the end of the quick-add row; opens **Your scouting chips** management panel
 - **Applies to:** collapsed discipline scope — selected `S` / `D` / `XD` chips + **Change** link; expanded picker toggles all three scope chips + **Done**
 
-Playing style tags (built-in + custom) are scoped to opponent vs pair target.
+Default library (seeded once): *Flat-pace specialist*, *Weak forehand defence*. Playing-style chips are scoped to opponent vs pair target (separate libraries).
 
 #### My game tab
 
-Two sections, each with the same combo-box + quick-add pattern:
+Two sections, each with the combo-box + quick-add pattern (unchanged; built-in tags + `···` manage for customs):
 
 | Section | Text field | Built-in tag groups |
 |---------|------------|---------------------|
@@ -214,19 +222,24 @@ Two sections, each with the same combo-box + quick-add pattern:
 
 | Action | Behaviour |
 |--------|-----------|
-| Tap `+ {label}` below box | Add tag to this note (chip appears inside combo box) |
+| Tap `+ {label}` below box | Add tag/chip to this note (appears inside combo box) |
 | Tap chip inside combo box | Remove tag from **this note only** |
-| Tap `···` | Open tag management panel |
+| Tap **Edit chips** (About them) | Open scouting chip management panel |
+| Tap `···` (My game) | Open custom tag management panel |
 
-#### Your tags panel (`···`)
+#### Your scouting chips panel (**Edit chips**)
 
-Inline panel for managing the **custom tag library** (not built-in tags):
+Inline panel for managing the **scouting chip library** (opponent or pair group):
 
-- **Add** new custom tag (subject to per-group limit)
-- **Rename** a custom tag — optional checkbox to also rename on all saved notes that use it (shows count)
+- **Add** new chip (subject to per-group limit)
+- **Rename** — optional checkbox to also rename on all saved notes that use it (shows count)
 - **Remove** from quick-add — optional checkbox to also remove from all saved notes (shows count)
 
 Footer copy explains that removing from quick-add does not change saved notes unless the user opts in.
+
+#### Your tags panel (`···`, My game only)
+
+Same add / rename / remove behaviour for journal custom tags (`selfFeel`, `gameEvents`).
 
 Save persists both modal modes. Delete is mode-specific: **Delete opponent note** / **Delete game note**.
 
@@ -273,9 +286,9 @@ Search matches body, journal fields, opponents, competition, disciplines, scope 
 
 ---
 
-## Future integration
+## Draw scout integration
 
-When a draw/rematch feature exists:
+The **Draw scout** card (see [draw scout spec](./draw-scout-spec.md)) surfaces scouting notes against opponents in an upcoming draw. Resolution:
 
 ```typescript
 const relevant = sortNotesNewestFirst(

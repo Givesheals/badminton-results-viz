@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { DisciplineChip } from '../discipline/DisciplineChip'
 import { OpponentStyleNoteSection } from '../notes/NoteTagPicker'
-import {
-  OPPONENT_STYLE_LABELS,
-  type OpponentStyleTag,
-} from '../../lib/noteTags'
+import { SCOUTING_STARTER_CHIPS } from '../../lib/customNoteTags'
 
 const FAKE_OPPONENTS = ['Riley Hart', 'Morgan Blake'] as const
 const SELECTED_OPPONENT = FAKE_OPPONENTS[0]
 
-const TAG_SEQUENCE: OpponentStyleTag[] = ['front_court', 'rear_court_attacker']
+const TAG_SEQUENCE = [SCOUTING_STARTER_CHIPS[0], SCOUTING_STARTER_CHIPS[1]] as const
 
 const TYPED_BODY = 'Flicks a lot, stand slightly back.'
 
@@ -18,7 +15,7 @@ const START_DELAY_MS = 120
 
 const EMPTY_DEMO = {
   body: '',
-  selectedTags: [] as OpponentStyleTag[],
+  selectedCustom: [] as string[],
   emphasizeAddLabel: null as string | null,
 }
 
@@ -28,7 +25,7 @@ type Props = {
 
 export function PremiumNotesCaptureDemo({ active = true }: Props) {
   const [body, setBody] = useState(EMPTY_DEMO.body)
-  const [selectedTags, setSelectedTags] = useState(EMPTY_DEMO.selectedTags)
+  const [selectedCustom, setSelectedCustom] = useState(EMPTY_DEMO.selectedCustom)
   const [emphasizeAddLabel, setEmphasizeAddLabel] = useState(EMPTY_DEMO.emphasizeAddLabel)
   const [runId, setRunId] = useState(0)
   const timersRef = useRef<number[]>([])
@@ -41,7 +38,7 @@ export function PremiumNotesCaptureDemo({ active = true }: Props) {
 
   const resetDemo = useCallback(() => {
     setBody(EMPTY_DEMO.body)
-    setSelectedTags(EMPTY_DEMO.selectedTags)
+    setSelectedCustom(EMPTY_DEMO.selectedCustom)
     setEmphasizeAddLabel(EMPTY_DEMO.emphasizeAddLabel)
   }, [])
 
@@ -61,20 +58,16 @@ export function PremiumNotesCaptureDemo({ active = true }: Props) {
       )
     }
 
-    schedule(START_DELAY_MS + 350, () =>
-      setEmphasizeAddLabel(OPPONENT_STYLE_LABELS[TAG_SEQUENCE[0]!]),
-    )
+    schedule(START_DELAY_MS + 350, () => setEmphasizeAddLabel(TAG_SEQUENCE[0]))
     schedule(START_DELAY_MS + 700, () => {
       setEmphasizeAddLabel(null)
-      setSelectedTags([TAG_SEQUENCE[0]!])
+      setSelectedCustom([TAG_SEQUENCE[0]])
     })
 
-    schedule(START_DELAY_MS + 1150, () =>
-      setEmphasizeAddLabel(OPPONENT_STYLE_LABELS[TAG_SEQUENCE[1]!]),
-    )
+    schedule(START_DELAY_MS + 1150, () => setEmphasizeAddLabel(TAG_SEQUENCE[1]))
     schedule(START_DELAY_MS + 1500, () => {
       setEmphasizeAddLabel(null)
-      setSelectedTags([...TAG_SEQUENCE])
+      setSelectedCustom([...TAG_SEQUENCE])
     })
 
     schedule(START_DELAY_MS + 1900, () => {
@@ -144,10 +137,10 @@ export function PremiumNotesCaptureDemo({ active = true }: Props) {
             key={runId}
             body={body}
             onBodyChange={setBody}
-            selected={selectedTags}
-            onSelectedChange={setSelectedTags}
-            selectedCustom={[]}
-            onSelectedCustomChange={() => {}}
+            selected={[]}
+            onSelectedChange={() => {}}
+            selectedCustom={selectedCustom}
+            onSelectedCustomChange={setSelectedCustom}
             playerName={null}
             emphasizeAddLabel={emphasizeAddLabel}
           />
