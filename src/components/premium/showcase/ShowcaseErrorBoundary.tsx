@@ -22,7 +22,7 @@ export class ShowcaseErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex aspect-[16/10] items-center justify-center rounded-xl border border-ink-100 bg-ink-50 px-4 text-center">
+        <div className="flex min-h-[280px] aspect-[5/4] items-center justify-center rounded-xl border border-ink-100 bg-ink-50 px-4 text-center sm:min-h-[240px] sm:aspect-[2/1]">
           <p className="text-sm text-ink-600">
             Preview unavailable right now. You can still continue with signup.
           </p>

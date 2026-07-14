@@ -4,18 +4,21 @@ import { Dashboard } from './components/dashboard/Dashboard'
 import { EmptyState } from './components/dashboard/EmptyState'
 import { FileUpload } from './components/upload/FileUpload'
 import { PremiumUserMenu } from './components/premium/PremiumUserMenu'
+import { ShowcaseRecordSurface } from './components/premium/showcase/ShowcaseRecordSurface'
 import { DatasetProvider, useDataset } from './context/DatasetContext'
 import { PremiumProvider } from './context/PremiumContext'
 import { computeStatsFromMatches } from './lib/computeStats'
 import { normalizeDataset } from './lib/matchHistory'
-import { isShowcaseMode } from './lib/showcaseMode'
+import { getShowcaseRecordSlideId, isShowcaseMode } from './lib/showcaseMode'
 
 function AppContent() {
   const { dataset, loadParsed } = useDataset()
   const showcaseMode = isShowcaseMode()
+  const recordSlideId = getShowcaseRecordSlideId()
 
   useEffect(() => {
     if (!showcaseMode) return
+
     let cancelled = false
     fetch(`${import.meta.env.BASE_URL}premium-showcase/dataset.json`)
       .then((response) => {
@@ -37,6 +40,10 @@ function AppContent() {
     if (!dataset) return null
     return computeStatsFromMatches(normalizeDataset(dataset)).playerName
   }, [dataset])
+
+  if (recordSlideId) {
+    return <ShowcaseRecordSurface slideId={recordSlideId} />
+  }
 
   const headerRight =
     dataset && playerName && !showcaseMode ? <PremiumUserMenu playerName={playerName} /> : undefined

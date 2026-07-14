@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "showcase:prepare": "node scripts/prepare-premium-showcase.mjs",
-    "showcase:capture": "node scripts/capture-premium-showcase.mjs"
+    "showcase:capture": "node scripts/capture-premium-showcase.mjs",
+    "showcase:record": "node scripts/record-premium-showcase.mjs"
   },
   "dependencies": {
     "html-to-image": "^1.11.13",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@tailwindcss/vite": "^4.3.0",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",

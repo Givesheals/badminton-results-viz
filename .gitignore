@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Local showcase source data (screenshots in public/premium-showcase/ are committed)
+# Local showcase source data (videos/posters in public/premium-showcase/ are committed)
 marketing/*.xlsx
 public/premium-showcase/dataset.json
+.tmp-showcase-record/
