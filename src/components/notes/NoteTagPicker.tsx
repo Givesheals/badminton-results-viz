@@ -139,15 +139,14 @@ function CustomTagManagePanel({
   const [renameOnNotes, setRenameOnNotes] = useState(true)
 
   const atLimit = rememberedTags.length >= CUSTOM_TAG_MAX_PER_GROUP
-  const panelTitle = diyLibrary ? 'Your scouting chips' : 'Your tags'
-  const newLabel = diyLibrary ? 'New chip' : 'New tag'
+  const panelTitle = diyLibrary ? 'Your note tags' : 'Your tags'
+  const newLabel = 'New tag'
   const emptyCopy = diyLibrary
-    ? 'No chips yet. Add one above.'
+    ? 'No tags yet. Add one above.'
     : 'No custom tags yet. Add one above.'
-  const removeCopy = diyLibrary ? 'quick-add chips' : 'quick-add tags'
-  const footerCopy = diyLibrary
-    ? 'Removing a chip hides it from quick-add. Saved notes keep the chip unless you choose to remove it from them too.'
-    : 'Removing a tag hides it from quick-add. Saved notes keep the tag unless you choose to remove it from them too.'
+  const removeCopy = 'quick-add tags'
+  const footerCopy =
+    'Removing a tag hides it from quick-add. Saved notes keep the tag unless you choose to remove it from them too.'
 
   function syncSelectedCustom(oldLabel: string, newLabel?: string) {
     const oldKey = oldLabel.toLowerCase()
@@ -166,11 +165,7 @@ function CustomTagManagePanel({
     if (label == null) return
     const updated = rememberCustomTag(playerName, customTagGroup, label)
     if (updated == null) {
-      setMessage(
-        diyLibrary
-          ? `You can save up to ${CUSTOM_TAG_MAX_PER_GROUP} chips`
-          : `You can save up to ${CUSTOM_TAG_MAX_PER_GROUP} custom tags`,
-      )
+      setMessage(`You can save up to ${CUSTOM_TAG_MAX_PER_GROUP} tags`)
       return
     }
     onRememberedChange(updated)
@@ -268,7 +263,7 @@ function CustomTagManagePanel({
         <button
           type="button"
           onClick={onClose}
-          className="text-xs text-ink-500 hover:text-ink-700"
+          className="rounded-lg bg-brand-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700"
         >
           Done
         </button>
@@ -284,7 +279,7 @@ function CustomTagManagePanel({
           value={addDraft}
           maxLength={CUSTOM_TAG_MAX_LENGTH}
           disabled={atLimit}
-          placeholder={atLimit ? (diyLibrary ? 'Chip limit reached' : 'Tag limit reached') : newLabel}
+          placeholder={atLimit ? 'Tag limit reached' : newLabel}
           onChange={(event) => setAddDraft(event.target.value)}
           className="min-w-0 flex-1 rounded-lg border border-ink-200 bg-white px-2.5 py-1.5 text-xs text-ink-900 focus:border-brand-300 focus:outline-none focus:ring-1 focus:ring-brand-100 disabled:bg-ink-50"
         />
@@ -495,11 +490,11 @@ function TagAddRow({
             type="button"
             onClick={() => setManageOpen((open) => !open)}
             aria-expanded={manageOpen}
-            aria-label={manageOpen ? 'Close chip editor' : 'Edit chips'}
-            title="Edit chips"
+            aria-label={manageOpen ? 'Close tag editor' : 'Edit tags'}
+            title="Edit tags"
             className={EDIT_CHIPS_BUTTON_CLASS}
           >
-            Edit chips
+            Edit tags
           </button>
         ) : (
           <button
@@ -561,7 +556,7 @@ function TaggedNoteSection<T extends string>({
   customTagGroup: CustomTagGroup
   playerName: string | null
   emphasizeAddLabel?: string | null
-  /** About them: library-only quick-add + Edit chips CTA. Built-ins stay for legacy note display. */
+  /** About them: library-only quick-add + Edit tags CTA. Built-ins stay for legacy note display. */
   diyLibrary?: boolean
 }) {
   const [rememberedCustom, setRememberedCustom] = useState(() =>
