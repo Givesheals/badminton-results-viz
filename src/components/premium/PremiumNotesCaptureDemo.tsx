@@ -112,14 +112,14 @@ export function PremiumNotesCaptureDemo({ active = true }: Props) {
       <div className="min-h-0 flex-1 overflow-hidden px-4 py-3 sm:px-5">
         <div className="space-y-3">
           <div
-            className="flex flex-wrap gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1"
+            className="flex w-full gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1"
             role="tablist"
             aria-hidden
           >
             {FAKE_OPPONENTS.map((name) => (
               <span
                 key={name}
-                className={`rounded-md px-2.5 py-1.5 text-xs font-medium ${
+                className={`min-w-0 flex-1 rounded-md px-1.5 py-1.5 text-center text-xs font-medium leading-snug ${
                   name === SELECTED_OPPONENT
                     ? 'bg-white text-ink-900 shadow-sm'
                     : 'text-ink-600'
@@ -128,7 +128,7 @@ export function PremiumNotesCaptureDemo({ active = true }: Props) {
                 {name}
               </span>
             ))}
-            <span className="rounded-md px-2.5 py-1.5 text-xs font-medium text-ink-600">
+            <span className="min-w-0 flex-1 rounded-md px-1.5 py-1.5 text-center text-xs font-medium leading-snug text-ink-600">
               The pair
             </span>
           </div>
