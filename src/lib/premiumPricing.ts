@@ -3,7 +3,6 @@ export type PremiumPlan = 'monthly' | 'yearly'
 export const PREMIUM_MONTHLY_PRICE_GBP = 6.99
 export const PREMIUM_YEARLY_PRICE_GBP = 59.99
 export const PREMIUM_YEARLY_SAVINGS_GBP = 23.89
-export const PREMIUM_VERIFICATION_GRACE_DAYS = 7
 
 /** Demo BE numbers that simulate "already subscribed by another account". */
 export const DEMO_BE_NUMBER_TAKEN = '1000001'

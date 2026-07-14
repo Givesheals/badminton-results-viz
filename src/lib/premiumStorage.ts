@@ -8,9 +8,6 @@ export type StoredPremiumState = {
   receiptEmail: string
   plan: PremiumPlan
   subscribedAt: string
-  verificationCode: string
-  verifiedAt: string | null
-  verificationDeadline: string
 }
 
 export function loadPremiumState(): StoredPremiumState | null {
@@ -18,7 +15,23 @@ export function loadPremiumState(): StoredPremiumState | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    return JSON.parse(raw) as StoredPremiumState
+    const parsed = JSON.parse(raw) as Partial<StoredPremiumState>
+    if (
+      typeof parsed.playerName !== 'string' ||
+      typeof parsed.beNumber !== 'string' ||
+      typeof parsed.receiptEmail !== 'string' ||
+      (parsed.plan !== 'monthly' && parsed.plan !== 'yearly') ||
+      typeof parsed.subscribedAt !== 'string'
+    ) {
+      return null
+    }
+    return {
+      playerName: parsed.playerName,
+      beNumber: parsed.beNumber,
+      receiptEmail: parsed.receiptEmail,
+      plan: parsed.plan,
+      subscribedAt: parsed.subscribedAt,
+    }
   } catch {
     return null
   }

@@ -72,10 +72,6 @@ export function BePlayerSearch({ defaultQuery = '', selected, onSelect, onClear,
             <p className="text-xs text-ink-600">
               BE {selected.beNumber} · {selected.club} · {selected.county}
             </p>
-            <p className="mt-1 text-xs text-ink-600">
-              After you subscribe, we&apos;ll send an activation code to{' '}
-              <strong>{selected.maskedEmail}</strong> (the email on their Badminton England record).
-            </p>
           </div>
           <button
             type="button"

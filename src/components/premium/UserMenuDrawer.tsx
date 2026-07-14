@@ -9,7 +9,6 @@ type Props = {
   onClose: () => void
   playerName: string
   onSignUpPremium: () => void
-  onVerifyEmail: () => void
   onManageSubscription: () => void
   onOpenNotifications: () => void
 }
@@ -31,13 +30,12 @@ export function UserMenuDrawer({
   onClose,
   playerName,
   onSignUpPremium,
-  onVerifyEmail,
   onManageSubscription,
   onOpenNotifications,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
-  const { premium, isSubscribed, isVerified, isPremiumActive } = usePremium()
+  const { premium, isSubscribed, isPremiumActive } = usePremium()
   const initials = getPlayerInitials(playerName)
 
   useEffect(() => {
@@ -116,26 +114,9 @@ export function UserMenuDrawer({
             </button>
           )}
 
-          {isSubscribed && !isVerified && (
-            <button
-              type="button"
-              onClick={() => {
-                onClose()
-                onVerifyEmail()
-              }}
-              className="mb-6 flex w-full flex-col items-center gap-1 rounded-xl border-2 border-brand-300 bg-brand-50 px-4 py-3 text-sm font-medium text-brand-800 hover:bg-brand-100"
-            >
-              <span>Confirm Badminton England email</span>
-              <span className="text-xs font-normal text-brand-700">
-                Enter the activation code we sent — required within 7 days
-              </span>
-            </button>
-          )}
-
           {isPremiumActive && (
             <div className="mb-6 rounded-xl border border-court-200 bg-court-50 px-4 py-3 text-center text-sm text-court-700">
               Premium active
-              {isVerified ? ' · Verified' : ' · Verification pending'}
             </div>
           )}
 

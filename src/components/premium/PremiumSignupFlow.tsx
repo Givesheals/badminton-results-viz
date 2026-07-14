@@ -10,7 +10,6 @@ import {
   PREMIUM_MONTHLY_PRICE_GBP,
   PREMIUM_YEARLY_PRICE_GBP,
   PREMIUM_YEARLY_SAVINGS_GBP,
-  PREMIUM_VERIFICATION_GRACE_DAYS,
   type PremiumPlan,
 } from '../../lib/premiumPricing'
 import { BePlayerSearch } from './BePlayerSearch'
@@ -22,7 +21,6 @@ type Props = {
   open: boolean
   onClose: () => void
   playerName: string
-  onOpenVerification: (devCode: string) => void
 }
 
 const PREMIUM_BENEFITS = [
@@ -33,7 +31,7 @@ const PREMIUM_BENEFITS = [
   'Player profile & season journey',
 ]
 
-export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerification }: Props) {
+export function PremiumSignupFlow({ open, onClose, playerName }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const { subscribe, checkBeNumber } = usePremium()
@@ -50,7 +48,6 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
   const [cardNumber, setCardNumber] = useState('')
   const [cardExpiry, setCardExpiry] = useState('')
   const [cardCvc, setCardCvc] = useState('')
-  const [lastDevCode, setLastDevCode] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -66,7 +63,6 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
     setCardNumber('')
     setCardExpiry('')
     setCardCvc('')
-    setLastDevCode(null)
   }, [open])
 
   useEffect(() => {
@@ -118,13 +114,12 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
     if (!selectedPlayer) return
     const resolvedReceiptEmail =
       receiptEmail.trim() || selectedPlayer.maskedEmail
-    const code = subscribe({
+    subscribe({
       playerName: selectedPlayer.name,
       beNumber: selectedPlayer.beNumber,
       receiptEmail: resolvedReceiptEmail,
       plan,
     })
-    setLastDevCode(code)
     setStep('success')
   }
 
@@ -145,7 +140,6 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
 
   const unlockedName = selectedPlayer?.name ?? ''
   const unlockedBeNumber = selectedPlayer?.beNumber ?? ''
-  const unlockedMaskedEmail = selectedPlayer?.maskedEmail ?? ''
 
   return createPortal(
     <>
@@ -401,25 +395,6 @@ export function PremiumSignupFlow({ open, onClose, playerName, onOpenVerificatio
                 Premium is active for {unlockedName} (BE {unlockedBeNumber})
               </p>
               <p>Advanced stats are now unlocked for this player on your account.</p>
-
-              <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
-                <p className="font-medium text-brand-900">Activate your subscription</p>
-                <p className="mt-1 text-brand-800">
-                  We&apos;ve sent a 6-digit activation code to{' '}
-                  <strong>{unlockedMaskedEmail}</strong> — the email address registered with
-                  Badminton England for this player. Enter that code within{' '}
-                  {PREMIUM_VERIFICATION_GRACE_DAYS} days to confirm access and keep premium active.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (lastDevCode) onOpenVerification(lastDevCode)
-                  }}
-                  className="mt-3 text-sm font-semibold text-brand-700 hover:text-brand-600"
-                >
-                  Enter activation code →
-                </button>
-              </div>
 
               <a
                 href="https://discord.com/"

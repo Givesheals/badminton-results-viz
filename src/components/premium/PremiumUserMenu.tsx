@@ -6,7 +6,6 @@ import {
   planBillingDescription,
   planPriceGbp,
 } from '../../lib/premiumPricing'
-import { BeEmailVerification } from './BeEmailVerification'
 import { PremiumSignupFlow } from './PremiumSignupFlow'
 import { UserMenuDrawer } from './UserMenuDrawer'
 import { NotificationsPreview } from '../notifications/NotificationsPreview'
@@ -17,13 +16,11 @@ type Props = {
 }
 
 export function PremiumUserMenu({ playerName }: Props) {
-  const { premium, isVerified, clearSubscription } = usePremium()
+  const { premium, clearSubscription } = usePremium()
   const [menuOpen, setMenuOpen] = useState(false)
   const [signupOpen, setSignupOpen] = useState(false)
-  const [verifyOpen, setVerifyOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const [devCode, setDevCode] = useState<string | null>(null)
 
   const initials = getPlayerInitials(playerName)
 
@@ -43,7 +40,6 @@ export function PremiumUserMenu({ playerName }: Props) {
         onClose={() => setMenuOpen(false)}
         playerName={playerName}
         onSignUpPremium={() => setSignupOpen(true)}
-        onVerifyEmail={() => setVerifyOpen(true)}
         onManageSubscription={() => setManageOpen(true)}
         onOpenNotifications={() => setNotificationsOpen(true)}
       />
@@ -57,17 +53,6 @@ export function PremiumUserMenu({ playerName }: Props) {
         open={signupOpen}
         onClose={() => setSignupOpen(false)}
         playerName={playerName}
-        onOpenVerification={(code) => {
-          setDevCode(code)
-          setSignupOpen(false)
-          setVerifyOpen(true)
-        }}
-      />
-
-      <BeEmailVerification
-        open={verifyOpen}
-        onClose={() => setVerifyOpen(false)}
-        devCode={devCode}
       />
 
       <Modal
@@ -98,25 +83,12 @@ export function PremiumUserMenu({ playerName }: Props) {
               <span className="font-medium text-ink-900">Receipt email:</span> {premium.receiptEmail}
             </p>
             <p>
-              <span className="font-medium text-ink-900">Status:</span>{' '}
-              {isVerified ? 'Verified' : 'Verification pending'}
+              <span className="font-medium text-ink-900">Status:</span> Active
             </p>
             <p>
               <span className="font-medium text-ink-900">Next billing:</span>{' '}
               {formatPriceGbp(planPriceGbp(premium.plan))}
             </p>
-            {!isVerified && (
-              <button
-                type="button"
-                onClick={() => {
-                  setManageOpen(false)
-                  setVerifyOpen(true)
-                }}
-                className="text-brand-700 hover:text-brand-600"
-              >
-                Verify Badminton England email →
-              </button>
-            )}
             <hr className="border-ink-100" />
             <button
               type="button"
