@@ -12,6 +12,7 @@ import {
 } from '../../lib/partnerTournamentHistory'
 import {
   isLightGroupProgressionStage,
+  PROGRESSION_PARTNER_CHIP_COLORS,
   PROGRESSION_STAGE_COLORS,
 } from '../../lib/tournamentProgression'
 import type { NormalizedMatch } from '../../types/matchHistory'
@@ -80,9 +81,9 @@ function StageGroupSection({
     ? group.tournaments
     : group.tournaments.slice(0, INITIAL_TOURNAMENTS_PER_STAGE)
   const hiddenCount = group.tournaments.length - visibleTournaments.length
-  const stageColor = isLightGroupProgressionStage(group.stage)
-    ? 'var(--color-ink-500)'
-    : PROGRESSION_STAGE_COLORS[group.stage]
+  const lightGroup = isLightGroupProgressionStage(group.stage)
+  const stageColor =
+    PROGRESSION_PARTNER_CHIP_COLORS[group.stage] ?? PROGRESSION_STAGE_COLORS[group.stage]
 
   return (
     <section className="rounded-lg card-frame bg-white">
@@ -94,7 +95,9 @@ function StageGroupSection({
       >
         <span className="flex min-w-0 items-center gap-2">
           <span
-            className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
+            className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs ${
+              lightGroup ? 'font-medium text-black' : 'font-semibold text-white'
+            }`}
             style={{ backgroundColor: stageColor }}
           >
             {group.label}

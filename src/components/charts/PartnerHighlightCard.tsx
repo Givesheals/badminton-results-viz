@@ -5,6 +5,7 @@ import {
 } from '../../lib/partnerAchievements'
 import {
   isLightGroupProgressionStage,
+  PROGRESSION_PARTNER_CHIP_COLORS,
   PROGRESSION_STAGE_COLORS,
   type ProgressionStage,
 } from '../../lib/tournamentProgression'
@@ -58,18 +59,20 @@ export function PartnerHighlightCard({ row, expanded, onToggle, panelId }: Props
   )
 }
 
-/** Group-stage swatches are very light — use a darker fill so white label text reads clearly. */
-const GROUP_CHIP_COLOR = 'var(--color-ink-500)'
-
 function StageChip({ stage, count }: { stage: ProgressionStage; count: number }) {
-  const backgroundColor = isLightGroupProgressionStage(stage)
-    ? GROUP_CHIP_COLOR
-    : PROGRESSION_STAGE_COLORS[stage]
+  const lightGroup = isLightGroupProgressionStage(stage)
 
   return (
     <li
-      className="rounded-full px-2.5 py-1 text-xs font-semibold text-white shadow-sm"
-      style={{ backgroundColor }}
+      className={`rounded-full px-2.5 py-1 text-xs ${
+        lightGroup
+          ? 'font-medium text-black'
+          : 'font-semibold text-white shadow-sm'
+      }`}
+      style={{
+        backgroundColor:
+          PROGRESSION_PARTNER_CHIP_COLORS[stage] ?? PROGRESSION_STAGE_COLORS[stage],
+      }}
     >
       {formatStageChip(stage, count)}
     </li>

@@ -66,13 +66,19 @@ export const PROGRESSION_STAGE_CHIP_ORDER: ProgressionStage[] = [
 ].reverse()
 
 export const PROGRESSION_STAGE_COLORS: Record<ProgressionStage, string> = {
-  'group-stages': 'var(--color-ink-300)',
-  'group-wins': 'var(--color-ink-400)',
+  'group-stages': 'var(--color-ink-200)',
+  'group-wins': 'var(--color-ink-300)',
   knockout: 'var(--color-brand-200)',
   'quarter-final': 'var(--color-brand-300)',
   'semi-final': 'var(--color-brand-400)',
   'runner-up': 'var(--color-brand-500)',
   winner: 'var(--color-brand-600)',
+}
+
+/** Partner chips keep a lighter grey so black label text stays soft vs QF. */
+export const PROGRESSION_PARTNER_CHIP_COLORS: Partial<Record<ProgressionStage, string>> = {
+  'group-stages': 'var(--color-ink-100)',
+  'group-wins': 'var(--color-ink-200)',
 }
 
 export type TournamentEntry = {
