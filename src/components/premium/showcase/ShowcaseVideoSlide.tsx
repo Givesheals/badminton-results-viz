@@ -11,6 +11,7 @@ type Props = {
   active: boolean
   reducedMotion: boolean
   label: string
+  onEnded?: () => void
 }
 
 function useShowcaseBucket() {
@@ -28,7 +29,7 @@ function useShowcaseBucket() {
   return bucket
 }
 
-export function ShowcaseVideoSlide({ slideId, active, reducedMotion, label }: Props) {
+export function ShowcaseVideoSlide({ slideId, active, reducedMotion, label, onEnded }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const bucket = useShowcaseBucket()
   const poster = showcasePosterSrc(slideId, bucket)
@@ -77,9 +78,11 @@ export function ShowcaseVideoSlide({ slideId, active, reducedMotion, label }: Pr
         poster={poster}
         muted
         playsInline
-        loop
         preload="auto"
         aria-label={label}
+        onEnded={() => {
+          if (active && !reducedMotion) onEnded?.()
+        }}
       >
         {/* MP4 first for Safari; WebM for Chromium/Firefox. */}
         <source src={mp4} type="video/mp4" />

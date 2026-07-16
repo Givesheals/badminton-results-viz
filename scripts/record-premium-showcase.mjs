@@ -168,18 +168,20 @@ async function recordAll() {
         await page.evaluate(() => {
           window.__startShowcaseRecord?.()
         })
-        // Capture from the held opening frame.
-        await page.waitForTimeout(80)
 
+        // Pace captures to wall-clock so screenshot overhead does not leave
+        // trailing freeze frames after the CSS scroll has already finished.
         const frameCount = Math.max(8, Math.round((slide.durationMs / 1000) * FPS))
         const frameIntervalMs = 1000 / FPS
+        const timelineStart = Date.now()
 
         for (let index = 0; index < frameCount; index += 1) {
+          const targetTime = timelineStart + index * frameIntervalMs
+          const waitMs = targetTime - Date.now()
+          if (waitMs > 1) await page.waitForTimeout(waitMs)
+
           const framePath = path.join(frameDir, `frame-${String(index).padStart(4, '0')}.jpg`)
           await page.screenshot({ path: framePath, type: 'jpeg', quality: 82 })
-          if (index < frameCount - 1) {
-            await page.waitForTimeout(frameIntervalMs)
-          }
         }
 
         await context.close()

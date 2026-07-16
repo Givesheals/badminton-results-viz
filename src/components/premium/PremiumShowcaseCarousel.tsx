@@ -26,12 +26,15 @@ export function PremiumShowcaseCarousel() {
     return () => window.clearTimeout(timer)
   }, [])
 
+  function goNext() {
+    setActiveIndex((activeIndexRef.current + 1) % SHOWCASE_VIDEO_SLIDES.length)
+  }
+
+  // Fallback timer in case ended never fires (e.g. reduced motion / load failure).
   useEffect(() => {
     if (reducedMotion) return
     const duration = SHOWCASE_VIDEO_SLIDES[activeIndex]!.displayMs
-    const timer = window.setTimeout(() => {
-      setActiveIndex((activeIndexRef.current + 1) % SHOWCASE_VIDEO_SLIDES.length)
-    }, duration)
+    const timer = window.setTimeout(goNext, duration + 250)
     return () => window.clearTimeout(timer)
   }, [activeIndex, reducedMotion])
 
@@ -70,6 +73,7 @@ export function PremiumShowcaseCarousel() {
                       active={isActive}
                       reducedMotion={reducedMotion}
                       label={slide.caption}
+                      onEnded={goNext}
                     />
                   </div>
                 )
