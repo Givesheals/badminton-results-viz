@@ -46,7 +46,7 @@ const ALL_TABS: { id: DashboardTabId; label: string; subtitle: string }[] = [
   {
     id: 'notes',
     label: 'Notes',
-    subtitle: 'Scouting notes & match journal',
+    subtitle: '',
   },
 ]
 
@@ -93,7 +93,13 @@ export function DashboardTabs({ importedAt, panels }: Props) {
 
   useEffect(() => {
     suppressSectionScrollRef.current = true
-    selectTab(DEFAULT_TAB)
+    const params = new URLSearchParams(window.location.search)
+    const tabFromUrl = params.get('tab')
+    const initialTab =
+      tabFromUrl === 'notes' && TAB_IDS.includes('notes' as DashboardTabId)
+        ? ('notes' as DashboardTabId)
+        : DEFAULT_TAB
+    selectTab(initialTab)
     clearScrollTarget()
     clearMilestoneTarget()
     requestAnimationFrame(() => {
@@ -171,38 +177,38 @@ export function DashboardTabs({ importedAt, panels }: Props) {
         <div
           role="tablist"
           aria-label="Dashboard sections"
-          className="-mx-1 overflow-x-auto px-1"
+          className="flex w-full gap-1 rounded-xl border border-ink-100 bg-white p-1 shadow-sm"
         >
-          <div className="inline-flex min-w-full gap-1 rounded-xl border border-ink-100 bg-white p-1 shadow-sm sm:min-w-0">
-            {TABS.map((tab) => {
-              const selected = activeTab === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  ref={(node) => {
-                    tabRefs.current[tab.id] = node ?? undefined
-                  }}
-                  type="button"
-                  role="tab"
-                  id={`${baseId}-tab-${tab.id}`}
-                  aria-selected={selected}
-                  aria-controls={`${baseId}-panel-${tab.id}`}
-                  tabIndex={selected ? 0 : -1}
-                  onClick={() => selectTab(tab.id)}
-                  onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
-                  className={`shrink-0 rounded-lg px-3 py-2 text-sm transition-colors sm:px-4 ${
-                    selected
-                      ? 'bg-court-50 font-medium text-court-800 shadow-sm ring-1 ring-court-200/80'
-                      : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              )
-            })}
-          </div>
+          {TABS.map((tab) => {
+            const selected = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                ref={(node) => {
+                  tabRefs.current[tab.id] = node ?? undefined
+                }}
+                type="button"
+                role="tab"
+                id={`${baseId}-tab-${tab.id}`}
+                aria-selected={selected}
+                aria-controls={`${baseId}-panel-${tab.id}`}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => selectTab(tab.id)}
+                onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
+                className={`min-w-0 flex-1 rounded-lg px-1.5 py-2 text-center text-xs leading-snug transition-colors sm:px-3 sm:text-sm ${
+                  selected
+                    ? 'bg-court-50 font-medium text-court-800 shadow-sm ring-1 ring-court-200/80'
+                    : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
         </div>
-        <p className="text-sm text-ink-600">{activeMeta.subtitle}</p>
+        {activeMeta.subtitle ? (
+          <p className="text-sm text-ink-600">{activeMeta.subtitle}</p>
+        ) : null}
       </div>
 
       {TABS.map((tab) => {

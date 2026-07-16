@@ -11,11 +11,15 @@ import {
   getMatchJournalNotes,
   groupNotesByOpponent,
   isDirectNoteContext,
+  isScoutingNote,
+  MATCH_JOURNAL_UI_ENABLED,
   noteMatchesSearch,
   type OpponentNote,
   type OpponentNoteGroup,
   type OpponentNoteMatchContext,
 } from '../../lib/opponentNotes'
+import { listActiveDrawScoutCompetitions } from '../../lib/drawScout'
+import { drawScoutPreviewCompetitions } from '../../lib/drawScoutPreviewData'
 import { recapMatchKey } from '../../lib/tournamentRecap'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { DisciplineChip } from '../discipline/DisciplineChip'
@@ -27,6 +31,12 @@ import { NoteTagChips } from './NoteTagPicker'
 import { OpponentNoteMatchFooter } from './OpponentNoteMatchFooter'
 import { OpponentNoteModal } from './OpponentNoteModal'
 import { OpponentPickerModal } from './OpponentPickerModal'
+import { PairNoteScopeBanner } from './PairNoteScopeBanner'
+import {
+  DrawScoutCard,
+  DrawScoutExploreModal,
+  useDrawScoutVisibility,
+} from './DrawScoutCard'
 
 type Props = {
   allMatches: NormalizedMatch[]
@@ -49,8 +59,8 @@ function NoteEntry({
   onOpen: () => void
 }) {
   const [matchOpen, setMatchOpen] = useState(false)
-  const scope = formatNoteScopeInGroup(note, groupOpponentName)
-  const isPairScope = note.target.kind === 'pair'
+  const scope = formatNoteScopeInGroup(note, groupOpponentName, { context: 'notes-list' })
+  const isPairScope = scope.kind === 'pair'
   const matchDetailsId = `note-match-${note.id}`
   const appliesToDisciplineCodes = getNoteScoutingAppliesToDisciplineCodes(note)
   const isDirectNote = isDirectNoteContext(note.context)
@@ -59,12 +69,7 @@ function NoteEntry({
 
   return (
     <li className="px-3 py-2.5">
-      {isPairScope && (
-        <p className="mb-1 text-xs text-ink-500">
-          {scope.label}
-          {scope.detail != null ? ` · vs ${scope.detail}` : ''}
-        </p>
-      )}
+      {isPairScope && <PairNoteScopeBanner scope={scope} />}
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1 space-y-1.5">
           {tagLabels.length > 0 && <NoteTagChips labels={tagLabels} />}
@@ -314,10 +319,17 @@ function ChevronIcon({ open, className = 'h-4 w-4' }: { open: boolean; className
 }
 
 export function OpponentNotesSection({ allMatches }: Props) {
-  const { allNotes } = useOpponentNotesContext()
+  const { allNotes, playerName } = useOpponentNotesContext()
+  const { hasActiveCompetitions } = useDrawScoutVisibility()
   const [search, setSearch] = useState('')
   const [activeNote, setActiveNote] = useState<OpponentNote | null>(null)
   const [addNoteState, setAddNoteState] = useState<AddNoteState>({ step: 'closed' })
+  const [exploreOpen, setExploreOpen] = useState(false)
+  const [drawScoutForced, setDrawScoutForced] = useState(false)
+  const [drawScoutSelection, setDrawScoutSelection] = useState<{
+    competitionSlug: string
+    playerName: string
+  } | null>(null)
 
   const knownOpponents = useMemo(() => collectKnownOpponentNames(allMatches), [allMatches])
 
@@ -335,30 +347,74 @@ export function OpponentNotesSection({ allMatches }: Props) {
   }, [allNotes, search])
 
   const journalNotes = useMemo(() => {
+    if (!MATCH_JOURNAL_UI_ENABLED) return []
     const filtered = allNotes.filter((note) => noteMatchesSearch(note, search))
     return getMatchJournalNotes(filtered)
   }, [allNotes, search])
 
+  const scoutingNotes = useMemo(
+    () => allNotes.filter(isScoutingNote),
+    [allNotes],
+  )
+
+  const hasReviewableNotes =
+    scoutingNotes.length > 0 ||
+    (MATCH_JOURNAL_UI_ENABLED && allNotes.some((note) => !isScoutingNote(note)))
+
   const hasSearchResults = groups.length > 0 || journalNotes.length > 0
 
   return (
-    <section className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
-      <div className="border-b border-ink-100 px-4 py-4 sm:px-5">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-lg font-semibold text-ink-900">Notes</h3>
-          <button
-            type="button"
-            onClick={() => setAddNoteState({ step: 'pick-opponent' })}
-            className="shrink-0 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-          >
-            Add new note
-          </button>
-        </div>
+    <div className="space-y-6">
+      <DrawScoutCard
+        playerName={playerName ?? 'You'}
+        allNotes={allNotes}
+        allMatches={allMatches}
+        forcedVisible={drawScoutForced}
+        initialCompetitionSlug={drawScoutSelection?.competitionSlug ?? null}
+        initialPlayerName={drawScoutSelection?.playerName ?? null}
+      />
+
+      <DrawScoutExploreModal
+        open={exploreOpen}
+        competitions={listActiveDrawScoutCompetitions(drawScoutPreviewCompetitions)}
+        initialSlug={drawScoutSelection?.competitionSlug ?? null}
+        youName={playerName ?? 'You'}
+        onClose={() => setExploreOpen(false)}
+        onConfirm={(competitionSlug, selectedPlayer) => {
+          setDrawScoutForced(true)
+          setDrawScoutSelection({ competitionSlug, playerName: selectedPlayer })
+        }}
+      />
+
+      <section className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
+        <div className="border-b border-ink-100 px-4 py-4 sm:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-lg font-semibold text-ink-900">Notes</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {hasActiveCompetitions && (
+                <button
+                  type="button"
+                  onClick={() => setExploreOpen(true)}
+                  className="shrink-0 rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                >
+                  Explore a draw →
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setAddNoteState({ step: 'pick-opponent' })}
+                className="shrink-0 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+              >
+                Add new note
+              </button>
+            </div>
+          </div>
         <p className="mt-1 text-sm text-ink-600">
-          Scouting notes on opponents for your next draw, plus an optional match journal for how
-          you played.
+          {MATCH_JOURNAL_UI_ENABLED
+            ? 'Personal notes on opponents for your next draw, plus an optional match journal for how you played.'
+            : 'Personal notes on opponents for your next draw.'}
         </p>
-        {allNotes.length > 0 && (
+        {hasReviewableNotes && (
           <div className="mt-3">
             <label htmlFor="opponent-notes-search" className="sr-only">
               Search notes
@@ -376,7 +432,7 @@ export function OpponentNotesSection({ allMatches }: Props) {
       </div>
 
       <div className="px-4 py-4 sm:px-5">
-        {allNotes.length === 0 ? (
+        {!hasReviewableNotes ? (
           <div className="rounded-xl border border-dashed border-ink-200 bg-ink-50/50 px-4 py-8 text-center">
             <p className="text-sm font-medium text-ink-800">No notes yet</p>
             <p className="mt-1 text-sm text-ink-600">
@@ -404,11 +460,13 @@ export function OpponentNotesSection({ allMatches }: Props) {
                 </ul>
               </div>
             )}
-            <MatchJournalSection
-              notes={journalNotes}
-              matchByKey={matchByKey}
-              onOpenNote={setActiveNote}
-            />
+            {MATCH_JOURNAL_UI_ENABLED && (
+              <MatchJournalSection
+                notes={journalNotes}
+                matchByKey={matchByKey}
+                onOpenNote={setActiveNote}
+              />
+            )}
           </div>
         )}
       </div>
@@ -442,6 +500,7 @@ export function OpponentNotesSection({ allMatches }: Props) {
           initialTarget={{ kind: 'opponent', name: addNoteState.context.opponentNames[0]! }}
         />
       )}
-    </section>
+      </section>
+    </div>
   )
 }

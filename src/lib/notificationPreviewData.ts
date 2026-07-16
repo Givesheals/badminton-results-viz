@@ -9,10 +9,14 @@
  *
  * When wired for real:
  *  - Email 1 ("capture notes") needs only match data the server already has.
- *  - Email 2 ("draw out") additionally needs the user's notes, which today live
- *    in localStorage (see docs/opponent-notes-spec.md). Populating the note
- *    badges/caveats below requires syncing notes server-side first.
+ *  - Email 2 ("draw out") needs the draw structure plus notesOpponentCount for
+ *    the CTA teaser. Full notes live in-app (see docs/draw-scout-spec.md).
  */
+
+import type { DrawDisciplineGroup } from './drawTypes'
+import { DRAW_SCOUT_PREVIEW_SLUG, drawScoutPreviewCompetitions } from './drawScoutPreviewData'
+
+export type { DrawDisciplineGroup, DrawMatchup, DrawPlayer } from './drawTypes'
 
 const PLAYER_ID = '91e9ff09-0fe3-4ac2-b281-8609219900d6'
 const PLAYER_PROFILE_URL = `https://badminfo.com/player/${PLAYER_ID}`
@@ -48,77 +52,19 @@ export type CaptureNotesEmailData = {
 }
 
 // ---------------------------------------------------------------------------
-// Email 2 - "Your draw is out" (enhanced with notes)
+// Email 2 - "Your draw is out"
 // ---------------------------------------------------------------------------
-
-/**
- * A single player as they appear in the draw preview. Kept structured (rather
- * than a joined "A & B" string) so names render as links.
- */
-export type DrawPlayer = {
-  name: string
-  url: string
-  /** Seeding prefix shown before the name, e.g. '[1]'. */
-  seedLabel?: string
-}
-
-/**
- * A single saved note, served in full beneath the matchup it relates to. We
- * show the actual note back to the player rather than hiding it behind a count.
- */
-export type DrawNoteLine = {
-  opponentName: string
-  tags: string[]
-  /** The actual note text. */
-  body: string
-  /** Competition the note was captured at, if we have it. */
-  competition?: string
-  /** Display date of the note, e.g. '14 Sep 2025'. */
-  date: string
-  /**
-   * Discipline code the note was captured in (e.g. 'MD', 'XD'). Rendered as a
-   * chip ONLY when it differs from the matchup's discipline, so the reader sees
-   * the note may be about a different format.
-   */
-  disciplineChip?: string
-  /**
-   * Set when the note was about a *pair* and the pairing they've now been drawn
-   * with differs. Names the original partner so the reader knows it may not
-   * fully apply.
-   */
-  pairingCaveat?: string
-  /**
-   * Only used in the "you may also meet" list: where/when you might face them,
-   * e.g. 'Open Doubles \u00b7 Quarter-finals'.
-   */
-  facingLabel?: string
-}
-
-export type DrawMatchup = {
-  id: string
-  roundLabel: string
-  yourSide: DrawPlayer[]
-  opponentSide: DrawPlayer[]
-  /** Notes for opponents in this matchup, shown as compact lines beneath it. */
-  notes: DrawNoteLine[]
-}
-
-export type DrawDisciplineGroup = {
-  disciplineCode: string
-  disciplineLabel: string
-  matchups: DrawMatchup[]
-}
 
 export type DrawOutEmailData = {
   recipientFirstName: string
   competitionName: string
   competitionUrl: string
+  competitionSlug: string
   favouritesCount: number
-  /** The draw itself, with notes served inline beneath each matchup. */
+  /** Count of distinct opponents in this draw the user has personal notes on. */
+  notesOpponentCount: number
+  drawNotesUrl: string
   disciplineGroups: DrawDisciplineGroup[]
-  /** Players you have notes on who entered but aren't in your group. */
-  laterNotes: DrawNoteLine[]
-  seeAllDrawNotesUrl: string
   notificationSettingsUrl: string
   unsubscribeUrl: string
 }
@@ -129,14 +75,6 @@ export type DrawOutEmailData = {
 
 const NOTIFICATION_SETTINGS_URL = 'https://badminfo.com/settings/notifications'
 const UNSUBSCRIBE_URL = 'https://badminfo.com/settings/notifications/unsubscribe'
-
-function player(name: string, extra: { seedLabel?: string } = {}): DrawPlayer {
-  return {
-    name,
-    url: `https://badminfo.com/player?name=${encodeURIComponent(name)}`,
-    ...extra,
-  }
-}
 
 export const captureNotesPreview: CaptureNotesEmailData = {
   recipientFirstName: 'Simon',
@@ -184,106 +122,18 @@ export const captureNotesPreview: CaptureNotesEmailData = {
   ],
 }
 
+const previewCompetition = drawScoutPreviewCompetitions[0]!
+const previewEntrant = previewCompetition.entrants[0]!
+
 export const drawOutPreview: DrawOutEmailData = {
   recipientFirstName: 'Simon',
-  competitionName: 'Cambridgeshire Senior Bronze July 2026',
-  competitionUrl: 'https://badminfo.com/competition/cambridgeshire-senior-bronze-july-2026',
+  competitionName: previewCompetition.name,
+  competitionUrl: previewCompetition.competitionUrl,
+  competitionSlug: DRAW_SCOUT_PREVIEW_SLUG,
   favouritesCount: 9,
+  notesOpponentCount: 4,
+  drawNotesUrl: `${PLAYER_PROFILE_URL}?tab=notes&draw=${DRAW_SCOUT_PREVIEW_SLUG}`,
   notificationSettingsUrl: NOTIFICATION_SETTINGS_URL,
   unsubscribeUrl: UNSUBSCRIBE_URL,
-  seeAllDrawNotesUrl: `${PLAYER_PROFILE_URL}?tab=notes&draw=cambridgeshire-senior-bronze-july-2026`,
-  disciplineGroups: [
-    {
-      disciplineCode: 'XD',
-      disciplineLabel: 'Mixed Doubles',
-      matchups: [
-        {
-          id: 'd1',
-          roundLabel: 'Group A',
-          yourSide: [player('Simon Parker'), player('Sara Moore')],
-          opponentSide: [player('Murray Wright'), player('Corinna Wong')],
-          notes: [
-            {
-              opponentName: 'Murray Wright',
-              tags: ['Aggressive', 'Strong at the net'],
-              body: 'Loves to intercept at the net - keep lifts tight and deep. Struggles when pushed to his rear forehand corner.',
-              competition: 'Norfolk Restricted 2025',
-              date: '14 Sep 2025',
-              // Note captured in men's doubles; this matchup is mixed.
-              disciplineChip: 'MD',
-            },
-          ],
-        },
-        {
-          id: 'd2',
-          roundLabel: 'Group A',
-          yourSide: [player('Simon Parker'), player('Sara Moore')],
-          opponentSide: [player('Dan Martyres', { seedLabel: '[1]' }), player('Alisha Johnson')],
-          notes: [
-            {
-              opponentName: 'Dan Martyres',
-              tags: ['Fast, flat attack'],
-              body: 'Big flat game, rushes you early. Slow to the net though - drops off the serve caused problems.',
-              competition: 'Suffolk Bronze 2026',
-              date: '2 Feb 2026',
-              // Original note was about the pair Dan + Jane, not Dan + Alisha.
-              pairingCaveat: 'noted with Jane Smith',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      disciplineCode: 'OD',
-      disciplineLabel: 'Open Doubles',
-      matchups: [
-        {
-          id: 'd3',
-          roundLabel: 'Group G',
-          yourSide: [player('Martin Crossley'), player('Simon Parker')],
-          opponentSide: [player('Simon Gilhooly'), player('Paul Andrew Mayfield')],
-          notes: [],
-        },
-        {
-          id: 'd4',
-          roundLabel: 'Group G',
-          yourSide: [player('Martin Crossley'), player('Simon Parker')],
-          opponentSide: [player('Daniel Hughes'), player('Morgan Taylor')],
-          notes: [
-            {
-              opponentName: 'Daniel Hughes',
-              tags: ['Big smash', 'Slow around the court'],
-              body: 'Huge smash but predictable - defend cross-court and he tires. Weak backhand under pressure.',
-              competition: 'Cambridgeshire Bronze 2025',
-              date: '9 Nov 2025',
-            },
-            {
-              opponentName: 'Daniel Hughes',
-              tags: [],
-              body: 'Serves short almost every time - stand in and attack it.',
-              competition: 'Cambridgeshire Bronze 2025',
-              date: '9 Nov 2025',
-            },
-          ],
-        },
-      ],
-    },
-  ],
-  laterNotes: [
-    {
-      opponentName: 'Ben Carter',
-      tags: ['Deceptive', 'Weak backhand clear'],
-      body: 'Great deception at the net, sells the dummy. Backhand clear is short - attack it early.',
-      competition: 'Essex Bronze 2026',
-      date: '18 Jan 2026',
-      facingLabel: 'Open Doubles \u00b7 Quarter-finals',
-    },
-    {
-      opponentName: 'Tom Fielding',
-      tags: ['Defensive'],
-      body: 'Very patient defender, happy to rally all day. Force the pace and bring him to the net.',
-      date: '3 Mar 2026',
-      facingLabel: 'Mixed Doubles \u00b7 Semi-finals',
-    },
-  ],
+  disciplineGroups: previewEntrant.disciplineGroups,
 }

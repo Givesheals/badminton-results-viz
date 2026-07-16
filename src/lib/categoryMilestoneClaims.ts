@@ -1,6 +1,9 @@
 import {
   CATEGORY_COMPLETION_STAGES,
   categoryAgeComboKey,
+  categoryCompletionAgeKey,
+  groupCategoryCompletionsByAge,
+  pickDefaultVisibleAgeLabels,
   type CategoryCompletionMilestone,
   type CategoryCompletionRow,
   type ProgressionStage,
@@ -96,6 +99,42 @@ export function buildFrontierAutoClaims(rows: CategoryCompletionRow[]): Set<stri
     }
   }
 
+  return claims
+}
+
+/**
+ * Pre-claim every achieved round (and completed cards) for age groups below the
+ * player's current top band so earlier junior/masters history does not need manual claiming.
+ */
+export function buildEarlierAgeGroupAutoClaims(rows: CategoryCompletionRow[]): Set<string> {
+  const claims = new Set<string>()
+  const ageGroups = groupCategoryCompletionsByAge(rows)
+  const topAgeKey = pickDefaultVisibleAgeLabels(ageGroups, 1)[0]
+  if (topAgeKey == null) return claims
+
+  for (const row of rows) {
+    if (categoryCompletionAgeKey(row.competitionAgeLabel) === topAgeKey) continue
+
+    const comboKey = comboKeyFromRow(row.tournamentCategoryLabel, row.competitionAgeLabel)
+
+    for (const milestone of row.milestones) {
+      if (!milestone.achieved) continue
+      claims.add(categoryMilestoneRoundKey(comboKey, milestone.stage))
+    }
+
+    if (row.milestones.every((milestone) => milestone.achieved)) {
+      claims.add(categoryMilestoneCardKey(comboKey))
+    }
+  }
+
+  return claims
+}
+
+export function buildCategoryMilestoneAutoClaims(rows: CategoryCompletionRow[]): Set<string> {
+  const claims = buildFrontierAutoClaims(rows)
+  for (const key of buildEarlierAgeGroupAutoClaims(rows)) {
+    claims.add(key)
+  }
   return claims
 }
 

@@ -6,7 +6,7 @@ sample test data so you can preview them in SendGrid straight away.
 | Email | Template | Test data | Subject line |
 |-------|----------|-----------|--------------|
 | Capture your notes (post-competition) | [`capture-notes.html`](capture-notes.html) | [`capture-notes.test-data.json`](capture-notes.test-data.json) | `How did you get on? Capture your notes` |
-| Your draw is out (enhanced with notes) | [`draw-out.html`](draw-out.html) | [`draw-out.test-data.json`](draw-out.test-data.json) | `{{competitionName}} draw out!` |
+| Your draw is out | [`draw-out.html`](draw-out.html) | [`draw-out.test-data.json`](draw-out.test-data.json) | `{{competitionName}} draw out!` |
 
 Set the subject in the version's **Settings** panel in SendGrid (it is also noted in an HTML comment at the top of each template).
 
@@ -60,9 +60,10 @@ Both templates support dark-mode inboxes:
   added for the template (`disciplineColor`, `dotColor`, `isWin`,
   `disciplineChip.color`) so the template stays free of colour-mapping logic.
 - **Capture your notes** needs only match data the server already has.
-- **Your draw is out** additionally needs the user's notes. Today notes live in
-  the browser (localStorage); populating `disciplineGroups[].matchups[].notes`
-  and `laterNotes` requires syncing notes server-side first.
+- **Your draw is out** needs only the draw structure plus `notesOpponentCount`
+  for the CTA teaser. Full notes are shown in-app (see
+  `docs/draw-scout-spec.md`). Counting opponents with notes requires syncing
+  notes server-side; until then the prototype computes the count client-side.
 - The discipline chip on a draw note is intended to appear **only when the note's
   discipline differs from the matchup** (e.g. a men's-doubles note shown against a
   mixed matchup) - omit `disciplineChip` when they match.

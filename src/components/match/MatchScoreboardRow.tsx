@@ -22,20 +22,15 @@ export function MatchScoreboardRow({ match }: Props) {
     <li
       className={`col-span-full grid grid-cols-subgrid items-center rounded-r border-l-4 py-1.5 pl-2 pr-1 ${style.borderClass} bg-white`}
     >
-      <div className="col-span-full min-w-0 px-0.5">
-        <p
-          className="truncate text-sm font-medium text-ink-900"
-          title={match.competitionName}
-        >
-          {match.competitionName}
-        </p>
+      <div className="col-span-full px-0.5">
+        <p className="text-sm font-medium leading-snug text-ink-900">{match.competitionName}</p>
         <p className="text-xs text-ink-500">{formatShortDate(match.date)}</p>
       </div>
 
       <DisciplineChip code={match.discipline} className="w-fit justify-self-start self-center" />
-      <TeamColumn members={ourTeam} side="ours" />
+      <TeamColumn members={ourTeam} side="ours" emphasize={match.outcome === 'win'} />
       <MatchScores games={games} scoreSummary={match.scoreSummary} />
-      <TeamColumn members={theirTeam} side="theirs" />
+      <TeamColumn members={theirTeam} side="theirs" emphasize={match.outcome === 'loss'} />
     </li>
   )
 }
@@ -43,9 +38,11 @@ export function MatchScoreboardRow({ match }: Props) {
 function TeamColumn({
   members,
   side,
+  emphasize,
 }: {
   members: TeamMember[]
   side: 'ours' | 'theirs'
+  emphasize: boolean
 }) {
   if (members.length === 0) {
     return (
@@ -57,7 +54,7 @@ function TeamColumn({
 
   return (
     <div
-      className={`min-w-0 text-xs leading-snug text-ink-900 ${
+      className={`text-xs leading-snug text-ink-900 ${
         side === 'ours' ? 'text-right' : 'text-left'
       }`}
     >
@@ -67,14 +64,11 @@ function TeamColumn({
         return (
           <p
             key={`${member.name}-${index}`}
-            className={`truncate ${
+            className={`leading-snug ${emphasize ? 'font-semibold' : ''} ${
               isPartner
                 ? 'text-brand-800 underline decoration-brand-200 underline-offset-2'
-                : side === 'theirs'
-                  ? 'font-semibold'
-                  : ''
+                : ''
             }`}
-            title={member.name}
           >
             {member.name}
             {member.rating != null ? (

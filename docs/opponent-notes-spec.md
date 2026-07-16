@@ -47,7 +47,7 @@ Singles matches auto-assign notes to the sole opponent.
 
 Use `MATCH_NOTE_TARGET` constant for the match journal slot.
 
-**Default doubles target:** first opponent name (not the pair).
+**Default doubles target:** when adding a note from a match with no existing opponent notes, the modal asks who the note is about first (opponent names + **The pair**) and does not pre-select anyone. After the first choice, the usual segmented control appears. Editing an existing note, singles, and notes opened with an explicit `initialTarget` still land on a selected target (first opponent name when falling back).
 
 ### `OpponentNoteMatchContext`
 
@@ -201,7 +201,8 @@ Top-level mode tabs: **About them** | **My game** (game tab hidden for direct no
 
 #### About them tab
 
-- Segmented opponent control (doubles): opponent names first, **The pair** last
+- **New doubles notes from a match:** first screen asks **Who is this note about?** (opponent names + **The pair**) with no default selection; choosing one reveals the form
+- Segmented opponent control (doubles): opponent names first, **The pair** last — used after the first choice (or when editing)
 - **Combo note box** — textarea with selected tags inside the bordered area (tap tag to remove from this note)
 - **Quick-add row** below the box: `+ {tag}` for tags in the player's library that are not already on the note
 - **Edit tags** — high-weight CTA at the end of the quick-add row; opens **Your note tags** management panel

@@ -1,8 +1,7 @@
-import { getDisciplineFamily, getDisciplineStyle } from '../../lib/disciplineStyle'
+import { getDisciplineFamily } from '../../lib/disciplineStyle'
 import type {
   DrawDisciplineGroup,
   DrawMatchup,
-  DrawNoteLine,
   DrawOutEmailData,
   DrawPlayer,
 } from '../../lib/notificationPreviewData'
@@ -22,49 +21,7 @@ const DISCIPLINE_DOT: Record<string, string> = {
   unknown: 'bg-ink-300',
 }
 
-/** Shared column template so the matchup rows and note rows line up. */
-const DRAW_GRID = 'grid grid-cols-[5rem_1fr_1fr] items-start gap-x-3 gap-y-1.5'
-
-function TagChip({ label }: { label: string }) {
-  return (
-    <span className="mr-1 inline-block rounded-full border border-brand-500 bg-white px-1.5 py-0.5 text-xs font-medium text-brand-700">
-      {label}
-    </span>
-  )
-}
-
-function DisciplineChip({ code }: { code: string }) {
-  const style = getDisciplineStyle(code)
-  return (
-    <span
-      className={`mr-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${style.chipClass}`}
-    >
-      {style.chipLabel}
-    </span>
-  )
-}
-
-/**
- * One saved note rendered as two grid cells: the player (aligned under the
- * round label column) and the note content spanning the two team columns.
- */
-function NoteRowCells({ note, spanTeams }: { note: DrawNoteLine; spanTeams?: boolean }) {
-  const meta = [note.facingLabel, note.competition, note.date].filter(Boolean).join(' \u00b7 ')
-  return (
-    <>
-      <p className="col-start-1 text-xs font-semibold text-ink-800">{note.opponentName}</p>
-      <div className={`text-sm leading-snug ${spanTeams ? 'col-span-2' : ''}`.trim()}>
-        {note.disciplineChip && <DisciplineChip code={note.disciplineChip} />}
-        {note.tags.map((tag) => (
-          <TagChip key={tag} label={tag} />
-        ))}
-        <span className="text-ink-700">{note.body}</span>
-        {note.pairingCaveat && <span className="text-ink-400"> ({note.pairingCaveat})</span>}
-        <span className="mt-0.5 block text-xs text-ink-400">{meta}</span>
-      </div>
-    </>
-  )
-}
+import { DRAW_MATCHUP_GRID } from '../notes/DrawMatchupRow'
 
 function TeamSide({ players }: { players: DrawPlayer[] }) {
   return (
@@ -82,13 +39,10 @@ function TeamSide({ players }: { players: DrawPlayer[] }) {
 
 function MatchupBlock({ label, matchup }: { label: string; matchup: DrawMatchup }) {
   return (
-    <div className={`${DRAW_GRID} border-t border-ink-100 py-3 first:border-t-0`}>
+    <div className={`${DRAW_MATCHUP_GRID} border-t border-ink-100 py-3 first:border-t-0`}>
       <p className="text-xs font-medium text-ink-500">{label}</p>
       <TeamSide players={matchup.yourSide} />
       <TeamSide players={matchup.opponentSide} />
-      {matchup.notes.map((note, index) => (
-        <NoteRowCells key={`${note.opponentName}-${index}`} note={note} spanTeams />
-      ))}
     </div>
   )
 }
@@ -114,27 +68,17 @@ function DisciplineBlock({ group }: { group: DrawDisciplineGroup }) {
   )
 }
 
-function LaterNotes({
-  notes,
-  seeAllUrl,
-}: {
-  notes: DrawNoteLine[]
-  seeAllUrl: string
-}) {
-  if (notes.length === 0) return null
+function DrawNotesCta({ data }: { data: DrawOutEmailData }) {
+  if (data.notesOpponentCount <= 0) return null
+  const label =
+    data.notesOpponentCount === 1
+      ? 'You have personal notes on 1 opponent in this draw.'
+      : `You have personal notes on ${data.notesOpponentCount} opponents in this draw.`
   return (
-    <div className="mt-8 rounded-xl bg-ink-50 px-5 py-4">
-      <h3 className="text-sm font-semibold text-ink-700">You may also meet</h3>
-      <p className="mb-3 mt-0.5 text-xs text-ink-500">
-        Entered this draw but not in your group - you could face them in the knockouts.
-      </p>
-      <div className="grid grid-cols-[5rem_1fr] items-start gap-x-3 gap-y-2">
-        {notes.map((note, index) => (
-          <NoteRowCells key={`${note.opponentName}-${index}`} note={note} />
-        ))}
-      </div>
+    <div className="mt-8">
+      <p className="text-sm text-ink-700">{label}</p>
       <div className="mt-3">
-        <EmailGhostButton href={seeAllUrl}>See all draw notes →</EmailGhostButton>
+        <EmailGhostButton href={data.drawNotesUrl}>View draw notes →</EmailGhostButton>
       </div>
     </div>
   )
@@ -159,7 +103,7 @@ export function DrawOutEmail({ data }: { data: DrawOutEmailData }) {
           ))}
         </div>
 
-        <LaterNotes notes={data.laterNotes} seeAllUrl={data.seeAllDrawNotesUrl} />
+        <DrawNotesCta data={data} />
       </div>
 
       <EmailFooter

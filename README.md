@@ -76,7 +76,7 @@ Product and engineering specs live in [`docs/`](docs/):
 | [partner-chemistry-spec.md](docs/partner-chemistry-spec.md) | Partner chemistry chart |
 | [partner-highlights-spec.md](docs/partner-highlights-spec.md) | Partner highlights |
 | [opponent-matchups-spec.md](docs/opponent-matchups-spec.md) | Nemeses and favourite opponents |
-| [opponent-notes-spec.md](docs/opponent-notes-spec.md) | Scouting notes, match journal, custom tags |
+| [opponent-notes-spec.md](docs/opponent-notes-spec.md) | Personal notes, match journal, custom tags |
 | [player-type-spec.md](docs/player-type-spec.md) | Player profile axes |
 | [rating-win-chance-table.md](docs/rating-win-chance-table.md) | Rating vs win chance reference |
 

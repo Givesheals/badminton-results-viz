@@ -26,9 +26,8 @@ type Props = {
 const PREMIUM_BENEFITS = [
   'Tournament recaps & weekend performance',
   'Partner chemistry & opponent matchups',
-  'Category milestones & tournament progression',
-  'Scouting notes & match journal',
-  'Player profile & season journey',
+  'Category milestones & tournament progression tracker',
+  'Personal notes',
 ]
 
 export function PremiumSignupFlow({ open, onClose, playerName }: Props) {

@@ -18,8 +18,10 @@ import {
   getNoteScoutingAppliesToDisciplineCodes,
   isDirectNoteContext,
   isMatchNoteTarget,
+  MATCH_JOURNAL_UI_ENABLED,
   MATCH_NOTE_TARGET,
   matchJournalHasContent,
+  isScoutingNote,
   noteHasStoredContent,
   noteTargetKey,
   noteTargetsEqual,
@@ -201,6 +203,31 @@ function DisciplineAppliesToPicker({
   )
 }
 
+function doublesTargetOptions(
+  opponentNames: string[],
+): { value: OpponentNoteTarget; label: string }[] {
+  return [
+    ...opponentNames.map((name) => ({
+      value: { kind: 'opponent' as const, name },
+      label: name,
+    })),
+    { value: { kind: 'pair' as const }, label: 'The pair' },
+  ]
+}
+
+function shouldPromptForNoteTarget(
+  context: OpponentNoteMatchContext,
+  initialTarget: OpponentNoteTarget | undefined,
+  getNotesForMatch: (matchKey: string) => OpponentNote[],
+): boolean {
+  if (isDirectNoteContext(context)) return false
+  if (context.opponentNames.length < 2) return false
+  if (initialTarget != null && !isMatchNoteTarget(initialTarget)) return false
+  return !getNotesForMatch(context.matchKey).some(
+    (note) => isScoutingNote(note) && noteHasStoredContent(note),
+  )
+}
+
 function OpponentSegmentedControl({
   opponentNames,
   target,
@@ -212,17 +239,11 @@ function OpponentSegmentedControl({
 }) {
   if (opponentNames.length < 2) return null
 
-  const options: { value: OpponentNoteTarget; label: string }[] = [
-    ...opponentNames.map((name) => ({
-      value: { kind: 'opponent' as const, name },
-      label: name,
-    })),
-    { value: { kind: 'pair' }, label: 'The pair' },
-  ]
+  const options = doublesTargetOptions(opponentNames)
 
   return (
     <div
-      className="flex flex-wrap gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1"
+      className="flex w-full gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1"
       role="tablist"
       aria-label="Who is this note about?"
     >
@@ -235,7 +256,7 @@ function OpponentSegmentedControl({
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(option.value)}
-            className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
+            className={`min-w-0 flex-1 rounded-md px-1.5 py-1.5 text-center text-xs font-medium leading-snug transition ${
               selected
                 ? 'bg-white text-ink-900 shadow-sm'
                 : 'text-ink-600 hover:text-ink-800'
@@ -245,6 +266,41 @@ function OpponentSegmentedControl({
           </button>
         )
       })}
+    </div>
+  )
+}
+
+function NoteTargetChooser({
+  opponentNames,
+  onChange,
+}: {
+  opponentNames: string[]
+  onChange: (target: OpponentNoteTarget) => void
+}) {
+  const options = doublesTargetOptions(opponentNames)
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-ink-900">Who is this note about?</p>
+        <p className="text-sm text-ink-600">
+          Pick a player or the pair to start. You can add notes for the others next. If
+          you&apos;re not sure which player is which, or who the note is about, choose{' '}
+          <span className="font-medium text-ink-800">The pair</span>.
+        </p>
+      </div>
+      <div className="flex flex-col gap-2" role="group" aria-label="Who is this note about?">
+        {options.map((option) => (
+          <button
+            key={option.label}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className="rounded-lg border border-ink-200 bg-white px-3 py-2.5 text-left text-sm font-medium text-ink-800 transition hover:border-brand-300 hover:bg-brand-50 hover:text-ink-900"
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -303,17 +359,25 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
     useOpponentNotesContext()
 
   const isDirectNote = isDirectNoteContext(context)
+  const promptForTarget = shouldPromptForNoteTarget(
+    context,
+    initialTarget,
+    getNotesForMatch,
+  )
   const resolvedInitialTarget =
     initialTarget != null && !isMatchNoteTarget(initialTarget)
       ? initialTarget
       : defaultNoteTarget(context.opponentNames)
 
   const [mode, setMode] = useState<ModalMode>(() => {
+    if (!MATCH_JOURNAL_UI_ENABLED) return 'scout'
     if (isDirectNote) return 'scout'
     if (initialTarget != null && isMatchNoteTarget(initialTarget)) return 'game'
     return 'scout'
   })
-  const [target, setTarget] = useState<OpponentNoteTarget>(() => resolvedInitialTarget)
+  const [target, setTarget] = useState<OpponentNoteTarget | null>(() =>
+    promptForTarget ? null : resolvedInitialTarget,
+  )
   const [draftsByTarget, setDraftsByTarget] = useState<Record<string, string>>(() =>
     buildDraftsFromStored(getNotesForMatch, context.matchKey),
   )
@@ -328,9 +392,11 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
     buildMatchJournalFromStored(existingMatchNote),
   )
 
-  const targetKey = noteTargetKey(target)
+  const awaitingTarget = target == null
+  const targetKey = target != null ? noteTargetKey(target) : ''
   const body = draftsByTarget[targetKey] ?? ''
-  const existingScoutingNote = getNoteForMatchTarget(context.matchKey, target)
+  const existingScoutingNote =
+    target != null ? getNoteForMatchTarget(context.matchKey, target) : null
   const appliesToDisciplineCodes =
     codesByTarget[targetKey] ??
     (existingScoutingNote != null
@@ -344,19 +410,30 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
     journalTagsFromNote(journalTags)
   const customOpponentStyles = scoutingTags?.customOpponentStyles ?? []
   const customPairStyles = scoutingTags?.customPairStyles ?? []
-  const scoutingTagsToSave = scoutingTagsForTargetState(target, scoutingTags)
+  const scoutingTagsToSave =
+    target != null ? scoutingTagsForTargetState(target, scoutingTags) : undefined
   const scoutingHasContent = noteHasContent(body, scoutingTagsToSave)
   const gameHasContent = matchNoteHasDraft(matchJournalDraft, journalTags)
   const scoutingCanSave =
     !scoutingHasContent || appliesToDisciplineCodes.length > 0
-  const hasAnyStoredNote = getNotesForMatch(context.matchKey).some(noteHasStoredContent)
+  const hasAnyStoredNote = getNotesForMatch(context.matchKey).some(
+    (note) =>
+      noteHasStoredContent(note) &&
+      (MATCH_JOURNAL_UI_ENABLED || isScoutingNote(note)),
+  )
   const gameTabHasNote =
     existingMatchNote != null && noteHasStoredContent(existingMatchNote)
-  const hasEdits = scoutingHasContent || gameHasContent || hasAnyStoredNote
-  const title = hasEdits ? 'Edit match notes' : 'Add match notes'
+  const hasEdits =
+    scoutingHasContent ||
+    (MATCH_JOURNAL_UI_ENABLED && gameHasContent) ||
+    hasAnyStoredNote
+  const title = hasEdits ? 'Edit personal notes' : 'Add personal notes'
   const canSave =
+    !awaitingTarget &&
     (scoutingHasContent ? scoutingCanSave : true) &&
-    (scoutingHasContent || gameHasContent || hasAnyStoredNote)
+    (scoutingHasContent ||
+      (MATCH_JOURNAL_UI_ENABLED && gameHasContent) ||
+      hasAnyStoredNote)
 
   function setBody(text: string) {
     setDraftsByTarget((prev) => ({ ...prev, [targetKey]: text }))
@@ -456,6 +533,7 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
   }
 
   function persistScoutingDraft() {
+    if (target == null) return
     if (scoutingHasContent && scoutingCanSave) {
       upsertNote(
         context,
@@ -479,28 +557,33 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
   }
 
   function handleTargetChange(newTarget: OpponentNoteTarget) {
-    if (noteTargetsEqual(target, newTarget)) return
-    persistScoutingDraft()
-    setDraftsByTarget((prev) => {
-      const next = { ...prev, [targetKey]: body }
-      if (!noteHasContent(body, scoutingTagsToSave)) delete next[targetKey]
-      return next
-    })
-    setCodesByTarget((prev) => ({ ...prev, [targetKey]: appliesToDisciplineCodes }))
-    setTagsByTarget((prev) => {
-      const next = { ...prev }
-      const normalized = scoutingTagsForTargetState(target, scoutingTags)
-      if (normalized != null) next[targetKey] = normalized
-      else delete next[targetKey]
-      return next
-    })
+    if (target != null && noteTargetsEqual(target, newTarget)) return
+    if (target != null) {
+      persistScoutingDraft()
+      setDraftsByTarget((prev) => {
+        const next = { ...prev, [targetKey]: body }
+        if (!noteHasContent(body, scoutingTagsToSave)) delete next[targetKey]
+        return next
+      })
+      setCodesByTarget((prev) => ({ ...prev, [targetKey]: appliesToDisciplineCodes }))
+      setTagsByTarget((prev) => {
+        const next = { ...prev }
+        const normalized = scoutingTagsForTargetState(target, scoutingTags)
+        if (normalized != null) next[targetKey] = normalized
+        else delete next[targetKey]
+        return next
+      })
+    }
     setTarget(newTarget)
   }
 
   function handleSave() {
+    if (awaitingTarget) return
     persistScoutingDraft()
 
-    if (!isDirectNote) {
+    // Skip match-journal upsert while MVP hides "My game" so existing
+    // journal notes are not wiped by a scout-only save.
+    if (MATCH_JOURNAL_UI_ENABLED && !isDirectNote) {
       upsertNote(
         context,
         '',
@@ -546,7 +629,10 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
   }
 
   const showDeleteScouting = mode === 'scout' && existingScoutingNote != null
-  const showDeleteGame = mode === 'game' && gameTabHasNote
+  const showDeleteGame =
+    MATCH_JOURNAL_UI_ENABLED && mode === 'game' && gameTabHasNote
+  const showModeTabs = MATCH_JOURNAL_UI_ENABLED && !isDirectNote && !awaitingTarget
+  const showScoutPanel = !MATCH_JOURNAL_UI_ENABLED || mode === 'scout'
 
   return (
     <Modal
@@ -580,82 +666,99 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
           >
             Cancel
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!canSave}
-            className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Save
-          </button>
+          {!awaitingTarget && (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!canSave}
+              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Save
+            </button>
+          )}
         </>
       }
     >
       <div className="space-y-4">
-        <ModalModeTabs
-          mode={mode}
-          onChange={handleModeChange}
-          showGameTab={!isDirectNote}
-        />
-
-        {mode === 'scout' ? (
-          <div className="space-y-3" role="tabpanel">
-            {!isDirectNote && context.opponentNames.length >= 2 && (
-              <OpponentSegmentedControl
-                opponentNames={context.opponentNames}
-                target={target}
-                onChange={handleTargetChange}
-              />
-            )}
-            {target.kind === 'pair' ? (
-              <PairStyleNoteSection
-                body={body}
-                onBodyChange={setBody}
-                selected={pairStyles}
-                onSelectedChange={setPairStyles}
-                selectedCustom={customPairStyles}
-                onSelectedCustomChange={setCustomPairStyles}
-                playerName={playerName}
-              />
-            ) : target.kind === 'opponent' ? (
-              <OpponentStyleNoteSection
-                body={body}
-                onBodyChange={setBody}
-                selected={opponentStyles}
-                onSelectedChange={setOpponentStyles}
-                selectedCustom={customOpponentStyles}
-                onSelectedCustomChange={setCustomOpponentStyles}
-                playerName={playerName}
-              />
-            ) : null}
-            <DisciplineAppliesToPicker
-              selectedCodes={appliesToDisciplineCodes}
-              onChange={setAppliesToDisciplineCodes}
-            />
-          </div>
+        {awaitingTarget ? (
+          <NoteTargetChooser
+            opponentNames={context.opponentNames}
+            onChange={handleTargetChange}
+          />
         ) : (
-          <div className="space-y-4" role="tabpanel">
-            <SelfFeelNoteSection
-              body={matchJournalDraft.selfReflection ?? ''}
-              onBodyChange={(value) => setMatchJournalField('selfReflection', value)}
-              selected={selfFeel}
-              onSelectedChange={(values) => setJournalTagGroup('selfFeel', values)}
-              selectedCustom={customSelfFeel}
-              onSelectedCustomChange={setCustomSelfFeel}
-              playerName={playerName}
-            />
-            <GameEventNoteSection
-              body={matchJournalDraft.gameEvents ?? ''}
-              onBodyChange={(value) => setMatchJournalField('gameEvents', value)}
-              selectedMatchFlow={matchFlow}
-              selectedPartnerContext={partnerContext}
-              onGameEventBuiltInChange={setJournalGameEventTags}
-              selectedCustom={customGameEvents}
-              onSelectedCustomChange={setCustomGameEvents}
-              showPartnerTag={context.partnerName != null}
-              playerName={playerName}
-            />
-          </div>
+          <>
+            {showModeTabs && (
+              <ModalModeTabs mode={mode} onChange={handleModeChange} showGameTab />
+            )}
+
+            {showScoutPanel ? (
+              <div className="space-y-3" role={showModeTabs ? 'tabpanel' : undefined}>
+                {!isDirectNote && context.opponentNames.length >= 2 && (
+                  <>
+                    <OpponentSegmentedControl
+                      opponentNames={context.opponentNames}
+                      target={target}
+                      onChange={handleTargetChange}
+                    />
+                    {target.kind === 'pair' && (
+                      <p className="text-xs text-ink-600">
+                        This note is about how they played together as a pair — not about either
+                        opponent on their own.
+                      </p>
+                    )}
+                  </>
+                )}
+                {target.kind === 'pair' ? (
+                  <PairStyleNoteSection
+                    body={body}
+                    onBodyChange={setBody}
+                    selected={pairStyles}
+                    onSelectedChange={setPairStyles}
+                    selectedCustom={customPairStyles}
+                    onSelectedCustomChange={setCustomPairStyles}
+                    playerName={playerName}
+                  />
+                ) : target.kind === 'opponent' ? (
+                  <OpponentStyleNoteSection
+                    body={body}
+                    onBodyChange={setBody}
+                    selected={opponentStyles}
+                    onSelectedChange={setOpponentStyles}
+                    selectedCustom={customOpponentStyles}
+                    onSelectedCustomChange={setCustomOpponentStyles}
+                    playerName={playerName}
+                  />
+                ) : null}
+                <DisciplineAppliesToPicker
+                  selectedCodes={appliesToDisciplineCodes}
+                  onChange={setAppliesToDisciplineCodes}
+                />
+              </div>
+            ) : (
+              <div className="space-y-4" role="tabpanel">
+                <SelfFeelNoteSection
+                  body={matchJournalDraft.selfReflection ?? ''}
+                  onBodyChange={(value) => setMatchJournalField('selfReflection', value)}
+                  selected={selfFeel}
+                  onSelectedChange={(values) => setJournalTagGroup('selfFeel', values)}
+                  selectedCustom={customSelfFeel}
+                  onSelectedCustomChange={setCustomSelfFeel}
+                  playerName={playerName}
+                />
+                <GameEventNoteSection
+                  body={matchJournalDraft.gameEvents ?? ''}
+                  onBodyChange={(value) => setMatchJournalField('gameEvents', value)}
+                  selectedMatchFlow={matchFlow}
+                  selectedPartnerContext={partnerContext}
+                  onGameEventBuiltInChange={setJournalGameEventTags}
+                  selectedCustom={customGameEvents}
+                  onSelectedCustomChange={setCustomGameEvents}
+                  showPartnerTag={context.partnerName != null}
+                  playerName={playerName}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
     </Modal>

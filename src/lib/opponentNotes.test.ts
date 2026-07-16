@@ -144,7 +144,7 @@ describe('opponentNotes', () => {
     expect(matchJournalHasContent(getMatchJournalFields(legacy), legacy.tags)).toBe(true)
   })
 
-  it('allows tags-only scouting notes without body text', () => {
+  it('allows tags-only personal notes without body text', () => {
     const ctx = makeContext({ discipline: 'MS', disciplineLabel: "Men's singles" })
     const created = upsertNote(
       [],
@@ -162,7 +162,7 @@ describe('opponentNotes', () => {
     expect(noteHasStoredContent(created[0]!)).toBe(true)
   })
 
-  it('groups only scouting notes under opponents', () => {
+  it('groups only personal notes under opponents', () => {
     const pairNote = note({
       id: 'pair-1',
       body: 'Strong rotation',
@@ -351,11 +351,34 @@ describe('opponentNotes', () => {
     expect(scottGroup?.notes).toHaveLength(3)
     expect(martinGroup?.notes).toHaveLength(1)
     expect(formatNoteScopeInGroup(pairNote, 'Scott Carter')).toEqual({
-      label: 'About the pair',
-      detail: 'Scott Carter & Martin Crossley',
+      kind: 'pair',
+      primary: 'Pair note — not about Scott Carter alone',
+      secondary: 'About how they played together · Scott Carter & Martin Crossley',
     })
     expect(formatNoteScopeInGroup(scottOnly, 'Scott Carter')).toEqual({
+      kind: 'opponent',
       label: 'About this player',
+    })
+  })
+
+  it('explains when a pair note was recorded with a different partner in the draw', () => {
+    const pairNote = note({
+      target: { kind: 'pair' },
+      context: makeContext({
+        opponentNames: ['Dan Martyres', 'Jane Smith'],
+        opponentsDisplay: 'Dan Martyres & Jane Smith',
+      }),
+    })
+
+    expect(
+      formatNoteScopeInGroup(pairNote, 'Dan Martyres', {
+        drawnCoOpponent: 'Sarah Brown',
+        context: 'draw-scout',
+      }),
+    ).toEqual({
+      kind: 'pair',
+      primary: 'Pair note — about how they played together',
+      secondary: 'Recorded as Dan Martyres & Jane Smith. Different partner in this draw.',
     })
   })
 

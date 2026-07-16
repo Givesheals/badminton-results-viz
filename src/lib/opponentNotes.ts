@@ -28,6 +28,13 @@ export type OpponentNoteTarget =
 
 export const MATCH_NOTE_TARGET: OpponentNoteTarget = { kind: 'match' }
 
+/**
+ * MVP: match journal ("My game") UI is hidden. Data model, persistence, and
+ * component code remain — flip this to `true` to restore the tab and Notes
+ * review section.
+ */
+export const MATCH_JOURNAL_UI_ENABLED = false
+
 export function isMatchNoteTarget(target: OpponentNoteTarget): boolean {
   return target.kind === 'match'
 }
@@ -74,7 +81,7 @@ export type OpponentNote = {
 /** Stable display order for discipline scope selection. */
 export const ALL_DISCIPLINE_CODES = ['MS', 'WS', 'OS', 'MD', 'WD', 'OD', 'XD'] as const
 
-/** Discipline codes offered when scoping opponent scouting notes (S / D / XD). */
+/** Discipline codes offered when scoping opponent personal notes (S / D / XD). */
 export const SCOUTING_APPLIES_TO_DISCIPLINE_CODES = ['S', 'D', 'XD'] as const
 
 export type ScoutingAppliesToDisciplineCode =
@@ -309,7 +316,10 @@ export function getNotesForMatch(notes: OpponentNote[], matchKey: string): Oppon
 }
 
 export function hasNotesForMatch(notes: OpponentNote[], matchKey: string): boolean {
-  return getNotesForMatch(notes, matchKey).some(noteHasStoredContent)
+  return getNotesForMatch(notes, matchKey).some(
+    (note) =>
+      noteHasStoredContent(note) && (MATCH_JOURNAL_UI_ENABLED || isScoutingNote(note)),
+  )
 }
 
 export function getNoteForMatchTarget(
@@ -523,16 +533,56 @@ export function groupNotesByOpponent(notes: OpponentNote[]): OpponentNoteGroup[]
     .filter((group) => group.notes.length > 0)
 }
 
+export type NoteScopeDisplay =
+  | { kind: 'opponent'; label: string }
+  | { kind: 'pair'; primary: string; secondary?: string }
+
+export function isPairNoteWithDifferentDrawnPartner(
+  note: OpponentNote,
+  drawnCoOpponent: string | null,
+): boolean {
+  if (note.target.kind !== 'pair' || drawnCoOpponent == null) return false
+  const normalized = drawnCoOpponent.trim().toLowerCase()
+  return !note.context.opponentNames.some(
+    (name) => name.trim().toLowerCase() === normalized,
+  )
+}
+
 export function formatNoteScopeInGroup(
   note: OpponentNote,
-  _groupOpponentName: string,
-): { label: string; detail?: string } {
+  viewedOpponentName: string,
+  options?: { drawnCoOpponent?: string | null; context?: 'notes-list' | 'draw-scout' },
+): NoteScopeDisplay {
   if (note.target.kind === 'opponent') {
-    return { label: 'About this player' }
+    return { kind: 'opponent', label: 'About this player' }
   }
+
+  const pairNames = note.context.opponentsDisplay
+  const differentPartner = isPairNoteWithDifferentDrawnPartner(
+    note,
+    options?.drawnCoOpponent ?? null,
+  )
+
+  if (differentPartner) {
+    return {
+      kind: 'pair',
+      primary: 'Pair note — about how they played together',
+      secondary: `Recorded as ${pairNames}. Different partner in this draw.`,
+    }
+  }
+
+  if (options?.context === 'draw-scout') {
+    return {
+      kind: 'pair',
+      primary: 'Pair note — about how they played together',
+      secondary: pairNames,
+    }
+  }
+
   return {
-    label: 'About the pair',
-    detail: note.context.opponentsDisplay,
+    kind: 'pair',
+    primary: `Pair note — not about ${viewedOpponentName} alone`,
+    secondary: `About how they played together · ${pairNames}`,
   }
 }
 
