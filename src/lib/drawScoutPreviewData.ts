@@ -94,6 +94,37 @@ const martinOd: DrawDisciplineGroup[] = [
   },
 ]
 
+/** Minimal draw so many favourites can appear in Whose draw without huge fixtures. */
+function stubFavouriteDraw(name: string): DrawDisciplineGroup[] {
+  return [
+    {
+      disciplineCode: 'XD',
+      disciplineLabel: 'Mixed Doubles',
+      matchups: [
+        {
+          id: `fav-${name.toLowerCase().replace(/\s+/g, '-')}`,
+          roundLabel: 'Group B',
+          yourSide: [player(name), player('Partner Stub')],
+          opponentSide: [player('Murray Wright'), player('Corinna Wong')],
+        },
+      ],
+    },
+  ]
+}
+
+const EXTRA_FAVOURITE_NAMES = [
+  'Ben Carter',
+  'Tom Fielding',
+  'Daniel Hughes',
+  'Alisha Johnson',
+  'Emma Walsh',
+  'Lucy Grant',
+  'James Chen',
+  'Paul Andrew Mayfield',
+  'Morgan Taylor',
+  'Corinna Wong',
+]
+
 export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
   {
     slug: 'cambridgeshire-senior-bronze-july-2026',
@@ -117,6 +148,11 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
         isFavourite: true,
         disciplineGroups: martinOd,
       },
+      ...EXTRA_FAVOURITE_NAMES.map((name) => ({
+        name,
+        isFavourite: true as const,
+        disciplineGroups: stubFavouriteDraw(name),
+      })),
       {
         name: 'Murray Wright',
         disciplineGroups: [

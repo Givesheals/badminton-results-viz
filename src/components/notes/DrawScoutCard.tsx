@@ -774,7 +774,7 @@ function CompetitionHeader({
   )
 }
 
-const VISIBLE_FAVOURITE_CHIPS = 4
+const VISIBLE_FAVOURITE_CHIPS = 2
 
 type PlayerOption = {
   name: string
@@ -785,9 +785,9 @@ type PlayerOption = {
 
 function buildPlayerOptions(competition: DrawScoutCompetition): PlayerOption[] {
   const you = competition.entrants.find((entrant) => entrant.isYou)
-  const favourites = competition.entrants.filter(
-    (entrant) => entrant.isFavourite && entrant.name !== you?.name,
-  )
+  const favourites = competition.entrants
+    .filter((entrant) => entrant.isFavourite && entrant.name !== you?.name)
+    .sort((a, b) => a.name.localeCompare(b.name))
   const rest = competition.entrants
     .filter((entrant) => !entrant.isYou && !entrant.isFavourite)
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -807,6 +807,18 @@ function buildPlayerOptions(competition: DrawScoutCompetition): PlayerOption[] {
   }
 
   return options
+}
+
+/** Keep the selected favourite visible; otherwise first N by name. Cap stays small for 10–15 favourites. */
+function pickQuickFavouriteChips(
+  favourites: PlayerOption[],
+  selectedName: string,
+  limit: number,
+): PlayerOption[] {
+  if (favourites.length === 0 || limit <= 0) return []
+  const selected = favourites.find((option) => option.name === selectedName)
+  const rest = favourites.filter((option) => option.name !== selectedName)
+  return (selected != null ? [selected, ...rest] : rest).slice(0, limit)
 }
 
 function matchPlayerOption(query: string, option: PlayerOption): boolean {
@@ -830,10 +842,10 @@ function resolvePlayerOption(query: string, options: PlayerOption[]): PlayerOpti
   return options.find((option) => matchPlayerOption(normalized, option)) ?? null
 }
 
-function FavouriteStarIcon() {
+function FavouriteStarIcon({ className = 'h-3 w-3' }: { className?: string }) {
   return (
     <svg
-      className="h-3 w-3 shrink-0 text-favourite-star"
+      className={`shrink-0 text-favourite-star ${className}`}
       viewBox="0 0 20 20"
       fill="currentColor"
       aria-hidden
@@ -874,6 +886,36 @@ function PlayerChip({
   )
 }
 
+function PlayerListOption({
+  option,
+  selected,
+  onSelect,
+}: {
+  option: PlayerOption
+  selected: boolean
+  onSelect: (option: PlayerOption) => void
+}) {
+  return (
+    <li role="presentation">
+      <button
+        type="button"
+        role="option"
+        aria-selected={selected}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => onSelect(option)}
+        className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
+          selected
+            ? 'bg-brand-50 font-medium text-brand-800'
+            : 'text-ink-800 hover:bg-ink-50'
+        }`}
+      >
+        {option.isFavourite && !option.isYou ? <FavouriteStarIcon /> : null}
+        <span className="min-w-0 truncate">{option.label}</span>
+      </button>
+    </li>
+  )
+}
+
 function PlayerCombobox({
   id,
   competition,
@@ -889,7 +931,6 @@ function PlayerCombobox({
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
   const [listOpen, setListOpen] = useState(false)
-  const [showAllFavourites, setShowAllFavourites] = useState(false)
   const [listStyle, setListStyle] = useState<{ top: number; left: number; width: number } | null>(
     null,
   )
@@ -898,9 +939,14 @@ function PlayerCombobox({
   const selectedOption = options.find((option) => option.name === value) ?? null
   const filtered = options.filter((option) => matchPlayerOption(query, option))
 
-  const favourites = options.filter((option) => option.isFavourite)
+  const favourites = options.filter((option) => option.isFavourite && !option.isYou)
   const you = options.find((option) => option.isYou)
   const viewingEntrant = competition.entrants.find((entrant) => entrant.name === value)
+
+  const filteredFavourites = filtered.filter((option) => option.isFavourite && !option.isYou)
+  const filteredYou = filtered.find((option) => option.isYou)
+  const filteredRest = filtered.filter((option) => !option.isFavourite && !option.isYou)
+  const showListSections = query.trim() === ''
 
   const selectOption = useCallback(
     (option: PlayerOption) => {
@@ -910,6 +956,11 @@ function PlayerCombobox({
     },
     [onChange],
   )
+
+  const openPlayerList = useCallback(() => {
+    setListOpen(true)
+    inputRef.current?.focus()
+  }, [])
 
   const commitQuery = useCallback(() => {
     const match = resolvePlayerOption(query, options)
@@ -922,7 +973,6 @@ function PlayerCombobox({
   }, [options, query, selectOption])
 
   useEffect(() => {
-    setShowAllFavourites(false)
     setQuery('')
     setListOpen(false)
   }, [competition.slug])
@@ -979,10 +1029,8 @@ function PlayerCombobox({
     }
   }, [commitQuery, listId, listOpen])
 
-  const visibleFavourites = showAllFavourites
-    ? favourites
-    : favourites.slice(0, VISIBLE_FAVOURITE_CHIPS)
-  const hiddenFavouriteCount = Math.max(0, favourites.length - VISIBLE_FAVOURITE_CHIPS)
+  const quickFavourites = pickQuickFavouriteChips(favourites, value, VISIBLE_FAVOURITE_CHIPS)
+  const overflowFavouriteCount = Math.max(0, favourites.length - quickFavourites.length)
   const inputValue = query !== '' ? query : (selectedOption?.label ?? '')
 
   return (
@@ -1023,7 +1071,7 @@ function PlayerCombobox({
               <ul
                 id={listId}
                 role="listbox"
-                className="max-h-48 overflow-y-auto rounded-lg border border-ink-200 bg-white py-1 shadow-lg"
+                className="max-h-64 overflow-y-auto rounded-lg border border-ink-200 bg-white py-1 shadow-lg"
                 style={{
                   position: 'fixed',
                   top: listStyle.top,
@@ -1032,27 +1080,63 @@ function PlayerCombobox({
                   zIndex: 60,
                 }}
               >
-                {filtered.map((option) => {
-                  const selected = value === option.name
-                  return (
-                    <li key={option.name} role="presentation">
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={selected}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => selectOption(option)}
-                        className={`w-full px-3 py-2 text-left text-sm transition ${
-                          selected
-                            ? 'bg-brand-50 font-medium text-brand-800'
-                            : 'text-ink-800 hover:bg-ink-50'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    </li>
-                  )
-                })}
+                {showListSections ? (
+                  <>
+                    {filteredYou != null && (
+                      <PlayerListOption
+                        option={filteredYou}
+                        selected={value === filteredYou.name}
+                        onSelect={selectOption}
+                      />
+                    )}
+                    {filteredFavourites.length > 0 && (
+                      <>
+                        <li
+                          role="presentation"
+                          className="flex items-center gap-1.5 px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-400"
+                        >
+                          <FavouriteStarIcon className="h-2.5 w-2.5" />
+                          Favourites
+                        </li>
+                        {filteredFavourites.map((option) => (
+                          <PlayerListOption
+                            key={option.name}
+                            option={option}
+                            selected={value === option.name}
+                            onSelect={selectOption}
+                          />
+                        ))}
+                      </>
+                    )}
+                    {filteredRest.length > 0 && (
+                      <>
+                        <li
+                          role="presentation"
+                          className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-400"
+                        >
+                          All players
+                        </li>
+                        {filteredRest.map((option) => (
+                          <PlayerListOption
+                            key={option.name}
+                            option={option}
+                            selected={value === option.name}
+                            onSelect={selectOption}
+                          />
+                        ))}
+                      </>
+                    )}
+                  </>
+                ) : (
+                  filtered.map((option) => (
+                    <PlayerListOption
+                      key={option.name}
+                      option={option}
+                      selected={value === option.name}
+                      onSelect={selectOption}
+                    />
+                  ))
+                )}
               </ul>,
               document.body,
             )
@@ -1067,7 +1151,7 @@ function PlayerCombobox({
               onClick={() => selectOption(you)}
             />
           )}
-          {visibleFavourites.map((option) => (
+          {quickFavourites.map((option) => (
             <PlayerChip
               key={option.name}
               label={option.label}
@@ -1076,22 +1160,15 @@ function PlayerCombobox({
               showFavouriteStar
             />
           ))}
-          {hiddenFavouriteCount > 0 && !showAllFavourites && (
+          {overflowFavouriteCount > 0 && (
             <button
               type="button"
-              onClick={() => setShowAllFavourites(true)}
-              className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-brand-600 transition hover:bg-brand-50"
+              onClick={openPlayerList}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-brand-600 transition hover:bg-brand-50"
+              aria-label={`Show all ${favourites.length} favourites`}
             >
-              +{hiddenFavouriteCount} more
-            </button>
-          )}
-          {showAllFavourites && favourites.length > VISIBLE_FAVOURITE_CHIPS && (
-            <button
-              type="button"
-              onClick={() => setShowAllFavourites(false)}
-              className="shrink-0 text-xs font-medium text-ink-500 transition hover:text-ink-700"
-            >
-              Show less
+              <FavouriteStarIcon />
+              +{overflowFavouriteCount} more
             </button>
           )}
         </div>

@@ -175,8 +175,14 @@ Single combobox: **“Whose draw”**
 | Section | Contents |
 |---------|----------|
 | Pinned | `{playerName} (you)` when entered in selected comp |
-| Favourites in this draw | Favourites who are entered |
+| Favourites in this draw | Favourites who are entered (starred in the list) |
 | All entered players | Search/filter any entrant in this competition |
+
+**Quick chips (below the combobox):**
+
+- Always show **You** when entered
+- Show at most **2** favourite name chips (keeps the selected favourite visible when possible)
+- If more favourites remain, a **★ +N more** control opens the combobox — never expands into a long chip row (designed for ~10–15 favourites)
 
 **Default selection:**
 
