@@ -132,7 +132,7 @@ export const drawOutPreview: DrawOutEmailData = {
   competitionSlug: DRAW_SCOUT_PREVIEW_SLUG,
   favouritesCount: 9,
   notesOpponentCount: 4,
-  drawNotesUrl: `${PLAYER_PROFILE_URL}?tab=notes&draw=${DRAW_SCOUT_PREVIEW_SLUG}`,
+  drawNotesUrl: `${PLAYER_PROFILE_URL}?tab=latest-event&draw=${DRAW_SCOUT_PREVIEW_SLUG}`,
   notificationSettingsUrl: NOTIFICATION_SETTINGS_URL,
   unsubscribeUrl: UNSUBSCRIBE_URL,
   disciplineGroups: previewEntrant.disciplineGroups,

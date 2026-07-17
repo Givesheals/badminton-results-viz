@@ -1399,7 +1399,7 @@ export function DrawScoutCard({
       : null
 
   return (
-    <section className="mb-6 overflow-hidden rounded-2xl border border-brand-200/80 bg-gradient-to-b from-brand-50/50 to-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-brand-200/80 bg-gradient-to-b from-brand-50/50 to-white shadow-sm">
       <div className="border-b border-brand-100/80 px-4 py-3 sm:px-5">
         <p className="text-xs font-medium text-ink-500">Draw scout</p>
 

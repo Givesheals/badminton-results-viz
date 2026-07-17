@@ -14,7 +14,7 @@ When a tournament draw is published, players need to see **what their draw is** 
 This feature:
 
 1. **Simplifies the “your draw is out” email** — draw preview only, plus a single CTA when the user has notes on opponents in that draw.
-2. **Adds a temporary “Draw scout” card** at the top of the Notes tab — draw structure + the user’s saved notes on relevant opponents.
+2. **Adds a temporary “Draw scout” card** at the top of the **Events** tab — draw structure + the user’s saved notes on relevant opponents (shown as the most recent / upcoming event, above past tournament recaps).
 3. **Lets the user view any entered player’s draw** in that competition (favourites surfaced first; full search for any entrant) so they can prep tactical advice for friends without a share button.
 
 Notes remain private; there is no export or share affordance. The entire Notes feature is already premium-gated — no additional gating here.
@@ -37,11 +37,11 @@ Users also want to explore **someone else’s draw** in the same competition (fr
 | In scope | Out of scope |
 |----------|--------------|
 | Draw-out email: strip inline notes; add note-count CTA | Server-side note sync for email (count can be computed server-side once notes sync exists; prototype uses mock count) |
-| Draw scout card on Notes tab | Share / export notes or draw |
+| Draw scout card on Events tab | Share / export notes or draw |
 | Competition + player pickers | Historical draw browsing after event ends |
-| Deep link from email (`?tab=notes&draw=…`) | Draw-out email variant for non-entrants |
+| Deep link from email (`?tab=latest-event&draw=…`) | Draw-out email variant for non-entrants |
 | Mock draw data for prototype | Live draw API integration (prototype first) |
-| “Explore a draw” header link (always in Notes tab header) | Push notifications |
+| “Explore a draw” header link (Events tab) | Push notifications |
 | Reuse existing note rendering (`NoteEntry`, tags, discipline chips) | Match journal in draw scout (personal notes only) |
 
 ---
@@ -89,7 +89,7 @@ type DrawOutEmailData = {
   competitionSlug: string
   /** Count of distinct opponents in this draw the user has personal notes on. */
   notesOpponentCount: number
-  drawNotesUrl: string // e.g. …/player/{id}?tab=notes&draw={competitionSlug}
+  drawNotesUrl: string // e.g. …/player/{id}?tab=latest-event&draw={competitionSlug}
   notificationSettingsUrl: string
   unsubscribeUrl: string
   disciplineGroups: DrawDisciplineGroup[] // matchups WITHOUT notes[]
@@ -122,12 +122,12 @@ Remove types/fields: `DrawNoteLine`, `matchups[].notes`, `laterNotes`, `seeAllDr
 
 ### Placement
 
-Top of the **Notes** tab (`OpponentNotesSection`), above the permanent “All notes” library.
+Top of the **Events** tab (`TournamentRecapSection`), above past tournament recaps — treated as the user’s most recent / upcoming event.
 
 ```
-Notes tab
-├── Draw scout card (conditional — see visibility rules)
-└── All notes (existing OpponentNotesSection content)
+Events tab
+├── Draw scout card (conditional — upcoming draw; see visibility rules)
+└── Tournament recap (newest past weekend first, Previous/Next nav)
 ```
 
 ### Card structure
@@ -228,7 +228,7 @@ The draw scout card appears when **any** active competition (draw published, not
 
 1. The user is entered, **or**
 2. A favourite is entered, **or**
-3. The user arrived via deep link `?tab=notes&draw={slug}`
+3. The user arrived via deep link `?tab=latest-event&draw={slug}` (legacy `?tab=notes&draw=` still opens Events)
 
 ### When the card is hidden
 
@@ -250,7 +250,7 @@ Both entry points are kept:
 | Entry | When | Behaviour |
 |-------|------|-----------|
 | **In-card competition picker** | Card visible | Switch between active competitions; defaults to user’s comp when available |
-| **Header “Explore a draw →”** | Always in Notes tab header | Opens competition picker (same upcoming/in-progress scope). Useful when the card is hidden, or as a discoverable alternate path when the card is already showing |
+| **Header “Explore a draw →”** | Always in Events tab (recap header) | Opens competition picker (same upcoming/in-progress scope). Useful when the card is hidden, or as a discoverable alternate path when the card is already showing |
 | **Email CTA** | Draw-out notification | Deep link opens Notes tab, selects competition from `draw` param, scrolls card into view |
 
 ---
@@ -268,7 +268,7 @@ Both entry points are kept:
 Example email CTA:
 
 ```text
-https://badminfo.com/player/{playerId}?tab=notes&draw=cambridgeshire-senior-bronze-july-2026
+https://badminfo.com/player/{playerId}?tab=latest-event&draw=cambridgeshire-senior-bronze-july-2026
 ```
 
 Prototype app can read the same params from `window.location.search` or integrate with `DashboardNavigationContext` (extend tab routing similarly to existing section deep links).
@@ -342,7 +342,7 @@ Count distinct opponent names across all matchups + later opponents where `getNo
 | `DrawScoutPlayerPicker` | Combobox with favourites section |
 | `DrawScoutMatchupBlock` | One round row + nested notes |
 | `DrawScoutLaterSection` | Collapsible “You may also meet” |
-| `OpponentNotesSection` | Mount `DrawScoutCard` above existing content; always show header “Explore a draw →” |
+| `TournamentRecapSection` | Mount `DrawScoutCard` above tournament recap; “Explore a draw →” in Events header |
 
 Extract shared note row rendering from `OpponentNotesSection` if needed to avoid duplication (`DrawScoutNoteList` or shared `NoteEntry`).
 
@@ -364,7 +364,7 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 - [x] Build `DrawScoutCard` + pickers
 - [x] Wire notes from `useOpponentNotesContext()`
 - [x] Integrate into `OpponentNotesSection`
-- [x] Parse `?tab=notes&draw=&player=` on load
+- [x] Parse `?tab=latest-event&draw=&player=` on load (legacy `tab=notes` remaps to Events)
 - [ ] Add in-app preview route or dev flag to simulate “draw is out” state
 
 ### Tests
@@ -414,34 +414,21 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ Notes                          [Explore a draw →]│  ← always in header
+│ Events                                          │
 ├─────────────────────────────────────────────────┤
-│ ┌─ DRAW SCOUT ────────────────────────────────┐ │
+│ ┌─ DRAW SCOUT (most recent / upcoming) ───────┐ │
 │ │ Competition  [ Cambs Senior Bronze · 12 Jul ▼]│
 │ │ Whose draw   [ Simon Parker (you)            ▼]│
-│ │ ★ Sara  ★ Martin   ← favourite chips with star │
+│ │ ★ Sara  ★ Martin  ★ +N more                  │ │
 │ │                                              │ │
 │ │ ● Mixed Doubles · Group A                    │ │
-│ │   ┌▌────────────────────────────────────┬──┐ │ │  ← discipline left edge on header
-│ │   │ You & Sara │ Murray & Corinna       │▾ │ │ │
-│ │   │ [View notes]     (games slot empty) │  │ │ │  ← reserved notes badge slot
-│ │   ├─────────────────────────────────────┴──┤ │ │
-│ │   │ Notes panel (no tabs — notes only)     │ │ │
-│ │   └────────────────────────────────────────┘ │ │
-│ │                                              │ │
-│ │   ┌▌────────────────────────────────────┬──┐ │ │
-│ │   │ You & Sara │ Dan & Alisha           │▾ │ │ │
-│ │   │ [View notes]  Your games: 2         │  │ │ │
-│ │   ├─────────────────────────────────────┴──┤ │ │
-│ │   │ [ Notes ] [ Your games ]  ← tabs both  │ │ │
-│ │   │ pair / solo content for active panel   │ │ │
-│ │   └────────────────────────────────────────┘ │ │
-│ │                                              │ │
+│ │   …matchup cards…                            │ │
 │ │ ▾ You may also meet (2)                      │ │
 │ └──────────────────────────────────────────────┘ │
 │                                                  │
-│ ── All notes ──                                  │
-│ …existing library…                               │
+│ ┌─ TOURNAMENT RECAP ──── [Explore a draw →] ──┐ │
+│ │ …past weekend recap…                         │ │
+│ └──────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────┘
 ```
 

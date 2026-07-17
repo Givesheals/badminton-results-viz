@@ -95,10 +95,15 @@ export function DashboardTabs({ importedAt, panels }: Props) {
     suppressSectionScrollRef.current = true
     const params = new URLSearchParams(window.location.search)
     const tabFromUrl = params.get('tab')
-    const initialTab =
-      tabFromUrl === 'notes' && TAB_IDS.includes('notes' as DashboardTabId)
+    const hasDrawDeepLink = params.get('draw') != null
+    // Draw scout lives on Events; honour legacy ?tab=notes&draw= links too.
+    const initialTab: DashboardTabId = hasDrawDeepLink
+      ? 'latest-event'
+      : tabFromUrl === 'notes' && TAB_IDS.includes('notes' as DashboardTabId)
         ? ('notes' as DashboardTabId)
-        : DEFAULT_TAB
+        : isVisibleTabId(tabFromUrl)
+          ? tabFromUrl
+          : DEFAULT_TAB
     selectTab(initialTab)
     clearScrollTarget()
     clearMilestoneTarget()

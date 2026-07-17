@@ -286,7 +286,7 @@ Search matches body, journal fields, opponents, competition, disciplines, scope 
 
 ## Draw scout integration
 
-The **Draw scout** card (see [draw scout spec](./draw-scout-spec.md)) surfaces personal notes against opponents in an upcoming draw. Resolution:
+The **Draw scout** card (see [draw scout spec](./draw-scout-spec.md)) lives on the **Events** tab (above tournament recap) and surfaces personal notes against opponents in an upcoming draw. Resolution:
 
 ```typescript
 const relevant = sortNotesNewestFirst(
