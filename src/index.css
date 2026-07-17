@@ -56,6 +56,10 @@
   --color-level-county: #159eda;
   --color-level-medal-text: #41016f;
 
+  /* Favourite star: deeper gold than medal chips so it reads on light grey */
+  --color-favourite-star: #c9a227;
+  --color-favourite-star-stroke: #8a7018;
+
   --color-discipline-mixed: #7acfd2;
   --color-discipline-doubles: #a0acda;
   --color-discipline-singles: #d1ca7b;
