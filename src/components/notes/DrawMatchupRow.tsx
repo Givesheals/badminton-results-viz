@@ -109,10 +109,14 @@ export function DrawMatchupRow({
   const notesSpan = label != null ? 'col-span-3' : 'col-span-2'
   const disciplineStyle = getDisciplineStyle(disciplineCode ?? '')
 
+  // Shared card chrome for expandable and static (no-intel) matchups.
+  const cardShell =
+    'overflow-hidden rounded-xl border border-ink-100 bg-white shadow-sm'
+
   if (expandable != null) {
     return (
       <div className="border-t border-ink-100 py-2 first:border-t-0 first:pt-0">
-        <div className="overflow-hidden rounded-xl border border-ink-100 bg-white shadow-sm">
+        <div className={cardShell}>
           <button
             type="button"
             onClick={expandable.onToggle}
@@ -138,12 +142,18 @@ export function DrawMatchupRow({
     )
   }
 
+  // Static card: same shell + discipline edge, no chevron / hover (not expandable).
   return (
-    <div
-      className={`${gridClass} rounded-r border-l-4 border-t border-ink-100 py-3 pl-2 first:border-t-0 ${disciplineStyle.borderClass}`}
-    >
-      {sides}
-      {notes != null && <div className={`${notesSpan} space-y-2`}>{notes}</div>}
+    <div className="border-t border-ink-100 py-2 first:border-t-0 first:pt-0">
+      <div className={cardShell}>
+        <div
+          className={`rounded-r border-l-4 px-3 py-3 ${disciplineStyle.borderClass}`}
+        >
+          <div className={gridClass}>{sides}</div>
+          <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
+          {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
+        </div>
+      </div>
     </div>
   )
 }
