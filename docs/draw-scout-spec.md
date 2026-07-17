@@ -251,7 +251,7 @@ Both entry points are kept:
 |-------|------|-----------|
 | **In-card competition picker** | Card visible | Switch between active competitions; defaults to user’s comp when available |
 | **Header “Explore a draw →”** | Always in Events tab (recap header) | Opens competition picker (same upcoming/in-progress scope). Useful when the card is hidden, or as a discoverable alternate path when the card is already showing |
-| **Email CTA** | Draw-out notification | Deep link opens Notes tab, selects competition from `draw` param, scrolls card into view |
+| **Email CTA** | Draw-out notification | Deep link opens Events tab, selects competition from `draw` param, scrolls card into view |
 
 ---
 
@@ -363,7 +363,7 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 - [x] Implement `isDrawScoutCompetitionActive()`
 - [x] Build `DrawScoutCard` + pickers
 - [x] Wire notes from `useOpponentNotesContext()`
-- [x] Integrate into `OpponentNotesSection`
+- [x] Integrate into `TournamentRecapSection` (Events tab)
 - [x] Parse `?tab=latest-event&draw=&player=` on load (legacy `tab=notes` remaps to Events)
 - [ ] Add in-app preview route or dev flag to simulate “draw is out” state
 
