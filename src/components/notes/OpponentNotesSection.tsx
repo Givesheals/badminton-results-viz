@@ -31,6 +31,7 @@ import { NoteTagChips } from './NoteTagPicker'
 import { OpponentNoteMatchFooter } from './OpponentNoteMatchFooter'
 import { OpponentNoteModal } from './OpponentNoteModal'
 import { OpponentPickerModal } from './OpponentPickerModal'
+import { YourTagsSection } from './YourTagsSection'
 import { PairNoteScopeBanner } from './PairNoteScopeBanner'
 import {
   DrawScoutCard,
@@ -324,7 +325,12 @@ export function OpponentNotesSection({ allMatches }: Props) {
   const [search, setSearch] = useState('')
   const [activeNote, setActiveNote] = useState<OpponentNote | null>(null)
   const [addNoteState, setAddNoteState] = useState<AddNoteState>({ step: 'closed' })
+  const [tagLibraryRevision, setTagLibraryRevision] = useState(0)
   const [exploreOpen, setExploreOpen] = useState(false)
+
+  function bumpTagLibraryRevision() {
+    setTagLibraryRevision((value) => value + 1)
+  }
   const [drawScoutForced, setDrawScoutForced] = useState(false)
   const [drawScoutSelection, setDrawScoutSelection] = useState<{
     competitionSlug: string
@@ -471,10 +477,17 @@ export function OpponentNotesSection({ allMatches }: Props) {
         )}
       </div>
 
+      <div className="border-t border-ink-100 px-4 py-4 sm:px-5">
+        <YourTagsSection revision={tagLibraryRevision} />
+      </div>
+
       {activeNote != null && (
         <OpponentNoteModal
           open
-          onClose={() => setActiveNote(null)}
+          onClose={() => {
+            setActiveNote(null)
+            bumpTagLibraryRevision()
+          }}
           context={activeNote.context}
           initialTarget={activeNote.target}
         />
@@ -495,7 +508,10 @@ export function OpponentNotesSection({ allMatches }: Props) {
       {addNoteState.step === 'compose' && (
         <OpponentNoteModal
           open
-          onClose={() => setAddNoteState({ step: 'closed' })}
+          onClose={() => {
+            setAddNoteState({ step: 'closed' })
+            bumpTagLibraryRevision()
+          }}
           context={addNoteState.context}
           initialTarget={{ kind: 'opponent', name: addNoteState.context.opponentNames[0]! }}
         />

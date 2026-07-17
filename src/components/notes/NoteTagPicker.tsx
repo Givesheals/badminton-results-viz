@@ -1,6 +1,4 @@
 import { useEffect, useId, useState, type FormEvent } from 'react'
-import { useOpponentNotesContext } from '../../context/OpponentNotesContext'
-import { countNotesWithCustomTag } from '../../lib/customTagNoteUpdates'
 import {
   CUSTOM_TAG_MAX_LENGTH,
   CUSTOM_TAG_MAX_PER_GROUP,
@@ -8,8 +6,6 @@ import {
   loadRememberedCustomTags,
   normalizeCustomTagLabel,
   rememberCustomTag,
-  removeRememberedCustomTag,
-  renameRememberedCustomTag,
   type CustomTagGroup,
 } from '../../lib/customNoteTags'
 import {
@@ -98,349 +94,6 @@ function TaggedNoteComboBox({
   )
 }
 
-const MORE_BUTTON_CLASS =
-  'inline-flex items-center rounded-lg border border-ink-100 bg-white px-2.5 py-1 text-xs font-medium text-ink-600 transition hover:bg-ink-50'
-
-const EDIT_CHIPS_BUTTON_CLASS =
-  'inline-flex items-center gap-1 rounded-lg border border-brand-300 bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-800 shadow-sm transition hover:bg-brand-100'
-
-function CustomTagManagePanel({
-  customTagGroup,
-  playerName,
-  rememberedTags,
-  onRememberedChange,
-  selectedCustom,
-  onSelectedCustomChange,
-  onClose,
-  diyLibrary = false,
-}: {
-  customTagGroup: CustomTagGroup
-  playerName: string | null
-  rememberedTags: string[]
-  onRememberedChange: (tags: string[]) => void
-  selectedCustom: string[]
-  onSelectedCustomChange: (values: string[]) => void
-  onClose: () => void
-  diyLibrary?: boolean
-}) {
-  const { allNotes, renameCustomTagEverywhere, removeCustomTagEverywhere } =
-    useOpponentNotesContext()
-  const addInputId = useId()
-  const [addDraft, setAddDraft] = useState('')
-  const [message, setMessage] = useState<string | null>(null)
-  const [editingLabel, setEditingLabel] = useState<string | null>(null)
-  const [editDraft, setEditDraft] = useState('')
-  const [pendingRemove, setPendingRemove] = useState<string | null>(null)
-  const [removeFromNotes, setRemoveFromNotes] = useState(false)
-  const [pendingRename, setPendingRename] = useState<{
-    oldLabel: string
-    newLabel: string
-  } | null>(null)
-  const [renameOnNotes, setRenameOnNotes] = useState(true)
-
-  const atLimit = rememberedTags.length >= CUSTOM_TAG_MAX_PER_GROUP
-  const panelTitle = diyLibrary ? 'Your note tags' : 'Your tags'
-  const newLabel = 'New tag'
-  const emptyCopy = diyLibrary
-    ? 'No tags yet. Add one above.'
-    : 'No custom tags yet. Add one above.'
-  const removeCopy = 'quick-add tags'
-  const footerCopy =
-    'Removing a tag hides it from quick-add. Saved notes keep the tag unless you choose to remove it from them too.'
-
-  function syncSelectedCustom(oldLabel: string, newLabel?: string) {
-    const oldKey = oldLabel.toLowerCase()
-    if (newLabel != null) {
-      onSelectedCustomChange(
-        selectedCustom.map((tag) => (tag.toLowerCase() === oldKey ? newLabel : tag)),
-      )
-      return
-    }
-    onSelectedCustomChange(selectedCustom.filter((tag) => tag.toLowerCase() !== oldKey))
-  }
-
-  function handleAdd(event: FormEvent) {
-    event.preventDefault()
-    const label = normalizeCustomTagLabel(addDraft)
-    if (label == null) return
-    const updated = rememberCustomTag(playerName, customTagGroup, label)
-    if (updated == null) {
-      setMessage(`You can save up to ${CUSTOM_TAG_MAX_PER_GROUP} tags`)
-      return
-    }
-    onRememberedChange(updated)
-    setAddDraft('')
-    setMessage(null)
-  }
-
-  function startRename(label: string) {
-    setEditingLabel(label)
-    setEditDraft(label)
-    setPendingRemove(null)
-    setPendingRename(null)
-    setMessage(null)
-  }
-
-  function startRemove(label: string) {
-    const usageCount = countNotesWithCustomTag(allNotes, customTagGroup, label)
-    setPendingRemove(label)
-    setRemoveFromNotes(usageCount > 0)
-    setEditingLabel(null)
-    setPendingRename(null)
-    setMessage(null)
-  }
-
-  function confirmRemove() {
-    if (pendingRemove == null) return
-    const label = pendingRemove
-    const usageCount = countNotesWithCustomTag(allNotes, customTagGroup, label)
-
-    const updated = removeRememberedCustomTag(playerName, customTagGroup, label)
-    if (updated != null) onRememberedChange(updated)
-
-    if (removeFromNotes && usageCount > 0) {
-      removeCustomTagEverywhere(customTagGroup, label)
-      syncSelectedCustom(label)
-    }
-
-    setPendingRemove(null)
-    setRemoveFromNotes(false)
-  }
-
-  function submitRename(oldLabel: string) {
-    const newLabel = normalizeCustomTagLabel(editDraft)
-    if (newLabel == null) return
-    if (newLabel.toLowerCase() === oldLabel.toLowerCase()) {
-      setEditingLabel(null)
-      return
-    }
-
-    const usageCount = countNotesWithCustomTag(allNotes, customTagGroup, oldLabel)
-    if (usageCount > 0) {
-      setPendingRename({ oldLabel, newLabel })
-      setRenameOnNotes(true)
-      return
-    }
-
-    const updated = renameRememberedCustomTag(playerName, customTagGroup, oldLabel, newLabel)
-    if (updated == null) {
-      setMessage('That tag name is already in use')
-      return
-    }
-    onRememberedChange(updated)
-    syncSelectedCustom(oldLabel, newLabel)
-    setEditingLabel(null)
-    setMessage(null)
-  }
-
-  function confirmRename() {
-    if (pendingRename == null) return
-    const { oldLabel, newLabel } = pendingRename
-    const usageCount = countNotesWithCustomTag(allNotes, customTagGroup, oldLabel)
-
-    const updated = renameRememberedCustomTag(playerName, customTagGroup, oldLabel, newLabel)
-    if (updated == null) {
-      setMessage('That tag name is already in use')
-      setPendingRename(null)
-      return
-    }
-    onRememberedChange(updated)
-
-    if (renameOnNotes && usageCount > 0) {
-      renameCustomTagEverywhere(customTagGroup, oldLabel, newLabel)
-    }
-    syncSelectedCustom(oldLabel, newLabel)
-
-    setPendingRename(null)
-    setEditingLabel(null)
-    setMessage(null)
-  }
-
-  return (
-    <div className="rounded-lg border border-ink-200 bg-ink-50/80 p-3">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-ink-700">{panelTitle}</p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-lg bg-brand-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700"
-        >
-          Done
-        </button>
-      </div>
-
-      <form onSubmit={handleAdd} className="mb-3 flex items-center gap-1.5">
-        <label htmlFor={addInputId} className="sr-only">
-          {newLabel}
-        </label>
-        <input
-          id={addInputId}
-          type="text"
-          value={addDraft}
-          maxLength={CUSTOM_TAG_MAX_LENGTH}
-          disabled={atLimit}
-          placeholder={atLimit ? 'Tag limit reached' : newLabel}
-          onChange={(event) => setAddDraft(event.target.value)}
-          className="min-w-0 flex-1 rounded-lg border border-ink-200 bg-white px-2.5 py-1.5 text-xs text-ink-900 focus:border-brand-300 focus:outline-none focus:ring-1 focus:ring-brand-100 disabled:bg-ink-50"
-        />
-        <button
-          type="submit"
-          disabled={atLimit || normalizeCustomTagLabel(addDraft) == null}
-          className="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-800 hover:bg-brand-100 disabled:opacity-40"
-        >
-          Add
-        </button>
-      </form>
-
-      {rememberedTags.length === 0 ? (
-        <p className="text-xs text-ink-500">{emptyCopy}</p>
-      ) : (
-        <ul className="space-y-2">
-          {rememberedTags.map((label) => (
-            <li key={label} className="rounded-lg border border-ink-100 bg-white px-2.5 py-2">
-              {editingLabel === label ? (
-                <form
-                  className="flex flex-wrap items-center gap-1.5"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    submitRename(label)
-                  }}
-                >
-                  <input
-                    type="text"
-                    value={editDraft}
-                    maxLength={CUSTOM_TAG_MAX_LENGTH}
-                    autoFocus
-                    onChange={(event) => setEditDraft(event.target.value)}
-                    className="min-w-0 flex-1 rounded-lg border border-ink-200 px-2 py-1 text-xs text-ink-900 focus:border-brand-300 focus:outline-none focus:ring-1 focus:ring-brand-100"
-                  />
-                  <button
-                    type="submit"
-                    disabled={normalizeCustomTagLabel(editDraft) == null}
-                    className="rounded-lg border border-ink-100 px-2 py-1 text-xs font-medium text-ink-700 hover:bg-ink-50 disabled:opacity-40"
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingLabel(null)}
-                    className="px-1.5 py-1 text-xs text-ink-500 hover:text-ink-700"
-                  >
-                    Cancel
-                  </button>
-                </form>
-              ) : pendingRemove === label ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-ink-700">
-                    Remove &ldquo;{label}&rdquo; from your {removeCopy}?
-                  </p>
-                  {countNotesWithCustomTag(allNotes, customTagGroup, label) > 0 && (
-                    <label className="flex items-start gap-2 text-xs text-ink-600">
-                      <input
-                        type="checkbox"
-                        checked={removeFromNotes}
-                        onChange={(event) => setRemoveFromNotes(event.target.checked)}
-                        className="mt-0.5"
-                      />
-                      <span>
-                        Also remove from{' '}
-                        {countNotesWithCustomTag(allNotes, customTagGroup, label)} saved note
-                        {countNotesWithCustomTag(allNotes, customTagGroup, label) === 1 ? '' : 's'}
-                      </span>
-                    </label>
-                  )}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={confirmRemove}
-                      className="rounded-lg border border-loss-200 px-2 py-1 text-xs font-medium text-loss-700 hover:bg-loss-50"
-                    >
-                      Remove
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPendingRemove(null)}
-                      className="px-2 py-1 text-xs text-ink-500 hover:text-ink-700"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium text-ink-800">{label}</span>
-                  <div className="flex shrink-0 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => startRename(label)}
-                      className="text-xs font-medium text-brand-600 hover:underline"
-                    >
-                      Rename
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => startRemove(label)}
-                      className="text-xs font-medium text-ink-500 hover:text-ink-700"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {pendingRename != null && (
-        <div className="mt-3 rounded-lg border border-ink-200 bg-white p-2.5">
-          <p className="text-xs text-ink-700">
-            Rename &ldquo;{pendingRename.oldLabel}&rdquo; to &ldquo;{pendingRename.newLabel}
-            &rdquo;?
-          </p>
-          {countNotesWithCustomTag(allNotes, customTagGroup, pendingRename.oldLabel) > 0 && (
-            <label className="mt-2 flex items-start gap-2 text-xs text-ink-600">
-              <input
-                type="checkbox"
-                checked={renameOnNotes}
-                onChange={(event) => setRenameOnNotes(event.target.checked)}
-                className="mt-0.5"
-              />
-              <span>
-                Also rename on{' '}
-                {countNotesWithCustomTag(allNotes, customTagGroup, pendingRename.oldLabel)} saved
-                note
-                {countNotesWithCustomTag(allNotes, customTagGroup, pendingRename.oldLabel) === 1
-                  ? ''
-                  : 's'}
-              </span>
-            </label>
-          )}
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              onClick={confirmRename}
-              className="rounded-lg bg-brand-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-700"
-            >
-              Rename
-            </button>
-            <button
-              type="button"
-              onClick={() => setPendingRename(null)}
-              className="px-2 py-1 text-xs text-ink-500 hover:text-ink-700"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {message != null && <p className="mt-2 text-xs text-ink-500">{message}</p>}
-      <p className="mt-3 text-[11px] leading-relaxed text-ink-500">{footerCopy}</p>
-    </div>
-  )
-}
-
 function TagAddRow({
   unselectedOptions,
   onAdd,
@@ -448,10 +101,7 @@ function TagAddRow({
   playerName,
   rememberedTags,
   onRememberedChange,
-  selectedCustom,
-  onSelectedCustomChange,
   emphasizeAddLabel,
-  diyLibrary = false,
 }: {
   unselectedOptions: { label: string; hint?: string }[]
   onAdd: (label: string) => void
@@ -459,68 +109,82 @@ function TagAddRow({
   playerName: string | null
   rememberedTags: string[]
   onRememberedChange: (tags: string[]) => void
-  selectedCustom: string[]
-  onSelectedCustomChange: (values: string[]) => void
   emphasizeAddLabel?: string | null
-  diyLibrary?: boolean
 }) {
-  const [manageOpen, setManageOpen] = useState(false)
+  const addInputId = useId()
+  const [addDraft, setAddDraft] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+  const atLimit = rememberedTags.length >= CUSTOM_TAG_MAX_PER_GROUP
+  const canSubmit = normalizeCustomTagLabel(addDraft) != null
+
+  function handleAdd(event: FormEvent) {
+    event.preventDefault()
+    const label = normalizeCustomTagLabel(addDraft)
+    if (label == null) return
+
+    const existing = rememberedTags.find((tag) => tag.toLowerCase() === label.toLowerCase())
+    if (existing == null) {
+      if (atLimit) {
+        setMessage(`You can save up to ${CUSTOM_TAG_MAX_PER_GROUP} tags`)
+        return
+      }
+      const updated = rememberCustomTag(playerName, customTagGroup, label)
+      onRememberedChange(updated ?? [...rememberedTags, label])
+    }
+
+    onAdd(existing ?? label)
+    setAddDraft('')
+    setMessage(null)
+  }
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-1.5">
-        {unselectedOptions.map((option) => (
-          <button
-            key={option.label}
-            type="button"
-            title={option.hint}
-            onClick={() => onAdd(option.label)}
-            className={`${ADD_TAG_CLASS} ${
-              emphasizeAddLabel === option.label
-                ? 'premium-notes-demo-chip-press scale-95 border-brand-300 bg-brand-50 text-brand-800 ring-2 ring-brand-200'
-                : ''
-            }`}
-          >
-            <span aria-hidden="true">+</span>
-            {option.label}
-          </button>
-        ))}
-        {diyLibrary ? (
-          <button
-            type="button"
-            onClick={() => setManageOpen((open) => !open)}
-            aria-expanded={manageOpen}
-            aria-label={manageOpen ? 'Close tag editor' : 'Edit tags'}
-            title="Edit tags"
-            className={EDIT_CHIPS_BUTTON_CLASS}
-          >
-            Edit tags
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setManageOpen((open) => !open)}
-            aria-expanded={manageOpen}
-            aria-label={manageOpen ? 'Close tag manager' : 'Manage your tags'}
-            title="Manage your tags"
-            className={MORE_BUTTON_CLASS}
-          >
-            <span aria-hidden="true">···</span>
-          </button>
-        )}
-      </div>
-      {manageOpen && (
-        <CustomTagManagePanel
-          customTagGroup={customTagGroup}
-          playerName={playerName}
-          rememberedTags={rememberedTags}
-          onRememberedChange={onRememberedChange}
-          selectedCustom={selectedCustom}
-          onSelectedCustomChange={onSelectedCustomChange}
-          onClose={() => setManageOpen(false)}
-          diyLibrary={diyLibrary}
-        />
+      {unselectedOptions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {unselectedOptions.map((option) => (
+            <button
+              key={option.label}
+              type="button"
+              title={option.hint}
+              onClick={() => onAdd(option.label)}
+              className={`${ADD_TAG_CLASS} ${
+                emphasizeAddLabel === option.label
+                  ? 'premium-notes-demo-chip-press scale-95 border-brand-300 bg-brand-50 text-brand-800 ring-2 ring-brand-200'
+                  : ''
+              }`}
+            >
+              <span aria-hidden="true">+</span>
+              {option.label}
+            </button>
+          ))}
+        </div>
       )}
+      <form onSubmit={handleAdd} className="flex items-center gap-1.5">
+        <label htmlFor={addInputId} className="sr-only">
+          Add a tag
+        </label>
+        <input
+          id={addInputId}
+          type="text"
+          value={addDraft}
+          maxLength={CUSTOM_TAG_MAX_LENGTH}
+          disabled={atLimit}
+          placeholder={atLimit ? 'Tag limit reached' : 'Add a tag…'}
+          onChange={(event) => {
+            setAddDraft(event.target.value)
+            setMessage(null)
+          }}
+          className="min-w-0 flex-1 rounded-lg border border-ink-200 bg-white px-2.5 py-1.5 text-xs text-ink-900 placeholder:text-ink-400 focus:border-brand-300 focus:outline-none focus:ring-1 focus:ring-brand-100 disabled:bg-ink-50"
+        />
+        <button
+          type="submit"
+          disabled={atLimit || !canSubmit}
+          className="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-800 hover:bg-brand-100 disabled:opacity-40"
+        >
+          Add
+        </button>
+      </form>
+      {message != null && <p className="text-xs text-ink-500">{message}</p>}
     </div>
   )
 }
@@ -556,7 +220,7 @@ function TaggedNoteSection<T extends string>({
   customTagGroup: CustomTagGroup
   playerName: string | null
   emphasizeAddLabel?: string | null
-  /** About them: library-only quick-add + Edit tags CTA. Built-ins stay for legacy note display. */
+  /** About them: library-only quick-add. Built-ins stay for legacy note display. */
   diyLibrary?: boolean
 }) {
   const [rememberedCustom, setRememberedCustom] = useState(() =>
@@ -637,10 +301,7 @@ function TaggedNoteSection<T extends string>({
         playerName={playerName}
         rememberedTags={rememberedCustom}
         onRememberedChange={setRememberedCustom}
-        selectedCustom={selectedCustom}
-        onSelectedCustomChange={onSelectedCustomChange}
         emphasizeAddLabel={emphasizeAddLabel}
-        diyLibrary={diyLibrary}
       />
     </section>
   )

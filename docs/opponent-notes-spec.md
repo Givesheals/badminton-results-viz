@@ -12,7 +12,7 @@ Players can capture **opponent notes** (scouting) and optional **match journal**
 
 Opponent notes are tied to a specific match and support doubles targeting: notes can apply to **the pair** or a **specific opponent**. Match journal notes apply to **the game itself** (how you played, conditions, partner context) and do not surface on future rematch prompts.
 
-**About them** uses a **build-your-own tag library** (two starter tags + Edit tags). **My game** keeps built-in + custom quick-add tags.
+**About them** uses a **build-your-own tag library** (two starter tags + light **Add a tag** while composing). Manage (add/remove) lives on the **Notes** tab. **My game** keeps built-in + custom quick-add tags.
 
 ---
 
@@ -205,14 +205,14 @@ Top-level mode tabs: **About them** | **My game** (game tab hidden for direct no
 - Segmented opponent control (doubles): opponent names first, **The pair** last — used after the first choice (or when editing)
 - **Combo note box** — textarea with selected tags inside the bordered area (tap tag to remove from this note)
 - **Quick-add row** below the box: `+ {tag}` for tags in the player's library that are not already on the note
-- **Edit tags** — high-weight CTA at the end of the quick-add row; opens **Your note tags** management panel
+- **Add a tag** — text field under the quick-add row; new labels join the library **and** this note (no rename / remove here)
 - **Applies to:** collapsed discipline scope — selected `S` / `D` / `XD` chips + **Change** link; expanded picker toggles all three scope chips + **Done**
 
 Default library (seeded once): *Flat-pace specialist*, *Weak forehand defence*. Playing-style tags are scoped to opponent vs pair target (separate libraries).
 
 #### My game tab
 
-Two sections, each with the combo-box + quick-add pattern (unchanged; built-in tags + `···` manage for customs):
+Two sections, each with the combo-box + quick-add pattern (built-in tags + **Add a tag** for customs; remove/manage on Notes tab):
 
 | Section | Text field | Built-in tag groups |
 |---------|------------|---------------------|
@@ -225,31 +225,27 @@ Two sections, each with the combo-box + quick-add pattern (unchanged; built-in t
 |--------|-----------|
 | Tap `+ {label}` below box | Add tag to this note (appears inside combo box) |
 | Tap tag inside combo box | Remove tag from **this note only** |
-| Tap **Edit tags** (About them) | Open **Your note tags** management panel |
-| Tap `···` (My game) | Open custom tag management panel |
+| **Add a tag** (compose) | Add to quick-add library **and** this note |
+| Notes tab **Your tags** | Add to library, or remove from library (optional strip from saved notes) |
 
-#### Your note tags panel (**Edit tags**)
+Rename / mass-edit of tag labels across notes is out of scope for now.
 
-Inline panel for managing the **About them tag library** (opponent or pair group):
+#### Your tags (Notes tab)
+
+Always-visible block at the **bottom** of the Notes tab for the quick-add libraries (Opponent / The pair; plus journal groups when My game UI is enabled):
 
 - **Add** new tag (subject to per-group limit)
-- **Rename** — optional checkbox to also rename on all saved notes that use it (shows count)
-- **Remove** from quick-add — optional checkbox to also remove from all saved notes (shows count)
-
-Footer copy explains that removing from quick-add does not change saved notes unless the user opts in. **Done** is a filled brand button closing the panel.
-
-#### Your tags panel (`···`, My game only)
-
-Same add / rename / remove behaviour for journal custom tags (`selfFeel`, `gameEvents`).
+- **Remove** from quick-add — primary action keeps the tag on saved notes; optional secondary strips it from notes that use it
 
 Save persists both modal modes. Delete is mode-specific: **Delete opponent note** / **Delete game note**.
 
 ### Notes tab (`OpponentNotesSection`)
 
-Two areas:
+Areas:
 
 1. **Opponent notes** — grouped by opponent name (pair-scoped notes appear under each player in the pair)
-2. **Match journal** — chronological game notes (`getMatchJournalNotes()`), not grouped by opponent
+2. **Match journal** — chronological game notes (`getMatchJournalNotes()`), not grouped by opponent (when enabled)
+3. **Your tags** — manage quick-add libraries (add / remove)
 
 **Review layout:**
 
@@ -269,6 +265,7 @@ Search matches body, journal fields, opponents, competition, disciplines, scope 
 | Custom tag library (localStorage) | `src/lib/customNoteTags.ts` |
 | Bulk tag rename/remove on notes | `src/lib/customTagNoteUpdates.ts` |
 | Tag picker + combo box UI | `src/components/notes/NoteTagPicker.tsx` |
+| Notes tab tag library (add/remove) | `src/components/notes/YourTagsSection.tsx` |
 | Modal UI | `src/components/notes/OpponentNoteModal.tsx` |
 | Notes tab | `src/components/notes/OpponentNotesSection.tsx` |
 | Persistence hook + bulk tag ops | `src/hooks/useOpponentNotes.ts` |
