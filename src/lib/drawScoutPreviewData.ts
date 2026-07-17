@@ -17,12 +17,14 @@ const simonXdOd: DrawDisciplineGroup[] = [
     disciplineCode: 'XD',
     disciplineLabel: 'Mixed Doubles',
     matchups: [
+      // Notes only (Murray note, no prior meeting)
       {
         id: 'd1',
         roundLabel: 'Group A',
         yourSide: [player('Simon Parker'), player('Sara Moore')],
         opponentSide: [player('Murray Wright'), player('Corinna Wong')],
       },
+      // Notes + games
       {
         id: 'd2',
         roundLabel: 'Group A',
@@ -38,17 +40,19 @@ const simonXdOd: DrawDisciplineGroup[] = [
     disciplineCode: 'OD',
     disciplineLabel: 'Open Doubles',
     matchups: [
+      // Games only (Gilhooly prior meeting, no notes)
       {
         id: 'd3',
         roundLabel: 'Group G',
         yourSide: [player('Martin Crossley'), player('Simon Parker')],
         opponentSide: [player('Simon Gilhooly'), player('Paul Andrew Mayfield')],
       },
+      // Neither notes nor games
       {
         id: 'd4',
         roundLabel: 'Group G',
         yourSide: [player('Martin Crossley'), player('Simon Parker')],
-        opponentSide: [player('Daniel Hughes'), player('Morgan Taylor')],
+        opponentSide: [player('Chris Nolan'), player('Alex Reid')],
       },
     ],
   },

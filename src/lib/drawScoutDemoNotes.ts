@@ -62,6 +62,7 @@ export const drawScoutDemoNotes: OpponentNote[] = [
       appliesToDisciplines: ['D'],
     },
   ),
+  // Murray is notes-only in the Cambs draw prototype (no prior meeting in demo matches).
   demoNote(
     'dan',
     'Dan Martyres',

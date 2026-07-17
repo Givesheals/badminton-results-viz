@@ -139,6 +139,8 @@ function DrawScoutNoteContent({
   )
 }
 
+type IntelPanelMode = 'notes' | 'games'
+
 function DrawScoutIntelBlock({
   title,
   notes,
@@ -147,7 +149,7 @@ function DrawScoutIntelBlock({
   hidePairScopeLine = false,
   resultItems,
   previousGamesAriaName,
-  autoOpenPreviousGames = false,
+  panel,
   viewingOwnDraw = true,
   disciplineCode,
 }: {
@@ -158,11 +160,13 @@ function DrawScoutIntelBlock({
   hidePairScopeLine?: boolean
   resultItems: ReturnType<typeof buildDrawScoutResultMatches>
   previousGamesAriaName: string
-  autoOpenPreviousGames?: boolean
+  panel: IntelPanelMode
   viewingOwnDraw?: boolean
   disciplineCode?: string | null
 }) {
-  if (notes.length === 0 && resultItems.length === 0) return null
+  const showNotes = panel === 'notes' && notes.length > 0
+  const showGames = panel === 'games' && resultItems.length > 0
+  if (!showNotes && !showGames) return null
 
   return (
     <div className="border-t border-ink-100 pt-3 first:border-t-0 first:pt-0">
@@ -170,7 +174,7 @@ function DrawScoutIntelBlock({
         <p className="text-sm font-semibold text-ink-900">{title}</p>
         {disciplineCode != null && <DisciplineChip code={disciplineCode} />}
       </div>
-      {notes.length > 0 && (
+      {showNotes && (
         <div className="mt-2 space-y-3">
           {notes.map((note) => (
             <DrawScoutNoteContent
@@ -183,14 +187,14 @@ function DrawScoutIntelBlock({
           ))}
         </div>
       )}
-      <DrawScoutPreviousGames
-        opponentName={previousGamesAriaName}
-        items={resultItems}
-        defaultOpen={autoOpenPreviousGames}
-        hasNotes={notes.length > 0}
-        viewingOwnDraw={viewingOwnDraw}
-        className={notes.length > 0 ? 'mt-3' : 'mt-2'}
-      />
+      {showGames && (
+        <DrawScoutPreviousGames
+          opponentName={previousGamesAriaName}
+          items={resultItems}
+          viewingOwnDraw={viewingOwnDraw}
+          className="mt-2"
+        />
+      )}
     </div>
   )
 }
@@ -203,7 +207,7 @@ function OpponentDrawIntelSection({
   playerName,
   matchByKey,
   disciplineCode,
-  autoOpenPreviousGames = false,
+  panel,
   viewingOwnDraw = true,
 }: {
   opponentName: string
@@ -213,7 +217,7 @@ function OpponentDrawIntelSection({
   playerName: string
   matchByKey: Map<string, NormalizedMatch>
   disciplineCode?: string | null
-  autoOpenPreviousGames?: boolean
+  panel: IntelPanelMode
   viewingOwnDraw?: boolean
 }) {
   const notes = useMemo(
@@ -248,7 +252,7 @@ function OpponentDrawIntelSection({
       drawnCoOpponent={coOpponentName}
       resultItems={resultItems}
       previousGamesAriaName={opponentName}
-      autoOpenPreviousGames={autoOpenPreviousGames}
+      panel={panel}
       viewingOwnDraw={viewingOwnDraw}
       disciplineCode={disciplineCode}
     />
@@ -261,7 +265,7 @@ function MatchupNotes({
   displayMatches,
   playerName,
   matchByKey,
-  autoOpenPreviousGames = false,
+  panel,
   viewingOwnDraw = true,
 }: {
   matchup: DrawMatchup
@@ -269,7 +273,7 @@ function MatchupNotes({
   displayMatches: NormalizedMatch[]
   playerName: string
   matchByKey: Map<string, NormalizedMatch>
-  autoOpenPreviousGames?: boolean
+  panel: IntelPanelMode
   viewingOwnDraw?: boolean
 }) {
   const opponentA = matchup.opponentSide[0] ?? null
@@ -301,7 +305,9 @@ function MatchupNotes({
     [matchByKey, pairNoteMatchKeys, pairPrevious.matches],
   )
 
-  const hasPairBlock = pairNotes.length > 0 || pairResultItems.length > 0
+  const hasPairBlock =
+    (panel === 'notes' && pairNotes.length > 0) ||
+    (panel === 'games' && pairResultItems.length > 0)
   const pairTitle =
     opponentA != null && opponentB != null
       ? `${opponentA.name} & ${opponentB.name}`
@@ -320,7 +326,8 @@ function MatchupNotes({
             playerName,
           )
         : getDrawScoutPreviousMatches(displayMatches, player.name, playerName)
-    return notes.length > 0 || history.matches.length > 0
+    if (panel === 'notes') return notes.length > 0
+    return history.matches.length > 0
   })
 
   if (!hasPairBlock && individuals.length === 0) return null
@@ -336,7 +343,7 @@ function MatchupNotes({
           hidePairScopeLine
           resultItems={pairResultItems}
           previousGamesAriaName={pairTitle}
-          autoOpenPreviousGames={autoOpenPreviousGames}
+          panel={panel}
           viewingOwnDraw={viewingOwnDraw}
         />
       )}
@@ -352,12 +359,63 @@ function MatchupNotes({
             displayMatches={displayMatches}
             playerName={playerName}
             matchByKey={matchByKey}
-            autoOpenPreviousGames={autoOpenPreviousGames}
+            panel={panel}
             viewingOwnDraw={viewingOwnDraw}
           />
         )
       })}
     </>
+  )
+}
+
+function MatchupIntelTabs({
+  active,
+  onChange,
+}: {
+  active: IntelPanelMode
+  onChange: (panel: IntelPanelMode) => void
+}) {
+  const tabs: { id: IntelPanelMode; label: string }[] = [
+    { id: 'notes', label: 'Notes' },
+    { id: 'games', label: 'Your games' },
+  ]
+
+  return (
+    <div
+      className="mb-3 flex gap-1 border-b border-ink-100"
+      role="tablist"
+      aria-label="Matchup intel"
+    >
+      {tabs.map((tab) => {
+        const selected = active === tab.id
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onChange(tab.id)}
+            className={`relative -mb-px px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
+              selected
+                ? tab.id === 'notes'
+                  ? 'text-notes-amber-ink'
+                  : 'text-brand-700'
+                : 'text-ink-500 hover:text-ink-800'
+            }`}
+          >
+            {tab.label}
+            {selected && (
+              <span
+                className={`absolute inset-x-1 bottom-0 h-0.5 rounded-full ${
+                  tab.id === 'notes' ? 'bg-notes-amber' : 'bg-brand-600'
+                }`}
+                aria-hidden
+              />
+            )}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -367,6 +425,7 @@ function MatchupBlock({
   displayMatches,
   playerName,
   matchByKey,
+  disciplineCode,
   viewingOwnDraw = true,
 }: {
   matchup: DrawMatchup
@@ -374,9 +433,11 @@ function MatchupBlock({
   displayMatches: NormalizedMatch[]
   playerName: string
   matchByKey: Map<string, NormalizedMatch>
+  disciplineCode: string
   viewingOwnDraw?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [panel, setPanel] = useState<IntelPanelMode>('notes')
   const counts = useMemo(
     () => getMatchupIntelCounts(matchup, displayNotes, displayMatches, playerName),
     [displayMatches, displayNotes, matchup, playerName],
@@ -384,30 +445,45 @@ function MatchupBlock({
   const teaser = formatMatchupIntelTeaser(counts.noteCount, counts.gamesPlayed, {
     viewingOwnDraw,
   })
-  const autoOpenPreviousGames = counts.noteCount === 0 && counts.gamesPlayed > 0
+  const showTabs = counts.noteCount > 0 && counts.gamesPlayed > 0
+  const resolvedPanel: IntelPanelMode = showTabs
+    ? panel
+    : counts.noteCount > 0
+      ? 'notes'
+      : 'games'
 
   if (teaser == null) {
-    return <DrawMatchupRow matchup={matchup} />
+    return <DrawMatchupRow matchup={matchup} disciplineCode={disciplineCode} />
   }
 
   return (
     <DrawMatchupRow
       matchup={matchup}
+      disciplineCode={disciplineCode}
       expandable={{
         open,
-        onToggle: () => setOpen((value) => !value),
+        onToggle: () => {
+          setOpen((value) => {
+            const next = !value
+            if (next) setPanel('notes')
+            return next
+          })
+        },
         teaser,
       }}
       notes={
-        <MatchupNotes
-          matchup={matchup}
-          displayNotes={displayNotes}
-          displayMatches={displayMatches}
-          playerName={playerName}
-          matchByKey={matchByKey}
-          autoOpenPreviousGames={autoOpenPreviousGames}
-          viewingOwnDraw={viewingOwnDraw}
-        />
+        <>
+          {showTabs && <MatchupIntelTabs active={panel} onChange={setPanel} />}
+          <MatchupNotes
+            matchup={matchup}
+            displayNotes={displayNotes}
+            displayMatches={displayMatches}
+            playerName={playerName}
+            matchByKey={matchByKey}
+            panel={resolvedPanel}
+            viewingOwnDraw={viewingOwnDraw}
+          />
+        </>
       }
     />
   )
@@ -446,6 +522,7 @@ function RoundGroupBlock({
             displayMatches={displayMatches}
             playerName={playerName}
             matchByKey={matchByKey}
+            disciplineCode={disciplineCode}
             viewingOwnDraw={viewingOwnDraw}
           />
         ))}
@@ -753,23 +830,40 @@ function resolvePlayerOption(query: string, options: PlayerOption[]): PlayerOpti
   return options.find((option) => matchPlayerOption(normalized, option)) ?? null
 }
 
+function FavouriteStarIcon() {
+  return (
+    <svg
+      className="h-3 w-3 shrink-0 text-level-gold"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+    </svg>
+  )
+}
+
 function PlayerChip({
   label,
   selected,
   onClick,
+  showFavouriteStar = false,
 }: {
   label: string
   selected: boolean
   onClick: () => void
+  showFavouriteStar?: boolean
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium transition ${
+      aria-label={showFavouriteStar ? `${label} (favourite)` : undefined}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition ${
         selected ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-700 hover:bg-ink-200'
       }`}
     >
+      {showFavouriteStar && <FavouriteStarIcon />}
       {label}
     </button>
   )
@@ -974,6 +1068,7 @@ function PlayerCombobox({
               label={option.label}
               selected={value === option.name}
               onClick={() => selectOption(option)}
+              showFavouriteStar
             />
           ))}
           {hiddenFavouriteCount > 0 && !showAllFavourites && (

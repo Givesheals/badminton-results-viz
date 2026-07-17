@@ -1,11 +1,15 @@
 import type { ReactNode } from 'react'
 import type { MatchupIntelTeaser } from '../../lib/drawScout'
 import type { DrawMatchup, DrawPlayer } from '../../lib/drawTypes'
+import { getDisciplineStyle } from '../../lib/disciplineStyle'
 
 export const DRAW_MATCHUP_GRID =
   'grid grid-cols-[5rem_1fr_1fr] items-start gap-x-3 gap-y-1.5'
 
 const DRAW_SIDES_GRID = 'grid grid-cols-2 items-start gap-x-3 gap-y-1.5'
+
+/** Reserves space so games never slide into the notes badge slot. */
+const NOTES_BADGE_SLOT = 'inline-flex min-h-[1.375rem] min-w-[5.75rem] items-center'
 
 function PlayerNames({ players }: { players: DrawPlayer[] }) {
   return (
@@ -41,20 +45,15 @@ function ChevronIcon({ open }: { open: boolean }) {
 }
 
 function MatchupIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
-  const showDot = teaser.notesCta != null && teaser.gamesLabel != null
-
   return (
     <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-      {teaser.notesCta != null && (
-        <span className="inline-flex items-center rounded-md bg-ink-100 px-2 py-0.5 text-xs font-semibold text-ink-800">
-          {teaser.notesCta}
-        </span>
-      )}
-      {showDot && (
-        <span className="text-sm text-ink-300" aria-hidden>
-          ·
-        </span>
-      )}
+      <span className={NOTES_BADGE_SLOT}>
+        {teaser.notesCta != null ? (
+          <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-2 py-0.5 text-xs font-semibold text-notes-amber-ink">
+            {teaser.notesCta}
+          </span>
+        ) : null}
+      </span>
       {teaser.gamesLabel != null && (
         <span className="text-sm text-ink-500">{teaser.gamesLabel}</span>
       )}
@@ -77,13 +76,21 @@ type Props = {
   notes?: ReactNode
   /** When set, the whole matchup row toggles expand/collapse. */
   expandable?: ExpandableProps
+  /** Discipline for the header-only left edge accent. */
+  disciplineCode?: string
 }
 
 /**
  * Draw matchup row. Default: two columns (your side | opponents). With `label`,
  * adds the round column used in draw-out email previews.
  */
-export function DrawMatchupRow({ label, matchup, notes, expandable }: Props) {
+export function DrawMatchupRow({
+  label,
+  matchup,
+  notes,
+  expandable,
+  disciplineCode,
+}: Props) {
   const sides =
     label != null ? (
       <>
@@ -100,6 +107,7 @@ export function DrawMatchupRow({ label, matchup, notes, expandable }: Props) {
 
   const gridClass = label != null ? DRAW_MATCHUP_GRID : DRAW_SIDES_GRID
   const notesSpan = label != null ? 'col-span-3' : 'col-span-2'
+  const disciplineStyle = getDisciplineStyle(disciplineCode ?? '')
 
   if (expandable != null) {
     return (
@@ -109,7 +117,7 @@ export function DrawMatchupRow({ label, matchup, notes, expandable }: Props) {
             type="button"
             onClick={expandable.onToggle}
             aria-expanded={expandable.open}
-            className="flex w-full items-stretch gap-2 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200"
+            className={`flex w-full items-stretch gap-2 rounded-r border-l-4 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200 ${disciplineStyle.borderClass}`}
           >
             <div className="min-w-0 flex-1 px-3 py-3">
               <div className={gridClass}>{sides}</div>
@@ -131,7 +139,9 @@ export function DrawMatchupRow({ label, matchup, notes, expandable }: Props) {
   }
 
   return (
-    <div className={`${gridClass} border-t border-ink-100 py-3 first:border-t-0`}>
+    <div
+      className={`${gridClass} rounded-r border-l-4 border-t border-ink-100 py-3 pl-2 first:border-t-0 ${disciplineStyle.borderClass}`}
+    >
       {sides}
       {notes != null && <div className={`${notesSpan} space-y-2`}>{notes}</div>}
     </div>

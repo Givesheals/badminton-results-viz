@@ -135,16 +135,16 @@ Notes tab
 ```
 Draw scout card
 ├── Competition picker (always visible when card is shown)
-├── Player picker (combobox)
+├── Player picker (combobox; favourite chips show a gold star)
 ├── Context line (when viewing someone else's draw)
 ├── Draw by discipline
 │   └── Matchup block (per round)
-│       ├── Your side vs opponent side (whole row tappable when intel exists)
-│       ├── Collapsed teaser: "View notes · Your games: {m}" (notes CTA first; games secondary)
-│       └── Expanded (flat, no nested cards):
-│           ├── Exact pairing block first (pair notes + games vs both)
-│           ├── Then each opponent alone (solo / other-partner notes + games without partner)
-│           └── Previous games: flat expand/collapse (auto-open when matchup has no notes)
+│       ├── Header: discipline left edge + your side vs opponents (tappable when intel exists)
+│       ├── Collapsed teaser: reserved notes-badge slot (amber “View notes” when present) + “Your games: {m}”
+│       └── Expanded:
+│           ├── Tabs “Notes” / “Your games” only when both exist (default Notes); otherwise single panel
+│           ├── Exact pairing block first (pair notes or games vs both, per active panel)
+│           └── Then each opponent alone (solo / other-partner notes or games without partner)
 └── "You may also meet" (collapsible; knockout-path opponents with notes)
 ```
 
@@ -413,14 +413,22 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 │ ┌─ DRAW SCOUT ────────────────────────────────┐ │
 │ │ Competition  [ Cambs Senior Bronze · 12 Jul ▼]│
 │ │ Whose draw   [ Simon Parker (you)            ▼]│
+│ │ ★ Sara  ★ Martin   ← favourite chips with star │
 │ │                                              │ │
 │ │ ● Mixed Doubles · Group A                    │ │
-│ │   ┌─────────────────────────────────────┬──┐ │ │
+│ │   ┌▌────────────────────────────────────┬──┐ │ │  ← discipline left edge on header
 │ │   │ You & Sara │ Murray & Corinna       │▾ │ │ │
-│ │   │ View notes · Your games: 1          │  │ │ │
+│ │   │ [View notes]     (games slot empty) │  │ │ │  ← reserved notes badge slot
 │ │   ├─────────────────────────────────────┴──┤ │ │
-│ │   │ Murray Wright — [tags] “note…”         │ │ │
-│ │   │ [ Your games: 1 ▾ ] note game marked   │ │ │
+│ │   │ Notes panel (no tabs — notes only)     │ │ │
+│ │   └────────────────────────────────────────┘ │ │
+│ │                                              │ │
+│ │   ┌▌────────────────────────────────────┬──┐ │ │
+│ │   │ You & Sara │ Dan & Alisha           │▾ │ │ │
+│ │   │ [View notes]  Your games: 2         │  │ │ │
+│ │   ├─────────────────────────────────────┴──┤ │ │
+│ │   │ [ Notes ] [ Your games ]  ← tabs both  │ │ │
+│ │   │ pair / solo content for active panel   │ │ │
 │ │   └────────────────────────────────────────┘ │ │
 │ │                                              │ │
 │ │ ▾ You may also meet (2)                      │ │
@@ -430,3 +438,7 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 │ …existing library…                               │
 └─────────────────────────────────────────────────┘
 ```
+
+**Prototype matchup fixtures (Simon’s Cambs draw):** notes-only (Murray), both (Dan & Alisha), games-only (Gilhooly & Mayfield), neither (Chris Nolan & Alex Reid).
+
+**Notes accent:** soft amber on the View notes badge, Notes tab indicator, and “Note from this game” labels. Brand purple remains for clickable chrome (selected chips, primary buttons).

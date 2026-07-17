@@ -135,7 +135,7 @@ describe('drawScout', () => {
     const notes = [
       noteFor('Murray Wright'),
       noteFor('Dan Martyres'),
-      noteFor('Daniel Hughes'),
+      noteFor('Alisha Johnson'),
       noteFor('Ben Carter'),
     ]
     expect(countDrawOpponentsWithNotes(cambs, simon, notes)).toBe(4)
@@ -234,7 +234,8 @@ describe('drawScout', () => {
   })
 
   it('counts notes and unique previous meetings across a matchup', () => {
-    const matchup = simon.disciplineGroups[0]!.matchups[0]!
+    // Dan & Alisha: notes + games (both). Murray is notes-only in the prototype fixtures.
+    const matchup = simon.disciplineGroups[0]!.matchups[1]!
     const counts = getMatchupIntelCounts(
       matchup,
       mergeDrawScoutDisplayNotes([]),
@@ -243,6 +244,38 @@ describe('drawScout', () => {
     )
     expect(counts.noteCount).toBeGreaterThan(0)
     expect(counts.gamesPlayed).toBeGreaterThan(0)
+  })
+
+  it('covers notes-only, games-only, both, and neither matchup fixtures', () => {
+    const notes = mergeDrawScoutDisplayNotes([])
+    const [xd, od] = simon.disciplineGroups
+    const murray = getMatchupIntelCounts(xd!.matchups[0]!, notes, drawScoutDemoMatches, 'Simon Parker')
+    const danAlisha = getMatchupIntelCounts(
+      xd!.matchups[1]!,
+      notes,
+      drawScoutDemoMatches,
+      'Simon Parker',
+    )
+    const gilHooly = getMatchupIntelCounts(
+      od!.matchups[0]!,
+      notes,
+      drawScoutDemoMatches,
+      'Simon Parker',
+    )
+    const neither = getMatchupIntelCounts(
+      od!.matchups[1]!,
+      notes,
+      drawScoutDemoMatches,
+      'Simon Parker',
+    )
+
+    expect(murray).toEqual({ noteCount: expect.any(Number), gamesPlayed: 0 })
+    expect(murray.noteCount).toBeGreaterThan(0)
+    expect(danAlisha.noteCount).toBeGreaterThan(0)
+    expect(danAlisha.gamesPlayed).toBeGreaterThan(0)
+    expect(gilHooly.noteCount).toBe(0)
+    expect(gilHooly.gamesPlayed).toBeGreaterThan(0)
+    expect(neither).toEqual({ noteCount: 0, gamesPlayed: 0 })
   })
 
   it('puts exact draw-pair notes ahead of individual notes for Dan & Alisha', () => {

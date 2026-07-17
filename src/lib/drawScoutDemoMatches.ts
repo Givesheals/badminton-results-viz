@@ -86,23 +86,8 @@ function demoMatch(options: {
   }
 }
 
-/** Example previous meetings aligned with draw scout demo notes. */
+/** Example previous meetings aligned with draw scout demo notes / matchup states. */
 export const drawScoutDemoMatches: NormalizedMatch[] = [
-  demoMatch({
-    competitionName: 'Norfolk Restricted 2025',
-    date: '2025-09-14',
-    discipline: 'MD',
-    disciplineLabel: "Men's doubles",
-    playerName: PLAYER,
-    partnerName: 'Martin Crossley',
-    opponent1: 'Murray Wright',
-    opponent2: 'James Chen',
-    outcome: 'win',
-    scores: [
-      [21, 15],
-      [21, 18],
-    ],
-  }),
   demoMatch({
     competitionName: 'Suffolk Bronze 2026',
     date: '2026-02-02',
@@ -180,6 +165,22 @@ export const drawScoutDemoMatches: NormalizedMatch[] = [
       [19, 21],
       [21, 18],
       [18, 21],
+    ],
+  }),
+  /** Games-only fixture for Simon’s Group G vs Gilhooly / Mayfield (no notes). */
+  demoMatch({
+    competitionName: 'Bedfordshire Open 2025',
+    date: '2025-06-08',
+    discipline: 'OD',
+    disciplineLabel: 'Open doubles',
+    playerName: PLAYER,
+    partnerName: 'Martin Crossley',
+    opponent1: 'Simon Gilhooly',
+    opponent2: 'Ryan Cole',
+    outcome: 'win',
+    scores: [
+      [21, 18],
+      [21, 16],
     ],
   }),
   demoMatch({

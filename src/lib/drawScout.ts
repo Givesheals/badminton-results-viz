@@ -360,7 +360,7 @@ export function getIndividualDrawScoutNotes(
 
 /**
  * Collapsed draw-scout teaser. Prefers a notes CTA when personal notes exist;
- * history-only rows keep the games label (no “No notes” shout).
+ * history-only rows keep the games label (UI still reserves the notes badge slot).
  * Null when there is nothing to open.
  */
 export type MatchupIntelTeaser = {

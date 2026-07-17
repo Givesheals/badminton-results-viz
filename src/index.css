@@ -63,6 +63,11 @@
   --color-discipline-doubles-soft: #f8f9fd;
   --color-discipline-singles-soft: #fcfaf5;
 
+  /* Soft amber drip for notes identity (badges / tab accents) — not clickable chrome */
+  --color-notes-amber: #d4a017;
+  --color-notes-amber-soft: #fbf6e8;
+  --color-notes-amber-ink: #7a5a0a;
+
   --color-surface-border: #d0d2dc;
   --border-width-card: 1.5px;
 }
