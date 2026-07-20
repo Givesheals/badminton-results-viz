@@ -20,13 +20,13 @@ function demoRow(
     Round: 'Group A',
     Discipline: discipline,
     'Player Name': playerName,
-    'Player Rating': 1250,
+    'Player Rating': 125,
     'Partner Name': partnerName ?? '',
-    'Partner Rating': partnerName ? 1180 : '',
+    'Partner Rating': partnerName ? 118 : '',
     'Opponent 1 Name': opponent1,
-    'Opponent 1 Rating': 1300,
+    'Opponent 1 Rating': 130,
     'Opponent 2 Name': opponent2 ?? '',
-    'Opponent 2 Rating': opponent2 ? 1220 : '',
+    'Opponent 2 Rating': opponent2 ? 122 : '',
     'Score Text': scores.map(([p, o]) => `${p}-${o}`).join(', '),
   }
 
@@ -81,7 +81,7 @@ function demoMatch(options: {
     outcome: options.outcome,
     nonCompetitiveReason: null,
     scoreSummary: String(raw['Score Text']),
-    playerRating: 1250,
+    playerRating: 125,
     raw,
   }
 }
@@ -196,6 +196,39 @@ export const drawScoutDemoMatches: NormalizedMatch[] = [
     scores: [
       [21, 16],
       [21, 14],
+    ],
+  }),
+  /** Games-only later-round fixture (QF: Oliver & Sophie — no notes). */
+  demoMatch({
+    competitionName: 'Norfolk Bronze 2026',
+    date: '2026-02-22',
+    discipline: 'XD',
+    disciplineLabel: 'Mixed doubles',
+    playerName: PLAYER,
+    partnerName: 'Sara Moore',
+    opponent1: 'Oliver Brooks',
+    opponent2: 'Sophie Lane',
+    outcome: 'loss',
+    scores: [
+      [19, 21],
+      [21, 18],
+      [16, 21],
+    ],
+  }),
+  /** Games-only later-round fixture (SF: Felix & Chloe — no notes). */
+  demoMatch({
+    competitionName: 'Hertfordshire Bronze 2026',
+    date: '2026-03-15',
+    discipline: 'XD',
+    disciplineLabel: 'Mixed doubles',
+    playerName: PLAYER,
+    partnerName: 'Sara Moore',
+    opponent1: 'Felix Grant',
+    opponent2: 'Chloe Adams',
+    outcome: 'win',
+    scores: [
+      [21, 17],
+      [21, 19],
     ],
   }),
 ]

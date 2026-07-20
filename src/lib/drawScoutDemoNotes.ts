@@ -140,6 +140,17 @@ export const drawScoutDemoNotes: OpponentNote[] = [
       tags: { customOpponentStyles: ['Defensive'] },
     },
   ),
+  // Later-round notes-only fixture (Helena in semis; no prior meeting in demo matches).
+  demoNote(
+    'helena',
+    'Helena Croft',
+    'Steep smash from mid-court and rushes the net after. Soften the pace and move her side to side.',
+    {
+      competitionName: 'Suffolk Open 2025',
+      date: '2025-10-05',
+      tags: { customOpponentStyles: ['Steep smash', 'Rushes the net'] },
+    },
+  ),
 ]
 
 function opponentNamesFromNote(note: OpponentNote): string[] {

@@ -140,7 +140,7 @@ Draw scout card
 ├── Draw by discipline
 │   └── Matchup block (per round)
 │       ├── Header: discipline left edge + your side vs opponents (tappable when intel exists)
-│       ├── Collapsed teaser: reserved notes-badge slot (amber “View notes” when present) + “Your games: {m}”
+│       ├── Collapsed teaser: reserved notes-badge slot (amber “View notes” when present) + quiet “Played you: {m}”
 │       └── Expanded:
 │           ├── Tabs “Notes” / “Your games” only when both exist (default Notes); otherwise single panel
 │           ├── Exact pairing block first (pair notes or games vs both, per active panel)
@@ -213,10 +213,24 @@ Reuse existing UI primitives from `OpponentNotesSection` (`NoteEntry`, `Discipli
 
 ### “You may also meet”
 
-Opponents entered in the same competition draw who are **not** in the viewed player’s current groups, but whom the user might face in knockouts — same semantics as the old email panel.
+Per discipline, show knockout opponents the viewed player might face **outside their current groups** — grouped by **round**, then ranked by **probability** within each round (percentages in a round sum to 100%).
 
-- Collapsed by default
-- Only opponents the user has personal notes on
+- One section per entered discipline (not a single card-level panel)
+- Round headers (Quarter-finals, Semi-finals, …) with opponents sorted most likely first
+- Leading **53%** badge (option A), opponent pair names below
+- Top **2** opponents visible per round; “+N more in quarter-finals” reveals the rest
+- All plausible opponents shown (not filtered to those with notes)
+- Rows with notes or previous games expand into Notes / Your games tabs (same as draw matchups)
+- Rows without intel use the same card shell with “No notes or games yet” (not expandable)
+
+```typescript
+type DrawScoutLaterOpponent = {
+  opponentSide: DrawPlayer[]   // 1 = singles, 2 = pair
+  disciplineCode: string
+  roundLabel: string
+  probability: number        // 0–1; same discipline + round sums to 1
+}
+```
 
 ---
 
@@ -304,8 +318,10 @@ type DrawScoutEntrant = {
 }
 
 type DrawScoutLaterOpponent = {
-  name: string
-  facingLabel: string // e.g. 'Open Doubles · Quarter-finals'
+  opponentSide: DrawPlayer[]
+  disciplineCode: string
+  roundLabel: string
+  probability: number
 }
 ```
 
@@ -341,7 +357,7 @@ Count distinct opponent names across all matchups + later opponents where `getNo
 | `DrawScoutCompetitionPicker` | Dropdown + search |
 | `DrawScoutPlayerPicker` | Combobox with favourites section |
 | `DrawScoutMatchupBlock` | One round row + nested notes |
-| `DrawScoutLaterSection` | Collapsible “You may also meet” |
+| `DrawScoutLaterSection` | Per-discipline “You may also meet” grouped by round |
 | `TournamentRecapSection` | Mount `DrawScoutCard` above tournament recap; “Explore a draw →” in Events header |
 
 Extract shared note row rendering from `OpponentNotesSection` if needed to avoid duplication (`DrawScoutNoteList` or shared `NoteEntry`).
@@ -423,7 +439,8 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 │ │                                              │ │
 │ │ ● Mixed Doubles · Group A                    │ │
 │ │   …matchup cards…                            │ │
-│ │ ▾ You may also meet (2)                      │ │
+│ │   You may also meet                          │ │
+│ │     Quarter-finals · 45% Tom & Lucy …        │ │
 │ └──────────────────────────────────────────────┘ │
 │                                                  │
 │ ┌─ TOURNAMENT RECAP ──── [Explore a draw →] ──┐ │

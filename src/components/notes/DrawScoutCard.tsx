@@ -1,19 +1,23 @@
 import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { getDisciplineFamily } from '../../lib/disciplineStyle'
+import { getDisciplineFamily, getDisciplineStyle } from '../../lib/disciplineStyle'
 import {
-  filterLaterOpponentsWithViewerIntel,
+  filterLaterOpponentsByDiscipline,
   formatCompetitionDateRange,
   formatCompetitionPickerLabel,
+  formatLaterOpponentProbability,
   formatMatchupIntelTeaser,
   getDefaultCompetitionSlug,
   getDefaultPlayerName,
   getEntrantForCompetition,
   getExactDrawPairNotes,
   getIndividualDrawScoutNotes,
+  getLaterOpponentIntelCounts,
   getMatchupIntelCounts,
   groupLaterOpponentsByRound,
   groupMatchupsByRound,
+  laterOpponentKey,
+  laterOpponentToMatchup,
   listActiveDrawScoutCompetitions,
   shouldAutoShowDrawScoutCard,
   type DrawScoutCompetition,
@@ -24,8 +28,8 @@ import {
   mergeDrawScoutDisplayNotes,
 } from '../../lib/drawScoutDemoNotes'
 import { readDrawScoutDeepLink } from '../../lib/drawScoutDeepLink'
-import { drawScoutPreviewCompetitions } from '../../lib/drawScoutPreviewData'
-import type { DrawDisciplineGroup, DrawMatchup } from '../../lib/drawTypes'
+import { getDrawScoutPreviewCompetitions } from '../../lib/drawScoutPreviewData'
+import type { DrawDisciplineGroup, DrawMatchup, DrawPlayer } from '../../lib/drawTypes'
 import { formatScoutingTagsForDisplay } from '../../lib/noteTags'
 import {
   formatNoteRecordedSummary,
@@ -42,6 +46,7 @@ import {
 } from '../../lib/drawScoutMatches'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { DisciplineChip } from '../discipline/DisciplineChip'
+import type { MatchupIntelTeaser } from '../../lib/drawScout'
 import { DrawMatchupRow } from './DrawMatchupRow'
 import { DrawScoutPreviousGames } from './DrawScoutPreviousGames'
 import { NoteTagChips } from './NoteTagPicker'
@@ -332,8 +337,9 @@ function MatchupNotes({
 
   if (!hasPairBlock && individuals.length === 0) return null
 
+  // Wrapper so `first:border-t-0` on intel blocks works even when tabs sit above as a sibling.
   return (
-    <>
+    <div>
       {hasPairBlock && opponentA != null && opponentB != null && (
         <DrawScoutIntelBlock
           title={pairTitle}
@@ -364,7 +370,7 @@ function MatchupNotes({
           />
         )
       })}
-    </>
+    </div>
   )
 }
 
@@ -531,22 +537,321 @@ function RoundGroupBlock({
   )
 }
 
-function DisciplineBlock({
+function LaterOpponentNames({ players }: { players: DrawPlayer[] }) {
+  return (
+    <div className="space-y-0.5">
+      {players.map((player, index) => (
+        <div key={player.name} className="text-sm leading-snug text-ink-900">
+          {player.seedLabel && (
+            <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
+          )}
+          {player.name}
+          {index < players.length - 1 && <span className="text-ink-400"> &</span>}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const NOTES_BADGE_SLOT = 'inline-flex min-h-[1.375rem] min-w-[5.75rem] items-center'
+
+function LaterOpponentIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className={NOTES_BADGE_SLOT}>
+        {teaser.notesCta != null ? (
+          <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-2 py-0.5 text-xs font-semibold text-notes-amber-ink">
+            {teaser.notesCta}
+          </span>
+        ) : null}
+      </span>
+      {teaser.gamesLabel != null && (
+        <span className="text-sm font-medium text-ink-600">{teaser.gamesLabel}</span>
+      )}
+    </div>
+  )
+}
+
+function LaterOpponentBlock({
+  opponent,
+  displayNotes,
+  displayMatches,
+  playerName,
+  matchByKey,
+  disciplineCode,
+  viewingOwnDraw = true,
+}: {
+  opponent: DrawScoutLaterOpponent
+  displayNotes: OpponentNote[]
+  displayMatches: NormalizedMatch[]
+  playerName: string
+  matchByKey: Map<string, NormalizedMatch>
+  disciplineCode: string
+  viewingOwnDraw?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [panel, setPanel] = useState<IntelPanelMode>('notes')
+  const matchup = useMemo(() => laterOpponentToMatchup(opponent), [opponent])
+  const counts = useMemo(
+    () => getLaterOpponentIntelCounts(opponent, displayNotes, displayMatches, playerName),
+    [displayMatches, displayNotes, opponent, playerName],
+  )
+  const teaser = formatMatchupIntelTeaser(counts.noteCount, counts.gamesPlayed, {
+    viewingOwnDraw,
+  })
+  const showTabs = counts.noteCount > 0 && counts.gamesPlayed > 0
+  const resolvedPanel: IntelPanelMode = showTabs
+    ? panel
+    : counts.noteCount > 0
+      ? 'notes'
+      : 'games'
+  const disciplineStyle = getDisciplineStyle(disciplineCode)
+  const cardShell = 'overflow-hidden rounded-xl border border-ink-100 bg-white shadow-sm'
+  const probabilityLabel = formatLaterOpponentProbability(opponent.probability)
+
+  const body = (
+    <>
+      <div className="flex items-start gap-3">
+        <span className="inline-flex shrink-0 items-center rounded-md bg-brand-50 px-2 py-1 text-xs font-bold tabular-nums text-brand-800">
+          {probabilityLabel}
+        </span>
+        <LaterOpponentNames players={opponent.opponentSide} />
+      </div>
+      {teaser != null ? (
+        <LaterOpponentIntelTeaserLine teaser={teaser} />
+      ) : (
+        <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
+      )}
+    </>
+  )
+
+  if (teaser == null) {
+    return (
+      <div className="border-t border-ink-100 py-2 first:border-t-0 first:pt-0">
+        <div className={cardShell}>
+          <div className={`rounded-r border-l-4 px-3 py-3 ${disciplineStyle.borderClass}`}>
+            {body}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="border-t border-ink-100 py-2 first:border-t-0 first:pt-0">
+      <div className={cardShell}>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen((value) => {
+              const next = !value
+              if (next) setPanel('notes')
+              return next
+            })
+          }}
+          aria-expanded={open}
+          className={`flex w-full items-stretch gap-2 rounded-r border-l-4 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200 ${disciplineStyle.borderClass}`}
+        >
+          <div className="min-w-0 flex-1 px-3 py-3">{body}</div>
+          <span
+            className="flex w-11 shrink-0 items-center justify-center border-l border-ink-100 bg-ink-50/70"
+            aria-hidden
+          >
+            <ChevronIcon open={open} />
+          </span>
+        </button>
+        {open && (
+          <div className="space-y-2 border-t border-ink-100 bg-ink-50/40 px-3 py-3">
+            {showTabs && <MatchupIntelTabs active={panel} onChange={setPanel} />}
+            <MatchupNotes
+              matchup={matchup}
+              displayNotes={displayNotes}
+              displayMatches={displayMatches}
+              playerName={playerName}
+              matchByKey={matchByKey}
+              panel={resolvedPanel}
+              viewingOwnDraw={viewingOwnDraw}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const LATER_OPPONENTS_INITIAL_VISIBLE = 2
+
+function LaterOpponentRoundGroup({
   group,
   displayNotes,
   displayMatches,
   playerName,
   matchByKey,
+  disciplineCode,
+  viewingOwnDraw,
+}: {
+  group: LaterOpponentRoundGroup
+  displayNotes: OpponentNote[]
+  displayMatches: NormalizedMatch[]
+  playerName: string
+  matchByKey: Map<string, NormalizedMatch>
+  disciplineCode: string
+  viewingOwnDraw: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [showAll, setShowAll] = useState(false)
+  const visibleOpponents = showAll
+    ? group.opponents
+    : group.opponents.slice(0, LATER_OPPONENTS_INITIAL_VISIBLE)
+  const hiddenCount = group.opponents.length - visibleOpponents.length
+
+  return (
+    <div className="mt-3 first:mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center justify-between rounded-lg bg-ink-100 px-3 py-2 text-left transition hover:bg-ink-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+        aria-expanded={open}
+      >
+        <h5 className="text-sm font-semibold text-ink-900">{group.roundLabel}</h5>
+        <ChevronIcon open={open} />
+      </button>
+      {open && (
+        <>
+          <div
+            className={`mt-1 ${
+              (hiddenCount > 0 && !showAll) ||
+              (showAll && group.opponents.length > LATER_OPPONENTS_INITIAL_VISIBLE)
+                ? '[&>div:last-child]:pb-0'
+                : ''
+            }`}
+          >
+            {visibleOpponents.map((opponent) => (
+              <LaterOpponentBlock
+                key={laterOpponentKey(opponent)}
+                opponent={opponent}
+                displayNotes={displayNotes}
+                displayMatches={displayMatches}
+                playerName={playerName}
+                matchByKey={matchByKey}
+                disciplineCode={disciplineCode}
+                viewingOwnDraw={viewingOwnDraw}
+              />
+            ))}
+          </div>
+          {hiddenCount > 0 && !showAll && (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="mt-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+            >
+              Show more
+            </button>
+          )}
+          {showAll && group.opponents.length > LATER_OPPONENTS_INITIAL_VISIBLE && (
+            <button
+              type="button"
+              onClick={() => setShowAll(false)}
+              className="mt-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+            >
+              Show less
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function DisciplineLaterSection({
+  laterOpponents,
+  disciplineCode,
+  displayNotes,
+  displayMatches,
+  playerName,
+  matchByKey,
+  viewingOwnDraw,
+  viewedPlayerName,
+}: {
+  laterOpponents: DrawScoutLaterOpponent[]
+  disciplineCode: string
+  displayNotes: OpponentNote[]
+  displayMatches: NormalizedMatch[]
+  playerName: string
+  matchByKey: Map<string, NormalizedMatch>
+  viewingOwnDraw: boolean
+  viewedPlayerName: string
+}) {
+  const [open, setOpen] = useState(false)
+  const roundGroups = useMemo(
+    () => groupLaterOpponentsByRound(laterOpponents),
+    [laterOpponents],
+  )
+
+  if (roundGroups.length === 0) return null
+
+  const title = viewingOwnDraw ? 'You may also meet' : `${viewedPlayerName} may also meet`
+  const helper = viewingOwnDraw
+    ? 'Possible knockout opponents in this event, most likely first.'
+    : `Possible knockout opponents for ${viewedPlayerName} in this event, most likely first.`
+
+  return (
+    <div className="mt-4">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center gap-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+        aria-expanded={open}
+      >
+        <span className="text-sm font-semibold text-ink-800">{title}</span>
+        <ChevronIcon open={open} />
+      </button>
+      <p className="mt-0.5 text-xs text-ink-500">{helper}</p>
+      {open && (
+        <div>
+          {roundGroups.map((group) => (
+            <LaterOpponentRoundGroup
+              key={group.roundLabel}
+              group={group}
+              displayNotes={displayNotes}
+              displayMatches={displayMatches}
+              playerName={playerName}
+              matchByKey={matchByKey}
+              disciplineCode={disciplineCode}
+              viewingOwnDraw={viewingOwnDraw}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DisciplineBlock({
+  group,
+  laterOpponents,
+  displayNotes,
+  displayMatches,
+  playerName,
+  matchByKey,
   viewingOwnDraw = true,
+  viewedPlayerName,
 }: {
   group: DrawDisciplineGroup
+  laterOpponents: DrawScoutLaterOpponent[]
   displayNotes: OpponentNote[]
   displayMatches: NormalizedMatch[]
   playerName: string
   matchByKey: Map<string, NormalizedMatch>
   viewingOwnDraw?: boolean
+  viewedPlayerName: string
 }) {
   const dotClass = DISCIPLINE_DOT[getDisciplineFamily(group.disciplineCode)]
+  const disciplineLaterOpponents = useMemo(
+    () => filterLaterOpponentsByDiscipline(laterOpponents, group.disciplineCode),
+    [group.disciplineCode, laterOpponents],
+  )
+
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -567,146 +872,17 @@ function DisciplineBlock({
             viewingOwnDraw={viewingOwnDraw}
           />
         ))}
+        <DisciplineLaterSection
+          laterOpponents={disciplineLaterOpponents}
+          disciplineCode={group.disciplineCode}
+          displayNotes={displayNotes}
+          displayMatches={displayMatches}
+          playerName={playerName}
+          matchByKey={matchByKey}
+          viewingOwnDraw={viewingOwnDraw}
+          viewedPlayerName={viewedPlayerName}
+        />
       </div>
-    </div>
-  )
-}
-
-const LATER_OPPONENTS_INITIAL_VISIBLE = 3
-
-function LaterRoundGroup({
-  group,
-  displayNotes,
-  displayMatches,
-  playerName,
-  matchByKey,
-  viewingOwnDraw,
-  viewedPlayerName,
-  isFirst = false,
-}: {
-  group: LaterOpponentRoundGroup
-  displayNotes: OpponentNote[]
-  displayMatches: NormalizedMatch[]
-  playerName: string
-  matchByKey: Map<string, NormalizedMatch>
-  viewingOwnDraw: boolean
-  viewedPlayerName: string
-  isFirst?: boolean
-}) {
-  const [showAll, setShowAll] = useState(false)
-  const visibleOpponents = showAll
-    ? group.opponents
-    : group.opponents.slice(0, LATER_OPPONENTS_INITIAL_VISIBLE)
-  const hiddenCount = group.opponents.length - visibleOpponents.length
-  const roundContext = viewingOwnDraw
-    ? 'Opponents you could face'
-    : `Opponents ${viewedPlayerName} could face`
-
-  return (
-    <div className={isFirst ? undefined : 'mt-5 border-t border-ink-200 pt-5'}>
-      <div className="rounded-lg bg-ink-100 px-3 py-2">
-        <h5 className="text-sm font-semibold text-ink-900">{group.roundLabel}</h5>
-        <p className="mt-0.5 text-xs text-ink-500">{roundContext}</p>
-      </div>
-      <div className="mt-3 space-y-4">
-        {visibleOpponents.map((opponent) => (
-          <OpponentDrawIntelSection
-            key={`${group.roundLabel}-${opponent.name}-${opponent.disciplineCode}`}
-            opponentName={opponent.name}
-            coOpponentName={null}
-            displayNotes={displayNotes}
-            displayMatches={displayMatches}
-            playerName={playerName}
-            matchByKey={matchByKey}
-            disciplineCode={opponent.disciplineCode}
-            viewingOwnDraw={viewingOwnDraw}
-          />
-        ))}
-      </div>
-      {hiddenCount > 0 && !showAll && (
-        <button
-          type="button"
-          onClick={() => setShowAll(true)}
-          className="mt-2 text-xs font-medium text-brand-600 transition hover:text-brand-700"
-        >
-          +{hiddenCount} more in {group.roundLabel.toLowerCase()}
-        </button>
-      )}
-      {showAll && group.opponents.length > LATER_OPPONENTS_INITIAL_VISIBLE && (
-        <button
-          type="button"
-          onClick={() => setShowAll(false)}
-          className="mt-2 text-xs font-medium text-ink-500 transition hover:text-ink-700"
-        >
-          Show less
-        </button>
-      )}
-    </div>
-  )
-}
-
-function LaterSection({
-  opponents,
-  displayNotes,
-  displayMatches,
-  playerName,
-  matchByKey,
-  viewingOwnDraw,
-  viewedPlayerName,
-}: {
-  opponents: DrawScoutLaterOpponent[]
-  displayNotes: OpponentNote[]
-  displayMatches: NormalizedMatch[]
-  playerName: string
-  matchByKey: Map<string, NormalizedMatch>
-  viewingOwnDraw: boolean
-  viewedPlayerName: string
-}) {
-  const [open, setOpen] = useState(false)
-  const relevant = useMemo(
-    () => filterLaterOpponentsWithViewerIntel(opponents, displayNotes, displayMatches, playerName),
-    [displayMatches, displayNotes, opponents, playerName],
-  )
-  const roundGroups = useMemo(() => groupLaterOpponentsByRound(relevant), [relevant])
-
-  if (relevant.length === 0) return null
-
-  const title = viewingOwnDraw
-    ? `You may also meet (${relevant.length})`
-    : `${viewedPlayerName} may also meet (${relevant.length})`
-  const helper = viewingOwnDraw
-    ? 'Knockout opponents outside your groups — with your personal notes.'
-    : `Knockout opponents outside ${viewedPlayerName}'s groups — with your personal notes.`
-
-  return (
-    <div className="mt-4 border-t border-ink-100 pt-4">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-2 text-left"
-        aria-expanded={open}
-      >
-        <span className="text-sm font-semibold text-ink-800">{title}</span>
-        <ChevronIcon open={open} />
-      </button>
-      <p className="mt-0.5 text-xs text-ink-500">{helper}</p>
-      {open && (
-        <div className="mt-4">
-          {roundGroups.map((group, index) => (
-            <LaterRoundGroup
-              key={group.roundLabel}
-              group={group}
-              displayNotes={displayNotes}
-              displayMatches={displayMatches}
-              playerName={playerName}
-              matchByKey={matchByKey}
-              viewingOwnDraw={viewingOwnDraw}
-              viewedPlayerName={viewedPlayerName}
-              isFirst={index === 0}
-            />
-          ))}
-        </div>
-      )}
     </div>
   )
 }
@@ -1320,7 +1496,7 @@ export function DrawScoutCard({
   playerName,
   allNotes,
   allMatches,
-  competitions = drawScoutPreviewCompetitions,
+  competitions,
   forcedVisible = false,
   initialCompetitionSlug = null,
   initialPlayerName = null,
@@ -1331,18 +1507,22 @@ export function DrawScoutCard({
 }) {
   const playerPickerId = useId()
   const deepLink = useMemo(() => readDrawScoutDeepLink(), [])
-  const activeCompetitions = useMemo(
-    () => listActiveDrawScoutCompetitions(competitions),
+  const resolvedCompetitions = useMemo(
+    () => competitions ?? getDrawScoutPreviewCompetitions(),
     [competitions],
+  )
+  const activeCompetitions = useMemo(
+    () => listActiveDrawScoutCompetitions(resolvedCompetitions),
+    [resolvedCompetitions],
   )
 
   const autoShow = useMemo(
     () =>
-      shouldAutoShowDrawScoutCard(competitions, {
+      shouldAutoShowDrawScoutCard(resolvedCompetitions, {
         youName: playerName,
         deepLinkSlug: deepLink.drawSlug ?? initialCompetitionSlug,
       }),
-    [competitions, deepLink.drawSlug, initialCompetitionSlug, playerName],
+    [resolvedCompetitions, deepLink.drawSlug, initialCompetitionSlug, playerName],
   )
 
   const showCard = forcedVisible || autoShow
@@ -1438,22 +1618,15 @@ export function DrawScoutCard({
               <DisciplineBlock
                 key={group.disciplineCode}
                 group={group}
+                laterOpponents={competition?.laterOpponentsByEntrant[entrant.name] ?? []}
                 displayNotes={displayNotes}
                 displayMatches={displayMatches}
                 playerName={playerName}
                 matchByKey={matchByKey}
                 viewingOwnDraw={entrant.isYou === true}
+                viewedPlayerName={viewingPlayerName.split(' ')[0] ?? viewingPlayerName}
               />
             ))}
-            <LaterSection
-              opponents={competition?.laterOpponentsByEntrant[entrant.name] ?? []}
-              displayNotes={displayNotes}
-              displayMatches={displayMatches}
-              playerName={playerName}
-              matchByKey={matchByKey}
-              viewingOwnDraw={entrant.isYou === true}
-              viewedPlayerName={viewingPlayerName.split(' ')[0] ?? viewingPlayerName}
-            />
           </div>
         )}
       </div>
@@ -1461,9 +1634,13 @@ export function DrawScoutCard({
   )
 }
 
-export function useDrawScoutVisibility(competitions = drawScoutPreviewCompetitions) {
+export function useDrawScoutVisibility(competitions?: DrawScoutCompetition[]) {
   const deepLink = useMemo(() => readDrawScoutDeepLink(), [])
-  const activeCount = listActiveDrawScoutCompetitions(competitions).length
+  const resolvedCompetitions = useMemo(
+    () => competitions ?? getDrawScoutPreviewCompetitions(),
+    [competitions],
+  )
+  const activeCount = listActiveDrawScoutCompetitions(resolvedCompetitions).length
   return {
     hasActiveCompetitions: activeCount > 0,
     deepLink,

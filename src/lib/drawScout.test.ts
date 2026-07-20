@@ -2,18 +2,23 @@ import { describe, expect, it } from 'vitest'
 import {
   countDrawOpponentsWithNotes,
   formatMatchupIntelTeaser,
+  filterLaterOpponentsByDiscipline,
+  formatLaterOpponentProbability,
   getDefaultCompetitionSlug,
   getDefaultPlayerName,
   getEventWeekendLastDay,
   getExactDrawPairNotes,
   getIndividualDrawScoutNotes,
+  getLaterOpponentIntelCounts,
   getMatchupIntelCounts,
   groupMatchupsByRound,
   groupLaterOpponentsByRound,
   isDrawScoutCompetitionActive,
   isDrawScoutCompetitionExpired,
+  laterOpponentDisplayName,
   shouldAutoShowDrawScoutCard,
   sortLaterOpponents,
+  sortLaterOpponentsWithinRound,
 } from './drawScout'
 import { drawScoutDemoMatches } from './drawScoutDemoMatches'
 import { mergeDrawScoutDisplayNotes } from './drawScoutDemoNotes'
@@ -106,8 +111,19 @@ describe('drawScout', () => {
     expect(isDrawScoutCompetitionExpired(fixture, during)).toBe(false)
     expect(isDrawScoutCompetitionExpired(fixture, sundayNight)).toBe(false)
     expect(isDrawScoutCompetitionExpired(fixture, monday)).toBe(true)
-    expect(isDrawScoutCompetitionActive({ ...cambs, ...fixture }, during)).toBe(true)
-    expect(isDrawScoutCompetitionActive({ ...cambs, ...fixture }, monday)).toBe(false)
+    expect(isDrawScoutCompetitionActive({ ...cambs, ...fixture, isPrototype: false }, during)).toBe(true)
+    expect(isDrawScoutCompetitionActive({ ...cambs, ...fixture, isPrototype: false }, monday)).toBe(false)
+  })
+
+  it('keeps prototype preview competitions visible after the fixture weekend', () => {
+    const mondayAfter = new Date('2026-07-20T09:00:00')
+    expect(isDrawScoutCompetitionActive(cambs, mondayAfter)).toBe(true)
+    expect(
+      shouldAutoShowDrawScoutCard(drawScoutPreviewCompetitions, {
+        youName: 'Simon Parker',
+        now: mondayAfter,
+      }),
+    ).toBe(true)
   })
 
   it('defaults to the user competition when available', () => {
@@ -176,22 +192,134 @@ describe('drawScout', () => {
     expect(grouped[0]!.matchups).toHaveLength(2)
   })
 
+  it('formats later opponent probability as a whole-number percent', () => {
+    expect(formatLaterOpponentProbability(0.53)).toBe('53%')
+    expect(formatLaterOpponentProbability(0.385)).toBe('39%')
+  })
+
+  it('filters later opponents by discipline', () => {
+    const opponents = cambs.laterOpponentsByEntrant['Simon Parker']!
+    const xd = filterLaterOpponentsByDiscipline(opponents, 'XD')
+    expect(xd.every((item) => item.disciplineCode === 'XD')).toBe(true)
+    expect(xd.length).toBeGreaterThan(0)
+  })
+
+  it('sorts later opponents by round earliest first, then probability within round', () => {
+    const opponents = cambs.laterOpponentsByEntrant['Simon Parker']!
+    const sorted = sortLaterOpponents(opponents)
+    expect(sorted[0]!.roundLabel).toBe('Quarter-finals')
+    expect(sorted[0]!.probability).toBeGreaterThanOrEqual(sorted[1]!.probability)
+  })
+
+  it('sorts later opponents within a round by probability descending', () => {
+    const qf = cambs.laterOpponentsByEntrant['Simon Parker']!.filter(
+      (item) => item.disciplineCode === 'XD' && item.roundLabel === 'Quarter-finals',
+    )
+    const sorted = sortLaterOpponentsWithinRound(qf)
+    expect(sorted.map((item) => item.probability)).toEqual([0.45, 0.35, 0.3, 0.25, 0.2, 0.15])
+    expect(laterOpponentDisplayName(sorted[0]!)).toContain('Tom Fielding')
+  })
+
+  it('covers notes-only, games-only, both, and neither intel across later rounds', () => {
+    const notes = mergeDrawScoutDisplayNotes([])
+    const later = cambs.laterOpponentsByEntrant['Simon Parker']!.filter(
+      (item) => item.disciplineCode === 'XD',
+    )
+
+    const states = later.map((opponent) => {
+      const counts = getLaterOpponentIntelCounts(
+        opponent,
+        notes,
+        drawScoutDemoMatches,
+        'Simon Parker',
+      )
+      return {
+        name: laterOpponentDisplayName(opponent),
+        round: opponent.roundLabel,
+        hasNotes: counts.noteCount > 0,
+        hasGames: counts.gamesPlayed > 0,
+      }
+    })
+
+    expect(states.some((s) => s.hasNotes && !s.hasGames)).toBe(true)
+    expect(states.some((s) => !s.hasNotes && s.hasGames)).toBe(true)
+    expect(states.some((s) => s.hasNotes && s.hasGames)).toBe(true)
+    expect(states.some((s) => !s.hasNotes && !s.hasGames)).toBe(true)
+    expect(states.some((s) => s.round === 'Quarter-finals' && !s.hasNotes && !s.hasGames)).toBe(
+      true,
+    )
+    expect(states.some((s) => s.round === 'Semi-finals' && s.hasNotes && !s.hasGames)).toBe(true)
+  })
+
+  it('groups later opponents by round after sorting by probability within round', () => {
+    const opponents = cambs.laterOpponentsByEntrant['Simon Parker']!.filter(
+      (item) => item.disciplineCode === 'OD',
+    )
+    const grouped = groupLaterOpponentsByRound(opponents)
+    expect(grouped.map((group) => group.roundLabel)).toEqual(['Quarter-finals'])
+    expect(grouped[0]!.opponents.map((item) => item.probability)).toEqual([0.62, 0.38])
+  })
+
+  it('aggregates intel counts across a later opponent pair', () => {
+    const danAlisha = cambs.laterOpponentsByEntrant['Simon Parker']!.find(
+      (item) =>
+        item.roundLabel === 'Semi-finals' &&
+        item.opponentSide.some((player) => player.name === 'Dan Martyres'),
+    )!
+    const counts = getLaterOpponentIntelCounts(
+      danAlisha,
+      mergeDrawScoutDisplayNotes([]),
+      drawScoutDemoMatches,
+      'Simon Parker',
+    )
+    expect(counts.noteCount).toBeGreaterThan(0)
+    expect(counts.gamesPlayed).toBeGreaterThan(0)
+  })
+
   it('sorts later opponents by round earliest first', () => {
     const sorted = sortLaterOpponents([
-      { name: 'Tom', disciplineCode: 'XD', roundLabel: 'Semi-finals' },
-      { name: 'Ben', disciplineCode: 'OD', roundLabel: 'Quarter-finals' },
+      {
+        opponentSide: [{ name: 'Tom', url: '' }],
+        disciplineCode: 'XD',
+        roundLabel: 'Semi-finals',
+        probability: 0.5,
+      },
+      {
+        opponentSide: [{ name: 'Ben', url: '' }],
+        disciplineCode: 'OD',
+        roundLabel: 'Quarter-finals',
+        probability: 0.5,
+      },
     ])
-    expect(sorted.map((item) => item.name)).toEqual(['Ben', 'Tom'])
+    expect(laterOpponentDisplayName(sorted[0]!)).toBe('Ben')
   })
 
   it('groups later opponents by round after sorting', () => {
     const grouped = groupLaterOpponentsByRound([
-      { name: 'Tom', disciplineCode: 'XD', roundLabel: 'Semi-finals' },
-      { name: 'Ben', disciplineCode: 'OD', roundLabel: 'Quarter-finals' },
-      { name: 'Dan', disciplineCode: 'XD', roundLabel: 'Quarter-finals' },
+      {
+        opponentSide: [{ name: 'Tom', url: '' }],
+        disciplineCode: 'XD',
+        roundLabel: 'Semi-finals',
+        probability: 0.6,
+      },
+      {
+        opponentSide: [{ name: 'Ben', url: '' }],
+        disciplineCode: 'OD',
+        roundLabel: 'Quarter-finals',
+        probability: 0.7,
+      },
+      {
+        opponentSide: [{ name: 'Dan', url: '' }],
+        disciplineCode: 'XD',
+        roundLabel: 'Quarter-finals',
+        probability: 0.3,
+      },
     ])
     expect(grouped.map((group) => group.roundLabel)).toEqual(['Quarter-finals', 'Semi-finals'])
-    expect(grouped[0]!.opponents.map((item) => item.name)).toEqual(['Ben', 'Dan'])
+    expect(grouped[0]!.opponents.map((item) => laterOpponentDisplayName(item))).toEqual([
+      'Ben',
+      'Dan',
+    ])
   })
 
   it('formats matchup intel teasers for notes, history, or both', () => {
@@ -209,27 +337,27 @@ describe('drawScout', () => {
     expect(formatMatchupIntelTeaser(0, 1)).toEqual({
       hasNotes: false,
       notesCta: null,
-      gamesLabel: 'Your games: 1',
+      gamesLabel: 'Played you: 1',
     })
     expect(formatMatchupIntelTeaser(0, 3)).toEqual({
       hasNotes: false,
       notesCta: null,
-      gamesLabel: 'Your games: 3',
+      gamesLabel: 'Played you: 3',
     })
     expect(formatMatchupIntelTeaser(2, 3)).toEqual({
       hasNotes: true,
       notesCta: 'View notes',
-      gamesLabel: 'Your games: 3',
+      gamesLabel: 'Played you: 3',
     })
     expect(formatMatchupIntelTeaser(0, 1, { viewingOwnDraw: false })).toEqual({
       hasNotes: false,
       notesCta: null,
-      gamesLabel: 'Your games: 1',
+      gamesLabel: 'Played you: 1',
     })
     expect(formatMatchupIntelTeaser(2, 3, { viewingOwnDraw: false })).toEqual({
       hasNotes: true,
       notesCta: 'View notes',
-      gamesLabel: 'Your games: 3',
+      gamesLabel: 'Played you: 3',
     })
   })
 

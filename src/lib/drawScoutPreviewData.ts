@@ -125,12 +125,42 @@ const EXTRA_FAVOURITE_NAMES = [
   'Corinna Wong',
 ]
 
+function toIsoDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/** Next Sat–Sun (or the current weekend on Sat/Sun) for prototype fixture labels. */
+export function upcomingWeekendDates(now: Date = new Date()): { startDate: string; endDate: string } {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const day = today.getDay()
+  if (day === 6) {
+    const end = new Date(today)
+    end.setDate(end.getDate() + 1)
+    return { startDate: toIsoDate(today), endDate: toIsoDate(end) }
+  }
+  if (day === 0) {
+    const start = new Date(today)
+    start.setDate(start.getDate() - 1)
+    return { startDate: toIsoDate(start), endDate: toIsoDate(today) }
+  }
+  const start = new Date(today)
+  start.setDate(start.getDate() + (6 - day))
+  const end = new Date(start)
+  end.setDate(end.getDate() + 1)
+  return { startDate: toIsoDate(start), endDate: toIsoDate(end) }
+}
+
+/** Static fixture data (tests); dates are not kept in sync with the calendar. */
 export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
   {
     slug: 'cambridgeshire-senior-bronze-july-2026',
     name: 'Cambridgeshire Senior Bronze July 2026',
     startDate: '2026-07-18',
     endDate: '2026-07-19',
+    isPrototype: true,
     competitionUrl: COMPETITION_URL,
     entrants: [
       {
@@ -193,15 +223,143 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
     ],
     laterOpponentsByEntrant: {
       'Simon Parker': [
-        { name: 'Tom Fielding', disciplineCode: 'XD', roundLabel: 'Semi-finals' },
-        { name: 'Ben Carter', disciplineCode: 'OD', roundLabel: 'Quarter-finals' },
+        // Semi-finals — mix of intel states
+        {
+          // Both notes + games
+          opponentSide: [
+            player('Dan Martyres', { seedLabel: '[1]' }),
+            player('Alisha Johnson'),
+          ],
+          disciplineCode: 'XD',
+          roundLabel: 'Semi-finals',
+          probability: 0.5,
+        },
+        {
+          // Both notes + games (also appears in quarters)
+          opponentSide: [player('Tom Fielding'), player('Lucy Grant')],
+          disciplineCode: 'XD',
+          roundLabel: 'Semi-finals',
+          probability: 0.35,
+        },
+        {
+          // Notes only
+          opponentSide: [player('Helena Croft'), player('Marcus Bloom')],
+          disciplineCode: 'XD',
+          roundLabel: 'Semi-finals',
+          probability: 0.28,
+        },
+        {
+          // Games only
+          opponentSide: [player('Felix Grant'), player('Chloe Adams')],
+          disciplineCode: 'XD',
+          roundLabel: 'Semi-finals',
+          probability: 0.22,
+        },
+        {
+          // Neither notes nor games
+          opponentSide: [player('Isla Bennett'), player('Noah Price')],
+          disciplineCode: 'XD',
+          roundLabel: 'Semi-finals',
+          probability: 0.18,
+        },
+        // Quarter-finals — mix of intel states (enough for Show more)
+        {
+          // Both notes + games
+          opponentSide: [player('Tom Fielding'), player('Lucy Grant')],
+          disciplineCode: 'XD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.45,
+        },
+        {
+          // Both notes + games
+          opponentSide: [player('Ben Carter'), player('Emma Walsh')],
+          disciplineCode: 'XD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.35,
+        },
+        {
+          // Games only
+          opponentSide: [player('Oliver Brooks'), player('Sophie Lane')],
+          disciplineCode: 'XD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.3,
+        },
+        {
+          // Notes only
+          opponentSide: [player('Murray Wright'), player('Corinna Wong')],
+          disciplineCode: 'XD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.25,
+        },
+        {
+          // Neither notes nor games
+          opponentSide: [player('Jamie Patel'), player('Priya Shah')],
+          disciplineCode: 'XD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.2,
+        },
+        {
+          // Neither notes nor games
+          opponentSide: [player('Nina West'), player('Ryan Cole')],
+          disciplineCode: 'XD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.15,
+        },
+        {
+          opponentSide: [player('Daniel Hughes'), player('Morgan Taylor')],
+          disciplineCode: 'OD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.62,
+        },
+        {
+          opponentSide: [player('Chris Nolan'), player('Alex Reid')],
+          disciplineCode: 'OD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.38,
+        },
       ],
       'Sara Moore': [
-        { name: 'Murray Wright', disciplineCode: 'XD', roundLabel: 'Semi-finals' },
-        { name: 'Dan Martyres', disciplineCode: 'XD', roundLabel: 'Quarter-finals' },
+        {
+          opponentSide: [
+            player('Dan Martyres', { seedLabel: '[1]' }),
+            player('Alisha Johnson'),
+          ],
+          disciplineCode: 'XD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.52,
+        },
+        {
+          opponentSide: [player('Murray Wright'), player('Corinna Wong')],
+          disciplineCode: 'XD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.48,
+        },
+        {
+          opponentSide: [player('Tom Fielding'), player('Lucy Grant')],
+          disciplineCode: 'XD',
+          roundLabel: 'Semi-finals',
+          probability: 0.55,
+        },
+        {
+          opponentSide: [player('Ben Carter'), player('Emma Walsh')],
+          disciplineCode: 'XD',
+          roundLabel: 'Semi-finals',
+          probability: 0.45,
+        },
       ],
       'Martin Crossley': [
-        { name: 'Daniel Hughes', disciplineCode: 'OD', roundLabel: 'Quarter-finals' },
+        {
+          opponentSide: [player('Simon Gilhooly'), player('Paul Andrew Mayfield')],
+          disciplineCode: 'OD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.55,
+        },
+        {
+          opponentSide: [player('Chris Nolan'), player('Alex Reid')],
+          disciplineCode: 'OD',
+          roundLabel: 'Quarter-finals',
+          probability: 0.45,
+        },
       ],
     },
   },
@@ -210,6 +368,7 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
     name: 'Essex Senior Bronze July 2026',
     startDate: '2026-07-18',
     endDate: '2026-07-19',
+    isPrototype: true,
     competitionUrl: 'https://badminfo.com/competition/essex-senior-bronze-july-2026',
     entrants: [
       {
@@ -236,3 +395,12 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
 ]
 
 export const DRAW_SCOUT_PREVIEW_SLUG = drawScoutPreviewCompetitions[0]!.slug
+
+/** Prototype competitions with rolling weekend dates for in-app display. */
+export function getDrawScoutPreviewCompetitions(now: Date = new Date()): DrawScoutCompetition[] {
+  const weekend = upcomingWeekendDates(now)
+  return drawScoutPreviewCompetitions.map((comp) => ({
+    ...comp,
+    ...weekend,
+  }))
+}

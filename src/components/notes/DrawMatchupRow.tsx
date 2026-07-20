@@ -55,7 +55,7 @@ function MatchupIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
         ) : null}
       </span>
       {teaser.gamesLabel != null && (
-        <span className="text-sm text-ink-500">{teaser.gamesLabel}</span>
+        <span className="text-sm font-medium text-ink-600">{teaser.gamesLabel}</span>
       )}
     </div>
   )

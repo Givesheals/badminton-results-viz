@@ -1,5 +1,8 @@
 import type { DrawScoutResultMatch } from '../../lib/drawScoutMatches'
-import { MatchScoreboardRow } from '../match/MatchScoreboardRow'
+import {
+  MATCH_SCOREBOARD_GRID,
+  MatchScoreboardRow,
+} from '../match/MatchScoreboardRow'
 
 type Props = {
   opponentName: string
@@ -42,7 +45,7 @@ export function DrawScoutPreviousGames({
               Note from this game
             </p>
           )}
-          <ul className="grid grid-cols-[max-content_minmax(0,1fr)_minmax(3.25rem,max-content)_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1">
+          <ul className={MATCH_SCOREBOARD_GRID}>
             <MatchScoreboardRow match={match} />
           </ul>
         </li>
