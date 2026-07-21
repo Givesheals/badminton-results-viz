@@ -553,11 +553,13 @@ function LaterOpponentNames({ players }: { players: DrawPlayer[] }) {
   )
 }
 
-const NOTES_BADGE_SLOT = 'inline-flex min-h-[1.375rem] min-w-[5.75rem] items-center'
+/** Reserves space on desktop so games never slide into the notes badge slot. */
+const NOTES_BADGE_SLOT =
+  'inline-flex min-h-[1.375rem] items-center sm:min-w-[5.75rem]'
 
 function LaterOpponentIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+    <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 sm:justify-start">
       <span className={NOTES_BADGE_SLOT}>
         {teaser.notesCta != null ? (
           <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-2 py-0.5 text-xs font-semibold text-notes-amber-ink">
@@ -798,7 +800,7 @@ function DisciplineLaterSection({
     : `Possible knockout opponents for ${viewedPlayerName} in this event, most likely first.`
 
   return (
-    <div className="mt-4">
+    <div className="mt-3">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -855,7 +857,7 @@ function DisciplineBlock({
   )
 
   return (
-    <div>
+    <div className="border-t border-ink-200/80 pt-4 first:border-t-0 first:pt-0">
       <div className="flex items-center gap-2">
         <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} aria-hidden />
         <h4 className="text-sm font-bold text-ink-900">{group.disciplineLabel}</h4>

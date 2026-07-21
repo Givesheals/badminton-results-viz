@@ -8,8 +8,9 @@ export const DRAW_MATCHUP_GRID =
 
 const DRAW_SIDES_GRID = 'grid grid-cols-2 items-start gap-x-3 gap-y-1.5'
 
-/** Reserves space so games never slide into the notes badge slot. */
-const NOTES_BADGE_SLOT = 'inline-flex min-h-[1.375rem] min-w-[5.75rem] items-center'
+/** Reserves space on desktop so games never slide into the notes badge slot. */
+const NOTES_BADGE_SLOT =
+  'inline-flex min-h-[1.375rem] items-center sm:min-w-[5.75rem]'
 
 function PlayerNames({ players }: { players: DrawPlayer[] }) {
   return (
@@ -46,7 +47,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 
 function MatchupIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+    <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 sm:justify-start">
       <span className={NOTES_BADGE_SLOT}>
         {teaser.notesCta != null ? (
           <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-2 py-0.5 text-xs font-semibold text-notes-amber-ink">
