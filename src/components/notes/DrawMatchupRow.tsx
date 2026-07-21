@@ -55,7 +55,9 @@ function MatchupIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
         ) : null}
       </span>
       {teaser.gamesLabel != null && (
-        <span className="text-sm font-medium text-ink-600">{teaser.gamesLabel}</span>
+        <span className="inline-flex items-center rounded-md border border-ink-200 px-2 py-0.5 text-xs font-semibold text-ink-600">
+          {teaser.gamesLabel}
+        </span>
       )}
     </div>
   )

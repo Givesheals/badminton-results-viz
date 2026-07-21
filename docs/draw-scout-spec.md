@@ -140,7 +140,7 @@ Draw scout card
 ├── Draw by discipline
 │   └── Matchup block (per round)
 │       ├── Header: discipline left edge + your side vs opponents (tappable when intel exists)
-│       ├── Collapsed teaser: reserved notes-badge slot (amber “View notes” when present) + quiet “Played you: {m}”
+│       ├── Collapsed teaser: reserved notes-badge slot (amber “View notes” when present) + outline ghost chip “Played you: {m}”
 │       └── Expanded:
 │           ├── Tabs “Notes” / “Your games” only when both exist (default Notes); otherwise single panel
 │           ├── Exact pairing block first (pair notes or games vs both, per active panel)
