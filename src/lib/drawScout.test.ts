@@ -22,7 +22,10 @@ import {
 } from './drawScout'
 import { drawScoutDemoMatches } from './drawScoutDemoMatches'
 import { mergeDrawScoutDisplayNotes } from './drawScoutDemoNotes'
-import { drawScoutPreviewCompetitions } from './drawScoutPreviewData'
+import {
+  drawScoutPreviewCompetitions,
+  getPrototypeDrawWeekend,
+} from './drawScoutPreviewData'
 import type { OpponentNote } from './opponentNotes'
 
 const cambs = drawScoutPreviewCompetitions[0]!
@@ -96,6 +99,22 @@ describe('drawScoutDemoNotes', () => {
 })
 
 describe('drawScout', () => {
+  it('keeps prototype draws on the current/next weekend', () => {
+    expect(getPrototypeDrawWeekend(new Date('2026-07-23T12:00:00'))).toEqual({
+      startDate: '2026-07-25',
+      endDate: '2026-07-26',
+    })
+    expect(getPrototypeDrawWeekend(new Date('2026-07-25T09:00:00'))).toEqual({
+      startDate: '2026-07-25',
+      endDate: '2026-07-26',
+    })
+    expect(getPrototypeDrawWeekend(new Date('2026-07-26T18:00:00'))).toEqual({
+      startDate: '2026-07-25',
+      endDate: '2026-07-26',
+    })
+    expect(isDrawScoutCompetitionActive(cambs)).toBe(true)
+  })
+
   it('uses the last weekend day within the event span', () => {
     expect(getEventWeekendLastDay('2026-07-11', '2026-07-12')).toBe('2026-07-12')
     expect(getEventWeekendLastDay('2026-07-11', '2026-07-11')).toBe('2026-07-11')
