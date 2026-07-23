@@ -4,6 +4,39 @@ import type { DrawScoutCompetition } from './drawScout'
 const COMPETITION_URL =
   'https://badminfo.com/competition/cambridgeshire-senior-bronze-july-2026'
 
+function formatLocalIsoDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/**
+ * Prototype draws stay on the current/next Sat–Sun so they never silently
+ * disappear after a hard-coded weekend expires.
+ */
+export function getPrototypeDrawWeekend(now = new Date()): {
+  startDate: string
+  endDate: string
+} {
+  const saturday = new Date(now)
+  saturday.setHours(0, 0, 0, 0)
+  const day = saturday.getDay() // 0 Sun … 6 Sat
+  if (day === 0) {
+    saturday.setDate(saturday.getDate() - 1)
+  } else if (day !== 6) {
+    saturday.setDate(saturday.getDate() + (6 - day))
+  }
+  const sunday = new Date(saturday)
+  sunday.setDate(sunday.getDate() + 1)
+  return {
+    startDate: formatLocalIsoDate(saturday),
+    endDate: formatLocalIsoDate(sunday),
+  }
+}
+
+const prototypeWeekend = getPrototypeDrawWeekend()
+
 function player(name: string, extra: { seedLabel?: string } = {}): DrawPlayer {
   return {
     name,
@@ -94,8 +127,8 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
   {
     slug: 'cambridgeshire-senior-bronze-july-2026',
     name: 'Cambridgeshire Senior Bronze July 2026',
-    startDate: '2026-07-18',
-    endDate: '2026-07-19',
+    startDate: prototypeWeekend.startDate,
+    endDate: prototypeWeekend.endDate,
     competitionUrl: COMPETITION_URL,
     entrants: [
       {
@@ -168,8 +201,8 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
   {
     slug: 'essex-senior-bronze-july-2026',
     name: 'Essex Senior Bronze July 2026',
-    startDate: '2026-07-18',
-    endDate: '2026-07-19',
+    startDate: prototypeWeekend.startDate,
+    endDate: prototypeWeekend.endDate,
     competitionUrl: 'https://badminfo.com/competition/essex-senior-bronze-july-2026',
     entrants: [
       {
