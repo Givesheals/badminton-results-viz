@@ -62,6 +62,7 @@ export const drawScoutDemoNotes: OpponentNote[] = [
       appliesToDisciplines: ['D'],
     },
   ),
+  // Murray is notes-only in the Cambs draw prototype (no prior meeting in demo matches).
   demoNote(
     'dan',
     'Dan Martyres',
@@ -137,6 +138,17 @@ export const drawScoutDemoNotes: OpponentNote[] = [
       competitionName: 'Essex Open 2026',
       date: '2026-03-03',
       tags: { customOpponentStyles: ['Defensive'] },
+    },
+  ),
+  // Later-round notes-only fixture (Helena in semis; no prior meeting in demo matches).
+  demoNote(
+    'helena',
+    'Helena Croft',
+    'Steep smash from mid-court and rushes the net after. Soften the pace and move her side to side.',
+    {
+      competitionName: 'Suffolk Open 2025',
+      date: '2025-10-05',
+      tags: { customOpponentStyles: ['Steep smash', 'Rushes the net'] },
     },
   ),
 ]

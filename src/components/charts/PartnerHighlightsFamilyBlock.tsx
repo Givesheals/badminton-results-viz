@@ -251,7 +251,7 @@ function PartnerHighlightsFamilyBlockBody({
                       Math.min(filteredPartners.length, count + SHOW_MORE_STEP),
                     )
                   }
-                  className="w-full rounded-lg border border-brand-200 bg-white px-4 py-2.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                  className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
                 >
                   Show more
                 </button>

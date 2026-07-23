@@ -56,12 +56,21 @@
   --color-level-county: #159eda;
   --color-level-medal-text: #41016f;
 
+  /* Favourite star: deeper gold than medal chips so it reads on light grey */
+  --color-favourite-star: #c9a227;
+  --color-favourite-star-stroke: #8a7018;
+
   --color-discipline-mixed: #7acfd2;
   --color-discipline-doubles: #a0acda;
   --color-discipline-singles: #d1ca7b;
   --color-discipline-mixed-soft: #f7fcfc;
   --color-discipline-doubles-soft: #f8f9fd;
   --color-discipline-singles-soft: #fcfaf5;
+
+  /* Soft amber drip for notes identity (badges / tab accents) — not clickable chrome */
+  --color-notes-amber: #d4a017;
+  --color-notes-amber-soft: #fbf6e8;
+  --color-notes-amber-ink: #7a5a0a;
 
   --color-surface-border: #d0d2dc;
   --border-width-card: 1.5px;

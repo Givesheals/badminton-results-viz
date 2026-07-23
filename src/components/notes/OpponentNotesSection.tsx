@@ -18,8 +18,6 @@ import {
   type OpponentNoteGroup,
   type OpponentNoteMatchContext,
 } from '../../lib/opponentNotes'
-import { listActiveDrawScoutCompetitions } from '../../lib/drawScout'
-import { drawScoutPreviewCompetitions } from '../../lib/drawScoutPreviewData'
 import { recapMatchKey } from '../../lib/tournamentRecap'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { DisciplineChip } from '../discipline/DisciplineChip'
@@ -31,12 +29,8 @@ import { NoteTagChips } from './NoteTagPicker'
 import { OpponentNoteMatchFooter } from './OpponentNoteMatchFooter'
 import { OpponentNoteModal } from './OpponentNoteModal'
 import { OpponentPickerModal } from './OpponentPickerModal'
+import { YourTagsSection } from './YourTagsSection'
 import { PairNoteScopeBanner } from './PairNoteScopeBanner'
-import {
-  DrawScoutCard,
-  DrawScoutExploreModal,
-  useDrawScoutVisibility,
-} from './DrawScoutCard'
 
 type Props = {
   allMatches: NormalizedMatch[]
@@ -320,16 +314,14 @@ function ChevronIcon({ open, className = 'h-4 w-4' }: { open: boolean; className
 
 export function OpponentNotesSection({ allMatches }: Props) {
   const { allNotes, playerName } = useOpponentNotesContext()
-  const { hasActiveCompetitions } = useDrawScoutVisibility()
   const [search, setSearch] = useState('')
   const [activeNote, setActiveNote] = useState<OpponentNote | null>(null)
   const [addNoteState, setAddNoteState] = useState<AddNoteState>({ step: 'closed' })
-  const [exploreOpen, setExploreOpen] = useState(false)
-  const [drawScoutForced, setDrawScoutForced] = useState(false)
-  const [drawScoutSelection, setDrawScoutSelection] = useState<{
-    competitionSlug: string
-    playerName: string
-  } | null>(null)
+  const [tagLibraryRevision, setTagLibraryRevision] = useState(0)
+
+  function bumpTagLibraryRevision() {
+    setTagLibraryRevision((value) => value + 1)
+  }
 
   const knownOpponents = useMemo(() => collectKnownOpponentNames(allMatches), [allMatches])
 
@@ -365,49 +357,17 @@ export function OpponentNotesSection({ allMatches }: Props) {
 
   return (
     <div className="space-y-6">
-      <DrawScoutCard
-        playerName={playerName ?? 'You'}
-        allNotes={allNotes}
-        allMatches={allMatches}
-        forcedVisible={drawScoutForced}
-        initialCompetitionSlug={drawScoutSelection?.competitionSlug ?? null}
-        initialPlayerName={drawScoutSelection?.playerName ?? null}
-      />
-
-      <DrawScoutExploreModal
-        open={exploreOpen}
-        competitions={listActiveDrawScoutCompetitions(drawScoutPreviewCompetitions)}
-        initialSlug={drawScoutSelection?.competitionSlug ?? null}
-        youName={playerName ?? 'You'}
-        onClose={() => setExploreOpen(false)}
-        onConfirm={(competitionSlug, selectedPlayer) => {
-          setDrawScoutForced(true)
-          setDrawScoutSelection({ competitionSlug, playerName: selectedPlayer })
-        }}
-      />
-
       <section className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
         <div className="border-b border-ink-100 px-4 py-4 sm:px-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-lg font-semibold text-ink-900">Notes</h3>
-            <div className="flex flex-wrap items-center gap-2">
-              {hasActiveCompetitions && (
-                <button
-                  type="button"
-                  onClick={() => setExploreOpen(true)}
-                  className="shrink-0 rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-                >
-                  Explore a draw →
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setAddNoteState({ step: 'pick-opponent' })}
-                className="shrink-0 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-              >
-                Add new note
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setAddNoteState({ step: 'pick-opponent' })}
+              className="shrink-0 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+            >
+              Add new note
+            </button>
           </div>
         <p className="mt-1 text-sm text-ink-600">
           {MATCH_JOURNAL_UI_ENABLED
@@ -471,10 +431,17 @@ export function OpponentNotesSection({ allMatches }: Props) {
         )}
       </div>
 
+      <div className="border-t border-ink-100 px-4 py-4 sm:px-5">
+        <YourTagsSection revision={tagLibraryRevision} />
+      </div>
+
       {activeNote != null && (
         <OpponentNoteModal
           open
-          onClose={() => setActiveNote(null)}
+          onClose={() => {
+            setActiveNote(null)
+            bumpTagLibraryRevision()
+          }}
           context={activeNote.context}
           initialTarget={activeNote.target}
         />
@@ -495,7 +462,10 @@ export function OpponentNotesSection({ allMatches }: Props) {
       {addNoteState.step === 'compose' && (
         <OpponentNoteModal
           open
-          onClose={() => setAddNoteState({ step: 'closed' })}
+          onClose={() => {
+            setAddNoteState({ step: 'closed' })
+            bumpTagLibraryRevision()
+          }}
           context={addNoteState.context}
           initialTarget={{ kind: 'opponent', name: addNoteState.context.opponentNames[0]! }}
         />

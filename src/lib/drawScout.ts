@@ -1,4 +1,4 @@
-import type { DrawDisciplineGroup, DrawMatchup } from './drawTypes'
+import type { DrawDisciplineGroup, DrawMatchup, DrawPlayer } from './drawTypes'
 import type { NormalizedMatch } from '../types/matchHistory'
 import { DISCIPLINE_LABELS } from '../types/matchHistory'
 import {
@@ -15,10 +15,12 @@ import { recapMatchKey } from './tournamentRecap'
 import { parseRoundToStage, STAGE_RANK } from './tournamentProgression'
 
 export type DrawScoutLaterOpponent = {
-  name: string
+  opponentSide: DrawPlayer[]
   disciplineCode: string
   /** Knockout round where paths could meet, e.g. Quarter-finals */
   roundLabel: string
+  /** Likelihood of facing this opponent in this round; opponents in the same round sum to 1. */
+  probability: number
 }
 
 export type DrawScoutEntrant = {
@@ -38,6 +40,8 @@ export type DrawScoutCompetition = {
   competitionUrl: string
   entrants: DrawScoutEntrant[]
   laterOpponentsByEntrant: Record<string, DrawScoutLaterOpponent[]>
+  /** Mock/prototype fixtures stay visible regardless of calendar date. */
+  isPrototype?: boolean
 }
 
 function parseLocalDate(isoDate: string): Date {
@@ -88,6 +92,7 @@ export function isDrawScoutCompetitionActive(
   comp: DrawScoutCompetition,
   now: Date = new Date(),
 ): boolean {
+  if (comp.isPrototype) return true
   return !isDrawScoutCompetitionExpired(comp, now)
 }
 
@@ -126,7 +131,9 @@ export function collectAllOpponentNamesForEntrant(
 ): string[] {
   const names = new Set(collectOpponentNamesFromDraw(entrant.disciplineGroups))
   for (const later of comp.laterOpponentsByEntrant[entrant.name] ?? []) {
-    names.add(later.name)
+    for (const player of later.opponentSide) {
+      names.add(player.name)
+    }
   }
   return [...names]
 }
@@ -360,7 +367,7 @@ export function getIndividualDrawScoutNotes(
 
 /**
  * Collapsed draw-scout teaser. Prefers a notes CTA when personal notes exist;
- * history-only rows keep the games label (no “No notes” shout).
+ * history-only rows keep the games label (UI still reserves the notes badge slot).
  * Null when there is nothing to open.
  */
 export type MatchupIntelTeaser = {
@@ -372,7 +379,7 @@ export type MatchupIntelTeaser = {
 
 export function formatGamesPlayedLabel(gamesPlayed: number): string | null {
   if (gamesPlayed <= 0) return null
-  return `Your games: ${gamesPlayed}`
+  return `Played you: ${gamesPlayed}`
 }
 
 export function formatMatchupIntelTeaser(
@@ -400,6 +407,36 @@ export function formatLaterOpponentDisciplineLabel(opponent: DrawScoutLaterOppon
   return DISCIPLINE_LABELS[opponent.disciplineCode] ?? opponent.disciplineCode
 }
 
+export function formatLaterOpponentProbability(probability: number): string {
+  return `${Math.round(probability * 100)}%`
+}
+
+export function laterOpponentDisplayName(opponent: DrawScoutLaterOpponent): string {
+  return opponent.opponentSide.map((player) => player.name).join(' & ')
+}
+
+export function laterOpponentKey(opponent: DrawScoutLaterOpponent): string {
+  return `${opponent.disciplineCode}:${opponent.roundLabel}:${laterOpponentDisplayName(opponent)}`
+}
+
+export function filterLaterOpponentsByDiscipline(
+  opponents: DrawScoutLaterOpponent[],
+  disciplineCode: string,
+): DrawScoutLaterOpponent[] {
+  return opponents.filter((opponent) => opponent.disciplineCode === disciplineCode)
+}
+
+/** Sort knockout-path opponents by probability within a round (highest first). */
+export function sortLaterOpponentsWithinRound(
+  opponents: DrawScoutLaterOpponent[],
+): DrawScoutLaterOpponent[] {
+  return [...opponents].sort((a, b) => {
+    const probDiff = b.probability - a.probability
+    if (probDiff !== 0) return probDiff
+    return laterOpponentDisplayName(a).localeCompare(laterOpponentDisplayName(b))
+  })
+}
+
 /** Sort knockout-path opponents earliest round first (quarters before semis). */
 export function sortLaterOpponents(
   opponents: DrawScoutLaterOpponent[],
@@ -409,7 +446,7 @@ export function sortLaterOpponents(
     if (roundDiff !== 0) return roundDiff
     const disciplineDiff = a.disciplineCode.localeCompare(b.disciplineCode)
     if (disciplineDiff !== 0) return disciplineDiff
-    return a.name.localeCompare(b.name)
+    return b.probability - a.probability
   })
 }
 
@@ -435,8 +472,31 @@ export function groupLaterOpponentsByRound(
 
   return order.map((roundLabel) => ({
     roundLabel,
-    opponents: byRound.get(roundLabel)!,
+    opponents: sortLaterOpponentsWithinRound(byRound.get(roundLabel)!),
   }))
+}
+
+export function laterOpponentToMatchup(opponent: DrawScoutLaterOpponent): DrawMatchup {
+  return {
+    id: laterOpponentKey(opponent),
+    roundLabel: opponent.roundLabel,
+    yourSide: [],
+    opponentSide: opponent.opponentSide,
+  }
+}
+
+export function getLaterOpponentIntelCounts(
+  opponent: DrawScoutLaterOpponent,
+  displayNotes: OpponentNote[],
+  displayMatches: NormalizedMatch[],
+  viewerName: string,
+): MatchupIntelCounts {
+  return getMatchupIntelCounts(
+    laterOpponentToMatchup(opponent),
+    displayNotes,
+    displayMatches,
+    viewerName,
+  )
 }
 
 export function laterOpponentHasViewerIntel(
@@ -445,19 +505,6 @@ export function laterOpponentHasViewerIntel(
   displayMatches: NormalizedMatch[],
   viewerName: string,
 ): boolean {
-  const hasNotes = opponentHasScoutingNotes(displayNotes, opponent.name)
-  const hasHistory =
-    getDrawScoutPreviousMatches(displayMatches, opponent.name, viewerName).matches.length > 0
-  return hasNotes || hasHistory
-}
-
-export function filterLaterOpponentsWithViewerIntel(
-  opponents: DrawScoutLaterOpponent[],
-  displayNotes: OpponentNote[],
-  displayMatches: NormalizedMatch[],
-  viewerName: string,
-): DrawScoutLaterOpponent[] {
-  return sortLaterOpponents(opponents).filter((opponent) =>
-    laterOpponentHasViewerIntel(opponent, displayNotes, displayMatches, viewerName),
-  )
+  const counts = getLaterOpponentIntelCounts(opponent, displayNotes, displayMatches, viewerName)
+  return counts.noteCount > 0 || counts.gamesPlayed > 0
 }

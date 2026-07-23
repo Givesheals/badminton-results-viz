@@ -22,7 +22,10 @@ import { FilterMatchCount } from '../filters/FilterMatchCount'
 import { SectionFilterBar } from '../filters/SectionFilterBar'
 import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
 import { favouriteOpponentsInfo, nemesesInfo } from '../../content/sectionInfo'
-import { MatchScoreboardRow } from '../match/MatchScoreboardRow'
+import {
+  MATCH_SCOREBOARD_GRID,
+  MatchScoreboardRow,
+} from '../match/MatchScoreboardRow'
 import { SHARE_ROW_LIMIT, sliceRowsForShare } from '../../lib/shareLimits'
 import { SectionHeading } from '../ui/SectionHeading'
 import { ShareButton } from '../ui/ShareButton'
@@ -523,7 +526,7 @@ function H2HOutcomeSection({
       >
         {title}
       </p>
-      <ul className="mt-1 grid grid-cols-[max-content_minmax(0,1fr)_minmax(3.25rem,max-content)_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1 px-2">
+      <ul className={`mt-1 ${MATCH_SCOREBOARD_GRID} px-2`}>
         {matches.map((match, index) => (
           <MatchScoreboardRow
             key={`${match.date}-${match.competitionName}-${index}`}
