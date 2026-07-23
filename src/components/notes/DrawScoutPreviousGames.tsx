@@ -1,6 +1,6 @@
 import type { DrawScoutResultMatch } from '../../lib/drawScoutMatches'
 import {
-  MATCH_SCOREBOARD_GRID,
+  MATCH_SCOREBOARD_GRID_COMPACT,
   MatchScoreboardRow,
 } from '../match/MatchScoreboardRow'
 
@@ -26,9 +26,11 @@ export function DrawScoutPreviousGames({
 }: Props) {
   if (items.length === 0) return null
 
+  // Negative margin pulls game rows out toward the accordion edge, reclaiming
+  // horizontal space for the three-column scoreboard on narrow screens.
   return (
     <ul
-      className={`divide-y divide-ink-100 ${className}`}
+      className={`-mx-2 divide-y divide-ink-100 ${className}`}
       aria-label={
         viewingOwnDraw
           ? `Your games against ${opponentName}`
@@ -41,12 +43,12 @@ export function DrawScoutPreviousGames({
           className="py-2 first:pt-0 last:pb-0"
         >
           {isNoteMatch && (
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-notes-amber-ink">
+            <p className="mb-1 px-2 text-[11px] font-medium uppercase tracking-wide text-notes-amber-ink">
               Note from this game
             </p>
           )}
-          <ul className={MATCH_SCOREBOARD_GRID}>
-            <MatchScoreboardRow match={match} />
+          <ul className={MATCH_SCOREBOARD_GRID_COMPACT}>
+            <MatchScoreboardRow match={match} variant="columns" />
           </ul>
         </li>
       ))}

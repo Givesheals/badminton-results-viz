@@ -1,7 +1,10 @@
 import { formatMatchDateShort, type OpponentNoteMatchContext } from '../../lib/opponentNotes'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { DisciplineChip } from '../discipline/DisciplineChip'
-import { MatchScoreboardRow } from '../match/MatchScoreboardRow'
+import {
+  MATCH_SCOREBOARD_GRID,
+  MatchScoreboardRow,
+} from '../match/MatchScoreboardRow'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
 
 type Props = {
@@ -28,7 +31,7 @@ export function OpponentNoteMatchFooter({ context, match }: Props) {
       </div>
 
       {match != null ? (
-        <ul className="grid grid-cols-[max-content_minmax(0,1fr)_minmax(3.25rem,max-content)_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1 p-2">
+        <ul className={`${MATCH_SCOREBOARD_GRID} p-2`}>
           <MatchScoreboardRow match={match} />
         </ul>
       ) : (

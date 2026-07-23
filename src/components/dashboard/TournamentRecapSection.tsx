@@ -4,7 +4,7 @@ import { useOpponentNotesContext } from '../../context/OpponentNotesContext'
 import { formatDisplayDate } from '../../lib/formatDate'
 import { formatWholePercent } from '../../lib/formatNumbers'
 import { listActiveDrawScoutCompetitions } from '../../lib/drawScout'
-import { drawScoutPreviewCompetitions } from '../../lib/drawScoutPreviewData'
+import { getDrawScoutPreviewCompetitions } from '../../lib/drawScoutPreviewData'
 import { computeTournamentRecaps } from '../../lib/tournamentRecap'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
 import {
@@ -70,7 +70,7 @@ export function TournamentRecapSection({ allMatches, initialIndex = 0 }: Props) 
       />
       <DrawScoutExploreModal
         open={exploreOpen}
-        competitions={listActiveDrawScoutCompetitions(drawScoutPreviewCompetitions)}
+        competitions={listActiveDrawScoutCompetitions(getDrawScoutPreviewCompetitions())}
         initialSlug={drawScoutSelection?.competitionSlug ?? null}
         youName={playerName ?? 'You'}
         onClose={() => setExploreOpen(false)}
