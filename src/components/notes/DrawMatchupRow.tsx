@@ -21,6 +21,9 @@ function PlayerNames({ players }: { players: DrawPlayer[] }) {
             <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
           )}
           {player.name}
+          {player.rating != null ? (
+            <span className="tabular-nums text-ink-500"> ({player.rating})</span>
+          ) : null}
           {index < players.length - 1 && <span className="text-ink-400"> &</span>}
         </div>
       ))}
@@ -118,44 +121,38 @@ export function DrawMatchupRow({
 
   if (expandable != null) {
     return (
-      <div className="border-t border-ink-100 py-2 first:border-t-0 first:pt-0">
-        <div className={cardShell}>
-          <button
-            type="button"
-            onClick={expandable.onToggle}
-            aria-expanded={expandable.open}
-            className={`flex w-full items-stretch gap-2 rounded-r border-l-4 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200 ${disciplineStyle.borderClass}`}
+      <div className={cardShell}>
+        <button
+          type="button"
+          onClick={expandable.onToggle}
+          aria-expanded={expandable.open}
+          className={`flex w-full items-stretch gap-2 rounded-r border-l-4 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200 ${disciplineStyle.borderClass}`}
+        >
+          <div className="min-w-0 flex-1 px-3 py-3">
+            <div className={gridClass}>{sides}</div>
+            <MatchupIntelTeaserLine teaser={expandable.teaser} />
+          </div>
+          <span
+            className="flex w-11 shrink-0 items-center justify-center border-l border-ink-100 bg-ink-50/70"
+            aria-hidden
           >
-            <div className="min-w-0 flex-1 px-3 py-3">
-              <div className={gridClass}>{sides}</div>
-              <MatchupIntelTeaserLine teaser={expandable.teaser} />
-            </div>
-            <span
-              className="flex w-11 shrink-0 items-center justify-center border-l border-ink-100 bg-ink-50/70"
-              aria-hidden
-            >
-              <ChevronIcon open={expandable.open} />
-            </span>
-          </button>
-          {expandable.open && notes != null && (
-            <div className="space-y-2 border-t border-ink-100 bg-ink-50/40 px-3 py-3">{notes}</div>
-          )}
-        </div>
+            <ChevronIcon open={expandable.open} />
+          </span>
+        </button>
+        {expandable.open && notes != null && (
+          <div className="space-y-2 border-t border-ink-100 bg-ink-50/40 px-3 py-3">{notes}</div>
+        )}
       </div>
     )
   }
 
   // Static card: same shell + discipline edge, no chevron / hover (not expandable).
   return (
-    <div className="border-t border-ink-100 py-2 first:border-t-0 first:pt-0">
-      <div className={cardShell}>
-        <div
-          className={`rounded-r border-l-4 px-3 py-3 ${disciplineStyle.borderClass}`}
-        >
-          <div className={gridClass}>{sides}</div>
-          <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
-          {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
-        </div>
+    <div className={cardShell}>
+      <div className={`rounded-r border-l-4 px-3 py-3 ${disciplineStyle.borderClass}`}>
+        <div className={gridClass}>{sides}</div>
+        <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
+        {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
       </div>
     </div>
   )

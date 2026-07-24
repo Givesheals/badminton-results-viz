@@ -6,6 +6,7 @@ import {
   loadRememberedCustomTags,
   normalizeCustomTagLabel,
   rememberCustomTag,
+  removeRememberedCustomTag,
   type CustomTagGroup,
 } from '../../lib/customNoteTags'
 import {
@@ -101,6 +102,7 @@ function TagAddRow({
   playerName,
   rememberedTags,
   onRememberedChange,
+  onCreatedNew,
   emphasizeAddLabel,
 }: {
   unselectedOptions: { label: string; hint?: string }[]
@@ -109,6 +111,8 @@ function TagAddRow({
   playerName: string | null
   rememberedTags: string[]
   onRememberedChange: (tags: string[]) => void
+  /** Called when a brand-new library chip is created from the add field. */
+  onCreatedNew?: (label: string) => void
   emphasizeAddLabel?: string | null
 }) {
   const addInputId = useId()
@@ -130,6 +134,7 @@ function TagAddRow({
       }
       const updated = rememberCustomTag(playerName, customTagGroup, label)
       onRememberedChange(updated ?? [...rememberedTags, label])
+      onCreatedNew?.(label)
     }
 
     onAdd(existing ?? label)
@@ -228,6 +233,8 @@ function TaggedNoteSection<T extends string>({
       ? ensureScoutingChipLibrary(playerName)[customTagGroup]
       : loadRememberedCustomTags(playerName)[customTagGroup],
   )
+  /** Labels created via "Add a tag…" in this compose session — remove from library if unticked. */
+  const [createdThisSession, setCreatedThisSession] = useState(() => new Set<string>())
 
   useEffect(() => {
     setRememberedCustom(
@@ -235,6 +242,7 @@ function TaggedNoteSection<T extends string>({
         ? ensureScoutingChipLibrary(playerName)[customTagGroup]
         : loadRememberedCustomTags(playerName)[customTagGroup],
     )
+    setCreatedThisSession(new Set())
   }, [playerName, customTagGroup, diyLibrary])
 
   const builtInLabelByValue = new Map(builtInOptions.map((option) => [option.value, option.label]))
@@ -275,9 +283,20 @@ function TaggedNoteSection<T extends string>({
       onSelectedBuiltInChange(selectedBuiltIn.filter((value) => value !== builtIn.value))
       return
     }
-    onSelectedCustomChange(
-      selectedCustom.filter((tag) => tag.toLowerCase() !== label.toLowerCase()),
-    )
+    const key = label.toLowerCase()
+    onSelectedCustomChange(selectedCustom.filter((tag) => tag.toLowerCase() !== key))
+
+    if (createdThisSession.has(key)) {
+      const updated = removeRememberedCustomTag(playerName, customTagGroup, label)
+      setRememberedCustom(
+        updated ?? rememberedCustom.filter((tag) => tag.toLowerCase() !== key),
+      )
+      setCreatedThisSession((prev) => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+    }
   }
 
   return (
@@ -301,6 +320,9 @@ function TaggedNoteSection<T extends string>({
         playerName={playerName}
         rememberedTags={rememberedCustom}
         onRememberedChange={setRememberedCustom}
+        onCreatedNew={(label) => {
+          setCreatedThisSession((prev) => new Set(prev).add(label.toLowerCase()))
+        }}
         emphasizeAddLabel={emphasizeAddLabel}
       />
     </section>

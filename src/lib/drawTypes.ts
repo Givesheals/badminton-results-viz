@@ -7,6 +7,8 @@ export type DrawPlayer = {
   url: string
   /** Seeding prefix shown before the name, e.g. '[1]'. */
   seedLabel?: string
+  /** Pre-match / draw rating shown after the name, e.g. 572. */
+  rating?: number
 }
 
 export type DrawMatchup = {

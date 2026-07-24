@@ -519,7 +519,7 @@ function RoundGroupBlock({
       <p className="text-xs font-medium text-ink-500">
         {disciplineCode}: {roundLabel}
       </p>
-      <div className="mt-1">
+      <div className="mt-1 space-y-2">
         {matchups.map((matchup) => (
           <MatchupBlock
             key={matchup.id}
@@ -546,6 +546,9 @@ function LaterOpponentNames({ players }: { players: DrawPlayer[] }) {
             <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
           )}
           {player.name}
+          {player.rating != null ? (
+            <span className="tabular-nums text-ink-500"> ({player.rating})</span>
+          ) : null}
           {index < players.length - 1 && <span className="text-ink-400"> &</span>}
         </div>
       ))}
@@ -954,8 +957,6 @@ function CompetitionHeader({
   )
 }
 
-const VISIBLE_FAVOURITE_CHIPS = 2
-
 type PlayerOption = {
   name: string
   label: string
@@ -987,18 +988,6 @@ function buildPlayerOptions(competition: DrawScoutCompetition): PlayerOption[] {
   }
 
   return options
-}
-
-/** Keep the selected favourite visible; otherwise first N by name. Cap stays small for 10–15 favourites. */
-function pickQuickFavouriteChips(
-  favourites: PlayerOption[],
-  selectedName: string,
-  limit: number,
-): PlayerOption[] {
-  if (favourites.length === 0 || limit <= 0) return []
-  const selected = favourites.find((option) => option.name === selectedName)
-  const rest = favourites.filter((option) => option.name !== selectedName)
-  return (selected != null ? [selected, ...rest] : rest).slice(0, limit)
 }
 
 function matchPlayerOption(query: string, option: PlayerOption): boolean {
@@ -1037,32 +1026,6 @@ function FavouriteStarIcon({ className = 'h-3 w-3' }: { className?: string }) {
         d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
       />
     </svg>
-  )
-}
-
-function PlayerChip({
-  label,
-  selected,
-  onClick,
-  showFavouriteStar = false,
-}: {
-  label: string
-  selected: boolean
-  onClick: () => void
-  showFavouriteStar?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={showFavouriteStar ? `${label} (favourite)` : undefined}
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition ${
-        selected ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-700 hover:bg-ink-200'
-      }`}
-    >
-      {showFavouriteStar && <FavouriteStarIcon />}
-      {label}
-    </button>
   )
 }
 
@@ -1119,8 +1082,6 @@ function PlayerCombobox({
   const selectedOption = options.find((option) => option.name === value) ?? null
   const filtered = options.filter((option) => matchPlayerOption(query, option))
 
-  const favourites = options.filter((option) => option.isFavourite && !option.isYou)
-  const you = options.find((option) => option.isYou)
   const viewingEntrant = competition.entrants.find((entrant) => entrant.name === value)
 
   const filteredFavourites = filtered.filter((option) => option.isFavourite && !option.isYou)
@@ -1136,11 +1097,6 @@ function PlayerCombobox({
     },
     [onChange],
   )
-
-  const openPlayerList = useCallback(() => {
-    setListOpen(true)
-    inputRef.current?.focus()
-  }, [])
 
   const commitQuery = useCallback(() => {
     const match = resolvePlayerOption(query, options)
@@ -1209,8 +1165,6 @@ function PlayerCombobox({
     }
   }, [commitQuery, listId, listOpen])
 
-  const quickFavourites = pickQuickFavouriteChips(favourites, value, VISIBLE_FAVOURITE_CHIPS)
-  const overflowFavouriteCount = Math.max(0, favourites.length - quickFavourites.length)
   const inputValue = query !== '' ? query : (selectedOption?.label ?? '')
 
   return (
@@ -1322,37 +1276,6 @@ function PlayerCombobox({
             )
           : null}
       </div>
-      {(favourites.length > 0 || you) && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          {you && (
-            <PlayerChip
-              label={you.label}
-              selected={value === you.name}
-              onClick={() => selectOption(you)}
-            />
-          )}
-          {quickFavourites.map((option) => (
-            <PlayerChip
-              key={option.name}
-              label={option.label}
-              selected={value === option.name}
-              onClick={() => selectOption(option)}
-              showFavouriteStar
-            />
-          ))}
-          {overflowFavouriteCount > 0 && (
-            <button
-              type="button"
-              onClick={openPlayerList}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-brand-600 transition hover:bg-brand-50"
-              aria-label={`Show all ${favourites.length} favourites`}
-            >
-              <FavouriteStarIcon />
-              +{overflowFavouriteCount} more
-            </button>
-          )}
-        </div>
-      )}
       {value && viewingEntrant != null && !viewingEntrant.isYou && (
         <p className="mt-1.5 text-xs text-ink-600">
           Viewing <strong>{value}</strong>&rsquo;s draw — your notes on their opponents
