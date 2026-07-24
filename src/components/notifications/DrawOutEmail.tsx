@@ -30,6 +30,9 @@ function TeamSide({ players }: { players: DrawPlayer[] }) {
         <div key={p.name} className="text-sm leading-snug text-ink-900">
           {p.seedLabel && <span className="mr-1 font-semibold text-ink-500">{p.seedLabel}</span>}
           <EmailLink href={p.url}>{p.name}</EmailLink>
+          {p.rating != null ? (
+            <span className="tabular-nums text-ink-500"> ({p.rating})</span>
+          ) : null}
           {index < players.length - 1 && <span className="text-ink-400"> &</span>}
         </div>
       ))}

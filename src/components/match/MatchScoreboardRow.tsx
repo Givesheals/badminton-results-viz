@@ -8,23 +8,23 @@ import {
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { DisciplineChip } from '../discipline/DisciplineChip'
 
-/** Parent list grid: stacked on phones, three-column scoreboard from `sm` up. */
+/** Parent list grid: stacked on phones, four-column scoreboard from `sm` up. */
 export const MATCH_SCOREBOARD_GRID =
-  'grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(3.25rem,max-content)_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1'
+  'grid grid-cols-1 sm:grid-cols-[max-content_minmax(0,1fr)_minmax(3.25rem,max-content)_minmax(0,1fr)] items-start gap-x-2.5 gap-y-2'
 
 /**
- * Compact parent grid: three-column scoreboard at every width. Use with
+ * Compact parent grid: four-column scoreboard at every width. Use with
  * `variant="columns"` in tight containers (e.g. Draw Scout accordions) where
  * the columns layout is easier to scan than the stacked phone fallback.
  */
 export const MATCH_SCOREBOARD_GRID_COMPACT =
-  'grid grid-cols-[minmax(0,1fr)_minmax(2.5rem,max-content)_minmax(0,1fr)] items-center gap-x-2 gap-y-1'
+  'grid grid-cols-[max-content_minmax(0,1fr)_minmax(2.5rem,max-content)_minmax(0,1fr)] items-start gap-x-2 gap-y-2'
 
 type Props = {
   match: NormalizedMatch
   /**
    * `responsive` (default): stacked on phones, columns from `sm` up.
-   * `columns`: three-column scoreboard at every width (pair with
+   * `columns`: four-column scoreboard at every width (pair with
    * MATCH_SCOREBOARD_GRID_COMPACT on the parent list).
    */
   variant?: 'responsive' | 'columns'
@@ -39,22 +39,20 @@ export function MatchScoreboardRow({ match, variant = 'responsive' }: Props) {
 
   return (
     <li
-      className={`col-span-full grid items-center rounded-r border-l-4 bg-white ${
+      className={`col-span-full grid items-start rounded-r border-l-4 ${style.rowBgClass} ${
         alwaysColumns
           ? 'grid-cols-subgrid py-1.5 pl-1.5 pr-0.5'
           : 'grid-cols-1 py-1.5 pl-2 pr-1 sm:grid-cols-subgrid'
       } ${style.borderClass}`}
     >
-      <div className="col-span-full px-0.5">
-        <p className="text-sm font-medium leading-snug text-ink-900">{match.competitionName}</p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <DisciplineChip code={match.discipline} className="w-fit" />
-          <p className="text-xs text-ink-500">{formatShortDate(match.date)}</p>
-        </div>
+      <div className="col-span-full space-y-0.5 px-0.5">
+        <p className="text-sm font-semibold leading-tight text-ink-900">{match.competitionName}</p>
+        <p className="text-xs leading-tight text-ink-500">{formatShortDate(match.date)}</p>
       </div>
 
       {!alwaysColumns && (
         <div className="col-span-full space-y-0.5 px-0.5 sm:hidden">
+          <DisciplineChip code={match.discipline} className="w-fit" />
           <TeamInline members={ourTeam} side="ours" emphasize={match.outcome === 'win'} />
           <p className="text-xs leading-snug text-ink-900">
             <span className="text-ink-500">vs </span>
@@ -73,6 +71,12 @@ export function MatchScoreboardRow({ match, variant = 'responsive' }: Props) {
         </div>
       )}
 
+      <DisciplineChip
+        code={match.discipline}
+        className={`w-fit justify-self-start self-start ${
+          alwaysColumns ? '' : 'hidden sm:inline-flex'
+        }`}
+      />
       <TeamColumn
         members={ourTeam}
         side="ours"
@@ -110,22 +114,24 @@ function TeamInline({
   }
 
   return (
-    <Tag className="text-xs leading-snug text-ink-900">
+    <Tag className="text-xs leading-snug">
       {members.map((member, index) => {
         const isPartner = side === 'ours' && index > 0
 
         return (
           <span key={`${member.name}-${index}`}>
             <span
-              className={`${emphasize ? 'font-semibold' : ''} ${
+              className={
                 isPartner
                   ? 'text-brand-800 underline decoration-brand-200 underline-offset-2'
-                  : ''
-              }`}
+                  : emphasize
+                    ? 'font-semibold text-ink-900'
+                    : 'text-ink-600'
+              }
             >
               {member.name}
               {member.rating != null ? (
-                <span className="tabular-nums text-ink-500"> ({member.rating})</span>
+                <span className="tabular-nums"> ({member.rating})</span>
               ) : null}
             </span>
             {index < members.length - 1 ? ' & ' : ''}
@@ -163,7 +169,7 @@ function TeamColumn({
 
   return (
     <div
-      className={`${visibility} min-w-0 text-xs leading-snug text-ink-900 ${
+      className={`${visibility} min-w-0 self-start text-xs leading-snug ${
         side === 'ours' ? 'text-right' : 'text-left'
       }`}
     >
@@ -173,15 +179,17 @@ function TeamColumn({
         return (
           <p
             key={`${member.name}-${index}`}
-            className={`leading-snug ${emphasize ? 'font-semibold' : ''} ${
+            className={`leading-snug ${
               isPartner
                 ? 'text-brand-800 underline decoration-brand-200 underline-offset-2'
-                : ''
+                : emphasize
+                  ? 'font-semibold text-ink-900'
+                  : 'text-ink-600'
             }`}
           >
             {member.name}
             {member.rating != null ? (
-              <span className="tabular-nums text-ink-500"> ({member.rating})</span>
+              <span className="tabular-nums"> ({member.rating})</span>
             ) : null}
             {index < members.length - 1 ? ' &' : ''}
           </p>
@@ -204,7 +212,9 @@ function MatchScores({
 
   if (games.length === 0) {
     return (
-      <p className={`${visibility} shrink-0 whitespace-nowrap text-center text-xs text-ink-500`}>
+      <p
+        className={`${visibility} shrink-0 self-start whitespace-nowrap text-center text-xs text-ink-500`}
+      >
         {scoreSummary || '—'}
       </p>
     )
@@ -212,10 +222,10 @@ function MatchScores({
 
   return (
     <div
-      className={`${visibility} shrink-0 whitespace-nowrap text-center text-xs tabular-nums text-ink-800`}
+      className={`${visibility} shrink-0 self-start whitespace-nowrap text-center text-xs tabular-nums text-ink-900`}
     >
       {games.map((game) => (
-        <p key={game.game}>
+        <p key={game.game} className="leading-snug">
           <ScoreSpan value={game.player} won={game.player > game.opponent} />
           <span className="text-ink-400"> - </span>
           <ScoreSpan value={game.opponent} won={game.opponent > game.player} />
@@ -252,7 +262,7 @@ function OutcomeScoreLine({
         </span>
       )}
       {games.length > 0 ? (
-        <span className="tabular-nums text-ink-800">
+        <span className="tabular-nums text-ink-900">
           {games.map((game, index) => (
             <span key={game.game}>
               {index > 0 ? ', ' : null}
@@ -263,14 +273,14 @@ function OutcomeScoreLine({
           ))}
         </span>
       ) : (
-        <span className="tabular-nums text-ink-800">{scoreSummary || '—'}</span>
+        <span className="tabular-nums text-ink-900">{scoreSummary || '—'}</span>
       )}
     </p>
   )
 }
 
 function ScoreSpan({ value, won }: { value: number; won: boolean }) {
-  return <span className={won ? 'font-bold' : ''}>{value}</span>
+  return <span className={won ? 'font-bold' : 'font-medium'}>{value}</span>
 }
 
 function formatShortDate(isoDate: string): string {

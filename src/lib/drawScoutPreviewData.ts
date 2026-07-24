@@ -37,11 +37,49 @@ export function getPrototypeDrawWeekend(now = new Date()): {
 
 const prototypeWeekend = getPrototypeDrawWeekend()
 
-function player(name: string, extra: { seedLabel?: string } = {}): DrawPlayer {
+/** Stable prototype ratings so the same name shows the same figure across the draw. */
+const PLAYER_RATINGS: Record<string, number> = {
+  'Simon Parker': 572,
+  'Sara Moore': 568,
+  'Martin Crossley': 555,
+  'Murray Wright': 548,
+  'Corinna Wong': 542,
+  'Dan Martyres': 612,
+  'Alisha Johnson': 598,
+  'Simon Gilhooly': 560,
+  'Paul Andrew Mayfield': 552,
+  'Chris Nolan': 535,
+  'Alex Reid': 528,
+  'James Chen': 575,
+  'Ben Carter': 558,
+  'Emma Walsh': 551,
+  'Tom Fielding': 565,
+  'Lucy Grant': 557,
+  'Daniel Hughes': 582,
+  'Morgan Taylor': 570,
+  'Helena Croft': 545,
+  'Marcus Bloom': 538,
+  'Felix Grant': 525,
+  'Chloe Adams': 520,
+  'Isla Bennett': 510,
+  'Noah Price': 505,
+  'Oliver Brooks': 540,
+  'Sophie Lane': 532,
+  'Jamie Patel': 518,
+  'Priya Shah': 515,
+  'Nina West': 508,
+  'Ryan Cole': 502,
+  'Amy Brooks': 548,
+  'Kate Morrison': 541,
+  'Partner Stub': 550,
+}
+
+function player(name: string, extra: { seedLabel?: string; rating?: number } = {}): DrawPlayer {
   return {
     name,
     url: `https://badminfo.com/player?name=${encodeURIComponent(name)}`,
     ...extra,
+    rating: extra.rating ?? PLAYER_RATINGS[name],
   }
 }
 
