@@ -313,7 +313,7 @@ function ChevronIcon({ open, className = 'h-4 w-4' }: { open: boolean; className
 }
 
 export function OpponentNotesSection({ allMatches }: Props) {
-  const { allNotes, playerName } = useOpponentNotesContext()
+  const { allNotes } = useOpponentNotesContext()
   const [search, setSearch] = useState('')
   const [activeNote, setActiveNote] = useState<OpponentNote | null>(null)
   const [addNoteState, setAddNoteState] = useState<AddNoteState>({ step: 'closed' })
