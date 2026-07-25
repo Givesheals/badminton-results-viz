@@ -160,6 +160,23 @@ export const drawScoutDemoNotes: OpponentNote[] = [
       tags: { customOpponentStyles: ['Steep smash', 'Rushes the net'] },
     },
   ),
+  // Doubles group (played): notes + games vs Gilhooly / Mayfield via Mayfield note.
+  demoNote(
+    'mayfield',
+    'Paul Andrew Mayfield',
+    'Drifts mid-court after the serve and leaves the tramlines open. Serve wide and attack his forehand side early.',
+    {
+      competitionName: 'Bedfordshire Open 2025',
+      date: '2025-06-08',
+      discipline: 'OD',
+      disciplineLabel: 'Open doubles',
+      partnerName: 'Martin Crossley',
+      tags: { customOpponentStyles: ['Drifts mid-court', 'Weak wide serve return'] },
+      appliesToDisciplines: ['D'],
+      opponentNames: ['Paul Andrew Mayfield', 'Simon Gilhooly'],
+      opponentsDisplay: 'Simon Gilhooly & Paul Andrew Mayfield',
+    },
+  ),
   // Singles group: notes-only vs Theo Marsh (no prior meeting in demo matches).
   demoNote(
     'theo',

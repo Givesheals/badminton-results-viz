@@ -396,6 +396,7 @@ describe('drawScout', () => {
 
   it('covers notes-only, games-only, both, and neither matchup fixtures', () => {
     const notes = mergeDrawScoutDisplayNotes([])
+    const os = simon.disciplineGroups.find((group) => group.disciplineCode === 'OS')!
     const xd = simon.disciplineGroups.find((group) => group.disciplineCode === 'XD')!
     const od = simon.disciplineGroups.find((group) => group.disciplineCode === 'OD')!
     const murray = getMatchupIntelCounts(
@@ -410,7 +411,7 @@ describe('drawScout', () => {
       drawScoutDemoMatches,
       'Simon Parker',
     )
-    const gilHooly = getMatchupIntelCounts(
+    const gilHoolyMayfield = getMatchupIntelCounts(
       od.matchups.find((item) => item.id === 'd3')!,
       notes,
       drawScoutDemoMatches,
@@ -422,14 +423,22 @@ describe('drawScout', () => {
       drawScoutDemoMatches,
       'Simon Parker',
     )
+    const callum = getMatchupIntelCounts(
+      os.matchups.find((item) => item.id === 'os2')!,
+      notes,
+      drawScoutDemoMatches,
+      'Simon Parker',
+    )
 
     expect(murray).toEqual({ noteCount: expect.any(Number), gamesPlayed: 0 })
     expect(murray.noteCount).toBeGreaterThan(0)
     expect(danAlisha.noteCount).toBeGreaterThan(0)
     expect(danAlisha.gamesPlayed).toBeGreaterThan(0)
-    expect(gilHooly.noteCount).toBe(0)
-    expect(gilHooly.gamesPlayed).toBeGreaterThan(0)
+    expect(gilHoolyMayfield.noteCount).toBeGreaterThan(0)
+    expect(gilHoolyMayfield.gamesPlayed).toBeGreaterThan(0)
     expect(neither).toEqual({ noteCount: 0, gamesPlayed: 0 })
+    expect(callum.noteCount).toBe(0)
+    expect(callum.gamesPlayed).toBeGreaterThan(0)
   })
 
   it('includes progressive draw states: unplayed singles, probable OD QF, definite XD QF', () => {
