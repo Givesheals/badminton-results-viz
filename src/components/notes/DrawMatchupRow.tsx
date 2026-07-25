@@ -9,10 +9,11 @@ export const DRAW_MATCHUP_GRID =
 
 /**
  * Condensed two-side layout: fixed-width columns for your side + opponents,
- * leftover space on the right so teams stay close and align across cards.
+ * leftover space on the right so teams stay close and align across cards
+ * (with or without a chevron column).
  */
 const DRAW_SIDES_GRID =
-  'grid grid-cols-[minmax(0,9.75rem)_minmax(0,9.75rem)_minmax(0,1fr)] items-start gap-x-3 gap-y-1 sm:grid-cols-[minmax(0,11rem)_minmax(0,11rem)_minmax(0,1fr)]'
+  'grid grid-cols-[9.75rem_9.75rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 sm:grid-cols-[11rem_11rem_minmax(0,1fr)]'
 
 function formatOpponentLine(players: DrawPlayer[]): string {
   return players
@@ -313,37 +314,34 @@ export function DrawMatchupRow({
     )
   }
 
-  // Static card: same shell + reserved chevron column so opponents align with expandable rows.
+  // Static card: no chevron panel (nothing to open). Fixed side columns keep
+  // opponent names aligned with expandable rows above/below.
   return (
     <div className={cardShell}>
-      <div
-        className={`flex w-full items-stretch gap-2 rounded-r border-l-4 ${disciplineStyle.borderClass}`}
-      >
-        <div className={`min-w-0 flex-1 ${paddingClass}`}>
-          {usePlayedCompact ? (
-            <PlayedMatchupBody matchup={matchup} />
-          ) : (
-            <>
-              <div className={gridClass}>{sides}</div>
-              {result != null ? (
+      <div className={`rounded-r border-l-4 ${paddingClass} ${disciplineStyle.borderClass}`}>
+        {usePlayedCompact ? (
+          <PlayedMatchupBody matchup={matchup} />
+        ) : (
+          <>
+            <div className={gridClass}>{sides}</div>
+            {result != null ? (
+              <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
+                <ResultInline result={result} />
+                <div aria-hidden />
+                <div aria-hidden />
+              </div>
+            ) : (
+              !played && (
                 <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
-                  <ResultInline result={result} />
+                  <p className="text-xs text-ink-400">No notes or games yet</p>
                   <div aria-hidden />
                   <div aria-hidden />
                 </div>
-              ) : (
-                !played && <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
-              )}
-              {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
-            </>
-          )}
-        </div>
-        <span
-          className={`flex ${chevronWidth} shrink-0 border-l border-ink-100 ${
-            usePlayedCompact ? 'bg-transparent' : 'bg-ink-50/70'
-          }`}
-          aria-hidden
-        />
+              )
+            )}
+            {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
+          </>
+        )}
       </div>
     </div>
   )
