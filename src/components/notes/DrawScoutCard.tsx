@@ -574,48 +574,54 @@ function ProbableNextMatchupBlock({
   viewingOwnDraw?: boolean
 }) {
   const [showAll, setShowAll] = useState(false)
+  const disciplineStyle = getDisciplineStyle(disciplineCode)
   const probable = matchup.probableOpponents ?? []
   const visible = showAll ? probable : probable.slice(0, PROBABLE_NEXT_INITIAL_VISIBLE)
   const hiddenCount = probable.length - visible.length
   const showMoreButtonClass =
-    'mt-2 w-fit rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
+    'my-2 ml-3 w-fit rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
-  // No outer card — each opponent is a full-width card so phone layouts keep score room.
+  // One section card groups the list; rows inside are flat (no nested cards) so
+  // we keep section identity without a second layer of padding/borders.
   return (
-    <div>
-      <p className="text-xs font-medium text-ink-500">Most likely opponents</p>
-      <div className="mt-1 space-y-2">
-        {visible.map((item) => {
-          const asLater = probableToLaterOpponent(
-            item,
-            disciplineCode,
-            matchup.roundLabel,
-          )
-          return (
-            <LaterOpponentBlock
-              key={laterOpponentKey(asLater)}
-              opponent={asLater}
-              displayNotes={displayNotes}
-              displayMatches={displayMatches}
-              playerName={playerName}
-              matchByKey={matchByKey}
-              disciplineCode={disciplineCode}
-              viewingOwnDraw={viewingOwnDraw}
-              variant="standalone"
-            />
-          )
-        })}
+    <div className="overflow-hidden rounded-xl border border-ink-100 bg-white shadow-sm">
+      <div className={`rounded-r border-l-4 ${disciplineStyle.borderClass}`}>
+        <p className="border-b border-ink-100 px-3 py-2 text-xs font-medium text-ink-500">
+          Most likely opponents
+        </p>
+        <div>
+          {visible.map((item) => {
+            const asLater = probableToLaterOpponent(
+              item,
+              disciplineCode,
+              matchup.roundLabel,
+            )
+            return (
+              <LaterOpponentBlock
+                key={laterOpponentKey(asLater)}
+                opponent={asLater}
+                displayNotes={displayNotes}
+                displayMatches={displayMatches}
+                playerName={playerName}
+                matchByKey={matchByKey}
+                disciplineCode={disciplineCode}
+                viewingOwnDraw={viewingOwnDraw}
+                variant="section"
+              />
+            )
+          })}
+        </div>
+        {hiddenCount > 0 && !showAll && (
+          <button type="button" onClick={() => setShowAll(true)} className={showMoreButtonClass}>
+            Show more
+          </button>
+        )}
+        {showAll && probable.length > PROBABLE_NEXT_INITIAL_VISIBLE && (
+          <button type="button" onClick={() => setShowAll(false)} className={showMoreButtonClass}>
+            Show less
+          </button>
+        )}
       </div>
-      {hiddenCount > 0 && !showAll && (
-        <button type="button" onClick={() => setShowAll(true)} className={showMoreButtonClass}>
-          Show more
-        </button>
-      )}
-      {showAll && probable.length > PROBABLE_NEXT_INITIAL_VISIBLE && (
-        <button type="button" onClick={() => setShowAll(false)} className={showMoreButtonClass}>
-          Show less
-        </button>
-      )}
     </div>
   )
 }
@@ -721,8 +727,12 @@ function LaterOpponentBlock({
   matchByKey: Map<string, NormalizedMatch>
   disciplineCode: string
   viewingOwnDraw?: boolean
-  /** embedded = nested in “may also meet”; standalone = full-width card list */
-  variant?: 'embedded' | 'standalone'
+  /**
+   * embedded = nested cards in “may also meet”
+   * standalone = full-width individual cards
+   * section = flat rows inside a shared section card (no nested chrome)
+   */
+  variant?: 'embedded' | 'standalone' | 'section'
 }) {
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<IntelPanelMode>('notes')
@@ -760,6 +770,57 @@ function LaterOpponentBlock({
     </>
   )
 
+  const expanded = open && teaser != null && (
+    <div className="space-y-2 border-t border-ink-100 bg-ink-50/40 px-3 py-3">
+      {showTabs && <MatchupIntelTabs active={panel} onChange={setPanel} />}
+      <MatchupNotes
+        matchup={matchup}
+        displayNotes={displayNotes}
+        displayMatches={displayMatches}
+        playerName={playerName}
+        matchByKey={matchByKey}
+        panel={resolvedPanel}
+        viewingOwnDraw={viewingOwnDraw}
+      />
+    </div>
+  )
+
+  const toggleOpen = () => {
+    setOpen((value) => {
+      const next = !value
+      if (next) setPanel('notes')
+      return next
+    })
+  }
+
+  // Flat row inside a shared section — full width of the outer card, no nested shell.
+  if (variant === 'section') {
+    if (teaser == null) {
+      return (
+        <div className="border-t border-ink-100 px-3 py-2.5 first:border-t-0">{body}</div>
+      )
+    }
+    return (
+      <div className="border-t border-ink-100 first:border-t-0">
+        <button
+          type="button"
+          onClick={toggleOpen}
+          aria-expanded={open}
+          className="flex w-full items-stretch gap-2 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200"
+        >
+          <div className="min-w-0 flex-1 px-3 py-2.5">{body}</div>
+          <span
+            className="flex w-10 shrink-0 items-center justify-center border-l border-ink-100"
+            aria-hidden
+          >
+            <ChevronIcon open={open} />
+          </span>
+        </button>
+        {expanded}
+      </div>
+    )
+  }
+
   const card =
     teaser == null ? (
       <div className={cardShell}>
@@ -771,13 +832,7 @@ function LaterOpponentBlock({
       <div className={cardShell}>
         <button
           type="button"
-          onClick={() => {
-            setOpen((value) => {
-              const next = !value
-              if (next) setPanel('notes')
-              return next
-            })
-          }}
+          onClick={toggleOpen}
           aria-expanded={open}
           className={`flex w-full items-stretch gap-2 rounded-r border-l-4 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200 ${disciplineStyle.borderClass}`}
         >
@@ -789,20 +844,7 @@ function LaterOpponentBlock({
             <ChevronIcon open={open} />
           </span>
         </button>
-        {open && (
-          <div className="space-y-2 border-t border-ink-100 bg-ink-50/40 px-3 py-3">
-            {showTabs && <MatchupIntelTabs active={panel} onChange={setPanel} />}
-            <MatchupNotes
-              matchup={matchup}
-              displayNotes={displayNotes}
-              displayMatches={displayMatches}
-              playerName={playerName}
-              matchByKey={matchByKey}
-              panel={resolvedPanel}
-              viewingOwnDraw={viewingOwnDraw}
-            />
-          </div>
-        )}
+        {expanded}
       </div>
     )
 
