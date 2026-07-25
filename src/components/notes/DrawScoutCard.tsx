@@ -574,49 +574,48 @@ function ProbableNextMatchupBlock({
   viewingOwnDraw?: boolean
 }) {
   const [showAll, setShowAll] = useState(false)
-  const disciplineStyle = getDisciplineStyle(disciplineCode)
   const probable = matchup.probableOpponents ?? []
   const visible = showAll ? probable : probable.slice(0, PROBABLE_NEXT_INITIAL_VISIBLE)
   const hiddenCount = probable.length - visible.length
   const showMoreButtonClass =
     'mt-2 w-fit rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
+  // No outer card — each opponent is a full-width card so phone layouts keep score room.
   return (
-    <div className="overflow-hidden rounded-xl border border-ink-100 bg-white shadow-sm">
-      <div className={`rounded-r border-l-4 px-3 py-3 ${disciplineStyle.borderClass}`}>
-        <p className="text-xs font-medium text-ink-500">Most likely opponents</p>
-        <div className="mt-1">
-          {visible.map((item) => {
-            const asLater = probableToLaterOpponent(
-              item,
-              disciplineCode,
-              matchup.roundLabel,
-            )
-            return (
-              <LaterOpponentBlock
-                key={laterOpponentKey(asLater)}
-                opponent={asLater}
-                displayNotes={displayNotes}
-                displayMatches={displayMatches}
-                playerName={playerName}
-                matchByKey={matchByKey}
-                disciplineCode={disciplineCode}
-                viewingOwnDraw={viewingOwnDraw}
-              />
-            )
-          })}
-        </div>
-        {hiddenCount > 0 && !showAll && (
-          <button type="button" onClick={() => setShowAll(true)} className={showMoreButtonClass}>
-            Show more
-          </button>
-        )}
-        {showAll && probable.length > PROBABLE_NEXT_INITIAL_VISIBLE && (
-          <button type="button" onClick={() => setShowAll(false)} className={showMoreButtonClass}>
-            Show less
-          </button>
-        )}
+    <div>
+      <p className="text-xs font-medium text-ink-500">Most likely opponents</p>
+      <div className="mt-1 space-y-2">
+        {visible.map((item) => {
+          const asLater = probableToLaterOpponent(
+            item,
+            disciplineCode,
+            matchup.roundLabel,
+          )
+          return (
+            <LaterOpponentBlock
+              key={laterOpponentKey(asLater)}
+              opponent={asLater}
+              displayNotes={displayNotes}
+              displayMatches={displayMatches}
+              playerName={playerName}
+              matchByKey={matchByKey}
+              disciplineCode={disciplineCode}
+              viewingOwnDraw={viewingOwnDraw}
+              variant="standalone"
+            />
+          )
+        })}
       </div>
+      {hiddenCount > 0 && !showAll && (
+        <button type="button" onClick={() => setShowAll(true)} className={showMoreButtonClass}>
+          Show more
+        </button>
+      )}
+      {showAll && probable.length > PROBABLE_NEXT_INITIAL_VISIBLE && (
+        <button type="button" onClick={() => setShowAll(false)} className={showMoreButtonClass}>
+          Show less
+        </button>
+      )}
     </div>
   )
 }
@@ -713,6 +712,7 @@ function LaterOpponentBlock({
   matchByKey,
   disciplineCode,
   viewingOwnDraw = true,
+  variant = 'embedded',
 }: {
   opponent: DrawScoutLaterOpponent
   displayNotes: OpponentNote[]
@@ -721,6 +721,8 @@ function LaterOpponentBlock({
   matchByKey: Map<string, NormalizedMatch>
   disciplineCode: string
   viewingOwnDraw?: boolean
+  /** embedded = nested in “may also meet”; standalone = full-width card list */
+  variant?: 'embedded' | 'standalone'
 }) {
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<IntelPanelMode>('notes')
@@ -758,20 +760,14 @@ function LaterOpponentBlock({
     </>
   )
 
-  if (teaser == null) {
-    return (
-      <div className="border-t border-ink-100 py-2 first:border-t-0 first:pt-0">
-        <div className={cardShell}>
-          <div className={`rounded-r border-l-4 px-3 py-3 ${disciplineStyle.borderClass}`}>
-            {body}
-          </div>
+  const card =
+    teaser == null ? (
+      <div className={cardShell}>
+        <div className={`rounded-r border-l-4 px-3 py-3 ${disciplineStyle.borderClass}`}>
+          {body}
         </div>
       </div>
-    )
-  }
-
-  return (
-    <div className="border-t border-ink-100 py-2 first:border-t-0 first:pt-0">
+    ) : (
       <div className={cardShell}>
         <button
           type="button"
@@ -808,7 +804,12 @@ function LaterOpponentBlock({
           </div>
         )}
       </div>
-    </div>
+    )
+
+  if (variant === 'standalone') return card
+
+  return (
+    <div className="border-t border-ink-100 py-2 first:border-t-0 first:pt-0">{card}</div>
   )
 }
 
