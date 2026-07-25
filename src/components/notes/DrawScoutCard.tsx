@@ -1042,7 +1042,7 @@ function DisciplineBlock({
   const dotClass = DISCIPLINE_DOT[getDisciplineFamily(group.disciplineCode)]
   const roundGroups = useMemo(() => groupMatchupsByRound(group.matchups), [group.matchups])
   const roundRoles = useMemo(() => getDrawRoundSectionRoles(roundGroups), [roundGroups])
-  const pairIdentity = useMemo(
+  const entrantIdentity = useMemo(
     () => getDisciplinePairIdentityLabel(group, viewedPlayerName),
     [group, viewedPlayerName],
   )
@@ -1062,8 +1062,8 @@ function DisciplineBlock({
         <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} aria-hidden />
         <h4 className="text-sm font-bold text-ink-900">{group.disciplineLabel}</h4>
       </div>
-      {pairIdentity != null ? (
-        <p className="mt-0.5 text-sm text-ink-600">{pairIdentity}</p>
+      {entrantIdentity != null ? (
+        <p className="mt-0.5 text-sm text-ink-600">{entrantIdentity}</p>
       ) : null}
       <div className="mt-1">
         {roundGroups.map((roundGroup) => (

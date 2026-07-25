@@ -132,21 +132,36 @@ export function collectOpponentNamesFromDraw(groups: DrawDisciplineGroup[]): str
 }
 
 /**
- * Doubles/mixed header line: viewed player & partner (full names + ratings).
- * Singles and incomplete sides return null.
+ * Discipline header identity: singles = viewed player + rating;
+ * doubles/mixed = viewed player & partner with ratings.
  */
 export function getDisciplinePairIdentityLabel(
   group: DrawDisciplineGroup,
   viewedPlayerName: string,
 ): string | null {
   const family = getDisciplineFamily(group.disciplineCode)
+  const viewedKey = viewedPlayerName.trim().toLowerCase()
+
+  const formatPlayer = (player: DrawPlayer): string => {
+    const rating = player.rating != null ? ` (${player.rating})` : ''
+    return `${player.name}${rating}`
+  }
+
+  if (family === 'singles') {
+    const yourSide =
+      group.matchups.find((matchup) => matchup.yourSide.length >= 1)?.yourSide ?? null
+    if (yourSide == null || yourSide.length === 0) return null
+    const viewed =
+      yourSide.find((player) => player.name.trim().toLowerCase() === viewedKey) ?? yourSide[0]!
+    return formatPlayer(viewed)
+  }
+
   if (family !== 'doubles' && family !== 'mixed') return null
 
   const yourSide =
     group.matchups.find((matchup) => matchup.yourSide.length >= 2)?.yourSide ?? null
   if (yourSide == null || yourSide.length < 2) return null
 
-  const viewedKey = viewedPlayerName.trim().toLowerCase()
   const viewedIndex = yourSide.findIndex(
     (player) => player.name.trim().toLowerCase() === viewedKey,
   )
@@ -155,13 +170,7 @@ export function getDisciplinePairIdentityLabel(
       ? yourSide
       : [yourSide[viewedIndex]!, ...yourSide.filter((_, index) => index !== viewedIndex)]
 
-  return ordered
-    .slice(0, 2)
-    .map((player) => {
-      const rating = player.rating != null ? ` (${player.rating})` : ''
-      return `${player.name}${rating}`
-    })
-    .join(' & ')
+  return ordered.slice(0, 2).map(formatPlayer).join(' & ')
 }
 
 /** Group-stage round labels (e.g. "Group A"); everything else is treated as knockout. */
