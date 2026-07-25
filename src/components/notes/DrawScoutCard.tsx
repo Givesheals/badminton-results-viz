@@ -10,6 +10,7 @@ import {
   formatMatchupIntelTeaser,
   getDefaultCompetitionSlug,
   getDefaultPlayerName,
+  getDisciplinePairIdentityLabel,
   getDrawRoundSectionRoles,
   getEntrantForCompetition,
   getExactDrawPairNotes,
@@ -981,10 +982,11 @@ function DisciplineLaterSection({
 
   if (roundGroups.length === 0) return null
 
-  const title = viewingOwnDraw ? 'You may also meet' : `${viewedPlayerName} may also meet`
+  const firstName = viewedPlayerName.split(' ')[0] ?? viewedPlayerName
+  const title = viewingOwnDraw ? 'You may also meet' : `${firstName} may also meet`
   const helper = viewingOwnDraw
     ? 'Possible knockout opponents in this event, most likely first.'
-    : `Possible knockout opponents for ${viewedPlayerName} in this event, most likely first.`
+    : `Possible knockout opponents for ${firstName} in this event, most likely first.`
 
   return (
     <div className="mt-3">
@@ -1040,6 +1042,10 @@ function DisciplineBlock({
   const dotClass = DISCIPLINE_DOT[getDisciplineFamily(group.disciplineCode)]
   const roundGroups = useMemo(() => groupMatchupsByRound(group.matchups), [group.matchups])
   const roundRoles = useMemo(() => getDrawRoundSectionRoles(roundGroups), [roundGroups])
+  const pairIdentity = useMemo(
+    () => getDisciplinePairIdentityLabel(group, viewedPlayerName),
+    [group, viewedPlayerName],
+  )
   const disciplineLaterOpponents = useMemo(
     () =>
       filterLaterOpponentsForDisciplineDraw(
@@ -1056,6 +1062,9 @@ function DisciplineBlock({
         <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} aria-hidden />
         <h4 className="text-sm font-bold text-ink-900">{group.disciplineLabel}</h4>
       </div>
+      {pairIdentity != null ? (
+        <p className="mt-0.5 text-sm text-ink-600">{pairIdentity}</p>
+      ) : null}
       <div className="mt-1">
         {roundGroups.map((roundGroup) => (
           <RoundGroupBlock
@@ -1743,7 +1752,7 @@ export function DrawScoutCard({
                 playerName={playerName}
                 matchByKey={matchByKey}
                 viewingOwnDraw={entrant.isYou === true}
-                viewedPlayerName={viewingPlayerName.split(' ')[0] ?? viewingPlayerName}
+                viewedPlayerName={viewingPlayerName}
               />
             ))}
           </div>

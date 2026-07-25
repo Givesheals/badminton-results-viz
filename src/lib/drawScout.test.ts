@@ -6,6 +6,7 @@ import {
   formatLaterOpponentProbability,
   getDefaultCompetitionSlug,
   getDefaultPlayerName,
+  getDisciplinePairIdentityLabel,
   getEventWeekendLastDay,
   getExactDrawPairNotes,
   getIndividualDrawScoutNotes,
@@ -431,6 +432,20 @@ describe('drawScout', () => {
       title: 'Up next · Semi-finals',
       subtitle: null,
     })
+  })
+
+  it('formats doubles/mixed pair identity with viewed player first', () => {
+    const od = simon.disciplineGroups.find((group) => group.disciplineCode === 'OD')!
+    const xd = simon.disciplineGroups.find((group) => group.disciplineCode === 'XD')!
+    const os = simon.disciplineGroups.find((group) => group.disciplineCode === 'OS')!
+
+    expect(getDisciplinePairIdentityLabel(od, 'Simon Parker')).toBe(
+      'Simon Parker & Martin Crossley',
+    )
+    expect(getDisciplinePairIdentityLabel(xd, 'Simon Parker')).toBe(
+      'Simon Parker & Sara Moore',
+    )
+    expect(getDisciplinePairIdentityLabel(os, 'Simon Parker')).toBeNull()
   })
 
   it('counts notes and unique previous meetings across a matchup', () => {

@@ -1,6 +1,7 @@
 import type { DrawDisciplineGroup, DrawMatchup, DrawPlayer } from './drawTypes'
 import type { NormalizedMatch } from '../types/matchHistory'
 import { DISCIPLINE_LABELS } from '../types/matchHistory'
+import { getDisciplineFamily } from './disciplineStyle'
 import {
   getDrawScoutPreviousMatches,
 } from './drawScoutMatches'
@@ -128,6 +129,36 @@ export function collectOpponentNamesFromDraw(groups: DrawDisciplineGroup[]): str
     }
   }
   return [...names]
+}
+
+/**
+ * Doubles/mixed header line: viewed player & partner (full names).
+ * Singles and incomplete sides return null.
+ */
+export function getDisciplinePairIdentityLabel(
+  group: DrawDisciplineGroup,
+  viewedPlayerName: string,
+): string | null {
+  const family = getDisciplineFamily(group.disciplineCode)
+  if (family !== 'doubles' && family !== 'mixed') return null
+
+  const yourSide =
+    group.matchups.find((matchup) => matchup.yourSide.length >= 2)?.yourSide ?? null
+  if (yourSide == null || yourSide.length < 2) return null
+
+  const viewedKey = viewedPlayerName.trim().toLowerCase()
+  const viewedIndex = yourSide.findIndex(
+    (player) => player.name.trim().toLowerCase() === viewedKey,
+  )
+  const ordered =
+    viewedIndex <= 0
+      ? yourSide
+      : [yourSide[viewedIndex]!, ...yourSide.filter((_, index) => index !== viewedIndex)]
+
+  return ordered
+    .slice(0, 2)
+    .map((player) => player.name)
+    .join(' & ')
 }
 
 /** Group-stage round labels (e.g. "Group A"); everything else is treated as knockout. */
