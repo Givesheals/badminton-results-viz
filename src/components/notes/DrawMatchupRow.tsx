@@ -21,18 +21,32 @@ function PlayerNames({
   players: DrawPlayer[]
   compact?: boolean
 }) {
+  // Compact played cards: one line per side so doubles don't stack taller than upcoming.
+  if (compact) {
+    return (
+      <p className="text-xs leading-snug text-ink-800">
+        {players.map((player, index) => (
+          <span key={player.name}>
+            {player.seedLabel && (
+              <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
+            )}
+            {player.name}
+            {index < players.length - 1 ? <span className="text-ink-400"> & </span> : null}
+          </span>
+        ))}
+      </p>
+    )
+  }
+
   return (
-    <div className={compact ? 'space-y-0' : 'space-y-0.5'}>
+    <div className="space-y-0.5">
       {players.map((player, index) => (
-        <div
-          key={player.name}
-          className={`leading-snug text-ink-900 ${compact ? 'text-xs' : 'text-sm'}`}
-        >
+        <div key={player.name} className="text-sm leading-snug text-ink-900">
           {player.seedLabel && (
             <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
           )}
           {player.name}
-          {!compact && player.rating != null ? (
+          {player.rating != null ? (
             <span className="tabular-nums text-ink-500"> ({player.rating})</span>
           ) : null}
           {index < players.length - 1 && <span className="text-ink-400"> &</span>}
@@ -42,10 +56,12 @@ function PlayerNames({
   )
 }
 
-function ChevronIcon({ open }: { open: boolean }) {
+function ChevronIcon({ open, compact = false }: { open: boolean; compact?: boolean }) {
   return (
     <svg
-      className={`h-5 w-5 shrink-0 text-ink-500 transition ${open ? 'rotate-180' : ''}`}
+      className={`shrink-0 text-ink-500 transition ${compact ? 'h-4 w-4' : 'h-5 w-5'} ${
+        open ? 'rotate-180' : ''
+      }`}
       viewBox="0 0 20 20"
       fill="currentColor"
       aria-hidden
@@ -61,7 +77,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 
 function NotesBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-2 py-0.5 text-xs font-semibold text-notes-amber-ink">
+    <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-1.5 py-0.5 text-[11px] font-semibold leading-none text-notes-amber-ink">
       {label}
     </span>
   )
@@ -69,43 +85,54 @@ function NotesBadge({ label }: { label: string }) {
 
 function GamesBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center rounded-md border border-ink-200 px-2 py-0.5 text-xs font-semibold text-ink-600">
+    <span className="inline-flex items-center rounded-md border border-ink-200 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-ink-600">
       {label}
     </span>
   )
 }
 
-/**
- * Teaser badges sit under the opponent column so they stay vertically aligned
- * with opponent names across cards and screen sizes.
- */
-function MatchupIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
+function ResultInline({ result }: { result: DrawMatchResult }) {
+  const isWin = result.outcome === 'win'
   return (
-    <div className={`mt-1.5 ${DRAW_SIDES_GRID}`}>
-      <div className="min-w-0" aria-hidden />
-      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-        {teaser.notesCta != null ? <NotesBadge label={teaser.notesCta} /> : null}
-        {teaser.gamesLabel != null ? <GamesBadge label={teaser.gamesLabel} /> : null}
-      </div>
-      <div aria-hidden className="min-w-0" />
-    </div>
+    <p className="text-[11px] leading-tight">
+      <span className={`font-bold uppercase tracking-wide ${isWin ? 'text-emerald-700' : 'text-ink-500'}`}>
+        {formatMatchResultOutcome(result.outcome)}
+      </span>
+      <span className="mx-1 text-ink-300" aria-hidden>
+        ·
+      </span>
+      <span className="font-semibold tabular-nums text-ink-800">{result.scoreSummary}</span>
+    </p>
   )
 }
 
-function ResultHeadline({ result }: { result: DrawMatchResult }) {
-  const isWin = result.outcome === 'win'
+/**
+ * Compact played teasers: result under your side, intel badges under opponents.
+ * Upcoming teasers keep View notes left / Played you under opponents.
+ */
+function MatchupIntelTeaserLine({
+  teaser,
+  result,
+}: {
+  teaser: MatchupIntelTeaser
+  result?: DrawMatchResult | null
+}) {
   return (
-    <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-      <span
-        className={`text-xs font-bold uppercase tracking-wide ${
-          isWin ? 'text-emerald-700' : 'text-ink-500'
-        }`}
-      >
-        {formatMatchResultOutcome(result.outcome)}
-      </span>
-      <span className="text-sm font-semibold tabular-nums text-ink-900">
-        {result.scoreSummary}
-      </span>
+    <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
+      <div className="min-w-0">
+        {result != null ? (
+          <ResultInline result={result} />
+        ) : teaser.notesCta != null ? (
+          <NotesBadge label={teaser.notesCta} />
+        ) : null}
+      </div>
+      <div className="flex min-w-0 flex-wrap items-center gap-1">
+        {result != null && teaser.notesCta != null ? (
+          <NotesBadge label={teaser.notesCta} />
+        ) : null}
+        {teaser.gamesLabel != null ? <GamesBadge label={teaser.gamesLabel} /> : null}
+      </div>
+      <div aria-hidden className="min-w-0" />
     </div>
   )
 }
@@ -128,7 +155,7 @@ type Props = {
   /** Discipline for the header-only left edge accent. */
   disciplineCode?: string
   /**
-   * Compact played-result layout: score + W/L first, shorter names, no ratings.
+   * Compact played-result layout: single-line names, result under your side.
    * Defaults to true when `matchup.result` is set.
    */
   compactResult?: boolean
@@ -137,7 +164,7 @@ type Props = {
 /**
  * Draw matchup row. Default: two columns (your side | opponents). With `label`,
  * adds the round column used in draw-out email previews.
- * Played matchups render a compact result headline when `result` is set.
+ * Played matchups render a denser compact layout when `result` is set.
  */
 export function DrawMatchupRow({
   label,
@@ -168,9 +195,10 @@ export function DrawMatchupRow({
     )
 
   const gridClass = label != null ? DRAW_MATCHUP_GRID : DRAW_SIDES_GRID
-  const notesSpan = label != null ? 'col-span-3' : 'col-span-3'
+  const notesSpan = 'col-span-3'
   const disciplineStyle = getDisciplineStyle(disciplineCode ?? '')
-  const paddingClass = useCompact ? 'px-3 py-2' : 'px-3 py-3'
+  const paddingClass = useCompact ? 'px-3 py-1.5' : 'px-3 py-3'
+  const chevronWidth = useCompact ? 'w-9' : 'w-11'
 
   // Shared card chrome for expandable and static (no-intel) matchups.
   const cardShell =
@@ -186,12 +214,12 @@ export function DrawMatchupRow({
           className={`flex w-full items-stretch gap-2 rounded-r border-l-4 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200 ${disciplineStyle.borderClass}`}
         >
           <div className={`min-w-0 flex-1 ${paddingClass}`}>
-            {result != null && <ResultHeadline result={result} />}
             <div className={gridClass}>{sides}</div>
             {useCondensedSides ? (
-              <MatchupIntelTeaserLine teaser={expandable.teaser} />
+              <MatchupIntelTeaserLine teaser={expandable.teaser} result={result} />
             ) : (
               <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                {result != null && <ResultInline result={result} />}
                 {expandable.teaser.notesCta != null && (
                   <NotesBadge label={expandable.teaser.notesCta} />
                 )}
@@ -202,10 +230,10 @@ export function DrawMatchupRow({
             )}
           </div>
           <span
-            className="flex w-11 shrink-0 items-center justify-center border-l border-ink-100 bg-ink-50/70"
+            className={`flex ${chevronWidth} shrink-0 items-center justify-center border-l border-ink-100 bg-ink-50/70`}
             aria-hidden
           >
-            <ChevronIcon open={expandable.open} />
+            <ChevronIcon open={expandable.open} compact={useCompact} />
           </span>
         </button>
         {expandable.open && notes != null && (
@@ -219,9 +247,16 @@ export function DrawMatchupRow({
   return (
     <div className={cardShell}>
       <div className={`rounded-r border-l-4 ${paddingClass} ${disciplineStyle.borderClass}`}>
-        {result != null && <ResultHeadline result={result} />}
         <div className={gridClass}>{sides}</div>
-        {!played && <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>}
+        {result != null ? (
+          <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
+            <ResultInline result={result} />
+            <div aria-hidden />
+            <div aria-hidden />
+          </div>
+        ) : (
+          !played && <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
+        )}
         {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
       </div>
     </div>
