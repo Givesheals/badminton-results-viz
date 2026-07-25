@@ -313,27 +313,37 @@ export function DrawMatchupRow({
     )
   }
 
-  // Static card: same shell + discipline edge, no chevron / hover (not expandable).
+  // Static card: same shell + reserved chevron column so opponents align with expandable rows.
   return (
     <div className={cardShell}>
-      <div className={`rounded-r border-l-4 ${paddingClass} ${disciplineStyle.borderClass}`}>
-        {usePlayedCompact ? (
-          <PlayedMatchupBody matchup={matchup} />
-        ) : (
-          <>
-            <div className={gridClass}>{sides}</div>
-            {result != null ? (
-              <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
-                <ResultInline result={result} />
-                <div aria-hidden />
-                <div aria-hidden />
-              </div>
-            ) : (
-              !played && <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
-            )}
-            {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
-          </>
-        )}
+      <div
+        className={`flex w-full items-stretch gap-2 rounded-r border-l-4 ${disciplineStyle.borderClass}`}
+      >
+        <div className={`min-w-0 flex-1 ${paddingClass}`}>
+          {usePlayedCompact ? (
+            <PlayedMatchupBody matchup={matchup} />
+          ) : (
+            <>
+              <div className={gridClass}>{sides}</div>
+              {result != null ? (
+                <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
+                  <ResultInline result={result} />
+                  <div aria-hidden />
+                  <div aria-hidden />
+                </div>
+              ) : (
+                !played && <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
+              )}
+              {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
+            </>
+          )}
+        </div>
+        <span
+          className={`flex ${chevronWidth} shrink-0 border-l border-ink-100 ${
+            usePlayedCompact ? 'bg-transparent' : 'bg-ink-50/70'
+          }`}
+          aria-hidden
+        />
       </div>
     </div>
   )
