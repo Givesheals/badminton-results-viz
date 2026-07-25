@@ -705,17 +705,16 @@ function LaterOpponentNames({ players }: { players: DrawPlayer[] }) {
 }
 
 function LaterOpponentIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
-  const gamesCount = teaser.gamesLabel?.match(/\d+/)?.[0] ?? null
   return (
     <div className="mt-1.5 flex flex-nowrap items-center gap-1.5">
       {teaser.notesCta != null ? (
         <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-1.5 py-0.5 text-[11px] font-semibold leading-none text-notes-amber-ink">
-          Notes
+          {teaser.notesCta}
         </span>
       ) : null}
-      {gamesCount != null ? (
-        <span className="inline-flex items-center rounded-md border border-ink-200 px-1.5 py-0.5 text-[11px] font-semibold leading-none tabular-nums text-ink-600">
-          ×{gamesCount}
+      {teaser.gamesLabel != null ? (
+        <span className="inline-flex items-center rounded-md border border-ink-200 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-ink-600">
+          {teaser.gamesLabel}
         </span>
       ) : null}
     </div>

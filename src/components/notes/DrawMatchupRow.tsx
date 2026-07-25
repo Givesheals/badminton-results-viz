@@ -116,24 +116,16 @@ function ResultInline({ result }: { result: DrawMatchResult }) {
 }
 
 /**
- * Tiny side-by-side intel for played rows — no pill chrome, stays on one line.
- * Full “View notes” / “Played you” pills remain on upcoming cards.
+ * Compact played-row intel: same amber/ink pill chrome as upcoming cards,
+ * kept side-by-side so completed rows stay short.
  */
 function PlayedIntelMicro({ teaser }: { teaser: MatchupIntelTeaser }) {
-  const gamesCount = teaser.gamesLabel?.match(/\d+/)?.[0] ?? null
-  if (teaser.notesCta == null && gamesCount == null) return null
+  if (teaser.notesCta == null && teaser.gamesLabel == null) return null
 
   return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-medium leading-none text-ink-500">
-      {teaser.notesCta != null ? (
-        <span className="text-notes-amber-ink">Notes</span>
-      ) : null}
-      {teaser.notesCta != null && gamesCount != null ? (
-        <span className="text-ink-300" aria-hidden>
-          ·
-        </span>
-      ) : null}
-      {gamesCount != null ? <span className="tabular-nums">×{gamesCount}</span> : null}
+    <span className="inline-flex shrink-0 flex-nowrap items-center gap-1">
+      {teaser.notesCta != null ? <NotesBadge label={teaser.notesCta} /> : null}
+      {teaser.gamesLabel != null ? <GamesBadge label={teaser.gamesLabel} /> : null}
     </span>
   )
 }
