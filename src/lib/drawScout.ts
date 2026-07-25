@@ -130,6 +130,11 @@ export function collectOpponentNamesFromDraw(groups: DrawDisciplineGroup[]): str
   return [...names]
 }
 
+/** Group-stage round labels (e.g. "Group A"); everything else is treated as knockout. */
+export function isGroupRoundLabel(roundLabel: string): boolean {
+  return /^group\b/i.test(roundLabel.trim())
+}
+
 /** True when the matchup has a recorded result (compact result card). */
 export function isPlayedMatchup(matchup: DrawMatchup): boolean {
   return matchup.result != null
@@ -141,6 +146,60 @@ export function isPlayedMatchup(matchup: DrawMatchup): boolean {
  */
 export function isProbableNextMatchup(matchup: DrawMatchup): boolean {
   return matchup.opponentPending === true
+}
+
+/** True when every matchup in the round has a recorded result. */
+export function isRoundFullyPlayed(matchups: DrawMatchup[]): boolean {
+  return matchups.length > 0 && matchups.every(isPlayedMatchup)
+}
+
+/** True when the round still has an unplayed or opponent-pending matchup. */
+export function isRoundUnfinished(matchups: DrawMatchup[]): boolean {
+  return matchups.some((matchup) => isProbableNextMatchup(matchup) || !isPlayedMatchup(matchup))
+}
+
+export type DrawRoundSectionRole = 'played' | 'up-next'
+
+/**
+ * First unfinished round is “up next”; fully-played rounds before (and after) are “played”.
+ * Used to weight round headers so the next stage reads clearly.
+ */
+export function getDrawRoundSectionRoles(
+  roundGroups: ReadonlyArray<{ roundLabel: string; matchups: DrawMatchup[] }>,
+): Map<string, DrawRoundSectionRole> {
+  const roles = new Map<string, DrawRoundSectionRole>()
+  let markedNext = false
+
+  for (const group of roundGroups) {
+    if (!markedNext && isRoundUnfinished(group.matchups)) {
+      roles.set(group.roundLabel, 'up-next')
+      markedNext = true
+      continue
+    }
+    roles.set(group.roundLabel, 'played')
+  }
+
+  return roles
+}
+
+export type DrawRoundSectionHeading = {
+  title: string
+  /** Optional quieter line under the title (e.g. group name while still in groups). */
+  subtitle: string | null
+}
+
+/** Copy for round headers: played archive vs clear “still in groups” / “up next”. */
+export function formatDrawRoundSectionHeading(
+  roundLabel: string,
+  role: DrawRoundSectionRole,
+): DrawRoundSectionHeading {
+  if (role === 'played') {
+    return { title: `Played · ${roundLabel}`, subtitle: null }
+  }
+  if (isGroupRoundLabel(roundLabel)) {
+    return { title: 'Still in group stages', subtitle: roundLabel }
+  }
+  return { title: `Up next · ${roundLabel}`, subtitle: null }
 }
 
 export function formatMatchResultOutcome(outcome: 'win' | 'loss'): string {
@@ -446,11 +505,6 @@ export function filterLaterOpponentsByDiscipline(
   disciplineCode: string,
 ): DrawScoutLaterOpponent[] {
   return opponents.filter((opponent) => opponent.disciplineCode === disciplineCode)
-}
-
-/** Group-stage round labels (e.g. "Group A"); everything else is treated as knockout. */
-export function isGroupRoundLabel(roundLabel: string): boolean {
-  return /^group\b/i.test(roundLabel.trim())
 }
 
 /**

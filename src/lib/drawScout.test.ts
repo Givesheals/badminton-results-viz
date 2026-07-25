@@ -13,6 +13,8 @@ import {
   getMatchupIntelCounts,
   groupMatchupsByRound,
   groupLaterOpponentsByRound,
+  formatDrawRoundSectionHeading,
+  getDrawRoundSectionRoles,
   isDrawScoutCompetitionActive,
   isDrawScoutCompetitionExpired,
   laterOpponentDisplayName,
@@ -377,6 +379,57 @@ describe('drawScout', () => {
       hasNotes: true,
       notesCta: 'View notes',
       gamesLabel: 'Played you: 3',
+    })
+  })
+
+  it('marks the first unfinished round as up-next and labels headings clearly', () => {
+    const yourSide = [{ name: 'You', url: '' }]
+    const opponentSide = [{ name: 'Them', url: '' }]
+    const roles = getDrawRoundSectionRoles([
+      {
+        roundLabel: 'Group G',
+        matchups: [
+          {
+            id: 'g1',
+            roundLabel: 'Group G',
+            yourSide,
+            opponentSide,
+            result: { outcome: 'win', scoreSummary: '21-10' },
+          },
+        ],
+      },
+      {
+        roundLabel: 'Quarter-finals',
+        matchups: [
+          {
+            id: 'qf1',
+            roundLabel: 'Quarter-finals',
+            yourSide,
+            opponentSide: [],
+            opponentPending: true,
+            probableOpponents: [],
+          },
+        ],
+      },
+    ])
+
+    expect(roles.get('Group G')).toBe('played')
+    expect(roles.get('Quarter-finals')).toBe('up-next')
+    expect(formatDrawRoundSectionHeading('Group G', 'played')).toEqual({
+      title: 'Played · Group G',
+      subtitle: null,
+    })
+    expect(formatDrawRoundSectionHeading('Group A', 'up-next')).toEqual({
+      title: 'Still in group stages',
+      subtitle: 'Group A',
+    })
+    expect(formatDrawRoundSectionHeading('Quarter-finals', 'up-next')).toEqual({
+      title: 'Up next · Quarter-finals',
+      subtitle: null,
+    })
+    expect(formatDrawRoundSectionHeading('Semi-finals', 'up-next')).toEqual({
+      title: 'Up next · Semi-finals',
+      subtitle: null,
     })
   })
 

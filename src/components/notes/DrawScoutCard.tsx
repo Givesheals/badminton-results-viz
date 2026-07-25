@@ -5,10 +5,12 @@ import {
   filterLaterOpponentsForDisciplineDraw,
   formatCompetitionDateRange,
   formatCompetitionPickerLabel,
+  formatDrawRoundSectionHeading,
   formatLaterOpponentProbability,
   formatMatchupIntelTeaser,
   getDefaultCompetitionSlug,
   getDefaultPlayerName,
+  getDrawRoundSectionRoles,
   getEntrantForCompetition,
   getExactDrawPairNotes,
   getIndividualDrawScoutNotes,
@@ -21,6 +23,7 @@ import {
   laterOpponentToMatchup,
   listActiveDrawScoutCompetitions,
   shouldAutoShowDrawScoutCard,
+  type DrawRoundSectionRole,
   type DrawScoutCompetition,
   type DrawScoutLaterOpponent,
   type LaterOpponentRoundGroup,
@@ -582,10 +585,12 @@ function ProbableNextMatchupBlock({
     'mt-2 w-fit rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
   // Full-width matchup cards on a shared tinted ground — groups the section without
-  // nesting cards inside another card shell.
+  // nesting cards inside another card shell. Round header (“Up next · …”) lives above.
   return (
     <div className={`rounded-xl border border-ink-100 ${disciplineStyle.rowBgClass} p-2`}>
-      <p className="mb-1.5 px-0.5 text-xs font-medium text-ink-500">Most likely opponents</p>
+      <p className="mb-1.5 px-0.5 text-xs font-medium text-ink-500">
+        Most likely opponents this round
+      </p>
       <div className="space-y-2">
         {visible.map((item) => {
           const asLater = probableToLaterOpponent(
@@ -626,6 +631,7 @@ function RoundGroupBlock({
   disciplineCode,
   roundLabel,
   matchups,
+  sectionRole,
   displayNotes,
   displayMatches,
   playerName,
@@ -635,18 +641,33 @@ function RoundGroupBlock({
   disciplineCode: string
   roundLabel: string
   matchups: DrawMatchup[]
+  sectionRole: DrawRoundSectionRole
   displayNotes: OpponentNote[]
   displayMatches: NormalizedMatch[]
   playerName: string
   matchByKey: Map<string, NormalizedMatch>
   viewingOwnDraw?: boolean
 }) {
+  const heading = formatDrawRoundSectionHeading(roundLabel, sectionRole)
+  const isUpNext = sectionRole === 'up-next'
+
   return (
-    <div className="mt-3 first:mt-2">
-      <p className="text-xs font-medium text-ink-500">
-        {disciplineCode}: {roundLabel}
-      </p>
-      <div className="mt-1 space-y-2">
+    <div className={`mt-3 first:mt-2 ${isUpNext ? 'mt-4 first:mt-3' : ''}`}>
+      {isUpNext ? (
+        <div className="mb-1.5">
+          <p className="text-sm font-semibold tracking-tight text-ink-900">{heading.title}</p>
+          {heading.subtitle != null ? (
+            <p className="mt-0.5 text-xs font-medium text-ink-500">
+              {disciplineCode}: {heading.subtitle}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-[11px] font-medium uppercase tracking-wide text-ink-400">
+          {heading.title}
+        </p>
+      )}
+      <div className={`${isUpNext ? 'mt-1.5' : 'mt-1'} ${isUpNext ? 'space-y-2' : 'space-y-1'}`}>
         {matchups.map((matchup) => (
           <MatchupBlock
             key={matchup.id}
@@ -666,9 +687,9 @@ function RoundGroupBlock({
 
 function LaterOpponentNames({ players }: { players: DrawPlayer[] }) {
   return (
-    <div className="space-y-0.5">
+    <p className="min-w-0 text-sm leading-snug text-ink-900">
       {players.map((player, index) => (
-        <div key={player.name} className="text-sm leading-snug text-ink-900">
+        <span key={player.name}>
           {player.seedLabel && (
             <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
           )}
@@ -676,32 +697,27 @@ function LaterOpponentNames({ players }: { players: DrawPlayer[] }) {
           {player.rating != null ? (
             <span className="tabular-nums text-ink-500"> ({player.rating})</span>
           ) : null}
-          {index < players.length - 1 && <span className="text-ink-400"> &</span>}
-        </div>
+          {index < players.length - 1 ? <span className="text-ink-400"> & </span> : null}
+        </span>
       ))}
-    </div>
+    </p>
   )
 }
 
-/** Reserves space on desktop so games never slide into the notes badge slot. */
-const NOTES_BADGE_SLOT =
-  'inline-flex min-h-[1.375rem] items-center sm:min-w-[5.75rem]'
-
 function LaterOpponentIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
+  const gamesCount = teaser.gamesLabel?.match(/\d+/)?.[0] ?? null
   return (
-    <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 sm:justify-start">
-      <span className={NOTES_BADGE_SLOT}>
-        {teaser.notesCta != null ? (
-          <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-2 py-0.5 text-xs font-semibold text-notes-amber-ink">
-            {teaser.notesCta}
-          </span>
-        ) : null}
-      </span>
-      {teaser.gamesLabel != null && (
-        <span className="inline-flex items-center rounded-md border border-ink-200 px-2 py-0.5 text-xs font-semibold text-ink-600">
-          {teaser.gamesLabel}
+    <div className="mt-1.5 flex flex-nowrap items-center gap-1.5">
+      {teaser.notesCta != null ? (
+        <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-1.5 py-0.5 text-[11px] font-semibold leading-none text-notes-amber-ink">
+          Notes
         </span>
-      )}
+      ) : null}
+      {gamesCount != null ? (
+        <span className="inline-flex items-center rounded-md border border-ink-200 px-1.5 py-0.5 text-[11px] font-semibold leading-none tabular-nums text-ink-600">
+          ×{gamesCount}
+        </span>
+      ) : null}
     </div>
   )
 }
@@ -820,7 +836,7 @@ function LaterOpponentBlock({
   const card =
     teaser == null ? (
       <div className={cardShell}>
-        <div className={`rounded-r border-l-4 px-3 py-3 ${disciplineStyle.borderClass}`}>
+        <div className={`rounded-r border-l-4 px-3 py-2.5 ${disciplineStyle.borderClass}`}>
           {body}
         </div>
       </div>
@@ -832,9 +848,9 @@ function LaterOpponentBlock({
           aria-expanded={open}
           className={`flex w-full items-stretch gap-2 rounded-r border-l-4 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200 ${disciplineStyle.borderClass}`}
         >
-          <div className="min-w-0 flex-1 px-3 py-3">{body}</div>
+          <div className="min-w-0 flex-1 px-3 py-2.5">{body}</div>
           <span
-            className="flex w-11 shrink-0 items-center justify-center border-l border-ink-100 bg-ink-50/70"
+            className="flex w-10 shrink-0 items-center justify-center border-l border-ink-100 bg-ink-50/70"
             aria-hidden
           >
             <ChevronIcon open={open} />
@@ -1019,6 +1035,8 @@ function DisciplineBlock({
   viewedPlayerName: string
 }) {
   const dotClass = DISCIPLINE_DOT[getDisciplineFamily(group.disciplineCode)]
+  const roundGroups = useMemo(() => groupMatchupsByRound(group.matchups), [group.matchups])
+  const roundRoles = useMemo(() => getDrawRoundSectionRoles(roundGroups), [roundGroups])
   const disciplineLaterOpponents = useMemo(
     () =>
       filterLaterOpponentsForDisciplineDraw(
@@ -1036,12 +1054,13 @@ function DisciplineBlock({
         <h4 className="text-sm font-bold text-ink-900">{group.disciplineLabel}</h4>
       </div>
       <div className="mt-1">
-        {groupMatchupsByRound(group.matchups).map((roundGroup) => (
+        {roundGroups.map((roundGroup) => (
           <RoundGroupBlock
             key={`${group.disciplineCode}-${roundGroup.roundLabel}`}
             disciplineCode={group.disciplineCode}
             roundLabel={roundGroup.roundLabel}
             matchups={roundGroup.matchups}
+            sectionRole={roundRoles.get(roundGroup.roundLabel) ?? 'played'}
             displayNotes={displayNotes}
             displayMatches={displayMatches}
             playerName={playerName}

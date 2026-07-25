@@ -14,6 +14,15 @@ export const DRAW_MATCHUP_GRID =
 const DRAW_SIDES_GRID =
   'grid grid-cols-[minmax(0,9.75rem)_minmax(0,9.75rem)_minmax(0,1fr)] items-start gap-x-3 gap-y-1 sm:grid-cols-[minmax(0,11rem)_minmax(0,11rem)_minmax(0,1fr)]'
 
+function formatOpponentLine(players: DrawPlayer[]): string {
+  return players
+    .map((player) => {
+      const seed = player.seedLabel ? `${player.seedLabel} ` : ''
+      return `${seed}${player.name}`
+    })
+    .join(' & ')
+}
+
 function PlayerNames({
   players,
   compact = false,
@@ -107,32 +116,70 @@ function ResultInline({ result }: { result: DrawMatchResult }) {
 }
 
 /**
- * Compact played teasers: result under your side, intel badges under opponents.
- * Upcoming teasers keep View notes left / Played you under opponents.
+ * Tiny side-by-side intel for played rows — no pill chrome, stays on one line.
+ * Full “View notes” / “Played you” pills remain on upcoming cards.
+ */
+function PlayedIntelMicro({ teaser }: { teaser: MatchupIntelTeaser }) {
+  const gamesCount = teaser.gamesLabel?.match(/\d+/)?.[0] ?? null
+  if (teaser.notesCta == null && gamesCount == null) return null
+
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-medium leading-none text-ink-500">
+      {teaser.notesCta != null ? (
+        <span className="text-notes-amber-ink">Notes</span>
+      ) : null}
+      {teaser.notesCta != null && gamesCount != null ? (
+        <span className="text-ink-300" aria-hidden>
+          ·
+        </span>
+      ) : null}
+      {gamesCount != null ? <span className="tabular-nums">×{gamesCount}</span> : null}
+    </span>
+  )
+}
+
+/**
+ * Upcoming teasers: View notes under your side / Played you under opponents.
  */
 function MatchupIntelTeaserLine({
   teaser,
-  result,
 }: {
   teaser: MatchupIntelTeaser
-  result?: DrawMatchResult | null
 }) {
   return (
     <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
       <div className="min-w-0">
-        {result != null ? (
-          <ResultInline result={result} />
-        ) : teaser.notesCta != null ? (
-          <NotesBadge label={teaser.notesCta} />
-        ) : null}
+        {teaser.notesCta != null ? <NotesBadge label={teaser.notesCta} /> : null}
       </div>
       <div className="flex min-w-0 flex-wrap items-center gap-1">
-        {result != null && teaser.notesCta != null ? (
-          <NotesBadge label={teaser.notesCta} />
-        ) : null}
         {teaser.gamesLabel != null ? <GamesBadge label={teaser.gamesLabel} /> : null}
       </div>
       <div aria-hidden className="min-w-0" />
+    </div>
+  )
+}
+
+/**
+ * Played result row: opponent only (no repeated your-side), single-line names,
+ * result + micro intel on one strip — much lower visual weight than upcoming cards.
+ */
+function PlayedMatchupBody({
+  matchup,
+  teaser,
+}: {
+  matchup: DrawMatchup
+  teaser?: MatchupIntelTeaser | null
+}) {
+  const result = matchup.result!
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center justify-between gap-2">
+        <ResultInline result={result} />
+        {teaser != null ? <PlayedIntelMicro teaser={teaser} /> : null}
+      </div>
+      <p className="mt-0.5 truncate text-xs leading-snug text-ink-700">
+        {formatOpponentLine(matchup.opponentSide)}
+      </p>
     </div>
   )
 }
@@ -155,7 +202,7 @@ type Props = {
   /** Discipline for the header-only left edge accent. */
   disciplineCode?: string
   /**
-   * Compact played-result layout: single-line names, result under your side.
+   * Compact played-result layout: opponent-only, result strip, micro intel.
    * Defaults to true when `matchup.result` is set.
    */
   compactResult?: boolean
@@ -178,6 +225,7 @@ export function DrawMatchupRow({
   const useCompact = compactResult ?? played
   const result = matchup.result
   const useCondensedSides = label == null
+  const usePlayedCompact = useCompact && played && useCondensedSides
 
   const sides =
     label != null ? (
@@ -197,12 +245,13 @@ export function DrawMatchupRow({
   const gridClass = label != null ? DRAW_MATCHUP_GRID : DRAW_SIDES_GRID
   const notesSpan = 'col-span-3'
   const disciplineStyle = getDisciplineStyle(disciplineCode ?? '')
-  const paddingClass = useCompact ? 'px-3 py-1.5' : 'px-3 py-3'
-  const chevronWidth = useCompact ? 'w-9' : 'w-11'
+  const paddingClass = usePlayedCompact ? 'px-3 py-1.5' : useCompact ? 'px-3 py-1.5' : 'px-3 py-3'
+  const chevronWidth = usePlayedCompact || useCompact ? 'w-8' : 'w-11'
 
-  // Shared card chrome for expandable and static (no-intel) matchups.
-  const cardShell =
-    'overflow-hidden rounded-xl border border-ink-100 bg-white shadow-sm'
+  // Played rows: flatter chrome so completed games sit below the next-round focus.
+  const cardShell = usePlayedCompact
+    ? 'overflow-hidden rounded-lg border border-ink-100/90 bg-white'
+    : 'overflow-hidden rounded-xl border border-ink-100 bg-white shadow-sm'
 
   if (expandable != null) {
     return (
@@ -214,26 +263,49 @@ export function DrawMatchupRow({
           className={`flex w-full items-stretch gap-2 rounded-r border-l-4 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200 ${disciplineStyle.borderClass}`}
         >
           <div className={`min-w-0 flex-1 ${paddingClass}`}>
-            <div className={gridClass}>{sides}</div>
-            {useCondensedSides ? (
-              <MatchupIntelTeaserLine teaser={expandable.teaser} result={result} />
+            {usePlayedCompact ? (
+              <PlayedMatchupBody matchup={matchup} teaser={expandable.teaser} />
             ) : (
-              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-                {result != null && <ResultInline result={result} />}
-                {expandable.teaser.notesCta != null && (
-                  <NotesBadge label={expandable.teaser.notesCta} />
+              <>
+                <div className={gridClass}>{sides}</div>
+                {useCondensedSides ? (
+                  result != null ? (
+                    <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
+                      <ResultInline result={result} />
+                      <div className="flex min-w-0 flex-wrap items-center gap-1">
+                        {expandable.teaser.notesCta != null ? (
+                          <NotesBadge label={expandable.teaser.notesCta} />
+                        ) : null}
+                        {expandable.teaser.gamesLabel != null ? (
+                          <GamesBadge label={expandable.teaser.gamesLabel} />
+                        ) : null}
+                      </div>
+                      <div aria-hidden className="min-w-0" />
+                    </div>
+                  ) : (
+                    <MatchupIntelTeaserLine teaser={expandable.teaser} />
+                  )
+                ) : (
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    {result != null && <ResultInline result={result} />}
+                    {expandable.teaser.notesCta != null && (
+                      <NotesBadge label={expandable.teaser.notesCta} />
+                    )}
+                    {expandable.teaser.gamesLabel != null && (
+                      <GamesBadge label={expandable.teaser.gamesLabel} />
+                    )}
+                  </div>
                 )}
-                {expandable.teaser.gamesLabel != null && (
-                  <GamesBadge label={expandable.teaser.gamesLabel} />
-                )}
-              </div>
+              </>
             )}
           </div>
           <span
-            className={`flex ${chevronWidth} shrink-0 items-center justify-center border-l border-ink-100 bg-ink-50/70`}
+            className={`flex ${chevronWidth} shrink-0 items-center justify-center border-l border-ink-100 ${
+              usePlayedCompact ? 'bg-transparent' : 'bg-ink-50/70'
+            }`}
             aria-hidden
           >
-            <ChevronIcon open={expandable.open} compact={useCompact} />
+            <ChevronIcon open={expandable.open} compact={usePlayedCompact || useCompact} />
           </span>
         </button>
         {expandable.open && notes != null && (
@@ -247,17 +319,23 @@ export function DrawMatchupRow({
   return (
     <div className={cardShell}>
       <div className={`rounded-r border-l-4 ${paddingClass} ${disciplineStyle.borderClass}`}>
-        <div className={gridClass}>{sides}</div>
-        {result != null ? (
-          <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
-            <ResultInline result={result} />
-            <div aria-hidden />
-            <div aria-hidden />
-          </div>
+        {usePlayedCompact ? (
+          <PlayedMatchupBody matchup={matchup} />
         ) : (
-          !played && <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
+          <>
+            <div className={gridClass}>{sides}</div>
+            {result != null ? (
+              <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
+                <ResultInline result={result} />
+                <div aria-hidden />
+                <div aria-hidden />
+              </div>
+            ) : (
+              !played && <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
+            )}
+            {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
+          </>
         )}
-        {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
       </div>
     </div>
   )
