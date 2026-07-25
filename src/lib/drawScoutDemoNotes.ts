@@ -15,6 +15,8 @@ function demoNote(
     competitionName?: string
     date?: string
     discipline?: string
+    disciplineLabel?: string
+    partnerName?: string | null
     opponentNames?: string[]
     opponentsDisplay?: string
     target?: OpponentNote['target']
@@ -22,6 +24,7 @@ function demoNote(
   } = {},
 ): OpponentNote {
   const opponentNames = options.opponentNames ?? [opponentName]
+  const discipline = options.discipline ?? 'XD'
   return {
     id: `draw-scout-demo:${id}`,
     body,
@@ -32,9 +35,15 @@ function demoNote(
       matchKey: `draw-scout-demo\\0${id}`,
       competitionName: options.competitionName ?? 'Norfolk Restricted 2025',
       date: options.date ?? '2025-09-14',
-      discipline: options.discipline ?? 'XD',
-      disciplineLabel: 'Mixed doubles',
-      partnerName: 'Sara Moore',
+      discipline,
+      disciplineLabel:
+        options.disciplineLabel ??
+        (discipline === 'OS'
+          ? 'Open singles'
+          : discipline === 'OD'
+            ? 'Open doubles'
+            : 'Mixed doubles'),
+      partnerName: options.partnerName === undefined ? 'Sara Moore' : options.partnerName,
       opponentNames,
       opponentsDisplay: options.opponentsDisplay ?? opponentNames.join(' & '),
       roundLabel: 'Group A',
@@ -149,6 +158,23 @@ export const drawScoutDemoNotes: OpponentNote[] = [
       competitionName: 'Suffolk Open 2025',
       date: '2025-10-05',
       tags: { customOpponentStyles: ['Steep smash', 'Rushes the net'] },
+    },
+  ),
+  // Singles group: notes-only vs Theo Marsh (no prior meeting in demo matches).
+  demoNote(
+    'theo',
+    'Theo Marsh',
+    'Heavy clear to the backhand corner and likes to finish at the net. Mix in tight net shots and push him wide early.',
+    {
+      competitionName: 'Essex Open 2025',
+      date: '2025-11-22',
+      discipline: 'OS',
+      disciplineLabel: 'Open singles',
+      partnerName: null,
+      tags: { customOpponentStyles: ['Heavy clears', 'Net finisher'] },
+      appliesToDisciplines: ['S'],
+      opponentNames: ['Theo Marsh'],
+      opponentsDisplay: 'Theo Marsh',
     },
   ),
 ]

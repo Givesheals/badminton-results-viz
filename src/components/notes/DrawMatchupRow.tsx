@@ -7,11 +7,12 @@ import { getDisciplineStyle } from '../../lib/disciplineStyle'
 export const DRAW_MATCHUP_GRID =
   'grid grid-cols-[5rem_1fr_1fr] items-start gap-x-3 gap-y-1.5'
 
-const DRAW_SIDES_GRID = 'grid grid-cols-2 items-start gap-x-3 gap-y-1.5'
-
-/** Reserves space on desktop so games never slide into the notes badge slot. */
-const NOTES_BADGE_SLOT =
-  'inline-flex min-h-[1.375rem] items-center sm:min-w-[5.75rem]'
+/**
+ * Condensed two-side layout: fixed-width columns for your side + opponents,
+ * leftover space on the right so teams stay close and align across cards.
+ */
+const DRAW_SIDES_GRID =
+  'grid grid-cols-[minmax(0,9.75rem)_minmax(0,9.75rem)_minmax(0,1fr)] items-start gap-x-3 gap-y-1 sm:grid-cols-[minmax(0,11rem)_minmax(0,11rem)_minmax(0,1fr)]'
 
 function PlayerNames({
   players,
@@ -58,21 +59,35 @@ function ChevronIcon({ open }: { open: boolean }) {
   )
 }
 
+function NotesBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-2 py-0.5 text-xs font-semibold text-notes-amber-ink">
+      {label}
+    </span>
+  )
+}
+
+function GamesBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center rounded-md border border-ink-200 px-2 py-0.5 text-xs font-semibold text-ink-600">
+      {label}
+    </span>
+  )
+}
+
+/**
+ * Teaser badges sit under the opponent column so they stay vertically aligned
+ * with opponent names across cards and screen sizes.
+ */
 function MatchupIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
   return (
-    <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 sm:justify-start">
-      <span className={NOTES_BADGE_SLOT}>
-        {teaser.notesCta != null ? (
-          <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-2 py-0.5 text-xs font-semibold text-notes-amber-ink">
-            {teaser.notesCta}
-          </span>
-        ) : null}
-      </span>
-      {teaser.gamesLabel != null && (
-        <span className="inline-flex items-center rounded-md border border-ink-200 px-2 py-0.5 text-xs font-semibold text-ink-600">
-          {teaser.gamesLabel}
-        </span>
-      )}
+    <div className={`mt-1.5 ${DRAW_SIDES_GRID}`}>
+      <div className="min-w-0" aria-hidden />
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+        {teaser.notesCta != null ? <NotesBadge label={teaser.notesCta} /> : null}
+        {teaser.gamesLabel != null ? <GamesBadge label={teaser.gamesLabel} /> : null}
+      </div>
+      <div aria-hidden className="min-w-0" />
     </div>
   )
 }
@@ -135,6 +150,7 @@ export function DrawMatchupRow({
   const played = matchup.result != null
   const useCompact = compactResult ?? played
   const result = matchup.result
+  const useCondensedSides = label == null
 
   const sides =
     label != null ? (
@@ -147,11 +163,12 @@ export function DrawMatchupRow({
       <>
         <PlayerNames players={matchup.yourSide} compact={useCompact} />
         <PlayerNames players={matchup.opponentSide} compact={useCompact} />
+        <div aria-hidden className="min-w-0" />
       </>
     )
 
   const gridClass = label != null ? DRAW_MATCHUP_GRID : DRAW_SIDES_GRID
-  const notesSpan = label != null ? 'col-span-3' : 'col-span-2'
+  const notesSpan = label != null ? 'col-span-3' : 'col-span-3'
   const disciplineStyle = getDisciplineStyle(disciplineCode ?? '')
   const paddingClass = useCompact ? 'px-3 py-2' : 'px-3 py-3'
 
@@ -171,7 +188,18 @@ export function DrawMatchupRow({
           <div className={`min-w-0 flex-1 ${paddingClass}`}>
             {result != null && <ResultHeadline result={result} />}
             <div className={gridClass}>{sides}</div>
-            <MatchupIntelTeaserLine teaser={expandable.teaser} />
+            {useCondensedSides ? (
+              <MatchupIntelTeaserLine teaser={expandable.teaser} />
+            ) : (
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                {expandable.teaser.notesCta != null && (
+                  <NotesBadge label={expandable.teaser.notesCta} />
+                )}
+                {expandable.teaser.gamesLabel != null && (
+                  <GamesBadge label={expandable.teaser.gamesLabel} />
+                )}
+              </div>
+            )}
           </div>
           <span
             className="flex w-11 shrink-0 items-center justify-center border-l border-ink-100 bg-ink-50/70"

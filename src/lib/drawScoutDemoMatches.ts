@@ -231,6 +231,41 @@ export const drawScoutDemoMatches: NormalizedMatch[] = [
       [21, 19],
     ],
   }),
+  /** Singles group: games-only vs Callum Reed (no notes). */
+  demoMatch({
+    competitionName: 'Norfolk Open 2025',
+    date: '2025-10-19',
+    discipline: 'OS',
+    disciplineLabel: 'Open singles',
+    playerName: PLAYER,
+    partnerName: null,
+    opponent1: 'Callum Reed',
+    opponent2: null,
+    outcome: 'win',
+    roundLabel: 'Group B',
+    scores: [
+      [21, 18],
+      [19, 21],
+      [21, 16],
+    ],
+  }),
+  demoMatch({
+    competitionName: 'Suffolk Open 2025',
+    date: '2025-08-03',
+    discipline: 'OS',
+    disciplineLabel: 'Open singles',
+    playerName: PLAYER,
+    partnerName: null,
+    opponent1: 'Callum Reed',
+    opponent2: null,
+    outcome: 'loss',
+    roundLabel: 'Quarter-final',
+    scores: [
+      [18, 21],
+      [21, 19],
+      [19, 21],
+    ],
+  }),
 ]
 
 export function isDrawScoutDemoMatch(match: NormalizedMatch): boolean {
