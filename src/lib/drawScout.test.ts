@@ -482,6 +482,12 @@ describe('drawScout', () => {
       drawScoutDemoMatches,
       'Simon Parker',
     )
+    const owen = getMatchupIntelCounts(
+      os.matchups.find((item) => item.id === 'os3')!,
+      notes,
+      drawScoutDemoMatches,
+      'Simon Parker',
+    )
 
     expect(murray).toEqual({ noteCount: expect.any(Number), gamesPlayed: 0 })
     expect(murray.noteCount).toBeGreaterThan(0)
@@ -492,6 +498,7 @@ describe('drawScout', () => {
     expect(neither).toEqual({ noteCount: 0, gamesPlayed: 0 })
     expect(callum.noteCount).toBe(0)
     expect(callum.gamesPlayed).toBeGreaterThan(0)
+    expect(owen).toEqual({ noteCount: 0, gamesPlayed: 0 })
   })
 
   it('includes progressive draw states: unplayed singles, probable OD QF, definite XD QF', () => {

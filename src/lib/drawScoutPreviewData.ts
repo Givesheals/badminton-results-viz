@@ -75,6 +75,7 @@ const PLAYER_RATINGS: Record<string, number> = {
   'Theo Marsh': 555,
   'Callum Reed': 548,
   'Harry Quinn': 540,
+  'Owen Blake': 536,
 }
 
 function player(name: string, extra: { seedLabel?: string; rating?: number } = {}): DrawPlayer {
@@ -97,17 +98,26 @@ const simonSinglesDoublesMixed: DrawDisciplineGroup[] = [
     disciplineCode: 'OS',
     disciplineLabel: 'Open Singles',
     matchups: [
+      // Notes only (Theo) — unplayed
       {
         id: 'os1',
         roundLabel: 'Group C',
         yourSide: [player('Simon Parker')],
         opponentSide: [player('Theo Marsh')],
       },
+      // Games only (Callum) — unplayed
       {
         id: 'os2',
         roundLabel: 'Group C',
         yourSide: [player('Simon Parker')],
         opponentSide: [player('Callum Reed')],
+      },
+      // Neither notes nor games — unplayed (box of four)
+      {
+        id: 'os3',
+        roundLabel: 'Group C',
+        yourSide: [player('Simon Parker')],
+        opponentSide: [player('Owen Blake')],
       },
     ],
   },
