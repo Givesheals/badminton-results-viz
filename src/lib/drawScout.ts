@@ -132,7 +132,7 @@ export function collectOpponentNamesFromDraw(groups: DrawDisciplineGroup[]): str
 }
 
 /**
- * Doubles/mixed header line: viewed player & partner (full names).
+ * Doubles/mixed header line: viewed player & partner (full names + ratings).
  * Singles and incomplete sides return null.
  */
 export function getDisciplinePairIdentityLabel(
@@ -157,7 +157,10 @@ export function getDisciplinePairIdentityLabel(
 
   return ordered
     .slice(0, 2)
-    .map((player) => player.name)
+    .map((player) => {
+      const rating = player.rating != null ? ` (${player.rating})` : ''
+      return `${player.name}${rating}`
+    })
     .join(' & ')
 }
 

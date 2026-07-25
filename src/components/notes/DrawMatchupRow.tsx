@@ -138,22 +138,13 @@ function PlayedIntelMicro({ teaser }: { teaser: MatchupIntelTeaser }) {
 }
 
 /**
- * Upcoming teasers: View notes under your side / Played you under opponents.
+ * Upcoming teasers under opponent-only cards (notes + games in one row).
  */
-function MatchupIntelTeaserLine({
-  teaser,
-}: {
-  teaser: MatchupIntelTeaser
-}) {
+function UpcomingIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
   return (
-    <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
-      <div className="min-w-0">
-        {teaser.notesCta != null ? <NotesBadge label={teaser.notesCta} /> : null}
-      </div>
-      <div className="flex min-w-0 flex-wrap items-center gap-1">
-        {teaser.gamesLabel != null ? <GamesBadge label={teaser.gamesLabel} /> : null}
-      </div>
-      <div aria-hidden className="min-w-0" />
+    <div className="mt-1.5 flex flex-nowrap items-center gap-1.5">
+      {teaser.notesCta != null ? <NotesBadge label={teaser.notesCta} /> : null}
+      {teaser.gamesLabel != null ? <GamesBadge label={teaser.gamesLabel} /> : null}
     </div>
   )
 }
@@ -183,6 +174,49 @@ function PlayedMatchupBody({
   )
 }
 
+/**
+ * Unplayed / definite up-next: opponents only — your side lives under the
+ * discipline title for doubles/mixed, so repeating it here is redundant.
+ */
+function UpcomingOpponentBody({
+  matchup,
+  teaser,
+  showEmptyHint = false,
+}: {
+  matchup: DrawMatchup
+  teaser?: MatchupIntelTeaser | null
+  showEmptyHint?: boolean
+}) {
+  return (
+    <div className="min-w-0">
+      {/* Larger type than played rows — this card is the next-match focus. */}
+      <p className="min-w-0 text-sm leading-snug text-ink-900">
+        {matchup.opponentSide.map((player, index) => (
+          <span key={player.name}>
+            <span className="whitespace-nowrap">
+              {player.seedLabel && (
+                <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
+              )}
+              {player.name}
+              {player.rating != null ? (
+                <span className="tabular-nums text-ink-500"> ({player.rating})</span>
+              ) : null}
+            </span>
+            {index < matchup.opponentSide.length - 1 ? (
+              <span className="text-ink-400"> & </span>
+            ) : null}
+          </span>
+        ))}
+      </p>
+      {teaser != null ? (
+        <UpcomingIntelTeaserLine teaser={teaser} />
+      ) : showEmptyHint ? (
+        <p className="mt-1.5 text-xs text-ink-400">No notes or games yet</p>
+      ) : null}
+    </div>
+  )
+}
+
 type ExpandableProps = {
   open: boolean
   onToggle: () => void
@@ -208,9 +242,8 @@ type Props = {
 }
 
 /**
- * Draw matchup row. Default: two columns (your side | opponents). With `label`,
- * adds the round column used in draw-out email previews.
- * Played matchups render a denser compact layout when `result` is set.
+ * Draw matchup row. Scout cards (no `label`): played and unplayed both show
+ * opponents only. With `label`, keeps the three-column draw-email layout.
  */
 export function DrawMatchupRow({
   label,
@@ -225,6 +258,7 @@ export function DrawMatchupRow({
   const result = matchup.result
   const useCondensedSides = label == null
   const usePlayedCompact = useCompact && played && useCondensedSides
+  const useUpcomingOpponentOnly = useCondensedSides && !played
 
   const sides =
     label != null ? (
@@ -264,6 +298,8 @@ export function DrawMatchupRow({
           <div className={`min-w-0 flex-1 ${paddingClass}`}>
             {usePlayedCompact ? (
               <PlayedMatchupBody matchup={matchup} teaser={expandable.teaser} />
+            ) : useUpcomingOpponentOnly ? (
+              <UpcomingOpponentBody matchup={matchup} teaser={expandable.teaser} />
             ) : (
               <>
                 <div className={gridClass}>{sides}</div>
@@ -282,7 +318,7 @@ export function DrawMatchupRow({
                       <div aria-hidden className="min-w-0" />
                     </div>
                   ) : (
-                    <MatchupIntelTeaserLine teaser={expandable.teaser} />
+                    <UpcomingIntelTeaserLine teaser={expandable.teaser} />
                   )
                 ) : (
                   <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -314,13 +350,17 @@ export function DrawMatchupRow({
     )
   }
 
-  // Static card: no chevron panel (nothing to open). Fixed side columns keep
-  // opponent names aligned with expandable rows above/below.
+  // Static card: no chevron panel (nothing to open).
   return (
     <div className={cardShell}>
       <div className={`rounded-r border-l-4 ${paddingClass} ${disciplineStyle.borderClass}`}>
         {usePlayedCompact ? (
           <PlayedMatchupBody matchup={matchup} />
+        ) : useUpcomingOpponentOnly ? (
+          <>
+            <UpcomingOpponentBody matchup={matchup} showEmptyHint />
+            {notes != null && <div className="mt-2 space-y-2">{notes}</div>}
+          </>
         ) : (
           <>
             <div className={gridClass}>{sides}</div>

@@ -440,10 +440,10 @@ describe('drawScout', () => {
     const os = simon.disciplineGroups.find((group) => group.disciplineCode === 'OS')!
 
     expect(getDisciplinePairIdentityLabel(od, 'Simon Parker')).toBe(
-      'Simon Parker & Martin Crossley',
+      'Simon Parker (572) & Martin Crossley (555)',
     )
     expect(getDisciplinePairIdentityLabel(xd, 'Simon Parker')).toBe(
-      'Simon Parker & Sara Moore',
+      'Simon Parker (572) & Sara Moore (568)',
     )
     expect(getDisciplinePairIdentityLabel(os, 'Simon Parker')).toBeNull()
   })
