@@ -579,49 +579,45 @@ function ProbableNextMatchupBlock({
   const visible = showAll ? probable : probable.slice(0, PROBABLE_NEXT_INITIAL_VISIBLE)
   const hiddenCount = probable.length - visible.length
   const showMoreButtonClass =
-    'my-2 ml-3 w-fit rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
+    'mt-2 w-fit rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
-  // One section card groups the list; rows inside are flat (no nested cards) so
-  // we keep section identity without a second layer of padding/borders.
+  // Full-width matchup cards on a shared tinted ground — groups the section without
+  // nesting cards inside another card shell.
   return (
-    <div className="overflow-hidden rounded-xl border border-ink-100 bg-white shadow-sm">
-      <div className={`rounded-r border-l-4 ${disciplineStyle.borderClass}`}>
-        <p className="border-b border-ink-100 px-3 py-2 text-xs font-medium text-ink-500">
-          Most likely opponents
-        </p>
-        <div>
-          {visible.map((item) => {
-            const asLater = probableToLaterOpponent(
-              item,
-              disciplineCode,
-              matchup.roundLabel,
-            )
-            return (
-              <LaterOpponentBlock
-                key={laterOpponentKey(asLater)}
-                opponent={asLater}
-                displayNotes={displayNotes}
-                displayMatches={displayMatches}
-                playerName={playerName}
-                matchByKey={matchByKey}
-                disciplineCode={disciplineCode}
-                viewingOwnDraw={viewingOwnDraw}
-                variant="section"
-              />
-            )
-          })}
-        </div>
-        {hiddenCount > 0 && !showAll && (
-          <button type="button" onClick={() => setShowAll(true)} className={showMoreButtonClass}>
-            Show more
-          </button>
-        )}
-        {showAll && probable.length > PROBABLE_NEXT_INITIAL_VISIBLE && (
-          <button type="button" onClick={() => setShowAll(false)} className={showMoreButtonClass}>
-            Show less
-          </button>
-        )}
+    <div className={`rounded-xl ${disciplineStyle.rowBgClass} p-2`}>
+      <p className="mb-1.5 px-0.5 text-xs font-medium text-ink-500">Most likely opponents</p>
+      <div className="space-y-2">
+        {visible.map((item) => {
+          const asLater = probableToLaterOpponent(
+            item,
+            disciplineCode,
+            matchup.roundLabel,
+          )
+          return (
+            <LaterOpponentBlock
+              key={laterOpponentKey(asLater)}
+              opponent={asLater}
+              displayNotes={displayNotes}
+              displayMatches={displayMatches}
+              playerName={playerName}
+              matchByKey={matchByKey}
+              disciplineCode={disciplineCode}
+              viewingOwnDraw={viewingOwnDraw}
+              variant="standalone"
+            />
+          )
+        })}
       </div>
+      {hiddenCount > 0 && !showAll && (
+        <button type="button" onClick={() => setShowAll(true)} className={showMoreButtonClass}>
+          Show more
+        </button>
+      )}
+      {showAll && probable.length > PROBABLE_NEXT_INITIAL_VISIBLE && (
+        <button type="button" onClick={() => setShowAll(false)} className={showMoreButtonClass}>
+          Show less
+        </button>
+      )}
     </div>
   )
 }
