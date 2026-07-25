@@ -686,17 +686,21 @@ function RoundGroupBlock({
 }
 
 function LaterOpponentNames({ players }: { players: DrawPlayer[] }) {
+  // Each player is nowrap so a wrap breaks between partners, not mid-name
+  // (e.g. "Daniel Hughes (582) &" / "Morgan Taylor (570)" — never "Morgan" / "Taylor").
   return (
     <p className="min-w-0 text-sm leading-snug text-ink-900">
       {players.map((player, index) => (
         <span key={player.name}>
-          {player.seedLabel && (
-            <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
-          )}
-          {player.name}
-          {player.rating != null ? (
-            <span className="tabular-nums text-ink-500"> ({player.rating})</span>
-          ) : null}
+          <span className="whitespace-nowrap">
+            {player.seedLabel && (
+              <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
+            )}
+            {player.name}
+            {player.rating != null ? (
+              <span className="tabular-nums text-ink-500"> ({player.rating})</span>
+            ) : null}
+          </span>
           {index < players.length - 1 ? <span className="text-ink-400"> & </span> : null}
         </span>
       ))}

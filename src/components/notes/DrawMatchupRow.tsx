@@ -30,16 +30,18 @@ function PlayerNames({
   players: DrawPlayer[]
   compact?: boolean
 }) {
-  // Compact played cards: one line per side so doubles don't stack taller than upcoming.
+  // Compact played cards: one line when it fits; wrap only between partners.
   if (compact) {
     return (
       <p className="text-xs leading-snug text-ink-800">
         {players.map((player, index) => (
           <span key={player.name}>
-            {player.seedLabel && (
-              <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
-            )}
-            {player.name}
+            <span className="whitespace-nowrap">
+              {player.seedLabel && (
+                <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
+              )}
+              {player.name}
+            </span>
             {index < players.length - 1 ? <span className="text-ink-400"> & </span> : null}
           </span>
         ))}
@@ -50,7 +52,10 @@ function PlayerNames({
   return (
     <div className="space-y-0.5">
       {players.map((player, index) => (
-        <div key={player.name} className="text-sm leading-snug text-ink-900">
+        <div
+          key={player.name}
+          className="text-xs leading-snug text-ink-900 sm:text-[13px]"
+        >
           {player.seedLabel && (
             <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
           )}
