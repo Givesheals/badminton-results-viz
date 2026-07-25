@@ -117,15 +117,16 @@ function ResultInline({ result }: { result: DrawMatchResult }) {
 
 /**
  * Compact played-row intel: same amber/ink pill chrome as upcoming cards,
- * kept side-by-side so completed rows stay short.
+ * with shorter labels so completed rows stay dense.
  */
 function PlayedIntelMicro({ teaser }: { teaser: MatchupIntelTeaser }) {
-  if (teaser.notesCta == null && teaser.gamesLabel == null) return null
+  const gamesCount = teaser.gamesLabel?.match(/\d+/)?.[0] ?? null
+  if (teaser.notesCta == null && gamesCount == null) return null
 
   return (
     <span className="inline-flex shrink-0 flex-nowrap items-center gap-1">
-      {teaser.notesCta != null ? <NotesBadge label={teaser.notesCta} /> : null}
-      {teaser.gamesLabel != null ? <GamesBadge label={teaser.gamesLabel} /> : null}
+      {teaser.notesCta != null ? <NotesBadge label="Notes" /> : null}
+      {gamesCount != null ? <GamesBadge label={`×${gamesCount}`} /> : null}
     </span>
   )
 }
