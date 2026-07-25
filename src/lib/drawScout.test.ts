@@ -232,11 +232,11 @@ describe('drawScout', () => {
 
   it('sorts later opponents within a round by probability descending', () => {
     const qf = cambs.laterOpponentsByEntrant['Simon Parker']!.filter(
-      (item) => item.disciplineCode === 'XD' && item.roundLabel === 'Quarter-finals',
+      (item) => item.disciplineCode === 'OS' && item.roundLabel === 'Quarter-finals',
     )
     const sorted = sortLaterOpponentsWithinRound(qf)
-    expect(sorted.map((item) => item.probability)).toEqual([0.45, 0.35, 0.3, 0.25, 0.2, 0.15])
-    expect(laterOpponentDisplayName(sorted[0]!)).toContain('Tom Fielding')
+    expect(sorted.map((item) => item.probability)).toEqual([0.45, 0.35, 0.2])
+    expect(laterOpponentDisplayName(sorted[0]!)).toContain('Harry Quinn')
   })
 
   it('covers notes-only, games-only, both, and neither intel across later rounds', () => {
@@ -264,7 +264,7 @@ describe('drawScout', () => {
     expect(states.some((s) => !s.hasNotes && s.hasGames)).toBe(true)
     expect(states.some((s) => s.hasNotes && s.hasGames)).toBe(true)
     expect(states.some((s) => !s.hasNotes && !s.hasGames)).toBe(true)
-    expect(states.some((s) => s.round === 'Quarter-finals' && !s.hasNotes && !s.hasGames)).toBe(
+    expect(states.some((s) => s.round === 'Semi-finals' && !s.hasNotes && !s.hasGames)).toBe(
       true,
     )
     expect(states.some((s) => s.round === 'Semi-finals' && s.hasNotes && !s.hasGames)).toBe(true)
@@ -275,8 +275,8 @@ describe('drawScout', () => {
       (item) => item.disciplineCode === 'OD',
     )
     const grouped = groupLaterOpponentsByRound(opponents)
-    expect(grouped.map((group) => group.roundLabel)).toEqual(['Quarter-finals'])
-    expect(grouped[0]!.opponents.map((item) => item.probability)).toEqual([0.62, 0.38])
+    expect(grouped.map((group) => group.roundLabel)).toEqual(['Semi-finals'])
+    expect(grouped[0]!.opponents.map((item) => item.probability)).toEqual([0.55, 0.45])
   })
 
   it('aggregates intel counts across a later opponent pair', () => {
@@ -382,7 +382,8 @@ describe('drawScout', () => {
 
   it('counts notes and unique previous meetings across a matchup', () => {
     // Dan & Alisha: notes + games (both). Murray is notes-only in the prototype fixtures.
-    const matchup = simon.disciplineGroups[0]!.matchups[1]!
+    const xd = simon.disciplineGroups.find((group) => group.disciplineCode === 'XD')!
+    const matchup = xd.matchups.find((item) => item.id === 'd2')!
     const counts = getMatchupIntelCounts(
       matchup,
       mergeDrawScoutDisplayNotes([]),
@@ -395,22 +396,28 @@ describe('drawScout', () => {
 
   it('covers notes-only, games-only, both, and neither matchup fixtures', () => {
     const notes = mergeDrawScoutDisplayNotes([])
-    const [xd, od] = simon.disciplineGroups
-    const murray = getMatchupIntelCounts(xd!.matchups[0]!, notes, drawScoutDemoMatches, 'Simon Parker')
+    const xd = simon.disciplineGroups.find((group) => group.disciplineCode === 'XD')!
+    const od = simon.disciplineGroups.find((group) => group.disciplineCode === 'OD')!
+    const murray = getMatchupIntelCounts(
+      xd.matchups.find((item) => item.id === 'd1')!,
+      notes,
+      drawScoutDemoMatches,
+      'Simon Parker',
+    )
     const danAlisha = getMatchupIntelCounts(
-      xd!.matchups[1]!,
+      xd.matchups.find((item) => item.id === 'd2')!,
       notes,
       drawScoutDemoMatches,
       'Simon Parker',
     )
     const gilHooly = getMatchupIntelCounts(
-      od!.matchups[0]!,
+      od.matchups.find((item) => item.id === 'd3')!,
       notes,
       drawScoutDemoMatches,
       'Simon Parker',
     )
     const neither = getMatchupIntelCounts(
-      od!.matchups[1]!,
+      od.matchups.find((item) => item.id === 'd4')!,
       notes,
       drawScoutDemoMatches,
       'Simon Parker',
@@ -423,6 +430,38 @@ describe('drawScout', () => {
     expect(gilHooly.noteCount).toBe(0)
     expect(gilHooly.gamesPlayed).toBeGreaterThan(0)
     expect(neither).toEqual({ noteCount: 0, gamesPlayed: 0 })
+  })
+
+  it('includes progressive draw states: unplayed singles, probable OD QF, definite XD QF', () => {
+    const os = simon.disciplineGroups.find((group) => group.disciplineCode === 'OS')!
+    const od = simon.disciplineGroups.find((group) => group.disciplineCode === 'OD')!
+    const xd = simon.disciplineGroups.find((group) => group.disciplineCode === 'XD')!
+
+    expect(os.matchups.every((matchup) => matchup.result == null)).toBe(true)
+    expect(os.matchups.every((matchup) => matchup.opponentPending !== true)).toBe(true)
+
+    expect(od.matchups.filter((matchup) => matchup.result != null)).toHaveLength(2)
+    const odQf = od.matchups.find((matchup) => matchup.id === 'od-qf')!
+    expect(odQf.opponentPending).toBe(true)
+    expect(odQf.probableOpponents?.length).toBeGreaterThanOrEqual(2)
+
+    expect(xd.matchups.filter((matchup) => matchup.result != null)).toHaveLength(2)
+    const xdQf = xd.matchups.find((matchup) => matchup.id === 'xd-qf')!
+    expect(xdQf.result).toBeUndefined()
+    expect(xdQf.opponentPending).not.toBe(true)
+    expect(xdQf.opponentSide.map((player) => player.name)).toEqual([
+      'Tom Fielding',
+      'Lucy Grant',
+    ])
+
+    const laterXdQf = (cambs.laterOpponentsByEntrant['Simon Parker'] ?? []).filter(
+      (item) => item.disciplineCode === 'XD' && item.roundLabel === 'Quarter-finals',
+    )
+    const laterOdQf = (cambs.laterOpponentsByEntrant['Simon Parker'] ?? []).filter(
+      (item) => item.disciplineCode === 'OD' && item.roundLabel === 'Quarter-finals',
+    )
+    expect(laterXdQf).toHaveLength(0)
+    expect(laterOdQf).toHaveLength(0)
   })
 
   it('puts exact draw-pair notes ahead of individual notes for Dan & Alisha', () => {

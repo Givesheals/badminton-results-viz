@@ -120,9 +120,31 @@ export function collectOpponentNamesFromDraw(groups: DrawDisciplineGroup[]): str
       for (const player of matchup.opponentSide) {
         names.add(player.name)
       }
+      for (const probable of matchup.probableOpponents ?? []) {
+        for (const player of probable.opponentSide) {
+          names.add(player.name)
+        }
+      }
     }
   }
   return [...names]
+}
+
+/** True when the matchup has a recorded result (compact result card). */
+export function isPlayedMatchup(matchup: DrawMatchup): boolean {
+  return matchup.result != null
+}
+
+/**
+ * True when this is a promoted next-round slot with the opponent still unsettled
+ * (probable-opponents list, not a definite scout card).
+ */
+export function isProbableNextMatchup(matchup: DrawMatchup): boolean {
+  return matchup.opponentPending === true
+}
+
+export function formatMatchResultOutcome(outcome: 'win' | 'loss'): string {
+  return outcome === 'win' ? 'Win' : 'Loss'
 }
 
 export function collectAllOpponentNamesForEntrant(
@@ -424,6 +446,30 @@ export function filterLaterOpponentsByDiscipline(
   disciplineCode: string,
 ): DrawScoutLaterOpponent[] {
   return opponents.filter((opponent) => opponent.disciplineCode === disciplineCode)
+}
+
+/** Group-stage round labels (e.g. "Group A"); everything else is treated as knockout. */
+export function isGroupRoundLabel(roundLabel: string): boolean {
+  return /^group\b/i.test(roundLabel.trim())
+}
+
+/**
+ * Later-opponent rows for a discipline, excluding rounds already promoted into
+ * the main matchup list (definite or probable next).
+ */
+export function filterLaterOpponentsForDisciplineDraw(
+  opponents: DrawScoutLaterOpponent[],
+  disciplineCode: string,
+  matchups: DrawMatchup[],
+): DrawScoutLaterOpponent[] {
+  const promotedRounds = new Set(
+    matchups
+      .filter((matchup) => !isGroupRoundLabel(matchup.roundLabel))
+      .map((matchup) => matchup.roundLabel),
+  )
+  return filterLaterOpponentsByDiscipline(opponents, disciplineCode).filter(
+    (opponent) => !promotedRounds.has(opponent.roundLabel),
+  )
 }
 
 /** Sort knockout-path opponents by probability within a round (highest first). */

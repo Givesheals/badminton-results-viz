@@ -16,8 +16,8 @@ describe('drawScoutMatches', () => {
   it('finds previous meetings with an opponent in uploaded results', () => {
     const match = drawScoutDemoMatches[0]!
     const allMatches: NormalizedMatch[] = [match]
-    expect(matchIncludesOpponent(match, 'Murray Wright')).toBe(true)
-    expect(getPreviousMatchesAgainstOpponent(allMatches, 'Murray Wright', 'Simon Parker')).toEqual([
+    expect(matchIncludesOpponent(match, 'Dan Martyres')).toBe(true)
+    expect(getPreviousMatchesAgainstOpponent(allMatches, 'Dan Martyres', 'Simon Parker')).toEqual([
       match,
     ])
   })
@@ -30,7 +30,7 @@ describe('drawScoutMatches', () => {
 
   it('prefers real meetings over demo data', () => {
     const real = { ...drawScoutDemoMatches[0]!, competitionName: 'My real event' }
-    const result = getDrawScoutPreviousMatches([real], 'Murray Wright', 'Simon Parker')
+    const result = getDrawScoutPreviousMatches([real], 'Dan Martyres', 'Simon Parker')
     expect(result.isDemo).toBe(false)
     expect(result.matches[0]?.competitionName).toBe('My real event')
   })

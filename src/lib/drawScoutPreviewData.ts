@@ -72,6 +72,9 @@ const PLAYER_RATINGS: Record<string, number> = {
   'Amy Brooks': 548,
   'Kate Morrison': 541,
   'Partner Stub': 550,
+  'Theo Marsh': 555,
+  'Callum Reed': 548,
+  'Harry Quinn': 540,
 }
 
 function player(name: string, extra: { seedLabel?: string; rating?: number } = {}): DrawPlayer {
@@ -83,19 +86,84 @@ function player(name: string, extra: { seedLabel?: string; rating?: number } = {
   }
 }
 
-const simonXdOd: DrawDisciplineGroup[] = [
+/**
+ * Simon’s progressive draw story (one scroll, three stages):
+ * - Singles: groups not started (upcoming cards + QF/SF in “may also meet”)
+ * - Doubles: groups done (compact results) + QF probable (promoted)
+ * - Mixed: groups done with wins (compact results) + QF definite opponent
+ */
+const simonSinglesDoublesMixed: DrawDisciplineGroup[] = [
+  {
+    disciplineCode: 'OS',
+    disciplineLabel: 'Open Singles',
+    matchups: [
+      {
+        id: 'os1',
+        roundLabel: 'Group C',
+        yourSide: [player('Simon Parker')],
+        opponentSide: [player('Theo Marsh')],
+      },
+      {
+        id: 'os2',
+        roundLabel: 'Group C',
+        yourSide: [player('Simon Parker')],
+        opponentSide: [player('Callum Reed')],
+      },
+    ],
+  },
+  {
+    disciplineCode: 'OD',
+    disciplineLabel: 'Open Doubles',
+    matchups: [
+      // Games only (Gilhooly prior meeting, no notes) — played win
+      {
+        id: 'd3',
+        roundLabel: 'Group G',
+        yourSide: [player('Martin Crossley'), player('Simon Parker')],
+        opponentSide: [player('Simon Gilhooly'), player('Paul Andrew Mayfield')],
+        result: { outcome: 'win', scoreSummary: '21-16, 21-19' },
+      },
+      // Neither notes nor games — played win (advances from group)
+      {
+        id: 'd4',
+        roundLabel: 'Group G',
+        yourSide: [player('Martin Crossley'), player('Simon Parker')],
+        opponentSide: [player('Chris Nolan'), player('Alex Reid')],
+        result: { outcome: 'win', scoreSummary: '21-12, 19-21, 21-14' },
+      },
+      // Promoted QF — opponent not decided yet
+      {
+        id: 'od-qf',
+        roundLabel: 'Quarter-finals',
+        yourSide: [player('Martin Crossley'), player('Simon Parker')],
+        opponentSide: [],
+        opponentPending: true,
+        probableOpponents: [
+          {
+            opponentSide: [player('Daniel Hughes'), player('Morgan Taylor')],
+            probability: 0.62,
+          },
+          {
+            opponentSide: [player('Oliver Brooks'), player('Sophie Lane')],
+            probability: 0.38,
+          },
+        ],
+      },
+    ],
+  },
   {
     disciplineCode: 'XD',
     disciplineLabel: 'Mixed Doubles',
     matchups: [
-      // Notes only (Murray note, no prior meeting)
+      // Notes only (Murray) — played win
       {
         id: 'd1',
         roundLabel: 'Group A',
         yourSide: [player('Simon Parker'), player('Sara Moore')],
         opponentSide: [player('Murray Wright'), player('Corinna Wong')],
+        result: { outcome: 'win', scoreSummary: '21-18, 21-15' },
       },
-      // Notes + games
+      // Notes + games — played win
       {
         id: 'd2',
         roundLabel: 'Group A',
@@ -104,26 +172,14 @@ const simonXdOd: DrawDisciplineGroup[] = [
           player('Dan Martyres', { seedLabel: '[1]' }),
           player('Alisha Johnson'),
         ],
+        result: { outcome: 'win', scoreSummary: '19-21, 21-17, 21-19' },
       },
-    ],
-  },
-  {
-    disciplineCode: 'OD',
-    disciplineLabel: 'Open Doubles',
-    matchups: [
-      // Games only (Gilhooly prior meeting, no notes)
+      // Promoted QF — definite opponent
       {
-        id: 'd3',
-        roundLabel: 'Group G',
-        yourSide: [player('Martin Crossley'), player('Simon Parker')],
-        opponentSide: [player('Simon Gilhooly'), player('Paul Andrew Mayfield')],
-      },
-      // Neither notes nor games
-      {
-        id: 'd4',
-        roundLabel: 'Group G',
-        yourSide: [player('Martin Crossley'), player('Simon Parker')],
-        opponentSide: [player('Chris Nolan'), player('Alex Reid')],
+        id: 'xd-qf',
+        roundLabel: 'Quarter-finals',
+        yourSide: [player('Simon Parker'), player('Sara Moore')],
+        opponentSide: [player('Tom Fielding'), player('Lucy Grant')],
       },
     ],
   },
@@ -237,7 +293,7 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
       {
         name: 'Simon Parker',
         isYou: true,
-        disciplineGroups: simonXdOd,
+        disciplineGroups: simonSinglesDoublesMixed,
       },
       {
         name: 'Sara Moore',
@@ -294,7 +350,51 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
     ],
     laterOpponentsByEntrant: {
       'Simon Parker': [
-        // Semi-finals — mix of intel states
+        // Singles — still in groups; QF + SF stay in “may also meet”
+        {
+          opponentSide: [player('Harry Quinn')],
+          disciplineCode: 'OS',
+          roundLabel: 'Quarter-finals',
+          probability: 0.45,
+        },
+        {
+          opponentSide: [player('Jamie Patel')],
+          disciplineCode: 'OS',
+          roundLabel: 'Quarter-finals',
+          probability: 0.35,
+        },
+        {
+          opponentSide: [player('Noah Price')],
+          disciplineCode: 'OS',
+          roundLabel: 'Quarter-finals',
+          probability: 0.2,
+        },
+        {
+          opponentSide: [player('Felix Grant')],
+          disciplineCode: 'OS',
+          roundLabel: 'Semi-finals',
+          probability: 0.55,
+        },
+        {
+          opponentSide: [player('Theo Marsh')],
+          disciplineCode: 'OS',
+          roundLabel: 'Semi-finals',
+          probability: 0.45,
+        },
+        // Doubles — QF promoted as probable (not listed here); SF only
+        {
+          opponentSide: [player('Daniel Hughes'), player('Morgan Taylor')],
+          disciplineCode: 'OD',
+          roundLabel: 'Semi-finals',
+          probability: 0.55,
+        },
+        {
+          opponentSide: [player('Chris Nolan'), player('Alex Reid')],
+          disciplineCode: 'OD',
+          roundLabel: 'Semi-finals',
+          probability: 0.45,
+        },
+        // Mixed — QF is definite in matchups; SF only here (intel mix for prototype)
         {
           // Both notes + games
           opponentSide: [
@@ -306,7 +406,7 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
           probability: 0.5,
         },
         {
-          // Both notes + games (also appears in quarters)
+          // Both notes + games (also appears as QF definite)
           opponentSide: [player('Tom Fielding'), player('Lucy Grant')],
           disciplineCode: 'XD',
           roundLabel: 'Semi-finals',
@@ -333,60 +433,24 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
           roundLabel: 'Semi-finals',
           probability: 0.18,
         },
-        // Quarter-finals — mix of intel states (enough for Show more)
         {
-          // Both notes + games
-          opponentSide: [player('Tom Fielding'), player('Lucy Grant')],
-          disciplineCode: 'XD',
-          roundLabel: 'Quarter-finals',
-          probability: 0.45,
-        },
-        {
-          // Both notes + games
-          opponentSide: [player('Ben Carter'), player('Emma Walsh')],
-          disciplineCode: 'XD',
-          roundLabel: 'Quarter-finals',
-          probability: 0.35,
-        },
-        {
-          // Games only
-          opponentSide: [player('Oliver Brooks'), player('Sophie Lane')],
-          disciplineCode: 'XD',
-          roundLabel: 'Quarter-finals',
-          probability: 0.3,
-        },
-        {
-          // Notes only
-          opponentSide: [player('Murray Wright'), player('Corinna Wong')],
-          disciplineCode: 'XD',
-          roundLabel: 'Quarter-finals',
-          probability: 0.25,
-        },
-        {
-          // Neither notes nor games
+          // Neither — extra SF for show-more coverage if needed
           opponentSide: [player('Jamie Patel'), player('Priya Shah')],
           disciplineCode: 'XD',
-          roundLabel: 'Quarter-finals',
-          probability: 0.2,
+          roundLabel: 'Semi-finals',
+          probability: 0.12,
         },
         {
-          // Neither notes nor games
           opponentSide: [player('Nina West'), player('Ryan Cole')],
           disciplineCode: 'XD',
-          roundLabel: 'Quarter-finals',
-          probability: 0.15,
+          roundLabel: 'Semi-finals',
+          probability: 0.1,
         },
         {
-          opponentSide: [player('Daniel Hughes'), player('Morgan Taylor')],
-          disciplineCode: 'OD',
-          roundLabel: 'Quarter-finals',
-          probability: 0.62,
-        },
-        {
-          opponentSide: [player('Chris Nolan'), player('Alex Reid')],
-          disciplineCode: 'OD',
-          roundLabel: 'Quarter-finals',
-          probability: 0.38,
+          opponentSide: [player('Ben Carter'), player('Emma Walsh')],
+          disciplineCode: 'XD',
+          roundLabel: 'Semi-finals',
+          probability: 0.08,
         },
       ],
       'Sara Moore': [

@@ -139,13 +139,11 @@ Draw scout card
 ├── Context line (when viewing someone else's draw)
 ├── Draw by discipline
 │   └── Matchup block (per round)
-│       ├── Header: discipline left edge + your side vs opponents (tappable when intel exists)
-│       ├── Collapsed teaser: amber “View notes” (left) + outline ghost chip “Played you: {m}” (mobile: right-aligned; desktop: reserved notes-slot cluster)
-│       └── Expanded:
-│           ├── Tabs “Notes” / “Your games” only when both exist (default Notes); otherwise single panel
-│           ├── Exact pairing block first (pair notes or games vs both, per active panel)
-│           └── Then each opponent alone (solo / other-partner notes or games without partner)
-└── "You may also meet" (collapsible; knockout-path opponents with notes)
+│       ├── Upcoming: full card — names, ratings, notes / past games
+│       ├── Played: compact — Win/Loss + score, shorter names, still expandable
+│       ├── Next probable: “opponent TBD” + ranked probable list
+│       └── Next definite: full scout card for the known opponent
+└── "You may also meet" (collapsible; later knockout rounds not already promoted)
 ```
 
 ### Competition picker
@@ -222,6 +220,7 @@ Per discipline, show knockout opponents the viewed player might face **outside t
 - All plausible opponents shown (not filtered to those with notes)
 - Rows with notes or previous games expand into Notes / Your games tabs (same as draw matchups)
 - Rows without intel use the same card shell with “No notes or games yet” (not expandable)
+- **Exclude rounds already promoted** into the main matchup list (definite next or probable-next slot) — see progressive states below
 
 ```typescript
 type DrawScoutLaterOpponent = {
@@ -231,6 +230,36 @@ type DrawScoutLaterOpponent = {
   probability: number        // 0–1; same discipline + round sums to 1
 }
 ```
+
+### Progressive states (in-tournament)
+
+As scores arrive, matchup cards and knockout placement evolve. **Same UI for own draw and someone else’s** — results are always shown (especially useful when scouting a friend).
+
+| State | When | UI |
+|-------|------|-----|
+| **Upcoming** | Match not played | Full scout card (names, ratings, notes / past games) |
+| **Played** | Result recorded | Compact card: **Win/Loss** + score headline, shorter names (no ratings), still expandable for notes |
+| **Next — probable** | Advanced; bracket opponent unsettled | Promoted into main list under the round label; “Next up · opponent TBD” + ranked probable opponents (probability badges; top 2 + show more) |
+| **Next — definite** | Advanced; opponent known | Promoted into main list as a normal full scout card (no probability badge) |
+
+Played group cards **stay visible** (compact) — they are not collapsed into a hidden accordion.
+
+Promotion rules:
+
+1. When a knockout round becomes the player’s next match, add it to `disciplineGroups.matchups` (not only under “You may also meet”).
+2. If the opponent is known → definite matchup (`opponentSide` filled).
+3. If the opponent is unsettled → `opponentPending: true` + `probableOpponents[]`.
+4. Remove that round from `laterOpponentsByEntrant` for the discipline (UI also filters promoted rounds as a safety net).
+
+#### Prototype fixture story (Simon’s Cambs draw)
+
+One competition, three disciplines, three stages in one scroll:
+
+| Discipline | Group stage | Quarter-final |
+|------------|-------------|---------------|
+| **Open Singles (OS)** | Unplayed — full upcoming cards | Still under “You may also meet” |
+| **Open Doubles (OD)** | Both played (compact wins) | Promoted **probable** next |
+| **Mixed Doubles (XD)** | Both played (compact wins) | Promoted **definite** next (Tom & Lucy) |
 
 ---
 
@@ -291,7 +320,29 @@ Prototype app can read the same params from `window.location.search` or integrat
 
 ## Part 5 — Data model (prototype)
 
-Until a live draw API exists, drive the card from mock data in `src/lib/drawScoutPreviewData.ts` (new file).
+Until a live draw API exists, drive the card from mock data in `src/lib/drawScoutPreviewData.ts`.
+
+```typescript
+type DrawMatchResult = {
+  outcome: 'win' | 'loss'
+  scoreSummary: string // e.g. "21-18, 19-21, 21-15"
+}
+
+type DrawProbableOpponent = {
+  opponentSide: DrawPlayer[]
+  probability: number
+}
+
+type DrawMatchup = {
+  id: string
+  roundLabel: string
+  yourSide: DrawPlayer[]
+  opponentSide: DrawPlayer[]
+  result?: DrawMatchResult           // compact played card
+  opponentPending?: boolean          // next slot, opponent TBD
+  probableOpponents?: DrawProbableOpponent[]
+}
+```
 
 ### `DrawScoutCompetition`
 
@@ -315,13 +366,6 @@ type DrawScoutEntrant = {
   isYou?: boolean
   isFavourite?: boolean
   disciplineGroups: DrawDisciplineGroup[] // same shape as email (no notes)
-}
-
-type DrawScoutLaterOpponent = {
-  opponentSide: DrawPlayer[]
-  disciplineCode: string
-  roundLabel: string
-  probability: number
 }
 ```
 
@@ -449,6 +493,6 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 └─────────────────────────────────────────────────┘
 ```
 
-**Prototype matchup fixtures (Simon’s Cambs draw):** notes-only (Murray), both (Dan & Alisha), games-only (Gilhooly & Mayfield), neither (Chris Nolan & Alex Reid).
+**Prototype matchup fixtures (Simon’s Cambs draw):** progressive states — Singles unplayed; Doubles compact group results + probable QF; Mixed compact group wins + definite QF (Tom & Lucy). Intel mix retained: notes-only (Murray), both (Dan & Alisha), games-only (Gilhooly & Mayfield), neither (Chris Nolan & Alex Reid).
 
 **Notes accent:** soft amber on the View notes badge, Notes tab indicator, and “Note from this game” labels. Brand purple remains for clickable chrome (selected chips, primary buttons).

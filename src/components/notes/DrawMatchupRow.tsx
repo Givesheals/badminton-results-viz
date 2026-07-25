@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { MatchupIntelTeaser } from '../../lib/drawScout'
-import type { DrawMatchup, DrawPlayer } from '../../lib/drawTypes'
+import { formatMatchResultOutcome } from '../../lib/drawScout'
+import type { DrawMatchResult, DrawMatchup, DrawPlayer } from '../../lib/drawTypes'
 import { getDisciplineStyle } from '../../lib/disciplineStyle'
 
 export const DRAW_MATCHUP_GRID =
@@ -12,16 +13,25 @@ const DRAW_SIDES_GRID = 'grid grid-cols-2 items-start gap-x-3 gap-y-1.5'
 const NOTES_BADGE_SLOT =
   'inline-flex min-h-[1.375rem] items-center sm:min-w-[5.75rem]'
 
-function PlayerNames({ players }: { players: DrawPlayer[] }) {
+function PlayerNames({
+  players,
+  compact = false,
+}: {
+  players: DrawPlayer[]
+  compact?: boolean
+}) {
   return (
-    <div className="space-y-0.5">
+    <div className={compact ? 'space-y-0' : 'space-y-0.5'}>
       {players.map((player, index) => (
-        <div key={player.name} className="text-sm leading-snug text-ink-900">
+        <div
+          key={player.name}
+          className={`leading-snug text-ink-900 ${compact ? 'text-xs' : 'text-sm'}`}
+        >
           {player.seedLabel && (
             <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
           )}
           {player.name}
-          {player.rating != null ? (
+          {!compact && player.rating != null ? (
             <span className="tabular-nums text-ink-500"> ({player.rating})</span>
           ) : null}
           {index < players.length - 1 && <span className="text-ink-400"> &</span>}
@@ -67,6 +77,24 @@ function MatchupIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
   )
 }
 
+function ResultHeadline({ result }: { result: DrawMatchResult }) {
+  const isWin = result.outcome === 'win'
+  return (
+    <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+      <span
+        className={`text-xs font-bold uppercase tracking-wide ${
+          isWin ? 'text-emerald-700' : 'text-ink-500'
+        }`}
+      >
+        {formatMatchResultOutcome(result.outcome)}
+      </span>
+      <span className="text-sm font-semibold tabular-nums text-ink-900">
+        {result.scoreSummary}
+      </span>
+    </div>
+  )
+}
+
 type ExpandableProps = {
   open: boolean
   onToggle: () => void
@@ -84,11 +112,17 @@ type Props = {
   expandable?: ExpandableProps
   /** Discipline for the header-only left edge accent. */
   disciplineCode?: string
+  /**
+   * Compact played-result layout: score + W/L first, shorter names, no ratings.
+   * Defaults to true when `matchup.result` is set.
+   */
+  compactResult?: boolean
 }
 
 /**
  * Draw matchup row. Default: two columns (your side | opponents). With `label`,
  * adds the round column used in draw-out email previews.
+ * Played matchups render a compact result headline when `result` is set.
  */
 export function DrawMatchupRow({
   label,
@@ -96,24 +130,30 @@ export function DrawMatchupRow({
   notes,
   expandable,
   disciplineCode,
+  compactResult,
 }: Props) {
+  const played = matchup.result != null
+  const useCompact = compactResult ?? played
+  const result = matchup.result
+
   const sides =
     label != null ? (
       <>
         <p className="text-xs font-medium text-ink-500">{label}</p>
-        <PlayerNames players={matchup.yourSide} />
-        <PlayerNames players={matchup.opponentSide} />
+        <PlayerNames players={matchup.yourSide} compact={useCompact} />
+        <PlayerNames players={matchup.opponentSide} compact={useCompact} />
       </>
     ) : (
       <>
-        <PlayerNames players={matchup.yourSide} />
-        <PlayerNames players={matchup.opponentSide} />
+        <PlayerNames players={matchup.yourSide} compact={useCompact} />
+        <PlayerNames players={matchup.opponentSide} compact={useCompact} />
       </>
     )
 
   const gridClass = label != null ? DRAW_MATCHUP_GRID : DRAW_SIDES_GRID
   const notesSpan = label != null ? 'col-span-3' : 'col-span-2'
   const disciplineStyle = getDisciplineStyle(disciplineCode ?? '')
+  const paddingClass = useCompact ? 'px-3 py-2' : 'px-3 py-3'
 
   // Shared card chrome for expandable and static (no-intel) matchups.
   const cardShell =
@@ -128,7 +168,8 @@ export function DrawMatchupRow({
           aria-expanded={expandable.open}
           className={`flex w-full items-stretch gap-2 rounded-r border-l-4 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200 ${disciplineStyle.borderClass}`}
         >
-          <div className="min-w-0 flex-1 px-3 py-3">
+          <div className={`min-w-0 flex-1 ${paddingClass}`}>
+            {result != null && <ResultHeadline result={result} />}
             <div className={gridClass}>{sides}</div>
             <MatchupIntelTeaserLine teaser={expandable.teaser} />
           </div>
@@ -149,9 +190,10 @@ export function DrawMatchupRow({
   // Static card: same shell + discipline edge, no chevron / hover (not expandable).
   return (
     <div className={cardShell}>
-      <div className={`rounded-r border-l-4 px-3 py-3 ${disciplineStyle.borderClass}`}>
+      <div className={`rounded-r border-l-4 ${paddingClass} ${disciplineStyle.borderClass}`}>
+        {result != null && <ResultHeadline result={result} />}
         <div className={gridClass}>{sides}</div>
-        <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
+        {!played && <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>}
         {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
       </div>
     </div>
