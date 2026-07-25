@@ -584,7 +584,7 @@ function ProbableNextMatchupBlock({
   // Full-width matchup cards on a shared tinted ground — groups the section without
   // nesting cards inside another card shell.
   return (
-    <div className={`rounded-xl ${disciplineStyle.rowBgClass} p-2`}>
+    <div className={`rounded-xl border border-ink-100 ${disciplineStyle.rowBgClass} p-2`}>>
       <p className="mb-1.5 px-0.5 text-xs font-medium text-ink-500">Most likely opponents</p>
       <div className="space-y-2">
         {visible.map((item) => {
