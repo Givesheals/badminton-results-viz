@@ -141,11 +141,19 @@ const simonSinglesDoublesMixed: DrawDisciplineGroup[] = [
         probableOpponents: [
           {
             opponentSide: [player('Daniel Hughes'), player('Morgan Taylor')],
-            probability: 0.62,
+            probability: 0.42,
           },
           {
             opponentSide: [player('Oliver Brooks'), player('Sophie Lane')],
-            probability: 0.38,
+            probability: 0.28,
+          },
+          {
+            opponentSide: [player('Ben Carter'), player('Emma Walsh')],
+            probability: 0.18,
+          },
+          {
+            opponentSide: [player('Jamie Patel'), player('Priya Shah')],
+            probability: 0.12,
           },
         ],
       },

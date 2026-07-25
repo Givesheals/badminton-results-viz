@@ -443,7 +443,7 @@ describe('drawScout', () => {
     expect(od.matchups.filter((matchup) => matchup.result != null)).toHaveLength(2)
     const odQf = od.matchups.find((matchup) => matchup.id === 'od-qf')!
     expect(odQf.opponentPending).toBe(true)
-    expect(odQf.probableOpponents?.length).toBeGreaterThanOrEqual(2)
+    expect(odQf.probableOpponents?.length).toBeGreaterThan(2)
 
     expect(xd.matchups.filter((matchup) => matchup.result != null)).toHaveLength(2)
     const xdQf = xd.matchups.find((matchup) => matchup.id === 'xd-qf')!

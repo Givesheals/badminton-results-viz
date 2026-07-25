@@ -578,36 +578,13 @@ function ProbableNextMatchupBlock({
   const probable = matchup.probableOpponents ?? []
   const visible = showAll ? probable : probable.slice(0, PROBABLE_NEXT_INITIAL_VISIBLE)
   const hiddenCount = probable.length - visible.length
+  const showMoreButtonClass =
+    'mt-2 w-fit rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
   return (
     <div className="overflow-hidden rounded-xl border border-ink-100 bg-white shadow-sm">
       <div className={`rounded-r border-l-4 px-3 py-3 ${disciplineStyle.borderClass}`}>
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-              Next up · opponent TBD
-            </p>
-            {matchup.yourSide.length > 0 && (
-              <div className="mt-1 space-y-0.5">
-                {matchup.yourSide.map((player, index) => (
-                  <div key={player.name} className="text-sm leading-snug text-ink-900">
-                    {player.seedLabel && (
-                      <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
-                    )}
-                    {player.name}
-                    {player.rating != null ? (
-                      <span className="tabular-nums text-ink-500"> ({player.rating})</span>
-                    ) : null}
-                    {index < matchup.yourSide.length - 1 && (
-                      <span className="text-ink-400"> &</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        <p className="mt-3 text-xs font-medium text-ink-500">Most likely opponents</p>
+        <p className="text-xs font-medium text-ink-500">Most likely opponents</p>
         <div className="mt-1">
           {visible.map((item) => {
             const asLater = probableToLaterOpponent(
@@ -630,20 +607,12 @@ function ProbableNextMatchupBlock({
           })}
         </div>
         {hiddenCount > 0 && !showAll && (
-          <button
-            type="button"
-            onClick={() => setShowAll(true)}
-            className="mt-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-          >
+          <button type="button" onClick={() => setShowAll(true)} className={showMoreButtonClass}>
             Show more
           </button>
         )}
         {showAll && probable.length > PROBABLE_NEXT_INITIAL_VISIBLE && (
-          <button
-            type="button"
-            onClick={() => setShowAll(false)}
-            className="mt-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-          >
+          <button type="button" onClick={() => setShowAll(false)} className={showMoreButtonClass}>
             Show less
           </button>
         )}
