@@ -687,13 +687,13 @@ function RoundGroupBlock({
 }
 
 function LaterOpponentNames({ players }: { players: DrawPlayer[] }) {
-  // Each player is nowrap so a wrap breaks between partners, not mid-name
-  // (e.g. "Daniel Hughes (582) &" / "Morgan Taylor (570)" — never "Morgan" / "Taylor").
-  return (
-    <p className="min-w-0 text-sm leading-snug text-ink-900">
-      {players.map((player, index) => (
-        <span key={player.name}>
-          <span className="whitespace-nowrap">
+  // Doubles/mixed: always stack partners (break after &) so every card shares
+  // the same name-block height — short pairs must not collapse to one line.
+  if (players.length >= 2) {
+    return (
+      <div className="min-w-0 text-sm leading-snug text-ink-900">
+        {players.map((player, index) => (
+          <div key={player.name} className="whitespace-nowrap">
             {player.seedLabel && (
               <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
             )}
@@ -701,10 +701,25 @@ function LaterOpponentNames({ players }: { players: DrawPlayer[] }) {
             {player.rating != null ? (
               <span className="tabular-nums text-ink-500"> ({player.rating})</span>
             ) : null}
-          </span>
-          {index < players.length - 1 ? <span className="text-ink-400"> & </span> : null}
-        </span>
-      ))}
+            {index < players.length - 1 ? <span className="text-ink-400"> &</span> : null}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const player = players[0]
+  if (player == null) return null
+
+  return (
+    <p className="min-w-0 text-sm leading-snug text-ink-900">
+      {player.seedLabel && (
+        <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
+      )}
+      {player.name}
+      {player.rating != null ? (
+        <span className="tabular-nums text-ink-500"> ({player.rating})</span>
+      ) : null}
     </p>
   )
 }

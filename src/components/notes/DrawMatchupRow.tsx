@@ -187,13 +187,30 @@ function UpcomingOpponentBody({
   teaser?: MatchupIntelTeaser | null
   showEmptyHint?: boolean
 }) {
+  const opponents = matchup.opponentSide
+
   return (
     <div className="min-w-0">
       {/* Larger type than played rows — this card is the next-match focus. */}
-      <p className="min-w-0 text-sm leading-snug text-ink-900">
-        {matchup.opponentSide.map((player, index) => (
-          <span key={player.name}>
-            <span className="whitespace-nowrap">
+      {opponents.length >= 2 ? (
+        <div className="min-w-0 text-sm leading-snug text-ink-900">
+          {opponents.map((player, index) => (
+            <div key={player.name} className="whitespace-nowrap">
+              {player.seedLabel && (
+                <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
+              )}
+              {player.name}
+              {player.rating != null ? (
+                <span className="tabular-nums text-ink-500"> ({player.rating})</span>
+              ) : null}
+              {index < opponents.length - 1 ? <span className="text-ink-400"> &</span> : null}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="min-w-0 text-sm leading-snug text-ink-900">
+          {opponents.map((player) => (
+            <span key={player.name} className="whitespace-nowrap">
               {player.seedLabel && (
                 <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
               )}
@@ -202,12 +219,9 @@ function UpcomingOpponentBody({
                 <span className="tabular-nums text-ink-500"> ({player.rating})</span>
               ) : null}
             </span>
-            {index < matchup.opponentSide.length - 1 ? (
-              <span className="text-ink-400"> & </span>
-            ) : null}
-          </span>
-        ))}
-      </p>
+          ))}
+        </p>
+      )}
       {teaser != null ? (
         <UpcomingIntelTeaserLine teaser={teaser} />
       ) : showEmptyHint ? (
