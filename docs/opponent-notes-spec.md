@@ -20,7 +20,7 @@ Opponent notes are tied to a specific match and support doubles targeting: notes
 
 | In scope | Out of scope |
 |----------|--------------|
-| Capture/edit modal from recap match rows | Draw scout card (see [draw scout spec](./draw-scout-spec.md)) |
+| Capture/edit modal from recap match rows | Draw companion card (see [draw companion spec](./draw-companion-spec.md)) |
 | Notes dashboard tab with search | Inline notes on opponent matchups |
 | localStorage persistence per player | Server sync |
 | Pair vs individual opponent targeting | |
@@ -284,9 +284,9 @@ Search matches body, journal fields, opponents, competition, disciplines, scope 
 
 ---
 
-## Draw scout integration
+## Draw companion integration
 
-The **Draw scout** card (see [draw scout spec](./draw-scout-spec.md)) lives on the **Events** tab (above tournament recap) and surfaces personal notes against opponents in an upcoming draw. Resolution:
+The **Draw companion** card (see [draw companion spec](./draw-companion-spec.md)) lives on the **Events** tab (above tournament recap) and surfaces personal notes against opponents in an upcoming draw. Resolution:
 
 ```typescript
 const relevant = sortNotesNewestFirst(

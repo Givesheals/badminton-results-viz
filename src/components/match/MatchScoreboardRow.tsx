@@ -14,7 +14,7 @@ export const MATCH_SCOREBOARD_GRID =
 
 /**
  * Compact parent grid: four-column scoreboard at every width. Use with
- * `variant="columns"` in tight containers (e.g. Draw Scout accordions) where
+ * `variant="columns"` in tight containers (e.g. Draw companion accordions) where
  * the columns layout is easier to scan than the stacked phone fallback.
  */
 export const MATCH_SCOREBOARD_GRID_COMPACT =

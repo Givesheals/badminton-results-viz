@@ -86,7 +86,7 @@ function demoMatch(options: {
   }
 }
 
-/** Example previous meetings aligned with draw scout demo notes / matchup states. */
+/** Example previous meetings aligned with draw companion demo notes / matchup states. */
 export const drawScoutDemoMatches: NormalizedMatch[] = [
   demoMatch({
     competitionName: 'Suffolk Bronze 2026',
@@ -229,6 +229,41 @@ export const drawScoutDemoMatches: NormalizedMatch[] = [
     scores: [
       [21, 17],
       [21, 19],
+    ],
+  }),
+  /** Singles group: games-only vs Callum Reed (no notes). */
+  demoMatch({
+    competitionName: 'Norfolk Open 2025',
+    date: '2025-10-19',
+    discipline: 'OS',
+    disciplineLabel: 'Open singles',
+    playerName: PLAYER,
+    partnerName: null,
+    opponent1: 'Callum Reed',
+    opponent2: null,
+    outcome: 'win',
+    roundLabel: 'Group B',
+    scores: [
+      [21, 18],
+      [19, 21],
+      [21, 16],
+    ],
+  }),
+  demoMatch({
+    competitionName: 'Suffolk Open 2025',
+    date: '2025-08-03',
+    discipline: 'OS',
+    disciplineLabel: 'Open singles',
+    playerName: PLAYER,
+    partnerName: null,
+    opponent1: 'Callum Reed',
+    opponent2: null,
+    outcome: 'loss',
+    roundLabel: 'Quarter-final',
+    scores: [
+      [18, 21],
+      [21, 19],
+      [19, 21],
     ],
   }),
 ]

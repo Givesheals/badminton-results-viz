@@ -16,7 +16,7 @@ type Props = {
 }
 
 /**
- * Previous meetings list for the Draw Scout games panel (tabs handle show/hide).
+ * Previous meetings list for the Draw companion games panel (tabs handle show/hide).
  */
 export function DrawScoutPreviousGames({
   opponentName,

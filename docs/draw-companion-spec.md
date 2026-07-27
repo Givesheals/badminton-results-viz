@@ -1,7 +1,7 @@
-# Draw scout — Feature brief
+# Draw companion — Feature brief
 
 **Product:** Badminton Results Viz / Badminfo  
-**Audience:** Engineers implementing the draw-out email refresh and in-app draw scout card.  
+**Audience:** Engineers implementing the draw-out email refresh and in-app draw companion card.  
 **Last updated:** July 2026  
 **Related:** [Opponent notes spec](./opponent-notes-spec.md), [`sendgrid/draw-out.html`](../sendgrid/draw-out.html)
 
@@ -14,7 +14,7 @@ When a tournament draw is published, players need to see **what their draw is** 
 This feature:
 
 1. **Simplifies the “your draw is out” email** — draw preview only, plus a single CTA when the user has notes on opponents in that draw.
-2. **Adds a temporary “Draw scout” card** at the top of the **Events** tab — draw structure + the user’s saved notes on relevant opponents (shown as the most recent / upcoming event, above past tournament recaps).
+2. **Adds a temporary “Draw companion” card** at the top of the **Events** tab — draw structure + the user’s saved notes on relevant opponents (shown as the most recent / upcoming event, above past tournament recaps).
 3. **Lets the user view any entered player’s draw** in that competition (favourites surfaced first; full search for any entrant) so they can prep tactical advice for friends without a share button.
 
 Notes remain private; there is no export or share affordance. The entire Notes feature is already premium-gated — no additional gating here.
@@ -37,12 +37,12 @@ Users also want to explore **someone else’s draw** in the same competition (fr
 | In scope | Out of scope |
 |----------|--------------|
 | Draw-out email: strip inline notes; add note-count CTA | Server-side note sync for email (count can be computed server-side once notes sync exists; prototype uses mock count) |
-| Draw scout card on Events tab | Share / export notes or draw |
+| Draw companion card on Events tab | Share / export notes or draw |
 | Competition + player pickers | Historical draw browsing after event ends |
 | Deep link from email (`?tab=latest-event&draw=…`) | Draw-out email variant for non-entrants |
 | Mock draw data for prototype | Live draw API integration (prototype first) |
 | “Explore a draw” header link (Events tab) | Push notifications |
-| Reuse existing note rendering (`NoteEntry`, tags, discipline chips) | Match journal in draw scout (personal notes only) |
+| Reuse existing note rendering (`NoteEntry`, tags, discipline chips) | Match journal in draw companion (personal notes only) |
 
 ---
 
@@ -118,34 +118,37 @@ Remove types/fields: `DrawNoteLine`, `matchups[].notes`, `laterNotes`, `seeAllDr
 
 ---
 
-## Part 2 — Draw scout card (in-app)
+## Part 2 — Draw companion card (in-app)
 
 ### Placement
 
-Top of the **Events** tab (`TournamentRecapSection`), above past tournament recaps — treated as the user’s most recent / upcoming event.
+**Prototype (current):** Entry points on a simulated **tournament page** (menu → Tournament page preview). Full Draw Companion opens in a full-screen modal. The Events tab no longer hosts the card.
+
+**Production target:** On the public Badminfo tournament page — Premium users always; non-Premium may get a rare gift (~1 in 10 when their set BE number is entered). Otherwise the page is unchanged. Gift users have no notes (notes are Premium-only).
+
+Previous Events-tab placement (historical):
 
 ```
 Events tab
-├── Draw scout card (conditional — upcoming draw; see visibility rules)
+├── Draw companion card (conditional — upcoming draw; see visibility rules)
 └── Tournament recap (newest past weekend first, Previous/Next nav)
 ```
 
+Events tab otherwise remains tournament recap only.
 ### Card structure
 
 ```
-Draw scout card
+Draw companion card
 ├── Competition picker (always visible when card is shown)
 ├── Player picker (combobox; favourite chips show a gold star)
 ├── Context line (when viewing someone else's draw)
 ├── Draw by discipline
 │   └── Matchup block (per round)
-│       ├── Header: discipline left edge + your side vs opponents (tappable when intel exists)
-│       ├── Collapsed teaser: amber “View notes” (left) + outline ghost chip “Played you: {m}” (mobile: right-aligned; desktop: reserved notes-slot cluster)
-│       └── Expanded:
-│           ├── Tabs “Notes” / “Your games” only when both exist (default Notes); otherwise single panel
-│           ├── Exact pairing block first (pair notes or games vs both, per active panel)
-│           └── Then each opponent alone (solo / other-partner notes or games without partner)
-└── "You may also meet" (collapsible; knockout-path opponents with notes)
+│       ├── Upcoming: full card — names, ratings, notes / past games
+│       ├── Played: compact — Win/Loss + score, shorter names, still expandable
+│       ├── Next probable: “opponent TBD” + ranked probable list
+│       └── Next definite: full companion card for the known opponent
+└── "You may also meet" (collapsible; later knockout rounds not already promoted)
 ```
 
 ### Competition picker
@@ -222,6 +225,7 @@ Per discipline, show knockout opponents the viewed player might face **outside t
 - All plausible opponents shown (not filtered to those with notes)
 - Rows with notes or previous games expand into Notes / Your games tabs (same as draw matchups)
 - Rows without intel use the same card shell with “No notes or games yet” (not expandable)
+- **Exclude rounds already promoted** into the main matchup list (definite next or probable-next slot) — see progressive states below
 
 ```typescript
 type DrawScoutLaterOpponent = {
@@ -232,13 +236,116 @@ type DrawScoutLaterOpponent = {
 }
 ```
 
+### Progressive states (in-tournament)
+
+As scores arrive, matchup cards and knockout placement evolve. **Same UI for own draw and someone else’s** — results are always shown (especially useful when scouting a friend).
+
+| State | When | UI |
+|-------|------|-----|
+| **Upcoming** | Match not played | Full scout card (names, ratings, notes / past games) |
+| **Played** | Result recorded | Compact card: **Win/Loss** + score headline, shorter names (no ratings), still expandable for notes |
+| **Next — probable** | Advanced; bracket opponent unsettled | Promoted into main list under the round label; “Next up · opponent TBD” + ranked probable opponents (probability badges; top 2 + show more) |
+| **Next — definite** | Advanced; opponent known | Promoted into main list as a normal full companion card (no probability badge) |
+
+Played group cards **stay visible** (compact) — they are not collapsed into a hidden accordion.
+
+Promotion rules:
+
+1. When a knockout round becomes the player’s next match, add it to `disciplineGroups.matchups` (not only under “You may also meet”).
+2. If the opponent is known → definite matchup (`opponentSide` filled).
+3. If the opponent is unsettled → `opponentPending: true` + `probableOpponents[]`.
+4. Remove that round from `laterOpponentsByEntrant` for the discipline (UI also filters promoted rounds as a safety net).
+
+#### Prototype fixture story (Simon’s Cambs draw)
+
+One competition, three disciplines, three stages in one scroll:
+
+| Discipline | Group stage | Quarter-final |
+|------------|-------------|---------------|
+| **Open Singles (OS)** | Unplayed — full upcoming cards | Still under “You may also meet” |
+| **Open Doubles (OD)** | Both played (compact wins) | Promoted **probable** next |
+| **Mixed Doubles (XD)** | Both played (compact wins) | Promoted **definite** next (Tom & Lucy) |
+
+### Freshness & cross-discipline status
+
+Tournaments often run disciplines concurrently, and results feeds vary from near-live to sporadic. Draw companion surfaces **what we know**, with freshness always visible so status claims are trusted.
+
+#### A — Results freshness (always)
+
+Sit directly under the competition / “whose draw” controls.
+
+| Cadence | Copy |
+|---------|------|
+| Any | `Results last updated {relative time}` (e.g. `14 min ago`, `2 hr ago`) |
+| `sporadic` | Append `· scores may lag` |
+| `live` / `frequent` | No lag caveat |
+
+Never label the draw “live” unless `updateCadence === 'live'`.
+
+#### B — Path until opponent decided (TBD next only)
+
+On **Next — probable** slots, one line under the round header:
+
+- Default: `Opponent decided after ~{N} more games`
+- When a single named person is the clear blocker: `Opponent decided after {Name} finishes {discipline}` (optionally `· ~{N} games`)
+
+`N` = matches still needed on the bracket path that settles who meets you (`gamesUntilOpponentDecided`).
+
+#### C — Cross-discipline busy banner (high visual weight)
+
+Show on **upcoming definite** matchups and **probable** opponent rows when a named opponent is still active in another discipline at this competition.
+
+| Rule | Detail |
+|------|--------|
+| Placement | Directly under that opponent’s name/pair row (not above the round) |
+| Visual | Callout strip: strong border + tinted background + bold lead line (stronger than notes/games badges) |
+| Lead (fresh) | `{Name} still playing {code}` e.g. `Lucy still playing OS` |
+| Lead (stale, ≥2 hr since last update) | `As of {relative}: {Name} still in {code}` |
+| Support | `{round} next` e.g. `QF next` · optional freshness (`14 min ago`) |
+| Hide when | Match already played vs them; person finished that discipline; insufficient data |
+
+Do **not** invent a remaining-match count for knockouts (wins extend the path). Prefer the **next round** cue instead.
+
+#### Data (prototype)
+
+```typescript
+type DrawUpdateCadence = 'live' | 'frequent' | 'sporadic'
+
+type DrawPlayerBusyStatus = {
+  disciplineCode: string       // e.g. "OS"
+  nextRoundShort: string       // e.g. "QF", "SF", "Group"
+}
+
+// on DrawScoutCompetition:
+resultsLastUpdatedAt?: string // ISO datetime
+updateCadence?: DrawUpdateCadence
+busyPlayersByName?: Record<string, DrawPlayerBusyStatus>
+
+// on DrawMatchup when opponentPending:
+gamesUntilOpponentDecided?: number
+opponentDecidedBlocker?: { playerName: string; disciplineLabel: string }
+```
+
+**Prototype cues (Simon’s Cambs):** freshness ~14 min ago · frequent; OS Callum → still playing OD; OD QF TBD → `~2 more games` + per-probable path lines (`1 group game remaining · 14 min ago`, …); XD QF Tom & Lucy definite (no cross-discipline busy — they’ve advanced).
+
+#### Probable-opponent path status
+
+Under each **Next — probable** candidate (same discipline you’re waiting on):
+
+| Situation | Example |
+|-----------|---------|
+| Still in groups | `1 group game remaining · 14 min ago` |
+| Through to a knockout round | `QF next · 14 min ago` |
+
+Do not invent remaining knockout match counts. Cross-discipline busy banners (red) remain separate when someone is still active in another event.
+
 ---
 
 ## Part 3 — Visibility & lifecycle
 
 ### When the card auto-shows
 
-The draw scout card appears when **any** active competition (draw published, not yet expired — see below) satisfies:
+The draw companion card appears when **any** active competition (draw published, not yet expired — see below) satisfies:
 
 1. The user is entered, **or**
 2. A favourite is entered, **or**
@@ -276,7 +383,7 @@ Both entry points are kept:
 | Param | Example | Behaviour |
 |-------|---------|-----------|
 | `tab` | `notes` | Activate Notes dashboard tab |
-| `draw` | `cambridgeshire-senior-bronze-july-2026` | Select competition in draw scout card |
+| `draw` | `cambridgeshire-senior-bronze-july-2026` | Select competition in draw companion card |
 | `player` | `Sara%20Moore` | Optional; select player in player picker. Default: self if entered |
 
 Example email CTA:
@@ -291,7 +398,31 @@ Prototype app can read the same params from `window.location.search` or integrat
 
 ## Part 5 — Data model (prototype)
 
-Until a live draw API exists, drive the card from mock data in `src/lib/drawScoutPreviewData.ts` (new file).
+Until a live draw API exists, drive the card from mock data in `src/lib/drawScoutPreviewData.ts`.
+
+```typescript
+type DrawMatchResult = {
+  outcome: 'win' | 'loss'
+  scoreSummary: string // e.g. "21-18, 19-21, 21-15"
+}
+
+type DrawProbableOpponent = {
+  opponentSide: DrawPlayer[]
+  probability: number
+}
+
+type DrawMatchup = {
+  id: string
+  roundLabel: string
+  yourSide: DrawPlayer[]
+  opponentSide: DrawPlayer[]
+  result?: DrawMatchResult           // compact played card
+  opponentPending?: boolean          // next slot, opponent TBD
+  probableOpponents?: DrawProbableOpponent[]
+  gamesUntilOpponentDecided?: number
+  opponentDecidedBlocker?: { playerName: string; disciplineLabel: string }
+}
+```
 
 ### `DrawScoutCompetition`
 
@@ -308,6 +439,11 @@ type DrawScoutCompetition = {
   entrants: DrawScoutEntrant[]
   /** Opponents user might meet later in knockouts (per entrant) */
   laterOpponentsByEntrant: Record<string, DrawScoutLaterOpponent[]>
+  /** ISO datetime of last results ingest */
+  resultsLastUpdatedAt?: string
+  updateCadence?: 'live' | 'frequent' | 'sporadic'
+  /** Players still active in another discipline (keyed by full name) */
+  busyPlayersByName?: Record<string, DrawPlayerBusyStatus>
 }
 
 type DrawScoutEntrant = {
@@ -315,13 +451,6 @@ type DrawScoutEntrant = {
   isYou?: boolean
   isFavourite?: boolean
   disciplineGroups: DrawDisciplineGroup[] // same shape as email (no notes)
-}
-
-type DrawScoutLaterOpponent = {
-  opponentSide: DrawPlayer[]
-  disciplineCode: string
-  roundLabel: string
-  probability: number
 }
 ```
 
@@ -373,7 +502,7 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 - [x] Update `DrawOutEmail.tsx` preview
 - [x] Update `notificationPreviewData.ts` comments
 
-### Draw scout card (prototype)
+### Draw companion card (prototype)
 
 - [x] Add `drawScoutPreviewData.ts` with 1–2 competitions (reuse matchup data from current `drawOutPreview`)
 - [x] Implement `isDrawScoutCompetitionActive()`
@@ -402,7 +531,7 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 |----------|------|
 | Email CTA | View draw notes → |
 | Email teaser | You have personal notes on {n} opponent(s) in this draw. |
-| Card title | Draw scout |
+| Card title | Draw companion |
 | Player picker label | Whose draw |
 | Competition picker label | Competition |
 | Viewing other player | Viewing **{name}**’s draw — your notes on their opponents |
@@ -411,6 +540,13 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 | Header entry (always visible) | Explore a draw → |
 | Empty player | Choose a player… |
 | No notes on opponent | (omit row, or muted “No notes yet”) |
+| Freshness | Results last updated {relative} |
+| Freshness (sporadic) | Results last updated {relative} · scores may lag |
+| Path until decided | Opponent decided after ~{n} more games |
+| Path until decided (blocker) | Opponent decided after {name} finishes {discipline} |
+| Busy banner (fresh) | {Name} still playing {code} |
+| Busy banner (stale) | As of {relative}: {Name} still in {code} |
+| Busy banner support | {round} next · {relative} |
 
 ---
 
@@ -432,7 +568,7 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 ┌─────────────────────────────────────────────────┐
 │ Events                                          │
 ├─────────────────────────────────────────────────┤
-│ ┌─ DRAW SCOUT (most recent / upcoming) ───────┐ │
+│ ┌─ DRAW COMPANION (most recent / upcoming) ───────┐ │
 │ │ Competition  [ Cambs Senior Bronze · 12 Jul ▼]│
 │ │ Whose draw   [ Simon Parker (you)            ▼]│
 │ │ ★ Sara  ★ Martin  ★ +N more                  │ │
@@ -449,6 +585,6 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 └─────────────────────────────────────────────────┘
 ```
 
-**Prototype matchup fixtures (Simon’s Cambs draw):** notes-only (Murray), both (Dan & Alisha), games-only (Gilhooly & Mayfield), neither (Chris Nolan & Alex Reid).
+**Prototype matchup fixtures (Simon’s Cambs draw):** progressive states — Singles unplayed; Doubles compact group results + probable QF; Mixed compact group wins + definite QF (Tom & Lucy). Intel mix retained: notes-only (Murray), both (Dan & Alisha), games-only (Gilhooly & Mayfield), neither (Chris Nolan & Alex Reid).
 
 **Notes accent:** soft amber on the View notes badge, Notes tab indicator, and “Note from this game” labels. Brand purple remains for clickable chrome (selected chips, primary buttons).

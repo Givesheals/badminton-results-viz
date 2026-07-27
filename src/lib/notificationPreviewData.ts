@@ -10,7 +10,7 @@
  * When wired for real:
  *  - Email 1 ("capture notes") needs only match data the server already has.
  *  - Email 2 ("draw out") needs the draw structure plus notesOpponentCount for
- *    the CTA teaser. Full notes live in-app (see docs/draw-scout-spec.md).
+ *    the CTA teaser. Full notes live in-app (see docs/draw-companion-spec.md).
  */
 
 import type { DrawDisciplineGroup } from './drawTypes'

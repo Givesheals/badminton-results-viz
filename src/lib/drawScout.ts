@@ -1,6 +1,14 @@
-import type { DrawDisciplineGroup, DrawMatchup, DrawPlayer } from './drawTypes'
+import type {
+  DrawDisciplineGroup,
+  DrawMatchup,
+  DrawOpponentPathStatus,
+  DrawPlayer,
+  DrawPlayerBusyStatus,
+  DrawUpdateCadence,
+} from './drawTypes'
 import type { NormalizedMatch } from '../types/matchHistory'
 import { DISCIPLINE_LABELS } from '../types/matchHistory'
+import { getDisciplineFamily } from './disciplineStyle'
 import {
   getDrawScoutPreviousMatches,
 } from './drawScoutMatches'
@@ -21,6 +29,8 @@ export type DrawScoutLaterOpponent = {
   roundLabel: string
   /** Likelihood of facing this opponent in this round; opponents in the same round sum to 1. */
   probability: number
+  /** Optional path cue when shown as a probable next opponent. */
+  pathStatus?: DrawOpponentPathStatus
 }
 
 export type DrawScoutEntrant = {
@@ -42,6 +52,154 @@ export type DrawScoutCompetition = {
   laterOpponentsByEntrant: Record<string, DrawScoutLaterOpponent[]>
   /** Mock/prototype fixtures stay visible regardless of calendar date. */
   isPrototype?: boolean
+  /** ISO datetime of last results ingest for this competition. */
+  resultsLastUpdatedAt?: string
+  /** How often this competition’s results feed tends to update. */
+  updateCadence?: DrawUpdateCadence
+  /** Players still active in another discipline (keyed by full display name). */
+  busyPlayersByName?: Record<string, DrawPlayerBusyStatus>
+}
+
+/** Updates older than this are treated as stale for busy-banner wording. */
+export const DRAW_RESULTS_STALE_MS = 2 * 60 * 60 * 1000
+
+export function isDrawResultsUpdateStale(
+  resultsLastUpdatedAt: string | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (resultsLastUpdatedAt == null || resultsLastUpdatedAt === '') return false
+  const updated = new Date(resultsLastUpdatedAt)
+  if (Number.isNaN(updated.getTime())) return false
+  return now.getTime() - updated.getTime() >= DRAW_RESULTS_STALE_MS
+}
+
+/** Relative phrase for a past ISO datetime, e.g. "14 min ago", "2 hr ago". */
+export function formatDrawRelativeTime(
+  isoDatetime: string,
+  now: Date = new Date(),
+): string | null {
+  const then = new Date(isoDatetime)
+  if (Number.isNaN(then.getTime())) return null
+  const deltaMs = Math.max(0, now.getTime() - then.getTime())
+  const minutes = Math.floor(deltaMs / 60_000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes} min ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} hr ago`
+  const days = Math.floor(hours / 24)
+  if (days === 1) return 'yesterday'
+  return `${days} days ago`
+}
+
+export function formatResultsLastUpdatedLine(
+  comp: Pick<DrawScoutCompetition, 'resultsLastUpdatedAt' | 'updateCadence'>,
+  now: Date = new Date(),
+): string | null {
+  if (comp.resultsLastUpdatedAt == null) return null
+  const relative = formatDrawRelativeTime(comp.resultsLastUpdatedAt, now)
+  if (relative == null) return null
+  const base = `Results last updated ${relative}`
+  if (comp.updateCadence === 'sporadic') {
+    return `${base} · scores may lag`
+  }
+  return base
+}
+
+export function formatOpponentDecidedAfterLine(
+  matchup: Pick<DrawMatchup, 'gamesUntilOpponentDecided' | 'opponentDecidedBlocker'>,
+): string | null {
+  const blocker = matchup.opponentDecidedBlocker
+  const games = matchup.gamesUntilOpponentDecided
+  if (blocker != null) {
+    const base = `Opponent decided after ${blocker.playerName} finishes ${blocker.disciplineLabel}`
+    if (games != null && games > 0) {
+      return `${base} · ~${games} ${games === 1 ? 'game' : 'games'}`
+    }
+    return base
+  }
+  if (games == null || games <= 0) return null
+  return `Opponent decided after ~${games} more ${games === 1 ? 'game' : 'games'}`
+}
+
+export type DrawBusyBannerCopy = {
+  lead: string
+  support: string
+}
+
+/**
+ * Busy statuses for named players on a side (upcoming / probable only — caller
+ * must not pass played matchups).
+ */
+export function getBusyStatusesForPlayers(
+  players: DrawPlayer[],
+  busyPlayersByName: Record<string, DrawPlayerBusyStatus> | undefined,
+): Array<{ playerName: string; status: DrawPlayerBusyStatus }> {
+  if (busyPlayersByName == null) return []
+  const rows: Array<{ playerName: string; status: DrawPlayerBusyStatus }> = []
+  for (const player of players) {
+    const status = busyPlayersByName[player.name]
+    if (status == null) continue
+    if (!status.disciplineCode || !status.nextRoundShort) continue
+    rows.push({ playerName: player.name, status })
+  }
+  return rows
+}
+
+export function formatCrossDisciplineBusyBanner(
+  playerName: string,
+  status: DrawPlayerBusyStatus,
+  options: {
+    resultsLastUpdatedAt?: string
+    now?: Date
+  } = {},
+): DrawBusyBannerCopy {
+  const now = options.now ?? new Date()
+  const relative =
+    options.resultsLastUpdatedAt != null
+      ? formatDrawRelativeTime(options.resultsLastUpdatedAt, now)
+      : null
+  const stale = isDrawResultsUpdateStale(options.resultsLastUpdatedAt, now)
+  const firstName = playerName.split(/\s+/)[0] ?? playerName
+  const code = status.disciplineCode
+  const lead =
+    stale && relative != null
+      ? `As of ${relative}: ${firstName} still in ${code}`
+      : `${firstName} still playing ${code}`
+  const roundCue = `${status.nextRoundShort} next`
+  const support =
+    !stale && relative != null ? `${roundCue} · ${relative}` : roundCue
+  return { lead, support }
+}
+
+/**
+ * Compact path line under a probable opponent: remaining group games or next
+ * round, plus when results were last updated.
+ *
+ * Examples: `1 group game remaining · 14 min ago` · `QF next · 14 min ago`
+ */
+export function formatOpponentPathStatusLine(
+  pathStatus: DrawOpponentPathStatus,
+  options: {
+    resultsLastUpdatedAt?: string
+    now?: Date
+  } = {},
+): string {
+  const now = options.now ?? new Date()
+  const relative =
+    options.resultsLastUpdatedAt != null
+      ? formatDrawRelativeTime(options.resultsLastUpdatedAt, now)
+      : null
+  const remaining = pathStatus.groupGamesRemaining
+  let core: string
+  if (remaining != null && remaining > 0) {
+    core =
+      remaining === 1
+        ? '1 group game remaining'
+        : `${remaining} group games remaining`
+  } else {
+    core = `${pathStatus.nextRoundShort} next`
+  }
+  return relative != null ? `${core} · ${relative}` : core
 }
 
 function parseLocalDate(isoDate: string): Date {
@@ -120,9 +278,132 @@ export function collectOpponentNamesFromDraw(groups: DrawDisciplineGroup[]): str
       for (const player of matchup.opponentSide) {
         names.add(player.name)
       }
+      for (const probable of matchup.probableOpponents ?? []) {
+        for (const player of probable.opponentSide) {
+          names.add(player.name)
+        }
+      }
     }
   }
   return [...names]
+}
+
+/**
+ * Discipline header identity: singles = viewed player + rating;
+ * doubles/mixed = viewed player & partner with ratings.
+ */
+export function getDisciplinePairIdentityLabel(
+  group: DrawDisciplineGroup,
+  viewedPlayerName: string,
+): string | null {
+  const family = getDisciplineFamily(group.disciplineCode)
+  const viewedKey = viewedPlayerName.trim().toLowerCase()
+
+  const formatPlayer = (player: DrawPlayer): string => {
+    const rating = player.rating != null ? ` (${player.rating})` : ''
+    return `${player.name}${rating}`
+  }
+
+  if (family === 'singles') {
+    const yourSide =
+      group.matchups.find((matchup) => matchup.yourSide.length >= 1)?.yourSide ?? null
+    if (yourSide == null || yourSide.length === 0) return null
+    const viewed =
+      yourSide.find((player) => player.name.trim().toLowerCase() === viewedKey) ?? yourSide[0]!
+    return formatPlayer(viewed)
+  }
+
+  if (family !== 'doubles' && family !== 'mixed') return null
+
+  const yourSide =
+    group.matchups.find((matchup) => matchup.yourSide.length >= 2)?.yourSide ?? null
+  if (yourSide == null || yourSide.length < 2) return null
+
+  const viewedIndex = yourSide.findIndex(
+    (player) => player.name.trim().toLowerCase() === viewedKey,
+  )
+  const ordered =
+    viewedIndex <= 0
+      ? yourSide
+      : [yourSide[viewedIndex]!, ...yourSide.filter((_, index) => index !== viewedIndex)]
+
+  return ordered.slice(0, 2).map(formatPlayer).join(' & ')
+}
+
+/** Group-stage round labels (e.g. "Group A"); everything else is treated as knockout. */
+export function isGroupRoundLabel(roundLabel: string): boolean {
+  return /^group\b/i.test(roundLabel.trim())
+}
+
+/** True when the matchup has a recorded result (compact result card). */
+export function isPlayedMatchup(matchup: DrawMatchup): boolean {
+  return matchup.result != null
+}
+
+/**
+ * True when this is a promoted next-round slot with the opponent still unsettled
+ * (probable-opponents list, not a definite scout card).
+ */
+export function isProbableNextMatchup(matchup: DrawMatchup): boolean {
+  return matchup.opponentPending === true
+}
+
+/** True when every matchup in the round has a recorded result. */
+export function isRoundFullyPlayed(matchups: DrawMatchup[]): boolean {
+  return matchups.length > 0 && matchups.every(isPlayedMatchup)
+}
+
+/** True when the round still has an unplayed or opponent-pending matchup. */
+export function isRoundUnfinished(matchups: DrawMatchup[]): boolean {
+  return matchups.some((matchup) => isProbableNextMatchup(matchup) || !isPlayedMatchup(matchup))
+}
+
+export type DrawRoundSectionRole = 'played' | 'up-next'
+
+/**
+ * First unfinished round is “up next”; fully-played rounds before (and after) are “played”.
+ * Used to weight round headers so the next stage reads clearly.
+ */
+export function getDrawRoundSectionRoles(
+  roundGroups: ReadonlyArray<{ roundLabel: string; matchups: DrawMatchup[] }>,
+): Map<string, DrawRoundSectionRole> {
+  const roles = new Map<string, DrawRoundSectionRole>()
+  let markedNext = false
+
+  for (const group of roundGroups) {
+    if (!markedNext && isRoundUnfinished(group.matchups)) {
+      roles.set(group.roundLabel, 'up-next')
+      markedNext = true
+      continue
+    }
+    roles.set(group.roundLabel, 'played')
+  }
+
+  return roles
+}
+
+export type DrawRoundSectionHeading = {
+  title: string
+  /** Optional quieter line under the title (e.g. group name while still in groups). */
+  subtitle: string | null
+}
+
+/** Copy for round headers: played archive vs clear “still in groups” / “up next”. */
+export function formatDrawRoundSectionHeading(
+  roundLabel: string,
+  role: DrawRoundSectionRole,
+): DrawRoundSectionHeading {
+  if (role === 'played') {
+    return { title: `Played · ${roundLabel}`, subtitle: null }
+  }
+  if (isGroupRoundLabel(roundLabel)) {
+    return { title: 'Still in group stages', subtitle: roundLabel }
+  }
+  return { title: `Up next · ${roundLabel}`, subtitle: null }
+}
+
+export function formatMatchResultOutcome(outcome: 'win' | 'loss'): string {
+  return outcome === 'win' ? 'Win' : 'Loss'
 }
 
 export function collectAllOpponentNamesForEntrant(
@@ -366,7 +647,7 @@ export function getIndividualDrawScoutNotes(
 }
 
 /**
- * Collapsed draw-scout teaser. Prefers a notes CTA when personal notes exist;
+ * Collapsed draw-companion teaser. Prefers a notes CTA when personal notes exist;
  * history-only rows keep the games label (UI still reserves the notes badge slot).
  * Null when there is nothing to open.
  */
@@ -424,6 +705,25 @@ export function filterLaterOpponentsByDiscipline(
   disciplineCode: string,
 ): DrawScoutLaterOpponent[] {
   return opponents.filter((opponent) => opponent.disciplineCode === disciplineCode)
+}
+
+/**
+ * Later-opponent rows for a discipline, excluding rounds already promoted into
+ * the main matchup list (definite or probable next).
+ */
+export function filterLaterOpponentsForDisciplineDraw(
+  opponents: DrawScoutLaterOpponent[],
+  disciplineCode: string,
+  matchups: DrawMatchup[],
+): DrawScoutLaterOpponent[] {
+  const promotedRounds = new Set(
+    matchups
+      .filter((matchup) => !isGroupRoundLabel(matchup.roundLabel))
+      .map((matchup) => matchup.roundLabel),
+  )
+  return filterLaterOpponentsByDiscipline(opponents, disciplineCode).filter(
+    (opponent) => !promotedRounds.has(opponent.roundLabel),
+  )
 }
 
 /** Sort knockout-path opponents by probability within a round (highest first). */

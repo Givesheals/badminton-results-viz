@@ -15,6 +15,8 @@ function demoNote(
     competitionName?: string
     date?: string
     discipline?: string
+    disciplineLabel?: string
+    partnerName?: string | null
     opponentNames?: string[]
     opponentsDisplay?: string
     target?: OpponentNote['target']
@@ -22,6 +24,7 @@ function demoNote(
   } = {},
 ): OpponentNote {
   const opponentNames = options.opponentNames ?? [opponentName]
+  const discipline = options.discipline ?? 'XD'
   return {
     id: `draw-scout-demo:${id}`,
     body,
@@ -32,9 +35,15 @@ function demoNote(
       matchKey: `draw-scout-demo\\0${id}`,
       competitionName: options.competitionName ?? 'Norfolk Restricted 2025',
       date: options.date ?? '2025-09-14',
-      discipline: options.discipline ?? 'XD',
-      disciplineLabel: 'Mixed doubles',
-      partnerName: 'Sara Moore',
+      discipline,
+      disciplineLabel:
+        options.disciplineLabel ??
+        (discipline === 'OS'
+          ? 'Open singles'
+          : discipline === 'OD'
+            ? 'Open doubles'
+            : 'Mixed doubles'),
+      partnerName: options.partnerName === undefined ? 'Sara Moore' : options.partnerName,
       opponentNames,
       opponentsDisplay: options.opponentsDisplay ?? opponentNames.join(' & '),
       roundLabel: 'Group A',
@@ -46,7 +55,7 @@ function demoNote(
   }
 }
 
-/** Demo personal notes for the draw scout prototype (Cambs Jul 2026 draw). */
+/** Demo personal notes for the draw companion prototype (Cambs Jul 2026 draw). */
 export const drawScoutDemoNotes: OpponentNote[] = [
   demoNote(
     'murray',
@@ -151,6 +160,40 @@ export const drawScoutDemoNotes: OpponentNote[] = [
       tags: { customOpponentStyles: ['Steep smash', 'Rushes the net'] },
     },
   ),
+  // Doubles group (played): notes + games vs Gilhooly / Mayfield via Mayfield note.
+  demoNote(
+    'mayfield',
+    'Paul Andrew Mayfield',
+    'Drifts mid-court after the serve and leaves the tramlines open. Serve wide and attack his forehand side early.',
+    {
+      competitionName: 'Bedfordshire Open 2025',
+      date: '2025-06-08',
+      discipline: 'OD',
+      disciplineLabel: 'Open doubles',
+      partnerName: 'Martin Crossley',
+      tags: { customOpponentStyles: ['Drifts mid-court', 'Weak wide serve return'] },
+      appliesToDisciplines: ['D'],
+      opponentNames: ['Paul Andrew Mayfield', 'Simon Gilhooly'],
+      opponentsDisplay: 'Simon Gilhooly & Paul Andrew Mayfield',
+    },
+  ),
+  // Singles group: notes-only vs Theo Marsh (no prior meeting in demo matches).
+  demoNote(
+    'theo',
+    'Theo Marsh',
+    'Heavy clear to the backhand corner and likes to finish at the net. Mix in tight net shots and push him wide early.',
+    {
+      competitionName: 'Essex Open 2025',
+      date: '2025-11-22',
+      discipline: 'OS',
+      disciplineLabel: 'Open singles',
+      partnerName: null,
+      tags: { customOpponentStyles: ['Heavy clears', 'Net finisher'] },
+      appliesToDisciplines: ['S'],
+      opponentNames: ['Theo Marsh'],
+      opponentsDisplay: 'Theo Marsh',
+    },
+  ),
 ]
 
 function opponentNamesFromNote(note: OpponentNote): string[] {
@@ -158,7 +201,7 @@ function opponentNamesFromNote(note: OpponentNote): string[] {
   return note.context.opponentNames
 }
 
-/** User notes win; demo notes fill gaps so the draw scout prototype is never empty. */
+/** User notes win; demo notes fill gaps so the draw companion prototype is never empty. */
 export function mergeDrawScoutDisplayNotes(userNotes: OpponentNote[]): OpponentNote[] {
   const covered = new Set<string>()
   for (const note of userNotes) {

@@ -11,6 +11,7 @@ type Props = {
   onSignUpPremium: () => void
   onManageSubscription: () => void
   onOpenNotifications: () => void
+  onOpenTournamentPreview: () => void
 }
 
 function InertLink({ children }: { children: ReactNode }) {
@@ -32,6 +33,7 @@ export function UserMenuDrawer({
   onSignUpPremium,
   onManageSubscription,
   onOpenNotifications,
+  onOpenTournamentPreview,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -152,6 +154,18 @@ export function UserMenuDrawer({
                   }}
                 >
                   Notifications
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="text-left text-base font-medium text-brand-700 hover:text-brand-600"
+                  onClick={() => {
+                    onClose()
+                    onOpenTournamentPreview()
+                  }}
+                >
+                  Tournament page preview
                 </button>
               </li>
               <li>
