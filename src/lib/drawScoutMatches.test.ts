@@ -35,7 +35,7 @@ describe('drawScoutMatches', () => {
     expect(result.matches[0]?.competitionName).toBe('My real event')
   })
 
-  it('marks note-linked matches when building draw scout result rows', () => {
+  it('marks note-linked matches when building draw companion result rows', () => {
     const match = drawScoutDemoMatches[0]!
     const key = recapMatchKey(match)
     const items = buildDrawScoutResultMatches([match], [key], new Map([[key, match]]))

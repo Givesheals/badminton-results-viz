@@ -55,7 +55,7 @@ function demoNote(
   }
 }
 
-/** Demo personal notes for the draw scout prototype (Cambs Jul 2026 draw). */
+/** Demo personal notes for the draw companion prototype (Cambs Jul 2026 draw). */
 export const drawScoutDemoNotes: OpponentNote[] = [
   demoNote(
     'murray',
@@ -201,7 +201,7 @@ function opponentNamesFromNote(note: OpponentNote): string[] {
   return note.context.opponentNames
 }
 
-/** User notes win; demo notes fill gaps so the draw scout prototype is never empty. */
+/** User notes win; demo notes fill gaps so the draw companion prototype is never empty. */
 export function mergeDrawScoutDisplayNotes(userNotes: OpponentNote[]): OpponentNote[] {
   const covered = new Set<string>()
   for (const note of userNotes) {

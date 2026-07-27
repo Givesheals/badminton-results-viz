@@ -62,7 +62,7 @@ Both templates support dark-mode inboxes:
 - **Capture your notes** needs only match data the server already has.
 - **Your draw is out** needs only the draw structure plus `notesOpponentCount`
   for the CTA teaser. Full notes are shown in-app (see
-  `docs/draw-scout-spec.md`). Counting opponents with notes requires syncing
+  `docs/draw-companion-spec.md`). Counting opponents with notes requires syncing
   notes server-side; until then the prototype computes the count client-side.
 - The discipline chip on a draw note is intended to appear **only when the note's
   discipline differs from the matchup** (e.g. a men's-doubles note shown against a

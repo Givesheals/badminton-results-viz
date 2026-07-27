@@ -4,6 +4,10 @@ import {
   formatMatchupIntelTeaser,
   filterLaterOpponentsByDiscipline,
   formatLaterOpponentProbability,
+  formatCrossDisciplineBusyBanner,
+  formatOpponentDecidedAfterLine,
+  formatOpponentPathStatusLine,
+  formatResultsLastUpdatedLine,
   getDefaultCompetitionSlug,
   getDefaultPlayerName,
   getDisciplinePairIdentityLabel,
@@ -528,6 +532,7 @@ describe('drawScout', () => {
     const odQf = od.matchups.find((matchup) => matchup.id === 'od-qf')!
     expect(odQf.opponentPending).toBe(true)
     expect(odQf.probableOpponents?.length).toBeGreaterThan(2)
+    expect(odQf.gamesUntilOpponentDecided).toBe(2)
 
     expect(xd.matchups.filter((matchup) => matchup.result != null)).toHaveLength(2)
     const xdQf = xd.matchups.find((matchup) => matchup.id === 'xd-qf')!
@@ -538,6 +543,20 @@ describe('drawScout', () => {
       'Lucy Grant',
     ])
 
+    expect(cambs.busyPlayersByName?.['Lucy Grant']).toBeUndefined()
+    expect(cambs.busyPlayersByName?.['Callum Reed']).toEqual({
+      disciplineCode: 'OD',
+      nextRoundShort: 'QF',
+    })
+    expect(cambs.updateCadence).toBe('frequent')
+
+    const odPaths = odQf.probableOpponents ?? []
+    expect(odPaths[0]?.pathStatus).toEqual({
+      nextRoundShort: 'Group',
+      groupGamesRemaining: 1,
+    })
+    expect(odPaths[3]?.pathStatus).toEqual({ nextRoundShort: 'QF' })
+
     const laterXdQf = (cambs.laterOpponentsByEntrant['Simon Parker'] ?? []).filter(
       (item) => item.disciplineCode === 'XD' && item.roundLabel === 'Quarter-finals',
     )
@@ -546,6 +565,103 @@ describe('drawScout', () => {
     )
     expect(laterXdQf).toHaveLength(0)
     expect(laterOdQf).toHaveLength(0)
+  })
+
+  it('formats freshness, path-until-decided, and busy banner copy', () => {
+    const now = new Date('2026-07-27T15:00:00.000Z')
+    expect(
+      formatResultsLastUpdatedLine(
+        {
+          resultsLastUpdatedAt: new Date(now.getTime() - 14 * 60_000).toISOString(),
+          updateCadence: 'frequent',
+        },
+        now,
+      ),
+    ).toBe('Results last updated 14 min ago')
+    expect(
+      formatResultsLastUpdatedLine(
+        {
+          resultsLastUpdatedAt: new Date(now.getTime() - 2 * 60 * 60_000).toISOString(),
+          updateCadence: 'sporadic',
+        },
+        now,
+      ),
+    ).toBe('Results last updated 2 hr ago · scores may lag')
+
+    expect(
+      formatOpponentDecidedAfterLine({ gamesUntilOpponentDecided: 2 }),
+    ).toBe('Opponent decided after ~2 more games')
+    expect(
+      formatOpponentDecidedAfterLine({
+        gamesUntilOpponentDecided: 1,
+        opponentDecidedBlocker: {
+          playerName: 'Lucy Grant',
+          disciplineLabel: 'open singles',
+        },
+      }),
+    ).toBe('Opponent decided after Lucy Grant finishes open singles · ~1 game')
+
+    const fresh = formatCrossDisciplineBusyBanner(
+      'Lucy Grant',
+      {
+        disciplineCode: 'OS',
+        nextRoundShort: 'QF',
+      },
+      {
+        resultsLastUpdatedAt: new Date(now.getTime() - 14 * 60_000).toISOString(),
+        now,
+      },
+    )
+    expect(fresh.lead).toBe('Lucy still playing OS')
+    expect(fresh.support).toBe('QF next · 14 min ago')
+
+    const stale = formatCrossDisciplineBusyBanner(
+      'Lucy Grant',
+      {
+        disciplineCode: 'OS',
+        nextRoundShort: 'QF',
+      },
+      {
+        resultsLastUpdatedAt: new Date(now.getTime() - 3 * 60 * 60_000).toISOString(),
+        now,
+      },
+    )
+    expect(stale.lead).toBe('As of 3 hr ago: Lucy still in OS')
+    expect(stale.support).toBe('QF next')
+
+    expect(
+      formatOpponentPathStatusLine(
+        {
+          nextRoundShort: 'Group',
+          groupGamesRemaining: 1,
+        },
+        {
+          resultsLastUpdatedAt: new Date(now.getTime() - 14 * 60_000).toISOString(),
+          now,
+        },
+      ),
+    ).toBe('1 group game remaining · 14 min ago')
+    expect(
+      formatOpponentPathStatusLine(
+        {
+          nextRoundShort: 'Group',
+          groupGamesRemaining: 2,
+        },
+        {
+          resultsLastUpdatedAt: new Date(now.getTime() - 14 * 60_000).toISOString(),
+          now,
+        },
+      ),
+    ).toBe('2 group games remaining · 14 min ago')
+    expect(
+      formatOpponentPathStatusLine(
+        { nextRoundShort: 'QF' },
+        {
+          resultsLastUpdatedAt: new Date(now.getTime() - 14 * 60_000).toISOString(),
+          now,
+        },
+      ),
+    ).toBe('QF next · 14 min ago')
   })
 
   it('puts exact draw-pair notes ahead of individual notes for Dan & Alisha', () => {

@@ -89,9 +89,10 @@ function player(name: string, extra: { seedLabel?: string; rating?: number } = {
 
 /**
  * Simon’s progressive draw story (one scroll, three stages):
- * - Singles: groups not started (upcoming cards + QF/SF in “may also meet”)
- * - Doubles: groups done (compact results) + QF probable (promoted)
- * - Mixed: groups done with wins (compact results) + QF definite opponent
+ * - Singles: groups not started (upcoming cards + QF/SF in “may also meet”);
+ *   Callum still busy in OD
+ * - Doubles: groups done (compact results) + QF probable with path status per side
+ * - Mixed: groups done with wins (compact results) + QF definite opponent (advanced)
  */
 const simonSinglesDoublesMixed: DrawDisciplineGroup[] = [
   {
@@ -148,22 +149,38 @@ const simonSinglesDoublesMixed: DrawDisciplineGroup[] = [
         yourSide: [player('Martin Crossley'), player('Simon Parker')],
         opponentSide: [],
         opponentPending: true,
+        gamesUntilOpponentDecided: 2,
         probableOpponents: [
           {
             opponentSide: [player('Daniel Hughes'), player('Morgan Taylor')],
             probability: 0.42,
+            pathStatus: {
+              nextRoundShort: 'Group',
+              groupGamesRemaining: 1,
+            },
           },
           {
             opponentSide: [player('Oliver Brooks'), player('Sophie Lane')],
             probability: 0.28,
+            pathStatus: {
+              nextRoundShort: 'Group',
+              groupGamesRemaining: 2,
+            },
           },
           {
             opponentSide: [player('Ben Carter'), player('Emma Walsh')],
             probability: 0.18,
+            pathStatus: {
+              nextRoundShort: 'Group',
+              groupGamesRemaining: 1,
+            },
           },
           {
             opponentSide: [player('Jamie Patel'), player('Priya Shah')],
             probability: 0.12,
+            pathStatus: {
+              nextRoundShort: 'QF',
+            },
           },
         ],
       },
@@ -307,6 +324,13 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
     endDate: prototypeWeekend.endDate,
     isPrototype: true,
     competitionUrl: COMPETITION_URL,
+    updateCadence: 'frequent',
+    busyPlayersByName: {
+      'Callum Reed': {
+        disciplineCode: 'OD',
+        nextRoundShort: 'QF',
+      },
+    },
     entrants: [
       {
         name: 'Simon Parker',
@@ -552,8 +576,12 @@ export const DRAW_SCOUT_PREVIEW_SLUG = drawScoutPreviewCompetitions[0]!.slug
 /** Prototype competitions with rolling weekend dates for in-app display. */
 export function getDrawScoutPreviewCompetitions(now: Date = new Date()): DrawScoutCompetition[] {
   const weekend = upcomingWeekendDates(now)
+  const resultsLastUpdatedAt = new Date(now.getTime() - 14 * 60_000).toISOString()
   return drawScoutPreviewCompetitions.map((comp) => ({
     ...comp,
     ...weekend,
+    ...(comp.updateCadence != null
+      ? { resultsLastUpdatedAt: comp.resultsLastUpdatedAt ?? resultsLastUpdatedAt }
+      : {}),
   }))
 }

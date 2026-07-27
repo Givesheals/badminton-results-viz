@@ -3,6 +3,7 @@ import type { MatchupIntelTeaser } from '../../lib/drawScout'
 import { formatMatchResultOutcome } from '../../lib/drawScout'
 import type { DrawMatchResult, DrawMatchup, DrawPlayer } from '../../lib/drawTypes'
 import { getDisciplineStyle } from '../../lib/disciplineStyle'
+import { DrawPairNames } from './DrawPairNames'
 
 export const DRAW_MATCHUP_GRID =
   'grid grid-cols-[5rem_1fr_1fr] items-start gap-x-3 gap-y-1.5'
@@ -187,41 +188,9 @@ function UpcomingOpponentBody({
   teaser?: MatchupIntelTeaser | null
   showEmptyHint?: boolean
 }) {
-  const opponents = matchup.opponentSide
-
   return (
     <div className="min-w-0">
-      {/* Larger type than played rows — this card is the next-match focus. */}
-      {opponents.length >= 2 ? (
-        <div className="min-w-0 text-sm leading-snug text-ink-900">
-          {opponents.map((player, index) => (
-            <div key={player.name} className="whitespace-nowrap">
-              {player.seedLabel && (
-                <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
-              )}
-              {player.name}
-              {player.rating != null ? (
-                <span className="tabular-nums text-ink-500"> ({player.rating})</span>
-              ) : null}
-              {index < opponents.length - 1 ? <span className="text-ink-400"> &</span> : null}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="min-w-0 text-sm leading-snug text-ink-900">
-          {opponents.map((player) => (
-            <span key={player.name} className="whitespace-nowrap">
-              {player.seedLabel && (
-                <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
-              )}
-              {player.name}
-              {player.rating != null ? (
-                <span className="tabular-nums text-ink-500"> ({player.rating})</span>
-              ) : null}
-            </span>
-          ))}
-        </p>
-      )}
+      <DrawPairNames players={matchup.opponentSide} />
       {teaser != null ? (
         <UpcomingIntelTeaserLine teaser={teaser} />
       ) : showEmptyHint ? (
@@ -253,10 +222,15 @@ type Props = {
    * Defaults to true when `matchup.result` is set.
    */
   compactResult?: boolean
+  /**
+   * High-weight status under opponent names (e.g. still in another discipline).
+   * Only shown on unplayed / definite upcoming cards — never on compact played rows.
+   */
+  statusBanner?: ReactNode
 }
 
 /**
- * Draw matchup row. Scout cards (no `label`): played and unplayed both show
+ * Draw matchup row. Draw companion cards (no `label`): played and unplayed both show
  * opponents only. With `label`, keeps the three-column draw-email layout.
  */
 export function DrawMatchupRow({
@@ -266,6 +240,7 @@ export function DrawMatchupRow({
   expandable,
   disciplineCode,
   compactResult,
+  statusBanner,
 }: Props) {
   const played = matchup.result != null
   const useCompact = compactResult ?? played
@@ -273,6 +248,7 @@ export function DrawMatchupRow({
   const useCondensedSides = label == null
   const usePlayedCompact = useCompact && played && useCondensedSides
   const useUpcomingOpponentOnly = useCondensedSides && !played
+  const visibleStatusBanner = !played ? statusBanner : null
 
   const sides =
     label != null ? (
@@ -313,7 +289,10 @@ export function DrawMatchupRow({
             {usePlayedCompact ? (
               <PlayedMatchupBody matchup={matchup} teaser={expandable.teaser} />
             ) : useUpcomingOpponentOnly ? (
-              <UpcomingOpponentBody matchup={matchup} teaser={expandable.teaser} />
+              <>
+                <UpcomingOpponentBody matchup={matchup} teaser={expandable.teaser} />
+                {visibleStatusBanner}
+              </>
             ) : (
               <>
                 <div className={gridClass}>{sides}</div>
@@ -332,7 +311,10 @@ export function DrawMatchupRow({
                       <div aria-hidden className="min-w-0" />
                     </div>
                   ) : (
-                    <UpcomingIntelTeaserLine teaser={expandable.teaser} />
+                    <>
+                      <UpcomingIntelTeaserLine teaser={expandable.teaser} />
+                      {visibleStatusBanner}
+                    </>
                   )
                 ) : (
                   <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -373,6 +355,7 @@ export function DrawMatchupRow({
         ) : useUpcomingOpponentOnly ? (
           <>
             <UpcomingOpponentBody matchup={matchup} showEmptyHint />
+            {visibleStatusBanner}
             {notes != null && <div className="mt-2 space-y-2">{notes}</div>}
           </>
         ) : (
@@ -393,6 +376,7 @@ export function DrawMatchupRow({
                 </div>
               )
             )}
+            {visibleStatusBanner}
             {notes != null && <div className={`${notesSpan} mt-2 space-y-2`}>{notes}</div>}
           </>
         )}

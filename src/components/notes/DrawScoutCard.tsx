@@ -3,11 +3,15 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { getDisciplineFamily, getDisciplineStyle } from '../../lib/disciplineStyle'
 import {
   filterLaterOpponentsForDisciplineDraw,
-  formatCompetitionDateRange,
   formatCompetitionPickerLabel,
+  formatCrossDisciplineBusyBanner,
   formatDrawRoundSectionHeading,
   formatLaterOpponentProbability,
   formatMatchupIntelTeaser,
+  formatOpponentDecidedAfterLine,
+  formatOpponentPathStatusLine,
+  formatResultsLastUpdatedLine,
+  getBusyStatusesForPlayers,
   getDefaultCompetitionSlug,
   getDefaultPlayerName,
   getDisciplinePairIdentityLabel,
@@ -29,12 +33,17 @@ import {
   type DrawScoutLaterOpponent,
   type LaterOpponentRoundGroup,
 } from '../../lib/drawScout'
+import type {
+  DrawDisciplineGroup,
+  DrawMatchup,
+  DrawPlayerBusyStatus,
+  DrawProbableOpponent,
+} from '../../lib/drawTypes'
 import {
   mergeDrawScoutDisplayNotes,
 } from '../../lib/drawScoutDemoNotes'
 import { readDrawScoutDeepLink } from '../../lib/drawScoutDeepLink'
 import { getDrawScoutPreviewCompetitions } from '../../lib/drawScoutPreviewData'
-import type { DrawDisciplineGroup, DrawMatchup, DrawPlayer, DrawProbableOpponent } from '../../lib/drawTypes'
 import { formatScoutingTagsForDisplay } from '../../lib/noteTags'
 import {
   formatNoteRecordedSummary,
@@ -53,6 +62,7 @@ import type { NormalizedMatch } from '../../types/matchHistory'
 import { DisciplineChip } from '../discipline/DisciplineChip'
 import type { MatchupIntelTeaser } from '../../lib/drawScout'
 import { DrawMatchupRow } from './DrawMatchupRow'
+import { DrawPairNames } from './DrawPairNames'
 import { DrawScoutPreviousGames } from './DrawScoutPreviousGames'
 import { NoteTagChips } from './NoteTagPicker'
 import { recapMatchKey } from '../../lib/tournamentRecap'
@@ -64,11 +74,48 @@ const DISCIPLINE_DOT: Record<string, string> = {
   unknown: 'bg-ink-300',
 }
 
+type DrawCompetitionStatus = {
+  resultsLastUpdatedAt?: string
+  busyPlayersByName?: Record<string, DrawPlayerBusyStatus>
+}
+
 type Props = {
   playerName: string
   allNotes: OpponentNote[]
   allMatches: NormalizedMatch[]
   competitions?: DrawScoutCompetition[]
+}
+
+function CrossDisciplineBusyBanners({
+  players,
+  competitionStatus,
+}: {
+  players: { name: string }[]
+  competitionStatus?: DrawCompetitionStatus | null
+}) {
+  if (competitionStatus == null) return null
+  const rows = getBusyStatusesForPlayers(players, competitionStatus.busyPlayersByName)
+  if (rows.length === 0) return null
+
+  return (
+    <div className="space-y-1">
+      {rows.map(({ playerName, status }) => {
+        const copy = formatCrossDisciplineBusyBanner(playerName, status, {
+          resultsLastUpdatedAt: competitionStatus.resultsLastUpdatedAt,
+        })
+        return (
+          <div
+            key={playerName}
+            className="mt-1.5 rounded-md border border-loss-100 bg-loss-50 px-2 py-1"
+            role="status"
+          >
+            <p className="text-[11px] font-semibold leading-tight text-loss-700">{copy.lead}</p>
+            <p className="text-[10px] font-medium leading-tight text-loss-600/85">{copy.support}</p>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -84,14 +131,6 @@ function ChevronIcon({ open }: { open: boolean }) {
         d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z"
         clipRule="evenodd"
       />
-    </svg>
-  )
-}
-
-function SwapIcon({ className = 'h-4 w-4' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-      <path d="M7.707 3.293a1 1 0 010 1.414L6.414 6H13a1 1 0 110 2H6.414l1.293 1.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zM12.293 11.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L13.586 15H7a1 1 0 110-2h6.586l-1.293-1.293a1 1 0 010-1.414z" />
     </svg>
   )
 }
@@ -178,12 +217,26 @@ function DrawScoutIntelBlock({
   const showGames = panel === 'games' && resultItems.length > 0
   if (!showNotes && !showGames) return null
 
+  const gamesEyebrow = viewingOwnDraw ? 'Previous games' : "Games you've played"
+
   return (
     <div className="border-t border-ink-100 pt-3 first:border-t-0 first:pt-0">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <p className="text-sm font-semibold text-ink-900">{title}</p>
-        {disciplineCode != null && <DisciplineChip code={disciplineCode} />}
-      </div>
+      {showGames ? (
+        <div className="mb-0.5">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-ink-400">
+            {gamesEyebrow}
+          </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <p className="text-sm font-medium text-ink-800">{title}</p>
+            {disciplineCode != null && <DisciplineChip code={disciplineCode} />}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="text-sm font-semibold text-ink-900">{title}</p>
+          {disciplineCode != null && <DisciplineChip code={disciplineCode} />}
+        </div>
+      )}
       {showNotes && (
         <div className="mt-2 space-y-3">
           {notes.map((note) => (
@@ -438,6 +491,7 @@ function MatchupBlock({
   matchByKey,
   disciplineCode,
   viewingOwnDraw = true,
+  competitionStatus,
 }: {
   matchup: DrawMatchup
   displayNotes: OpponentNote[]
@@ -446,6 +500,7 @@ function MatchupBlock({
   matchByKey: Map<string, NormalizedMatch>
   disciplineCode: string
   viewingOwnDraw?: boolean
+  competitionStatus?: DrawCompetitionStatus | null
 }) {
   if (isProbableNextMatchup(matchup)) {
     return (
@@ -457,6 +512,7 @@ function MatchupBlock({
         matchByKey={matchByKey}
         disciplineCode={disciplineCode}
         viewingOwnDraw={viewingOwnDraw}
+        competitionStatus={competitionStatus}
       />
     )
   }
@@ -470,6 +526,7 @@ function MatchupBlock({
       matchByKey={matchByKey}
       disciplineCode={disciplineCode}
       viewingOwnDraw={viewingOwnDraw}
+      competitionStatus={competitionStatus}
     />
   )
 }
@@ -482,6 +539,7 @@ function ScoutMatchupBlock({
   matchByKey,
   disciplineCode,
   viewingOwnDraw = true,
+  competitionStatus,
 }: {
   matchup: DrawMatchup
   displayNotes: OpponentNote[]
@@ -490,6 +548,7 @@ function ScoutMatchupBlock({
   matchByKey: Map<string, NormalizedMatch>
   disciplineCode: string
   viewingOwnDraw?: boolean
+  competitionStatus?: DrawCompetitionStatus | null
 }) {
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<IntelPanelMode>('notes')
@@ -506,15 +565,29 @@ function ScoutMatchupBlock({
     : counts.noteCount > 0
       ? 'notes'
       : 'games'
+  const statusBanner =
+    matchup.result == null ? (
+      <CrossDisciplineBusyBanners
+        players={matchup.opponentSide}
+        competitionStatus={competitionStatus}
+      />
+    ) : null
 
   if (teaser == null) {
-    return <DrawMatchupRow matchup={matchup} disciplineCode={disciplineCode} />
+    return (
+      <DrawMatchupRow
+        matchup={matchup}
+        disciplineCode={disciplineCode}
+        statusBanner={statusBanner}
+      />
+    )
   }
 
   return (
     <DrawMatchupRow
       matchup={matchup}
       disciplineCode={disciplineCode}
+      statusBanner={statusBanner}
       expandable={{
         open,
         onToggle: () => {
@@ -556,6 +629,7 @@ function probableToLaterOpponent(
     disciplineCode,
     roundLabel,
     probability: probable.probability,
+    pathStatus: probable.pathStatus,
   }
 }
 
@@ -568,6 +642,7 @@ function ProbableNextMatchupBlock({
   matchByKey,
   disciplineCode,
   viewingOwnDraw = true,
+  competitionStatus,
 }: {
   matchup: DrawMatchup
   displayNotes: OpponentNote[]
@@ -576,12 +651,14 @@ function ProbableNextMatchupBlock({
   matchByKey: Map<string, NormalizedMatch>
   disciplineCode: string
   viewingOwnDraw?: boolean
+  competitionStatus?: DrawCompetitionStatus | null
 }) {
   const [showAll, setShowAll] = useState(false)
   const disciplineStyle = getDisciplineStyle(disciplineCode)
   const probable = matchup.probableOpponents ?? []
   const visible = showAll ? probable : probable.slice(0, PROBABLE_NEXT_INITIAL_VISIBLE)
   const hiddenCount = probable.length - visible.length
+  const decidedAfterLine = formatOpponentDecidedAfterLine(matchup)
   const showMoreButtonClass =
     'mt-2 w-fit rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
@@ -589,8 +666,13 @@ function ProbableNextMatchupBlock({
   // nesting cards inside another card shell. Round header (“Up next · …”) lives above.
   return (
     <div className={`rounded-xl border border-ink-100 ${disciplineStyle.rowBgClass} p-2`}>
+      {decidedAfterLine != null ? (
+        <p className="mb-1.5 px-0.5 text-xs font-semibold leading-snug text-ink-700">
+          {decidedAfterLine}
+        </p>
+      ) : null}
       <p className="mb-1.5 px-0.5 text-xs font-medium text-ink-500">
-        Most likely opponents this round
+        Most Likely Opponents
       </p>
       <div className="space-y-2">
         {visible.map((item) => {
@@ -610,6 +692,7 @@ function ProbableNextMatchupBlock({
               disciplineCode={disciplineCode}
               viewingOwnDraw={viewingOwnDraw}
               variant="standalone"
+              competitionStatus={competitionStatus}
             />
           )
         })}
@@ -638,6 +721,7 @@ function RoundGroupBlock({
   playerName,
   matchByKey,
   viewingOwnDraw = true,
+  competitionStatus,
 }: {
   disciplineCode: string
   roundLabel: string
@@ -648,6 +732,7 @@ function RoundGroupBlock({
   playerName: string
   matchByKey: Map<string, NormalizedMatch>
   viewingOwnDraw?: boolean
+  competitionStatus?: DrawCompetitionStatus | null
 }) {
   const heading = formatDrawRoundSectionHeading(roundLabel, sectionRole)
   const isUpNext = sectionRole === 'up-next'
@@ -679,48 +764,11 @@ function RoundGroupBlock({
             matchByKey={matchByKey}
             disciplineCode={disciplineCode}
             viewingOwnDraw={viewingOwnDraw}
+            competitionStatus={competitionStatus}
           />
         ))}
       </div>
     </div>
-  )
-}
-
-function LaterOpponentNames({ players }: { players: DrawPlayer[] }) {
-  // Doubles/mixed: always stack partners (break after &) so every card shares
-  // the same name-block height — short pairs must not collapse to one line.
-  if (players.length >= 2) {
-    return (
-      <div className="min-w-0 text-sm leading-snug text-ink-900">
-        {players.map((player, index) => (
-          <div key={player.name} className="whitespace-nowrap">
-            {player.seedLabel && (
-              <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
-            )}
-            {player.name}
-            {player.rating != null ? (
-              <span className="tabular-nums text-ink-500"> ({player.rating})</span>
-            ) : null}
-            {index < players.length - 1 ? <span className="text-ink-400"> &</span> : null}
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  const player = players[0]
-  if (player == null) return null
-
-  return (
-    <p className="min-w-0 text-sm leading-snug text-ink-900">
-      {player.seedLabel && (
-        <span className="mr-1 font-semibold text-ink-500">{player.seedLabel}</span>
-      )}
-      {player.name}
-      {player.rating != null ? (
-        <span className="tabular-nums text-ink-500"> ({player.rating})</span>
-      ) : null}
-    </p>
   )
 }
 
@@ -750,6 +798,7 @@ function LaterOpponentBlock({
   disciplineCode,
   viewingOwnDraw = true,
   variant = 'embedded',
+  competitionStatus,
 }: {
   opponent: DrawScoutLaterOpponent
   displayNotes: OpponentNote[]
@@ -764,6 +813,7 @@ function LaterOpponentBlock({
    * section = flat rows inside a shared section card (no nested chrome)
    */
   variant?: 'embedded' | 'standalone' | 'section'
+  competitionStatus?: DrawCompetitionStatus | null
 }) {
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<IntelPanelMode>('notes')
@@ -784,6 +834,18 @@ function LaterOpponentBlock({
   const disciplineStyle = getDisciplineStyle(disciplineCode)
   const cardShell = 'overflow-hidden rounded-xl border border-ink-100 bg-white shadow-sm'
   const probabilityLabel = formatLaterOpponentProbability(opponent.probability)
+  const busyBanner = (
+    <CrossDisciplineBusyBanners
+      players={opponent.opponentSide}
+      competitionStatus={competitionStatus}
+    />
+  )
+  const pathStatusLine =
+    opponent.pathStatus != null
+      ? formatOpponentPathStatusLine(opponent.pathStatus, {
+          resultsLastUpdatedAt: competitionStatus?.resultsLastUpdatedAt,
+        })
+      : null
 
   const body = (
     <>
@@ -791,8 +853,12 @@ function LaterOpponentBlock({
         <span className="inline-flex shrink-0 items-center rounded-md bg-brand-50 px-2 py-1 text-xs font-bold tabular-nums text-brand-800">
           {probabilityLabel}
         </span>
-        <LaterOpponentNames players={opponent.opponentSide} />
+        <DrawPairNames players={opponent.opponentSide} />
       </div>
+      {pathStatusLine != null ? (
+        <p className="mt-1 text-[10px] font-medium leading-tight text-ink-500">{pathStatusLine}</p>
+      ) : null}
+      {busyBanner}
       {teaser != null ? (
         <LaterOpponentIntelTeaserLine teaser={teaser} />
       ) : (
@@ -1044,6 +1110,7 @@ function DisciplineBlock({
   matchByKey,
   viewingOwnDraw = true,
   viewedPlayerName,
+  competitionStatus,
 }: {
   group: DrawDisciplineGroup
   laterOpponents: DrawScoutLaterOpponent[]
@@ -1053,6 +1120,7 @@ function DisciplineBlock({
   matchByKey: Map<string, NormalizedMatch>
   viewingOwnDraw?: boolean
   viewedPlayerName: string
+  competitionStatus?: DrawCompetitionStatus | null
 }) {
   const dotClass = DISCIPLINE_DOT[getDisciplineFamily(group.disciplineCode)]
   const roundGroups = useMemo(() => groupMatchupsByRound(group.matchups), [group.matchups])
@@ -1093,6 +1161,7 @@ function DisciplineBlock({
             playerName={playerName}
             matchByKey={matchByKey}
             viewingOwnDraw={viewingOwnDraw}
+            competitionStatus={competitionStatus}
           />
         ))}
         <DisciplineLaterSection
@@ -1106,69 +1175,6 @@ function DisciplineBlock({
           viewedPlayerName={viewedPlayerName}
         />
       </div>
-    </div>
-  )
-}
-
-function CompetitionHeader({
-  competition,
-  alternatives,
-  onSelect,
-}: {
-  competition: DrawScoutCompetition
-  alternatives: DrawScoutCompetition[]
-  onSelect: (slug: string) => void
-}) {
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const showChange = alternatives.length > 1
-
-  return (
-    <div>
-      <div className="flex items-start gap-2">
-        <h4 className="min-w-0 flex-1 text-base font-semibold leading-snug text-ink-900">
-          {competition.name}
-        </h4>
-        {showChange && (
-          <button
-            type="button"
-            onClick={() => setPickerOpen((value) => !value)}
-            className="mt-0.5 shrink-0 rounded-md p-1 text-brand-600 transition hover:bg-brand-50 hover:text-brand-700"
-            aria-label={pickerOpen ? 'Cancel changing competition' : 'Change competition'}
-            aria-expanded={pickerOpen}
-          >
-            <SwapIcon />
-          </button>
-        )}
-      </div>
-      <p className="mt-0.5 text-xs text-ink-500">{formatCompetitionDateRange(competition)}</p>
-      {showChange && pickerOpen && (
-        <ul className="mt-2 space-y-1 rounded-lg border border-ink-100 bg-white p-1 shadow-sm">
-          {alternatives.map((comp) => {
-            const selected = comp.slug === competition.slug
-            return (
-              <li key={comp.slug}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSelect(comp.slug)
-                    setPickerOpen(false)
-                  }}
-                  className={`w-full rounded-md px-3 py-2 text-left text-sm transition ${
-                    selected
-                      ? 'bg-brand-50 font-medium text-brand-800'
-                      : 'text-ink-800 hover:bg-ink-50'
-                  }`}
-                >
-                  <span className="block">{comp.name}</span>
-                  <span className="mt-0.5 block text-xs text-ink-500">
-                    {formatCompetitionDateRange(comp)}
-                  </span>
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      )}
     </div>
   )
 }
@@ -1427,7 +1433,7 @@ function PlayerCombobox({
                   top: listStyle.top,
                   left: listStyle.left,
                   width: listStyle.width,
-                  zIndex: 60,
+                  zIndex: 80,
                 }}
               >
                 {showListSections ? (
@@ -1643,10 +1649,13 @@ export function DrawScoutCard({
   forcedVisible = false,
   initialCompetitionSlug = null,
   initialPlayerName = null,
+  /** Gift / non-Premium preview: hide scouting notes (past games still show). */
+  disableNotes = false,
 }: Props & {
   forcedVisible?: boolean
   initialCompetitionSlug?: string | null
   initialPlayerName?: string | null
+  disableNotes?: boolean
 }) {
   const playerPickerId = useId()
   const deepLink = useMemo(() => readDrawScoutDeepLink(), [])
@@ -1676,19 +1685,44 @@ export function DrawScoutCard({
       deepLinkSlug: deepLink.drawSlug ?? initialCompetitionSlug,
     }),
   )
-  const [viewingPlayerName, setViewingPlayerName] = useState<string>('')
 
   const competition =
     activeCompetitions.find((comp) => comp.slug === competitionSlug) ?? null
 
+  const [viewingPlayerName, setViewingPlayerName] = useState(() => {
+    const initialComp =
+      activeCompetitions.find((comp) => comp.slug === competitionSlug) ?? null
+    if (!initialComp) return ''
+    if (initialPlayerName) {
+      const match = getEntrantForCompetition(initialComp, initialPlayerName)
+      if (match) return match.name
+    }
+    if (deepLink.playerName) {
+      const match = getEntrantForCompetition(initialComp, deepLink.playerName)
+      if (match) return match.name
+    }
+    return getDefaultPlayerName(initialComp, playerName) ?? ''
+  })
+
   useEffect(() => {
     if (!competition) return
-    const defaultPlayer =
-      initialPlayerName ??
-      deepLink.playerName ??
-      getDefaultPlayerName(competition, playerName) ??
-      ''
-    setViewingPlayerName(defaultPlayer)
+    // Prefer an explicit initial/deep-link player only when they are entered;
+    // otherwise default to "you" so the picker is never left blank.
+    if (initialPlayerName) {
+      const match = getEntrantForCompetition(competition, initialPlayerName)
+      if (match) {
+        setViewingPlayerName(match.name)
+        return
+      }
+    }
+    if (deepLink.playerName) {
+      const match = getEntrantForCompetition(competition, deepLink.playerName)
+      if (match) {
+        setViewingPlayerName(match.name)
+        return
+      }
+    }
+    setViewingPlayerName(getDefaultPlayerName(competition, playerName) ?? '')
   }, [competition, deepLink.playerName, initialPlayerName, playerName])
 
   useEffect(() => {
@@ -1697,13 +1731,10 @@ export function DrawScoutCard({
     }
   }, [initialCompetitionSlug])
 
-  useEffect(() => {
-    if (initialPlayerName) {
-      setViewingPlayerName(initialPlayerName)
-    }
-  }, [initialPlayerName])
-
-  const displayNotes = useMemo(() => mergeDrawScoutDisplayNotes(allNotes), [allNotes])
+  const displayNotes = useMemo(
+    () => (disableNotes ? [] : mergeDrawScoutDisplayNotes(allNotes)),
+    [allNotes, disableNotes],
+  )
   const displayMatches = useMemo(() => mergeDrawScoutDisplayMatches(allMatches), [allMatches])
 
   const matchByKey = useMemo(() => {
@@ -1721,35 +1752,33 @@ export function DrawScoutCard({
       ? getEntrantForCompetition(competition, viewingPlayerName)
       : null
 
+  const freshnessLine = competition != null ? formatResultsLastUpdatedLine(competition) : null
+  const competitionStatus: DrawCompetitionStatus | null =
+    competition != null
+      ? {
+          resultsLastUpdatedAt: competition.resultsLastUpdatedAt,
+          busyPlayersByName: competition.busyPlayersByName,
+        }
+      : null
+
   return (
     <section className="overflow-hidden rounded-2xl border border-brand-200/80 bg-gradient-to-b from-brand-50/50 to-white shadow-sm">
       <div className="border-b border-brand-100/80 px-4 py-3 sm:px-5">
-        <p className="text-xs font-medium text-ink-500">Draw scout</p>
+        <h3 className="text-lg font-semibold text-ink-900">Draw companion</h3>
 
-        <div className="mt-2 space-y-3">
-          {competition && (
-            <CompetitionHeader
-              competition={competition}
-              alternatives={activeCompetitions}
-              onSelect={(nextSlug) => {
-                setCompetitionSlug(nextSlug)
-                const nextComp = activeCompetitions.find((comp) => comp.slug === nextSlug)
-                if (nextComp) {
-                  setViewingPlayerName(getDefaultPlayerName(nextComp, playerName) ?? '')
-                }
-              }}
-            />
-          )}
-
-          {competition && (
+        {competition && (
+          <div className="mt-2">
             <PlayerCombobox
               id={playerPickerId}
               competition={competition}
               value={viewingPlayerName}
               onChange={setViewingPlayerName}
             />
-          )}
-        </div>
+          </div>
+        )}
+        {freshnessLine != null ? (
+          <p className="mt-2 text-xs font-medium text-ink-500">{freshnessLine}</p>
+        ) : null}
       </div>
 
       <div className="px-4 py-3 sm:px-5">
@@ -1768,6 +1797,7 @@ export function DrawScoutCard({
                 matchByKey={matchByKey}
                 viewingOwnDraw={entrant.isYou === true}
                 viewedPlayerName={viewingPlayerName}
+                competitionStatus={competitionStatus}
               />
             ))}
           </div>

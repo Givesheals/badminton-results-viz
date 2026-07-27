@@ -1,5 +1,5 @@
 export type DrawScoutDeepLink = {
-  /** Events tab hosts Draw Scout. Legacy `?tab=notes&draw=` still opens Events. */
+  /** Events tab hosts Draw companion. Legacy `?tab=notes&draw=` still opens Events. */
   tab: 'latest-event' | null
   drawSlug: string | null
   playerName: string | null

@@ -9,6 +9,7 @@ import {
 import { PremiumSignupFlow } from './PremiumSignupFlow'
 import { UserMenuDrawer } from './UserMenuDrawer'
 import { NotificationsPreview } from '../notifications/NotificationsPreview'
+import { TournamentPagePreview } from '../tournament/TournamentPagePreview'
 import { getPlayerInitials } from '../../lib/getPlayerInitials'
 
 type Props = {
@@ -21,6 +22,7 @@ export function PremiumUserMenu({ playerName }: Props) {
   const [signupOpen, setSignupOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [tournamentPreviewOpen, setTournamentPreviewOpen] = useState(false)
 
   const initials = getPlayerInitials(playerName)
 
@@ -42,11 +44,19 @@ export function PremiumUserMenu({ playerName }: Props) {
         onSignUpPremium={() => setSignupOpen(true)}
         onManageSubscription={() => setManageOpen(true)}
         onOpenNotifications={() => setNotificationsOpen(true)}
+        onOpenTournamentPreview={() => setTournamentPreviewOpen(true)}
       />
 
       <NotificationsPreview
         open={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}
+      />
+
+      <TournamentPagePreview
+        open={tournamentPreviewOpen}
+        onClose={() => setTournamentPreviewOpen(false)}
+        playerName={playerName}
+        onSignUpPremium={() => setSignupOpen(true)}
       />
 
       <PremiumSignupFlow

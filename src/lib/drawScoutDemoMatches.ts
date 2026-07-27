@@ -86,7 +86,7 @@ function demoMatch(options: {
   }
 }
 
-/** Example previous meetings aligned with draw scout demo notes / matchup states. */
+/** Example previous meetings aligned with draw companion demo notes / matchup states. */
 export const drawScoutDemoMatches: NormalizedMatch[] = [
   demoMatch({
     competitionName: 'Suffolk Bronze 2026',

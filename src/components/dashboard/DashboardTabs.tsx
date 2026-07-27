@@ -96,7 +96,7 @@ export function DashboardTabs({ importedAt, panels }: Props) {
     const params = new URLSearchParams(window.location.search)
     const tabFromUrl = params.get('tab')
     const hasDrawDeepLink = params.get('draw') != null
-    // Draw scout lives on Events; honour legacy ?tab=notes&draw= links too.
+    // Draw companion moved to tournament page; deep links still open Events for now.
     const initialTab: DashboardTabId = hasDrawDeepLink
       ? 'latest-event'
       : tabFromUrl === 'notes' && TAB_IDS.includes('notes' as DashboardTabId)
