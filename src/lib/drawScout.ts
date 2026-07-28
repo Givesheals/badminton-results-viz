@@ -131,7 +131,7 @@ export type DrawBusyBannerCopy = {
  * must not pass played matchups).
  */
 export function getBusyStatusesForPlayers(
-  players: DrawPlayer[],
+  players: { name: string }[],
   busyPlayersByName: Record<string, DrawPlayerBusyStatus> | undefined,
 ): Array<{ playerName: string; status: DrawPlayerBusyStatus }> {
   if (busyPlayersByName == null) return []
