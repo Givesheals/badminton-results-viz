@@ -1,9 +1,17 @@
 import type { TournamentPageVisibility } from '../../lib/tournamentPageMockData'
 
+export type OptionBStage = 'Entries' | 'Groups' | 'Finals' | 'Companion'
+
 type EntryProps = {
   visibility: TournamentPageVisibility
   noteCount: number
   onOpen: () => void
+}
+
+type OptionBProps = {
+  visibility: TournamentPageVisibility
+  selectedStage: OptionBStage
+  onSelectStage: (stage: OptionBStage) => void
 }
 
 function OptionLabel({ children }: { children: string }) {
@@ -97,37 +105,51 @@ export function DrawCompanionEntryOptionA({ visibility, noteCount, onOpen }: Ent
   )
 }
 
-/** Option B — compact pill on the stage bar (mobile-friendly). */
-export function DrawCompanionEntryOptionB({ visibility, onOpen }: EntryProps) {
+function stageChipClass(selected: boolean) {
+  return `rounded-full px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
+    selected
+      ? 'border border-ink-900 bg-ink-200 text-ink-900'
+      : 'bg-ink-100 text-brand-700 hover:bg-ink-200'
+  }`
+}
+
+/** Option B — companion as a stage chip that swaps page content (not a modal). */
+export function DrawCompanionEntryOptionB({
+  visibility,
+  selectedStage,
+  onSelectStage,
+}: OptionBProps) {
   return (
     <div className="rounded-xl border border-dashed border-brand-300/70 bg-brand-50/30 p-3">
       <OptionLabel>Option B — stage bar pill</OptionLabel>
       {visibility === 'hidden' ? (
         <HiddenPlaceholder />
       ) : (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Stage">
           <span className="text-sm font-medium text-brand-700">Stage:</span>
           {(['Entries', 'Groups', 'Finals'] as const).map((stage) => {
-            const selected = stage === 'Finals'
+            const selected = selectedStage === stage
             return (
-              <span
+              <button
                 key={stage}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                  selected
-                    ? 'border border-ink-900 bg-ink-200 text-ink-900'
-                    : 'bg-ink-100 text-brand-700'
-                }`}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => onSelectStage(stage)}
+                className={stageChipClass(selected)}
               >
                 {stage}
-              </span>
+              </button>
             )
           })}
           {/* Same chip shell as Entries/Groups — crown is the only differentiator */}
           <button
             type="button"
-            onClick={onOpen}
-            className="inline-flex items-center gap-1 rounded-full bg-ink-100 px-3 py-1.5 text-sm font-medium text-brand-700 transition hover:bg-ink-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-            aria-label="Open draw companion"
+            role="tab"
+            aria-selected={selectedStage === 'Companion'}
+            onClick={() => onSelectStage('Companion')}
+            className={`inline-flex items-center gap-1 ${stageChipClass(selectedStage === 'Companion')}`}
+            aria-label="Draw companion"
             title="Draw companion"
           >
             Companion

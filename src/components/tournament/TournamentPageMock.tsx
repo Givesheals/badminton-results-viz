@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   cambridgeTournamentPage,
   osSeniorsFinalsMatches,
@@ -7,16 +8,20 @@ import {
   type MockBracketPlayer,
   type TournamentPageVisibility,
 } from '../../lib/tournamentPageMockData'
+import { DrawCompanionContent } from './DrawCompanionContent'
 import {
   DrawCompanionEntryOptionA,
   DrawCompanionEntryOptionB,
   DrawCompanionEntryOptionC,
+  type OptionBStage,
 } from './DrawCompanionEntryOptions'
 
 type Props = {
   visibility: TournamentPageVisibility
   noteCount: number
+  playerName: string
   onOpenCompanion: () => void
+  onSignUpPremium?: () => void
 }
 
 function ScoreCells({ player }: { player: MockBracketPlayer }) {
@@ -95,15 +100,54 @@ function BracketColumn({
   )
 }
 
-export function TournamentPageMock({
-  visibility,
-  noteCount,
-  onOpenCompanion,
-}: Props) {
-  const t = cambridgeTournamentPage
+function KnockoutBracket() {
   const qf = osSeniorsFinalsMatches.filter((m) => m.round === 'qf')
   const sf = osSeniorsFinalsMatches.filter((m) => m.round === 'sf')
   const final = osSeniorsFinalsMatches.filter((m) => m.round === 'f')
+
+  return (
+    <section>
+      <h3 className="mb-3 text-base font-bold text-ink-900">OS Seniors</h3>
+      <div className="overflow-x-auto pb-2">
+        <div className="flex min-w-[36rem] gap-4">
+          <BracketColumn title="Quarter Finals" matches={qf} />
+          <BracketColumn title="Semi Finals" matches={sf} />
+          <BracketColumn title="Final" matches={final} />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function StagePlaceholder({ stage }: { stage: 'Entries' | 'Groups' }) {
+  return (
+    <section className="rounded-xl border border-dashed border-ink-200 bg-white px-4 py-8 text-center">
+      <p className="text-sm font-medium text-ink-700">{stage} content</p>
+      <p className="mt-1 text-xs text-ink-500">
+        Mock only — this stage is not populated in the preview.
+      </p>
+    </section>
+  )
+}
+
+export function TournamentPageMock({
+  visibility,
+  noteCount,
+  playerName,
+  onOpenCompanion,
+  onSignUpPremium,
+}: Props) {
+  const t = cambridgeTournamentPage
+  const [optionBStage, setOptionBStage] = useState<OptionBStage>('Finals')
+
+  useEffect(() => {
+    if (visibility === 'hidden' && optionBStage === 'Companion') {
+      setOptionBStage('Finals')
+    }
+  }, [visibility, optionBStage])
+
+  const contentStage: OptionBStage =
+    visibility === 'hidden' ? 'Finals' : optionBStage
 
   return (
     <div className="mx-auto max-w-4xl space-y-5 pb-10">
@@ -174,7 +218,7 @@ export function TournamentPageMock({
         </a>
       </article>
 
-      {/* Placement options */}
+      {/* Placement options A & C still open the companion as a modal */}
       <div className="space-y-4">
         <DrawCompanionEntryOptionA
           visibility={visibility}
@@ -212,11 +256,11 @@ export function TournamentPageMock({
         </div>
       </div>
 
-      {/* Stage bar — Option B sits here in context */}
+      {/* Stage bar — Option B sits here; Companion swaps content below (not a modal) */}
       <DrawCompanionEntryOptionB
         visibility={visibility}
-        noteCount={noteCount}
-        onOpen={onOpenCompanion}
+        selectedStage={optionBStage}
+        onSelectStage={setOptionBStage}
       />
 
       {/* When Option B is the production pick, stage pills live outside the dashed frame.
@@ -242,17 +286,23 @@ export function TournamentPageMock({
         </div>
       )}
 
-      {/* Bracket */}
-      <section>
-        <h3 className="mb-3 text-base font-bold text-ink-900">OS Seniors</h3>
-        <div className="overflow-x-auto pb-2">
-          <div className="flex min-w-[36rem] gap-4">
-            <BracketColumn title="Quarter Finals" matches={qf} />
-            <BracketColumn title="Semi Finals" matches={sf} />
-            <BracketColumn title="Final" matches={final} />
+      {contentStage === 'Companion' ? (
+        <section className="rounded-xl border border-ink-100 bg-white p-4 shadow-sm">
+          <div className="mb-3">
+            <h3 className="text-base font-bold text-ink-900">Draw companion</h3>
+            <p className="text-xs text-ink-500">{t.name}</p>
           </div>
-        </div>
-      </section>
+          <DrawCompanionContent
+            visibility={visibility}
+            playerName={playerName}
+            onSignUpPremium={onSignUpPremium}
+          />
+        </section>
+      ) : contentStage === 'Finals' ? (
+        <KnockoutBracket />
+      ) : (
+        <StagePlaceholder stage={contentStage} />
+      )}
     </div>
   )
 }

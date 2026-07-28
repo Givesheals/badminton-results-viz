@@ -1,13 +1,10 @@
 import { createPortal } from 'react-dom'
-import { useEffect, useId, useMemo, useRef } from 'react'
-import { useDataset } from '../../context/DatasetContext'
-import { useOpponentNotes } from '../../hooks/useOpponentNotes'
-import { normalizeDataset } from '../../lib/matchHistory'
+import { useEffect, useId, useRef } from 'react'
 import {
   cambridgeTournamentPage,
   type TournamentPageVisibility,
 } from '../../lib/tournamentPageMockData'
-import { DrawScoutCard } from '../notes/DrawScoutCard'
+import { DrawCompanionContent } from './DrawCompanionContent'
 
 type Props = {
   open: boolean
@@ -30,13 +27,6 @@ export function DrawCompanionModal({
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
-  const { dataset } = useDataset()
-  const { allNotes } = useOpponentNotes(playerName)
-
-  const allMatches = useMemo(
-    () => (dataset ? normalizeDataset(dataset) : []),
-    [dataset],
-  )
 
   useEffect(() => {
     if (!open) return
@@ -52,8 +42,6 @@ export function DrawCompanionModal({
   }, [open])
 
   if (!open) return null
-
-  const isGift = visibility === 'gift'
 
   return createPortal(
     <>
@@ -96,37 +84,11 @@ export function DrawCompanionModal({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-          <div className="space-y-3">
-            {isGift && (
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand-200 bg-brand-50/50 px-3 py-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink-900">Enjoy this one-off gift</p>
-                  <p className="text-xs text-ink-600">
-                    Unlock with Premium for your next tournament.
-                  </p>
-                </div>
-                {onSignUpPremium && (
-                  <button
-                    type="button"
-                    onClick={onSignUpPremium}
-                    className="shrink-0 bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700"
-                  >
-                    Unlock Premium
-                  </button>
-                )}
-              </div>
-            )}
-
-            <DrawScoutCard
-              playerName={playerName}
-              allNotes={isGift ? [] : allNotes}
-              allMatches={allMatches}
-              forcedVisible
-              disableNotes={isGift}
-              initialCompetitionSlug={cambridgeTournamentPage.drawCompanionSlug}
-              initialPlayerName={playerName}
-            />
-          </div>
+          <DrawCompanionContent
+            visibility={visibility}
+            playerName={playerName}
+            onSignUpPremium={onSignUpPremium}
+          />
         </div>
 
         <div className="flex shrink-0 justify-end border-t border-ink-200 px-4 py-3">

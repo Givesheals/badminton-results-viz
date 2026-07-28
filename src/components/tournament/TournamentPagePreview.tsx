@@ -131,14 +131,20 @@ export function TournamentPagePreview({
           <TournamentPageMock
             visibility={visibility}
             noteCount={noteCount}
+            playerName={playerName}
             onOpenCompanion={() => {
               if (visibility === 'hidden') return
               setCompanionOpen(true)
+            }}
+            onSignUpPremium={() => {
+              onClose()
+              onSignUpPremium()
             }}
           />
         </div>
       </div>
 
+      {/* Options A & C still open as a modal; Option B swaps page content instead */}
       <DrawCompanionModal
         open={companionOpen}
         onClose={() => setCompanionOpen(false)}
