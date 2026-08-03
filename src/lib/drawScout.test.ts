@@ -5,7 +5,6 @@ import {
   filterLaterOpponentsByDiscipline,
   formatLaterOpponentProbability,
   formatCrossDisciplineBusyBanner,
-  formatOpponentDecidedAfterLine,
   formatOpponentPathStatusLine,
   formatResultsLastUpdatedLine,
   getDefaultCompetitionSlug,
@@ -587,19 +586,6 @@ describe('drawScout', () => {
         now,
       ),
     ).toBe('Results last updated 2 hr ago · scores may lag')
-
-    expect(
-      formatOpponentDecidedAfterLine({ gamesUntilOpponentDecided: 2 }),
-    ).toBe('Opponent decided after ~2 more games')
-    expect(
-      formatOpponentDecidedAfterLine({
-        gamesUntilOpponentDecided: 1,
-        opponentDecidedBlocker: {
-          playerName: 'Lucy Grant',
-          disciplineLabel: 'open singles',
-        },
-      }),
-    ).toBe('Opponent decided after Lucy Grant finishes open singles · ~1 game')
 
     const fresh = formatCrossDisciplineBusyBanner(
       'Lucy Grant',

@@ -105,22 +105,6 @@ export function formatResultsLastUpdatedLine(
   return base
 }
 
-export function formatOpponentDecidedAfterLine(
-  matchup: Pick<DrawMatchup, 'gamesUntilOpponentDecided' | 'opponentDecidedBlocker'>,
-): string | null {
-  const blocker = matchup.opponentDecidedBlocker
-  const games = matchup.gamesUntilOpponentDecided
-  if (blocker != null) {
-    const base = `Opponent decided after ${blocker.playerName} finishes ${blocker.disciplineLabel}`
-    if (games != null && games > 0) {
-      return `${base} · ~${games} ${games === 1 ? 'game' : 'games'}`
-    }
-    return base
-  }
-  if (games == null || games <= 0) return null
-  return `Opponent decided after ~${games} more ${games === 1 ? 'game' : 'games'}`
-}
-
 export type DrawBusyBannerCopy = {
   lead: string
   support: string

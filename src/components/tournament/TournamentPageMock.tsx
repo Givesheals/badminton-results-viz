@@ -1,22 +1,27 @@
+import { useEffect, useState } from 'react'
+import {
+  DRAW_COMPANION_BUILD_STAGES,
+  DRAW_COMPANION_BUILD_STAGE_META,
+  type DrawCompanionBuildStage,
+} from '../../lib/drawCompanionBuildStage'
 import {
   cambridgeTournamentPage,
   osSeniorsFinalsMatches,
   TOURNAMENT_PAGE_CATEGORIES,
-  TOURNAMENT_PAGE_STAGES,
   type MockBracketMatch,
   type MockBracketPlayer,
   type TournamentPageVisibility,
 } from '../../lib/tournamentPageMockData'
+import { DrawCompanionContent } from './DrawCompanionContent'
 import {
-  DrawCompanionEntryOptionA,
-  DrawCompanionEntryOptionB,
-  DrawCompanionEntryOptionC,
-} from './DrawCompanionEntryOptions'
+  DrawCompanionStageBar,
+  type TournamentPageStage,
+} from './DrawCompanionStageBar'
 
 type Props = {
   visibility: TournamentPageVisibility
-  noteCount: number
-  onOpenCompanion: () => void
+  playerName: string
+  onSignUpPremium?: () => void
 }
 
 function ScoreCells({ player }: { player: MockBracketPlayer }) {
@@ -95,21 +100,62 @@ function BracketColumn({
   )
 }
 
-export function TournamentPageMock({
-  visibility,
-  noteCount,
-  onOpenCompanion,
-}: Props) {
-  const t = cambridgeTournamentPage
+function KnockoutBracket() {
   const qf = osSeniorsFinalsMatches.filter((m) => m.round === 'qf')
   const sf = osSeniorsFinalsMatches.filter((m) => m.round === 'sf')
   const final = osSeniorsFinalsMatches.filter((m) => m.round === 'f')
 
   return (
+    <section>
+      <h3 className="mb-3 text-base font-bold text-ink-900">OS Seniors</h3>
+      <div className="overflow-x-auto pb-2">
+        <div className="flex min-w-[36rem] gap-4">
+          <BracketColumn title="Quarter Finals" matches={qf} />
+          <BracketColumn title="Semi Finals" matches={sf} />
+          <BracketColumn title="Final" matches={final} />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function StagePlaceholder({ stage }: { stage: 'Entries' | 'Groups' }) {
+  return (
+    <section className="rounded-xl border border-dashed border-ink-200 bg-white px-4 py-8 text-center">
+      <p className="text-sm font-medium text-ink-700">{stage} content</p>
+      <p className="mt-1 text-xs text-ink-500">
+        Mock only — this stage is not populated in the preview.
+      </p>
+    </section>
+  )
+}
+
+export function TournamentPageMock({
+  visibility,
+  playerName,
+  onSignUpPremium,
+}: Props) {
+  const t = cambridgeTournamentPage
+  const [stage, setStage] = useState<TournamentPageStage>('Companion')
+  const [buildStage, setBuildStage] = useState<DrawCompanionBuildStage>(2)
+
+  useEffect(() => {
+    if (visibility === 'hidden' && stage === 'Companion') {
+      setStage('Finals')
+    }
+  }, [visibility, stage])
+
+  const contentStage: TournamentPageStage =
+    visibility === 'hidden' ? 'Finals' : stage
+  const showBuildStagePicker = visibility !== 'hidden'
+
+  return (
     <div className="mx-auto max-w-4xl space-y-5 pb-10">
       <p className="rounded-lg border border-ink-200 bg-white px-3 py-2 text-xs text-ink-600">
-        Simulated tournament page for placement review. In production, only one entry
-        option would appear — and only for Premium or gift-eligible visitors.
+        Simulated tournament page. Draw companion appears as a stage chip for Premium
+        and gift visitors — selecting it swaps the page content below (not a modal).
+        Use the ticket build control above the discipline tabs to screenshot each
+        engineering ticket.
       </p>
 
       {/* Tournament info card */}
@@ -174,19 +220,44 @@ export function TournamentPageMock({
         </a>
       </article>
 
-      {/* Placement options */}
-      <div className="space-y-4">
-        <DrawCompanionEntryOptionA
-          visibility={visibility}
-          noteCount={noteCount}
-          onOpen={onOpenCompanion}
-        />
-        <DrawCompanionEntryOptionC
-          visibility={visibility}
-          noteCount={noteCount}
-          onOpen={onOpenCompanion}
-        />
-      </div>
+      {showBuildStagePicker && (
+        <div className="rounded-lg border border-dashed border-brand-200 bg-brand-50/40 px-3 py-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-brand-800">Ticket build:</span>
+            <div
+              role="group"
+              aria-label="Draw companion ticket build stage"
+              className="flex flex-wrap gap-1"
+            >
+              {DRAW_COMPANION_BUILD_STAGES.map((ticketStage) => {
+                const selected = buildStage === ticketStage
+                const meta = DRAW_COMPANION_BUILD_STAGE_META[ticketStage]
+                return (
+                  <button
+                    key={ticketStage}
+                    type="button"
+                    title={meta.summary}
+                    onClick={() => {
+                      setBuildStage(ticketStage)
+                      if (visibility !== 'hidden') setStage('Companion')
+                    }}
+                    className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
+                      selected
+                        ? 'bg-brand-600 text-white shadow-sm'
+                        : 'bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50'
+                    }`}
+                  >
+                    {ticketStage}. {meta.shortLabel}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <p className="mt-1.5 text-[11px] text-ink-500">
+            {DRAW_COMPANION_BUILD_STAGE_META[buildStage].summary}
+          </p>
+        </div>
+      )}
 
       {/* Category tabs */}
       <div className="border-b border-ink-200">
@@ -212,47 +283,26 @@ export function TournamentPageMock({
         </div>
       </div>
 
-      {/* Stage bar — Option B sits here in context */}
-      <DrawCompanionEntryOptionB
+      <DrawCompanionStageBar
         visibility={visibility}
-        noteCount={noteCount}
-        onOpen={onOpenCompanion}
+        selectedStage={contentStage}
+        onSelectStage={setStage}
       />
 
-      {/* When Option B is the production pick, stage pills live outside the dashed frame.
-          Show a clean stage row only when hidden so the page still reads as complete. */}
-      {visibility === 'hidden' && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-brand-700">Stage:</span>
-          {TOURNAMENT_PAGE_STAGES.map((stage) => {
-            const selected = stage === 'Finals'
-            return (
-              <span
-                key={stage}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                  selected
-                    ? 'border border-ink-900 bg-ink-200 text-ink-900'
-                    : 'bg-ink-100 text-brand-700'
-                }`}
-              >
-                {stage}
-              </span>
-            )
-          })}
-        </div>
+      {contentStage === 'Companion' ? (
+        <section className="rounded-xl border border-ink-100 bg-white p-4 shadow-sm">
+          <DrawCompanionContent
+            visibility={visibility}
+            playerName={playerName}
+            onSignUpPremium={onSignUpPremium}
+            buildStage={buildStage}
+          />
+        </section>
+      ) : contentStage === 'Finals' ? (
+        <KnockoutBracket />
+      ) : (
+        <StagePlaceholder stage={contentStage} />
       )}
-
-      {/* Bracket */}
-      <section>
-        <h3 className="mb-3 text-base font-bold text-ink-900">OS Seniors</h3>
-        <div className="overflow-x-auto pb-2">
-          <div className="flex min-w-[36rem] gap-4">
-            <BracketColumn title="Quarter Finals" matches={qf} />
-            <BracketColumn title="Semi Finals" matches={sf} />
-            <BracketColumn title="Final" matches={final} />
-          </div>
-        </div>
-      </section>
     </div>
   )
 }

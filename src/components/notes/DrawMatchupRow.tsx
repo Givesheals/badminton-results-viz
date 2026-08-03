@@ -227,6 +227,11 @@ type Props = {
    * Only shown on unplayed / definite upcoming cards — never on compact played rows.
    */
   statusBanner?: ReactNode
+  /**
+   * When true and the card is static (not expandable), show “No notes or games yet”.
+   * Ticket stages before history should leave this off so cards are names-only.
+   */
+  showEmptyIntelHint?: boolean
 }
 
 /**
@@ -241,6 +246,7 @@ export function DrawMatchupRow({
   disciplineCode,
   compactResult,
   statusBanner,
+  showEmptyIntelHint = true,
 }: Props) {
   const played = matchup.result != null
   const useCompact = compactResult ?? played
@@ -354,7 +360,7 @@ export function DrawMatchupRow({
           <PlayedMatchupBody matchup={matchup} />
         ) : useUpcomingOpponentOnly ? (
           <>
-            <UpcomingOpponentBody matchup={matchup} showEmptyHint />
+            <UpcomingOpponentBody matchup={matchup} showEmptyHint={showEmptyIntelHint} />
             {visibleStatusBanner}
             {notes != null && <div className="mt-2 space-y-2">{notes}</div>}
           </>
@@ -368,7 +374,8 @@ export function DrawMatchupRow({
                 <div aria-hidden />
               </div>
             ) : (
-              !played && (
+              !played &&
+              showEmptyIntelHint && (
                 <div className={`mt-1 ${DRAW_SIDES_GRID}`}>
                   <p className="text-xs text-ink-400">No notes or games yet</p>
                   <div aria-hidden />

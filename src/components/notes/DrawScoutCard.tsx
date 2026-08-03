@@ -8,7 +8,6 @@ import {
   formatDrawRoundSectionHeading,
   formatLaterOpponentProbability,
   formatMatchupIntelTeaser,
-  formatOpponentDecidedAfterLine,
   formatOpponentPathStatusLine,
   formatResultsLastUpdatedLine,
   getBusyStatusesForPlayers,
@@ -39,6 +38,11 @@ import type {
   DrawPlayerBusyStatus,
   DrawProbableOpponent,
 } from '../../lib/drawTypes'
+import {
+  applyDrawCompanionBuildStage,
+  getDrawCompanionBuildFeatures,
+  type DrawCompanionBuildStage,
+} from '../../lib/drawCompanionBuildStage'
 import {
   mergeDrawScoutDisplayNotes,
 } from '../../lib/drawScoutDemoNotes'
@@ -492,6 +496,8 @@ function MatchupBlock({
   disciplineCode,
   viewingOwnDraw = true,
   competitionStatus,
+  /** When false, flat cards only — no games teaser, accordion, or empty intel hint. */
+  matchHistoryEnabled = true,
 }: {
   matchup: DrawMatchup
   displayNotes: OpponentNote[]
@@ -501,6 +507,7 @@ function MatchupBlock({
   disciplineCode: string
   viewingOwnDraw?: boolean
   competitionStatus?: DrawCompetitionStatus | null
+  matchHistoryEnabled?: boolean
 }) {
   if (isProbableNextMatchup(matchup)) {
     return (
@@ -513,6 +520,7 @@ function MatchupBlock({
         disciplineCode={disciplineCode}
         viewingOwnDraw={viewingOwnDraw}
         competitionStatus={competitionStatus}
+        matchHistoryEnabled={matchHistoryEnabled}
       />
     )
   }
@@ -527,6 +535,7 @@ function MatchupBlock({
       disciplineCode={disciplineCode}
       viewingOwnDraw={viewingOwnDraw}
       competitionStatus={competitionStatus}
+      matchHistoryEnabled={matchHistoryEnabled}
     />
   )
 }
@@ -540,6 +549,7 @@ function ScoutMatchupBlock({
   disciplineCode,
   viewingOwnDraw = true,
   competitionStatus,
+  matchHistoryEnabled = true,
 }: {
   matchup: DrawMatchup
   displayNotes: OpponentNote[]
@@ -549,16 +559,24 @@ function ScoutMatchupBlock({
   disciplineCode: string
   viewingOwnDraw?: boolean
   competitionStatus?: DrawCompetitionStatus | null
+  matchHistoryEnabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<IntelPanelMode>('notes')
+  // getDrawScoutPreviousMatches falls back to demo fixtures when the list is empty —
+  // so ticket stages that hide history must hard-disable intel, not just pass [].
   const counts = useMemo(
-    () => getMatchupIntelCounts(matchup, displayNotes, displayMatches, playerName),
-    [displayMatches, displayNotes, matchup, playerName],
+    () =>
+      matchHistoryEnabled
+        ? getMatchupIntelCounts(matchup, displayNotes, displayMatches, playerName)
+        : { noteCount: 0, gamesPlayed: 0 },
+    [displayMatches, displayNotes, matchHistoryEnabled, matchup, playerName],
   )
-  const teaser = formatMatchupIntelTeaser(counts.noteCount, counts.gamesPlayed, {
-    viewingOwnDraw,
-  })
+  const teaser = matchHistoryEnabled
+    ? formatMatchupIntelTeaser(counts.noteCount, counts.gamesPlayed, {
+        viewingOwnDraw,
+      })
+    : null
   const showTabs = counts.noteCount > 0 && counts.gamesPlayed > 0
   const resolvedPanel: IntelPanelMode = showTabs
     ? panel
@@ -579,6 +597,7 @@ function ScoutMatchupBlock({
         matchup={matchup}
         disciplineCode={disciplineCode}
         statusBanner={statusBanner}
+        showEmptyIntelHint={matchHistoryEnabled}
       />
     )
   }
@@ -643,6 +662,7 @@ function ProbableNextMatchupBlock({
   disciplineCode,
   viewingOwnDraw = true,
   competitionStatus,
+  matchHistoryEnabled = true,
 }: {
   matchup: DrawMatchup
   displayNotes: OpponentNote[]
@@ -652,25 +672,21 @@ function ProbableNextMatchupBlock({
   disciplineCode: string
   viewingOwnDraw?: boolean
   competitionStatus?: DrawCompetitionStatus | null
+  matchHistoryEnabled?: boolean
 }) {
   const [showAll, setShowAll] = useState(false)
   const disciplineStyle = getDisciplineStyle(disciplineCode)
   const probable = matchup.probableOpponents ?? []
   const visible = showAll ? probable : probable.slice(0, PROBABLE_NEXT_INITIAL_VISIBLE)
   const hiddenCount = probable.length - visible.length
-  const decidedAfterLine = formatOpponentDecidedAfterLine(matchup)
   const showMoreButtonClass =
     'mt-2 w-fit rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
   // Full-width matchup cards on a shared tinted ground — groups the section without
   // nesting cards inside another card shell. Round header (“Up next · …”) lives above.
+  // Path-until-decided lives on each probable row (pathStatus), not as a section lead-in.
   return (
     <div className={`rounded-xl border border-ink-100 ${disciplineStyle.rowBgClass} p-2`}>
-      {decidedAfterLine != null ? (
-        <p className="mb-1.5 px-0.5 text-xs font-semibold leading-snug text-ink-700">
-          {decidedAfterLine}
-        </p>
-      ) : null}
       <p className="mb-1.5 px-0.5 text-xs font-medium text-ink-500">
         Most Likely Opponents
       </p>
@@ -693,6 +709,7 @@ function ProbableNextMatchupBlock({
               viewingOwnDraw={viewingOwnDraw}
               variant="standalone"
               competitionStatus={competitionStatus}
+              matchHistoryEnabled={matchHistoryEnabled}
             />
           )
         })}
@@ -722,6 +739,7 @@ function RoundGroupBlock({
   matchByKey,
   viewingOwnDraw = true,
   competitionStatus,
+  matchHistoryEnabled = true,
 }: {
   disciplineCode: string
   roundLabel: string
@@ -733,6 +751,7 @@ function RoundGroupBlock({
   matchByKey: Map<string, NormalizedMatch>
   viewingOwnDraw?: boolean
   competitionStatus?: DrawCompetitionStatus | null
+  matchHistoryEnabled?: boolean
 }) {
   const heading = formatDrawRoundSectionHeading(roundLabel, sectionRole)
   const isUpNext = sectionRole === 'up-next'
@@ -765,6 +784,7 @@ function RoundGroupBlock({
             disciplineCode={disciplineCode}
             viewingOwnDraw={viewingOwnDraw}
             competitionStatus={competitionStatus}
+            matchHistoryEnabled={matchHistoryEnabled}
           />
         ))}
       </div>
@@ -799,6 +819,7 @@ function LaterOpponentBlock({
   viewingOwnDraw = true,
   variant = 'embedded',
   competitionStatus,
+  matchHistoryEnabled = true,
 }: {
   opponent: DrawScoutLaterOpponent
   displayNotes: OpponentNote[]
@@ -814,17 +835,23 @@ function LaterOpponentBlock({
    */
   variant?: 'embedded' | 'standalone' | 'section'
   competitionStatus?: DrawCompetitionStatus | null
+  matchHistoryEnabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<IntelPanelMode>('notes')
   const matchup = useMemo(() => laterOpponentToMatchup(opponent), [opponent])
   const counts = useMemo(
-    () => getLaterOpponentIntelCounts(opponent, displayNotes, displayMatches, playerName),
-    [displayMatches, displayNotes, opponent, playerName],
+    () =>
+      matchHistoryEnabled
+        ? getLaterOpponentIntelCounts(opponent, displayNotes, displayMatches, playerName)
+        : { noteCount: 0, gamesPlayed: 0 },
+    [displayMatches, displayNotes, matchHistoryEnabled, opponent, playerName],
   )
-  const teaser = formatMatchupIntelTeaser(counts.noteCount, counts.gamesPlayed, {
-    viewingOwnDraw,
-  })
+  const teaser = matchHistoryEnabled
+    ? formatMatchupIntelTeaser(counts.noteCount, counts.gamesPlayed, {
+        viewingOwnDraw,
+      })
+    : null
   const showTabs = counts.noteCount > 0 && counts.gamesPlayed > 0
   const resolvedPanel: IntelPanelMode = showTabs
     ? panel
@@ -861,9 +888,9 @@ function LaterOpponentBlock({
       {busyBanner}
       {teaser != null ? (
         <LaterOpponentIntelTeaserLine teaser={teaser} />
-      ) : (
+      ) : matchHistoryEnabled ? (
         <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
-      )}
+      ) : null}
     </>
   )
 
@@ -962,6 +989,7 @@ function LaterOpponentRoundGroup({
   matchByKey,
   disciplineCode,
   viewingOwnDraw,
+  matchHistoryEnabled = true,
 }: {
   group: LaterOpponentRoundGroup
   displayNotes: OpponentNote[]
@@ -970,6 +998,7 @@ function LaterOpponentRoundGroup({
   matchByKey: Map<string, NormalizedMatch>
   disciplineCode: string
   viewingOwnDraw: boolean
+  matchHistoryEnabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [showAll, setShowAll] = useState(false)
@@ -1009,6 +1038,7 @@ function LaterOpponentRoundGroup({
                 matchByKey={matchByKey}
                 disciplineCode={disciplineCode}
                 viewingOwnDraw={viewingOwnDraw}
+                matchHistoryEnabled={matchHistoryEnabled}
               />
             ))}
           </div>
@@ -1045,6 +1075,7 @@ function DisciplineLaterSection({
   matchByKey,
   viewingOwnDraw,
   viewedPlayerName,
+  matchHistoryEnabled = true,
 }: {
   laterOpponents: DrawScoutLaterOpponent[]
   disciplineCode: string
@@ -1054,6 +1085,7 @@ function DisciplineLaterSection({
   matchByKey: Map<string, NormalizedMatch>
   viewingOwnDraw: boolean
   viewedPlayerName: string
+  matchHistoryEnabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const roundGroups = useMemo(
@@ -1093,6 +1125,7 @@ function DisciplineLaterSection({
               matchByKey={matchByKey}
               disciplineCode={disciplineCode}
               viewingOwnDraw={viewingOwnDraw}
+              matchHistoryEnabled={matchHistoryEnabled}
             />
           ))}
         </div>
@@ -1111,6 +1144,7 @@ function DisciplineBlock({
   viewingOwnDraw = true,
   viewedPlayerName,
   competitionStatus,
+  matchHistoryEnabled = true,
 }: {
   group: DrawDisciplineGroup
   laterOpponents: DrawScoutLaterOpponent[]
@@ -1121,6 +1155,7 @@ function DisciplineBlock({
   viewingOwnDraw?: boolean
   viewedPlayerName: string
   competitionStatus?: DrawCompetitionStatus | null
+  matchHistoryEnabled?: boolean
 }) {
   const dotClass = DISCIPLINE_DOT[getDisciplineFamily(group.disciplineCode)]
   const roundGroups = useMemo(() => groupMatchupsByRound(group.matchups), [group.matchups])
@@ -1162,6 +1197,7 @@ function DisciplineBlock({
             matchByKey={matchByKey}
             viewingOwnDraw={viewingOwnDraw}
             competitionStatus={competitionStatus}
+            matchHistoryEnabled={matchHistoryEnabled}
           />
         ))}
         <DisciplineLaterSection
@@ -1173,6 +1209,7 @@ function DisciplineBlock({
           matchByKey={matchByKey}
           viewingOwnDraw={viewingOwnDraw}
           viewedPlayerName={viewedPlayerName}
+          matchHistoryEnabled={matchHistoryEnabled}
         />
       </div>
     </div>
@@ -1286,11 +1323,14 @@ function PlayerCombobox({
   competition,
   value,
   onChange,
+  notesEnabled = true,
 }: {
   id: string
   competition: DrawScoutCompetition
   value: string
   onChange: (name: string) => void
+  /** When false (ticket screenshots), omit notes-oriented context copy. */
+  notesEnabled?: boolean
 }) {
   const listId = `${id}-list`
   const inputRef = useRef<HTMLInputElement>(null)
@@ -1500,7 +1540,15 @@ function PlayerCombobox({
       </div>
       {value && viewingEntrant != null && !viewingEntrant.isYou && (
         <p className="mt-1.5 text-xs text-ink-600">
-          Viewing <strong>{value}</strong>&rsquo;s draw — your notes on their opponents
+          {notesEnabled ? (
+            <>
+              Viewing <strong>{value}</strong>&rsquo;s draw — your notes on their opponents
+            </>
+          ) : (
+            <>
+              Viewing <strong>{value}</strong>&rsquo;s draw — prep for their opponents
+            </>
+          )}
         </p>
       )}
     </div>
@@ -1651,18 +1699,27 @@ export function DrawScoutCard({
   initialPlayerName = null,
   /** Gift / non-Premium preview: hide scouting notes (past games still show). */
   disableNotes = false,
+  /**
+   * Ticket screenshot mode (1–7). Gates features and reshapes fixture data.
+   * When set, notes are always hidden regardless of `disableNotes`.
+   */
+  buildStage = null,
 }: Props & {
   forcedVisible?: boolean
   initialCompetitionSlug?: string | null
   initialPlayerName?: string | null
   disableNotes?: boolean
+  buildStage?: DrawCompanionBuildStage | null
 }) {
   const playerPickerId = useId()
   const deepLink = useMemo(() => readDrawScoutDeepLink(), [])
-  const resolvedCompetitions = useMemo(
-    () => competitions ?? getDrawScoutPreviewCompetitions(),
-    [competitions],
-  )
+  const buildFeatures = buildStage != null ? getDrawCompanionBuildFeatures(buildStage) : null
+  const hideNotes = disableNotes || buildStage != null
+  const resolvedCompetitions = useMemo(() => {
+    const base = competitions ?? getDrawScoutPreviewCompetitions()
+    if (buildStage == null) return base
+    return base.map((comp) => applyDrawCompanionBuildStage(comp, buildStage))
+  }, [buildStage, competitions])
   const activeCompetitions = useMemo(
     () => listActiveDrawScoutCompetitions(resolvedCompetitions),
     [resolvedCompetitions],
@@ -1732,10 +1789,13 @@ export function DrawScoutCard({
   }, [initialCompetitionSlug])
 
   const displayNotes = useMemo(
-    () => (disableNotes ? [] : mergeDrawScoutDisplayNotes(allNotes)),
-    [allNotes, disableNotes],
+    () => (hideNotes ? [] : mergeDrawScoutDisplayNotes(allNotes)),
+    [allNotes, hideNotes],
   )
-  const displayMatches = useMemo(() => mergeDrawScoutDisplayMatches(allMatches), [allMatches])
+  const displayMatches = useMemo(() => {
+    if (buildFeatures != null && !buildFeatures.showMatchHistory) return []
+    return mergeDrawScoutDisplayMatches(allMatches)
+  }, [allMatches, buildFeatures])
 
   const matchByKey = useMemo(() => {
     const map = new Map<string, NormalizedMatch>()
@@ -1747,12 +1807,17 @@ export function DrawScoutCard({
 
   if (!showCard || activeCompetitions.length === 0) return null
 
+  const showDraw = buildFeatures == null || buildFeatures.showDraw
+  const showPlayerPicker = buildFeatures == null || buildFeatures.showPlayerPicker
+  const matchHistoryEnabled = buildFeatures == null || buildFeatures.showMatchHistory
+
   const entrant =
     competition && viewingPlayerName
       ? getEntrantForCompetition(competition, viewingPlayerName)
       : null
 
-  const freshnessLine = competition != null ? formatResultsLastUpdatedLine(competition) : null
+  const freshnessLine =
+    showDraw && competition != null ? formatResultsLastUpdatedLine(competition) : null
   const competitionStatus: DrawCompetitionStatus | null =
     competition != null
       ? {
@@ -1766,13 +1831,14 @@ export function DrawScoutCard({
       <div className="border-b border-brand-100/80 px-4 py-3 sm:px-5">
         <h3 className="text-lg font-semibold text-ink-900">Draw companion</h3>
 
-        {competition && (
+        {competition && showPlayerPicker && (
           <div className="mt-2">
             <PlayerCombobox
               id={playerPickerId}
               competition={competition}
               value={viewingPlayerName}
               onChange={setViewingPlayerName}
+              notesEnabled={!hideNotes}
             />
           </div>
         )}
@@ -1782,7 +1848,11 @@ export function DrawScoutCard({
       </div>
 
       <div className="px-4 py-3 sm:px-5">
-        {!entrant ? (
+        {!showDraw ? (
+          <p className="text-sm text-ink-600">
+            Your draw appears here once Companion content is wired up.
+          </p>
+        ) : !entrant ? (
           <p className="text-sm text-ink-600">Choose a player to view their draw.</p>
         ) : (
           <div className="space-y-6">
@@ -1798,6 +1868,7 @@ export function DrawScoutCard({
                 viewingOwnDraw={entrant.isYou === true}
                 viewedPlayerName={viewingPlayerName}
                 competitionStatus={competitionStatus}
+                matchHistoryEnabled={matchHistoryEnabled}
               />
             ))}
           </div>
