@@ -14,7 +14,7 @@ When a tournament draw is published, players need to see **what their draw is** 
 This feature:
 
 1. **Simplifies the “your draw is out” email** — draw preview only, plus a single CTA when the user has notes on opponents in that draw.
-2. **Adds a temporary “Draw companion” card** at the top of the **Events** tab — draw structure + the user’s saved notes on relevant opponents (shown as the most recent / upcoming event, above past tournament recaps).
+2. **Adds a “Draw companion” view** on the public **tournament page** — accessible via a Companion stage chip (Premium always; rare gift for some non-Premium). Shows draw structure + the user’s saved notes on relevant opponents.
 3. **Lets the user view any entered player’s draw** in that competition (favourites surfaced first; full search for any entrant) so they can prep tactical advice for friends without a share button.
 
 Notes remain private; there is no export or share affordance. The entire Notes feature is already premium-gated — no additional gating here.
@@ -37,11 +37,11 @@ Users also want to explore **someone else’s draw** in the same competition (fr
 | In scope | Out of scope |
 |----------|--------------|
 | Draw-out email: strip inline notes; add note-count CTA | Server-side note sync for email (count can be computed server-side once notes sync exists; prototype uses mock count) |
-| Draw companion card on Events tab | Share / export notes or draw |
+| Draw companion on tournament page (stage chip) | Share / export notes or draw |
 | Competition + player pickers | Historical draw browsing after event ends |
-| Deep link from email (`?tab=latest-event&draw=…`) | Draw-out email variant for non-entrants |
+| Deep link from email into companion | Draw-out email variant for non-entrants |
 | Mock draw data for prototype | Live draw API integration (prototype first) |
-| “Explore a draw” header link (Events tab) | Push notifications |
+| Gift visibility (~1 in 10 non-Premium) | Push notifications |
 | Reuse existing note rendering (`NoteEntry`, tags, discipline chips) | Match journal in draw companion (personal notes only) |
 
 ---
@@ -122,19 +122,21 @@ Remove types/fields: `DrawNoteLine`, `matchups[].notes`, `laterNotes`, `seeAllDr
 
 ### Placement
 
-**Prototype (current):** Entry points on a simulated **tournament page** (menu → Tournament page preview). Full Draw Companion opens in a full-screen modal. The Events tab no longer hosts the card.
+**Decided:** Companion stage chip on the public Badminfo **tournament page** (alongside Entries / Groups / Finals). Selecting Companion swaps the page content below the stage bar — not a modal.
 
-**Production target:** On the public Badminfo tournament page — Premium users always; non-Premium may get a rare gift (~1 in 10 when their set BE number is entered). Otherwise the page is unchanged. Gift users have no notes (notes are Premium-only).
+**Who sees it:** Premium users always; non-Premium may get a rare gift (~1 in 10 when their set BE number is entered). Otherwise the page is unchanged (stage bar shows Entries / Groups / Finals only). Gift users have no notes (notes are Premium-only).
 
-Previous Events-tab placement (historical):
+**Prototype:** Menu → Tournament page preview. Visibility toggle (Premium / Gift / Hidden) simulates the three visitor states.
 
 ```
-Events tab
-├── Draw companion card (conditional — upcoming draw; see visibility rules)
-└── Tournament recap (newest past weekend first, Previous/Next nav)
+Tournament page
+├── Tournament info card
+├── Category tabs
+├── Stage: Entries · Groups · Finals · Companion ★  (Companion only if Premium/gift)
+└── Content area (bracket / entries / groups — or Draw companion when Companion selected)
 ```
 
-Events tab otherwise remains tournament recap only.
+The Events tab remains tournament recap only (no draw companion card).
 ### Card structure
 
 ```
@@ -284,12 +286,7 @@ Never label the draw “live” unless `updateCadence === 'live'`.
 
 #### B — Path until opponent decided (TBD next only)
 
-On **Next — probable** slots, one line under the round header:
-
-- Default: `Opponent decided after ~{N} more games`
-- When a single named person is the clear blocker: `Opponent decided after {Name} finishes {discipline}` (optionally `· ~{N} games`)
-
-`N` = matches still needed on the bracket path that settles who meets you (`gamesUntilOpponentDecided`).
+Per-opponent path status on each probable row (group games remaining / next round cue) — not a section-level “Opponent decided after…” lead-in under the round header.
 
 #### C — Cross-discipline busy banner (high visual weight)
 
@@ -343,21 +340,20 @@ Do not invent remaining knockout match counts. Cross-discipline busy banners (re
 
 ## Part 3 — Visibility & lifecycle
 
-### When the card auto-shows
+### When Companion appears on the tournament page
 
-The draw companion card appears when **any** active competition (draw published, not yet expired — see below) satisfies:
+The Companion stage chip is shown when the visitor is:
 
-1. The user is entered, **or**
-2. A favourite is entered, **or**
-3. The user arrived via deep link `?tab=latest-event&draw={slug}` (legacy `?tab=notes&draw=` still opens Events)
+1. **Premium**, **or**
+2. **Gift-eligible** (~1 in 10 non-Premium when their set BE number is entered)
 
-### When the card is hidden
+Otherwise the stage bar shows Entries / Groups / Finals only — page otherwise unchanged.
 
-No active competitions qualify for auto-show → card hidden until the user picks a competition via **“Explore a draw →”** or a deep link.
+Within the companion, competition lists still follow draw lifecycle (published, not yet expired — see below).
 
 ### Expiry rule
 
-Remove a competition from active lists (and hide the card if none remain) when **both** are true:
+Remove a competition from active picker lists when **both** are true:
 
 1. The competition has finished (last match day over), **and**
 2. That competition’s **weekend** has passed (last calendar day of the event’s weekend)
@@ -366,13 +362,11 @@ Use whichever boundary is **later**. No grace period beyond the weekend — no h
 
 ### Entry points
 
-Both entry points are kept:
-
 | Entry | When | Behaviour |
 |-------|------|-----------|
-| **In-card competition picker** | Card visible | Switch between active competitions; defaults to user’s comp when available |
-| **Header “Explore a draw →”** | Always in Events tab (recap header) | Opens competition picker (same upcoming/in-progress scope). Useful when the card is hidden, or as a discoverable alternate path when the card is already showing |
-| **Email CTA** | Draw-out notification | Deep link opens Events tab, selects competition from `draw` param, scrolls card into view |
+| **Companion stage chip** | Premium or gift on tournament page | Selects Companion stage; page content swaps to draw companion |
+| **In-companion competition picker** | Companion stage open | Switch between active competitions; defaults to user’s comp when available |
+| **Email CTA** | Draw-out notification | Deep link opens tournament page Companion stage for that competition |
 
 ---
 
@@ -482,12 +476,14 @@ Count distinct opponent names across all matchups + later opponents where `getNo
 
 | Component | Responsibility |
 |-----------|----------------|
-| `DrawScoutCard` | Card shell, visibility, competition + player state |
+| `DrawCompanionStageBar` | Stage chips including Companion (Premium/gift only) |
+| `DrawCompanionContent` | Gift banner + mounts `DrawScoutCard` |
+| `DrawScoutCard` | Card shell, competition + player state |
 | `DrawScoutCompetitionPicker` | Dropdown + search |
 | `DrawScoutPlayerPicker` | Combobox with favourites section |
 | `DrawScoutMatchupBlock` | One round row + nested notes |
 | `DrawScoutLaterSection` | Per-discipline “You may also meet” grouped by round |
-| `TournamentRecapSection` | Mount `DrawScoutCard` above tournament recap; “Explore a draw →” in Events header |
+| `TournamentPagePreview` / `TournamentPageMock` | Prototype of public tournament page + Companion stage |
 
 Extract shared note row rendering from `OpponentNotesSection` if needed to avoid duplication (`DrawScoutNoteList` or shared `NoteEntry`).
 
@@ -502,15 +498,16 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 - [x] Update `DrawOutEmail.tsx` preview
 - [x] Update `notificationPreviewData.ts` comments
 
-### Draw companion card (prototype)
+### Draw companion (prototype)
 
 - [x] Add `drawScoutPreviewData.ts` with 1–2 competitions (reuse matchup data from current `drawOutPreview`)
 - [x] Implement `isDrawScoutCompetitionActive()`
 - [x] Build `DrawScoutCard` + pickers
 - [x] Wire notes from `useOpponentNotesContext()`
-- [x] Integrate into `TournamentRecapSection` (Events tab)
-- [x] Parse `?tab=latest-event&draw=&player=` on load (legacy `tab=notes` remaps to Events)
-- [ ] Add in-app preview route or dev flag to simulate “draw is out” state
+- [x] Tournament page preview with Companion stage chip (inline content swap)
+- [x] Premium / Gift / Hidden visibility states
+- [ ] Production deep link into tournament page Companion stage
+- [ ] Live draw API integration
 
 ### Tests
 
@@ -537,13 +534,13 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 | Viewing other player | Viewing **{name}**’s draw — your notes on their opponents |
 | Later section title | You may also meet |
 | Later section helper | Entered this draw but not in their group — you could face them in the knockouts. |
-| Header entry (always visible) | Explore a draw → |
+| Stage chip | Companion |
 | Empty player | Choose a player… |
 | No notes on opponent | (omit row, or muted “No notes yet”) |
 | Freshness | Results last updated {relative} |
 | Freshness (sporadic) | Results last updated {relative} · scores may lag |
-| Path until decided | Opponent decided after ~{n} more games |
-| Path until decided (blocker) | Opponent decided after {name} finishes {discipline} |
+| Path status (group) | ~{n} group games left |
+| Path status (knockout) | {round} next |
 | Busy banner (fresh) | {Name} still playing {code} |
 | Busy banner (stale) | As of {relative}: {Name} still in {code} |
 | Busy banner support | {round} next · {relative} |
@@ -558,7 +555,7 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 | Live draw API shape | Map 1:1 onto `DrawScoutCompetition` when available |
 | Favourites list source | Prototype: mock names flagged `isFavourite`; production: user favourites service |
 | Competition search scope | **Decided:** upcoming and in-progress only |
-| Header “Explore a draw” vs in-card picker | **Decided:** keep both |
+| Tournament page placement | **Decided:** Companion stage chip (inline content swap, not modal) |
 
 ---
 
@@ -566,9 +563,15 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ Events                                          │
+│ Tournament page                                 │
 ├─────────────────────────────────────────────────┤
-│ ┌─ DRAW COMPANION (most recent / upcoming) ───────┐ │
+│ ┌─ Tournament info card ───────────────────────┐ │
+│ │ Cambridge CSBC Senior Tier 4 · …             │ │
+│ └──────────────────────────────────────────────┘ │
+│ Categories: All · OS · WS · OD · WD · XD         │
+│ Stage: Entries · Groups · Finals · Companion ★   │
+│                                                  │
+│ ┌─ DRAW COMPANION ─────────────────────────────┐ │
 │ │ Competition  [ Cambs Senior Bronze · 12 Jul ▼]│
 │ │ Whose draw   [ Simon Parker (you)            ▼]│
 │ │ ★ Sara  ★ Martin  ★ +N more                  │ │
@@ -577,10 +580,6 @@ Extract shared note row rendering from `OpponentNotesSection` if needed to avoid
 │ │   …matchup cards…                            │ │
 │ │   You may also meet                          │ │
 │ │     Quarter-finals · 45% Tom & Lucy …        │ │
-│ └──────────────────────────────────────────────┘ │
-│                                                  │
-│ ┌─ TOURNAMENT RECAP ──── [Explore a draw →] ──┐ │
-│ │ …past weekend recap…                         │ │
 │ └──────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────┘
 ```

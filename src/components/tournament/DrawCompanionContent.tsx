@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useDataset } from '../../context/DatasetContext'
 import { useOpponentNotes } from '../../hooks/useOpponentNotes'
+import type { DrawCompanionBuildStage } from '../../lib/drawCompanionBuildStage'
 import { normalizeDataset } from '../../lib/matchHistory'
 import {
   cambridgeTournamentPage,
@@ -12,13 +13,16 @@ type Props = {
   visibility: TournamentPageVisibility
   playerName: string
   onSignUpPremium?: () => void
+  /** Ticket screenshot build-out stage (1–7). */
+  buildStage: DrawCompanionBuildStage
 }
 
-/** Shared draw companion body (gift banner + scout card) for modal and inline Option B. */
+/** Draw companion body (gift banner + scout card) shown when the Companion stage is selected. */
 export function DrawCompanionContent({
   visibility,
   playerName,
   onSignUpPremium,
+  buildStage,
 }: Props) {
   const { dataset } = useDataset()
   const { allNotes } = useOpponentNotes(playerName)
@@ -57,7 +61,8 @@ export function DrawCompanionContent({
         allNotes={isGift ? [] : allNotes}
         allMatches={allMatches}
         forcedVisible
-        disableNotes={isGift}
+        disableNotes
+        buildStage={buildStage}
         initialCompetitionSlug={cambridgeTournamentPage.drawCompanionSlug}
         initialPlayerName={playerName}
       />
