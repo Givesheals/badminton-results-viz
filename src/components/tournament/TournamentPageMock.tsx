@@ -239,7 +239,7 @@ export function TournamentPageMock({
                     title={meta.summary}
                     onClick={() => {
                       setBuildStage(ticketStage)
-                      if (visibility !== 'hidden') setStage('Companion')
+                      setStage('Companion')
                     }}
                     className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                       selected
