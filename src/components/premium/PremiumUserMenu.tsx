@@ -5,6 +5,7 @@ import {
   formatPriceGbp,
   planBillingDescription,
   planPriceGbp,
+  type PremiumPlan,
 } from '../../lib/premiumPricing'
 import { PremiumSignupFlow } from './PremiumSignupFlow'
 import { UserMenuDrawer } from './UserMenuDrawer'
@@ -21,12 +22,18 @@ export function PremiumUserMenu({ playerName }: Props) {
   const { premium, clearSubscription } = usePremium()
   const [menuOpen, setMenuOpen] = useState(false)
   const [signupOpen, setSignupOpen] = useState(false)
+  const [signupPlan, setSignupPlan] = useState<PremiumPlan>('yearly')
   const [manageOpen, setManageOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [tournamentPreviewOpen, setTournamentPreviewOpen] = useState(false)
 
   const initials = getPlayerInitials(playerName)
+
+  function openSignup(plan: PremiumPlan = 'yearly') {
+    setSignupPlan(plan)
+    setSignupOpen(true)
+  }
 
   return (
     <>
@@ -43,7 +50,7 @@ export function PremiumUserMenu({ playerName }: Props) {
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         playerName={playerName}
-        onSignUpPremium={() => setSignupOpen(true)}
+        onSignUpPremium={() => openSignup('yearly')}
         onManageSubscription={() => setManageOpen(true)}
         onOpenUserSettings={() => setSettingsOpen(true)}
         onOpenNotifications={() => setNotificationsOpen(true)}
@@ -54,7 +61,7 @@ export function PremiumUserMenu({ playerName }: Props) {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         playerName={playerName}
-        onSignUpPremium={() => setSignupOpen(true)}
+        onSignUpPremium={(plan) => openSignup(plan ?? 'yearly')}
         onManageSubscription={() => setManageOpen(true)}
       />
 
@@ -67,13 +74,14 @@ export function PremiumUserMenu({ playerName }: Props) {
         open={tournamentPreviewOpen}
         onClose={() => setTournamentPreviewOpen(false)}
         playerName={playerName}
-        onSignUpPremium={() => setSignupOpen(true)}
+        onSignUpPremium={() => openSignup('yearly')}
       />
 
       <PremiumSignupFlow
         open={signupOpen}
         onClose={() => setSignupOpen(false)}
         playerName={playerName}
+        initialPlan={signupPlan}
       />
 
       <Modal

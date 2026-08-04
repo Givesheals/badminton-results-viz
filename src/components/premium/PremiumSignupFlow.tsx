@@ -21,6 +21,8 @@ type Props = {
   open: boolean
   onClose: () => void
   playerName: string
+  /** Pre-select plan when opened from settings (or elsewhere). */
+  initialPlan?: PremiumPlan
 }
 
 const PREMIUM_BENEFITS = [
@@ -30,13 +32,13 @@ const PREMIUM_BENEFITS = [
   'Personal notes',
 ]
 
-export function PremiumSignupFlow({ open, onClose, playerName }: Props) {
+export function PremiumSignupFlow({ open, onClose, playerName, initialPlan = 'yearly' }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const { subscribe, checkBeNumber } = usePremium()
 
   const [step, setStep] = useState<Step>('value')
-  const [plan, setPlan] = useState<PremiumPlan>('yearly')
+  const [plan, setPlan] = useState<PremiumPlan>(initialPlan)
   const [selectedPlayer, setSelectedPlayer] = useState<BePlayerRecord | null>(null)
   const [receiptEmail, setReceiptEmail] = useState('')
   const [playerError, setPlayerError] = useState<string | null>(null)
@@ -51,7 +53,7 @@ export function PremiumSignupFlow({ open, onClose, playerName }: Props) {
   useEffect(() => {
     if (!open) return
     setStep('value')
-    setPlan('yearly')
+    setPlan(initialPlan)
     setSelectedPlayer(null)
     setReceiptEmail('')
     setPlayerError(null)
@@ -62,7 +64,7 @@ export function PremiumSignupFlow({ open, onClose, playerName }: Props) {
     setCardNumber('')
     setCardExpiry('')
     setCardCvc('')
-  }, [open])
+  }, [open, initialPlan])
 
   useEffect(() => {
     if (!open) return

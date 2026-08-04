@@ -17,7 +17,7 @@ type Props = {
   open: boolean
   onClose: () => void
   playerName: string
-  onSignUpPremium: () => void
+  onSignUpPremium: (plan?: PremiumPlan) => void
   onManageSubscription: () => void
 }
 
@@ -353,7 +353,13 @@ function SubscribedPremiumTab({
   )
 }
 
-function UnsubscribedPremiumTab({ onSignUpPremium }: { onSignUpPremium: () => void }) {
+function UnsubscribedPremiumTab({
+  onSignUpPremium,
+}: {
+  onSignUpPremium: (plan: PremiumPlan) => void
+}) {
+  const [plan, setPlan] = useState<PremiumPlan>('yearly')
+
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap items-center gap-2">
@@ -369,29 +375,59 @@ function UnsubscribedPremiumTab({ onSignUpPremium }: { onSignUpPremium: () => vo
 
       {/* CTA above the fold — primary action before benefits or scrolling */}
       <div className="border-t border-ink-100 pt-5">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border-2 border-brand-500 bg-brand-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">Yearly</p>
-            <p className="mt-1 text-lg font-bold text-ink-900">
-              {formatPriceGbp(PREMIUM_YEARLY_PRICE_GBP)}
-              <span className="text-sm font-medium text-ink-500">/yr</span>
-            </p>
-            <p className="mt-0.5 text-xs font-medium text-court-700">
-              Save {formatPriceGbp(PREMIUM_YEARLY_SAVINGS_GBP)}
-            </p>
+        <fieldset>
+          <legend className="sr-only">Choose a plan</legend>
+          <div className="space-y-2">
+            <label
+              className={`flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 ${
+                plan === 'yearly' ? 'border-brand-500 bg-brand-50' : 'border-ink-100 bg-white'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  name="premium-settings-plan"
+                  checked={plan === 'yearly'}
+                  onChange={() => setPlan('yearly')}
+                  className="text-brand-600"
+                />
+                <div>
+                  <p className="font-medium text-ink-900">Yearly</p>
+                  <p className="text-xs text-court-700">
+                    Save {formatPriceGbp(PREMIUM_YEARLY_SAVINGS_GBP)}
+                  </p>
+                </div>
+              </div>
+              <span className="font-semibold text-ink-900">
+                {formatPriceGbp(PREMIUM_YEARLY_PRICE_GBP)}/yr
+              </span>
+            </label>
+
+            <label
+              className={`flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 ${
+                plan === 'monthly' ? 'border-brand-500 bg-brand-50' : 'border-ink-100 bg-white'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  name="premium-settings-plan"
+                  checked={plan === 'monthly'}
+                  onChange={() => setPlan('monthly')}
+                  className="text-brand-600"
+                />
+                <p className="font-medium text-ink-900">Monthly</p>
+              </div>
+              <span className="font-semibold text-ink-900">
+                {formatPriceGbp(PREMIUM_MONTHLY_PRICE_GBP)}/mo
+              </span>
+            </label>
           </div>
-          <div className="rounded-xl border border-ink-200 bg-white px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Monthly</p>
-            <p className="mt-1 text-lg font-bold text-ink-900">
-              {formatPriceGbp(PREMIUM_MONTHLY_PRICE_GBP)}
-              <span className="text-sm font-medium text-ink-500">/mo</span>
-            </p>
-          </div>
-        </div>
+        </fieldset>
 
         <button
           type="button"
-          onClick={onSignUpPremium}
+          onClick={() => onSignUpPremium(plan)}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-brand-700"
         >
           Subscribe to Premium
