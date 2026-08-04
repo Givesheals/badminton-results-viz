@@ -35,7 +35,8 @@ const TABS: { id: SettingsTab; label: string }[] = [
 const PREMIUM_PITCH_BENEFITS: { title: string; value: string }[] = [
   {
     title: 'Personal notes',
-    value: 'Capture what worked last time so you hold a tactical edge on rematches.',
+    value:
+      'Capture what worked — and we surface them again the next time you draw that player or pair.',
   },
   {
     title: 'Analytics',
@@ -43,7 +44,8 @@ const PREMIUM_PITCH_BENEFITS: { title: string; value: string }[] = [
   },
   {
     title: 'Draw Companion',
-    value: 'Spot likely opponents early and prepare before you step on court.',
+    value:
+      'See the % chance of facing each name in your half — so the most likely paths stand out before you play.',
   },
   {
     title: 'Tournament recaps',
