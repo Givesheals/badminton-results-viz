@@ -10,6 +10,7 @@ type Props = {
   playerName: string
   onSignUpPremium: () => void
   onManageSubscription: () => void
+  onOpenUserSettings: () => void
   onOpenNotifications: () => void
   onOpenTournamentPreview: () => void
 }
@@ -32,6 +33,7 @@ export function UserMenuDrawer({
   playerName,
   onSignUpPremium,
   onManageSubscription,
+  onOpenUserSettings,
   onOpenNotifications,
   onOpenTournamentPreview,
 }: Props) {
@@ -139,7 +141,16 @@ export function UserMenuDrawer({
             <h3 className="mb-3 text-sm font-semibold text-ink-900">Your Account</h3>
             <ul className="space-y-3">
               <li>
-                <InertLink>User Settings</InertLink>
+                <button
+                  type="button"
+                  className="text-left text-base font-medium text-brand-700 hover:text-brand-600"
+                  onClick={() => {
+                    onClose()
+                    onOpenUserSettings()
+                  }}
+                >
+                  User Settings
+                </button>
               </li>
               <li>
                 <InertLink>Favourites</InertLink>

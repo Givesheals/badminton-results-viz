@@ -8,6 +8,7 @@ import {
 } from '../../lib/premiumPricing'
 import { PremiumSignupFlow } from './PremiumSignupFlow'
 import { UserMenuDrawer } from './UserMenuDrawer'
+import { UserSettingsPage } from './UserSettingsPage'
 import { NotificationsPreview } from '../notifications/NotificationsPreview'
 import { TournamentPagePreview } from '../tournament/TournamentPagePreview'
 import { getPlayerInitials } from '../../lib/getPlayerInitials'
@@ -21,6 +22,7 @@ export function PremiumUserMenu({ playerName }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [signupOpen, setSignupOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [tournamentPreviewOpen, setTournamentPreviewOpen] = useState(false)
 
@@ -43,8 +45,17 @@ export function PremiumUserMenu({ playerName }: Props) {
         playerName={playerName}
         onSignUpPremium={() => setSignupOpen(true)}
         onManageSubscription={() => setManageOpen(true)}
+        onOpenUserSettings={() => setSettingsOpen(true)}
         onOpenNotifications={() => setNotificationsOpen(true)}
         onOpenTournamentPreview={() => setTournamentPreviewOpen(true)}
+      />
+
+      <UserSettingsPage
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        playerName={playerName}
+        onSignUpPremium={() => setSignupOpen(true)}
+        onManageSubscription={() => setManageOpen(true)}
       />
 
       <NotificationsPreview
@@ -68,7 +79,7 @@ export function PremiumUserMenu({ playerName }: Props) {
       <Modal
         open={manageOpen}
         onClose={() => setManageOpen(false)}
-        title="Manage subscription"
+        title="Stripe Customer Portal"
         footer={
           <button
             type="button"
@@ -79,41 +90,36 @@ export function PremiumUserMenu({ playerName }: Props) {
           </button>
         }
       >
-        {premium ? (
-          <div className="space-y-3 text-sm text-ink-700">
-            <p>
-              <span className="font-medium text-ink-900">Player:</span> {premium.playerName} (BE{' '}
-              {premium.beNumber})
+        <div className="space-y-3 text-sm text-ink-700">
+          <p>
+            In production this opens the{' '}
+            <span className="font-medium text-ink-900">Stripe Customer Portal</span> in a new tab
+            — change plan, update payment method, view invoices, or cancel.
+          </p>
+          {premium ? (
+            <>
+              <p className="rounded-lg border border-ink-100 bg-ink-50 px-3 py-2 text-xs text-ink-600">
+                Prototype subscription: {premium.playerName} (BE {premium.beNumber}) ·{' '}
+                {planBillingDescription(premium.plan)} · {formatPriceGbp(planPriceGbp(premium.plan))}
+              </p>
+              <hr className="border-ink-100" />
+              <button
+                type="button"
+                onClick={() => {
+                  clearSubscription()
+                  setManageOpen(false)
+                }}
+                className="text-sm text-loss-600 hover:text-loss-700"
+              >
+                Cancel subscription (prototype reset)
+              </button>
+            </>
+          ) : (
+            <p className="text-xs text-ink-500">
+              No real subscription stored — you are viewing the subscribed demo layout.
             </p>
-            <p>
-              <span className="font-medium text-ink-900">Plan:</span>{' '}
-              {planBillingDescription(premium.plan)}
-            </p>
-            <p>
-              <span className="font-medium text-ink-900">Receipt email:</span> {premium.receiptEmail}
-            </p>
-            <p>
-              <span className="font-medium text-ink-900">Status:</span> Active
-            </p>
-            <p>
-              <span className="font-medium text-ink-900">Next billing:</span>{' '}
-              {formatPriceGbp(planPriceGbp(premium.plan))}
-            </p>
-            <hr className="border-ink-100" />
-            <button
-              type="button"
-              onClick={() => {
-                clearSubscription()
-                setManageOpen(false)
-              }}
-              className="text-sm text-loss-600 hover:text-loss-700"
-            >
-              Cancel subscription (prototype reset)
-            </button>
-          </div>
-        ) : (
-          <p className="text-sm text-ink-700">No active subscription.</p>
-        )}
+          )}
+        </div>
       </Modal>
     </>
   )
