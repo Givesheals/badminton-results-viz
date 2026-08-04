@@ -103,7 +103,7 @@ function buildDemoPremium(playerName: string): StoredPremiumState {
 
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-1.5">
       <dt className="text-sm font-semibold text-ink-900">{label}</dt>
       <dd className="text-sm font-medium text-brand-700">{children}</dd>
     </div>
@@ -230,13 +230,13 @@ export function UserSettingsPage({
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
         <div className="mx-auto w-full max-w-3xl rounded-xl border border-ink-200 bg-white shadow-sm">
-          <div className="px-5 pt-5 sm:px-6 sm:pt-6">
+          <div className="px-5 pt-4 sm:px-6 sm:pt-5">
             <h2 className="text-xl font-bold text-ink-900 sm:text-2xl">User Settings</h2>
 
             <nav
-              className="mt-4 flex gap-1 overflow-x-auto border-b border-ink-200"
+              className="mt-3 flex gap-1 overflow-x-auto border-b border-ink-200"
               aria-label="Settings sections"
             >
               {TABS.map((tab) => {
@@ -246,7 +246,7 @@ export function UserSettingsPage({
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`shrink-0 border-b-2 px-3 py-2.5 text-sm font-semibold transition ${
+                    className={`shrink-0 border-b-2 px-3 py-2 text-sm font-semibold transition ${
                       selected
                         ? 'border-ink-900 text-ink-900'
                         : 'border-transparent text-brand-700 hover:text-brand-600'
@@ -259,7 +259,7 @@ export function UserSettingsPage({
             </nav>
           </div>
 
-          <div className="px-5 py-5 sm:px-6 sm:py-6">
+          <div className="px-5 py-4 sm:px-6 sm:py-4">
             {activeTab === 'premium' ? (
               showSubscribed && displayPremium ? (
                 <SubscribedPremiumTab
@@ -295,11 +295,11 @@ function SubscribedPremiumTab({
   const nextRenews = nextRenewalIso(premium.subscribedAt, premium.plan)
 
   return (
-    <div className="space-y-1">
+    <div>
       <h3 className="text-base font-bold text-ink-900">Premium</h3>
-      <p className="text-sm text-ink-500">Your Badminfo Premium account</p>
+      <p className="mt-0.5 text-sm text-ink-500">Your Badminfo Premium account</p>
 
-      <dl className="mt-4 divide-y divide-ink-100 border-t border-ink-100">
+      <dl className="mt-2.5 divide-y divide-ink-100 border-t border-ink-100">
         <DetailRow label="Status">
           <StatusPill active />
         </DetailRow>
@@ -313,24 +313,24 @@ function SubscribedPremiumTab({
         <DetailRow label="Subscribed since">{formatDisplayDate(premium.subscribedAt)}</DetailRow>
       </dl>
 
-      <div className="mt-6 border-t border-ink-100 pt-5">
+      <div className="mt-3 border-t border-ink-100 pt-3">
         <h4 className="text-sm font-bold text-ink-900">Covered players</h4>
-        <p className="mt-1 text-xs text-ink-500">
+        <p className="mt-0.5 text-xs text-ink-500">
           Players this subscription covers (by Badminton England number).
         </p>
-        <div className="mt-3 overflow-x-auto rounded-lg border border-ink-100">
+        <div className="mt-2 overflow-x-auto rounded-lg border border-ink-100">
           <table className="w-full min-w-[280px] text-left text-sm">
             <thead>
               <tr className="border-b border-ink-100 bg-[#f6f2fa] text-xs font-semibold uppercase tracking-wide text-ink-500">
-                <th className="px-3 py-2.5 font-semibold">Name</th>
-                <th className="px-3 py-2.5 font-semibold">BE Number</th>
+                <th className="px-3 py-1.5 font-semibold">Name</th>
+                <th className="px-3 py-1.5 font-semibold">BE Number</th>
               </tr>
             </thead>
             <tbody>
               {coveredPlayers.map((player) => (
                 <tr key={player.beNumber} className="border-b border-ink-50 last:border-0">
-                  <td className="px-3 py-2.5 font-medium text-brand-700">{player.name}</td>
-                  <td className="px-3 py-2.5 text-ink-700">{player.beNumber}</td>
+                  <td className="px-3 py-1.5 font-medium text-brand-700">{player.name}</td>
+                  <td className="px-3 py-1.5 text-ink-700">{player.beNumber}</td>
                 </tr>
               ))}
             </tbody>
@@ -338,16 +338,16 @@ function SubscribedPremiumTab({
         </div>
       </div>
 
-      <div className="mt-6 border-t border-ink-100 pt-5">
+      <div className="mt-3 border-t border-ink-100 pt-3">
         <button
           type="button"
           onClick={onManageSubscription}
-          className="inline-flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
+          className="inline-flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
         >
           Manage subscription
           <ExternalLinkIcon />
         </button>
-        <p className="mt-2 text-xs text-ink-500">
+        <p className="mt-1 text-xs text-ink-500">
           Opens the Stripe Customer Portal (cancel, change plan, payment details).
         </p>
       </div>
