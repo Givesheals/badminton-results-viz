@@ -45,7 +45,7 @@ const PREMIUM_PITCH_BENEFITS: { title: string; value: string }[] = [
   {
     title: 'Draw Companion',
     value:
-      'See the % chance of facing each name in your half — so the most likely paths stand out before you play.',
+      'Live % odds against every name in your half — updated as results land, so your most likely path is clear at every stage.',
   },
   {
     title: 'Tournament recaps',
