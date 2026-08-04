@@ -31,12 +31,24 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'premium', label: 'Premium' },
 ]
 
-/** Marketing ticks for the inactive Premium tab — aligned with signup pitch + Draw Companion. */
-const PREMIUM_PITCH_BENEFITS = [
-  'Personal notes on opponents and matches',
-  'Analytics — recaps, matchups, milestones and progression',
-  'Draw Companion on tournament pages',
-  'Tournament recaps and weekend performance',
+/** Value-led pitch lines: what you get, not just what the feature is. */
+const PREMIUM_PITCH_BENEFITS: { title: string; value: string }[] = [
+  {
+    title: 'Personal notes',
+    value: 'Capture what worked last time so you hold a tactical edge on rematches.',
+  },
+  {
+    title: 'Analytics',
+    value: 'See how you, your partners, and your results really trend over time.',
+  },
+  {
+    title: 'Draw Companion',
+    value: 'Spot likely opponents early and prepare before you step on court.',
+  },
+  {
+    title: 'Tournament recaps',
+    value: 'Relive the weekend — the results, the run, the story worth keeping.',
+  },
 ]
 
 function ExternalLinkIcon({ className }: { className?: string }) {
@@ -302,7 +314,7 @@ function SubscribedPremiumTab({
       <div className="mt-6 border-t border-ink-100 pt-5">
         <h4 className="text-sm font-bold text-ink-900">Covered players</h4>
         <p className="mt-1 text-xs text-ink-500">
-          Premium unlocks for these Badminton England registrations.
+          Players this subscription covers (by Badminton England number).
         </p>
         <div className="mt-3 overflow-x-auto rounded-lg border border-ink-100">
           <table className="w-full min-w-[280px] text-left text-sm">
@@ -355,53 +367,53 @@ function UnsubscribedPremiumTab({ onSignUpPremium }: { onSignUpPremium: () => vo
         <StatusPill active={false} />
       </div>
 
+      {/* CTA above the fold — primary action before benefits or scrolling */}
       <div className="border-t border-ink-100 pt-5">
-        <p className="text-sm text-ink-700">
-          Unlock deeper insights from your match history — notes, analytics, and tools to prepare
-          for your next tournament.
-        </p>
-
-        <ul className="mt-4 space-y-2.5">
-          {PREMIUM_PITCH_BENEFITS.map((benefit) => (
-            <li key={benefit} className="flex gap-2.5 text-sm text-ink-700">
-              <span className="mt-0.5 shrink-0 font-bold text-brand-600" aria-hidden>
-                ✓
-              </span>
-              {benefit}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border-2 border-brand-500 bg-brand-50 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">Yearly</p>
-          <p className="mt-1 text-lg font-bold text-ink-900">
-            {formatPriceGbp(PREMIUM_YEARLY_PRICE_GBP)}
-            <span className="text-sm font-medium text-ink-500">/yr</span>
-          </p>
-          <p className="mt-0.5 text-xs font-medium text-court-700">
-            Save {formatPriceGbp(PREMIUM_YEARLY_SAVINGS_GBP)}
-          </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border-2 border-brand-500 bg-brand-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">Yearly</p>
+            <p className="mt-1 text-lg font-bold text-ink-900">
+              {formatPriceGbp(PREMIUM_YEARLY_PRICE_GBP)}
+              <span className="text-sm font-medium text-ink-500">/yr</span>
+            </p>
+            <p className="mt-0.5 text-xs font-medium text-court-700">
+              Save {formatPriceGbp(PREMIUM_YEARLY_SAVINGS_GBP)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-ink-200 bg-white px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Monthly</p>
+            <p className="mt-1 text-lg font-bold text-ink-900">
+              {formatPriceGbp(PREMIUM_MONTHLY_PRICE_GBP)}
+              <span className="text-sm font-medium text-ink-500">/mo</span>
+            </p>
+          </div>
         </div>
-        <div className="rounded-xl border border-ink-200 bg-white px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Monthly</p>
-          <p className="mt-1 text-lg font-bold text-ink-900">
-            {formatPriceGbp(PREMIUM_MONTHLY_PRICE_GBP)}
-            <span className="text-sm font-medium text-ink-500">/mo</span>
-          </p>
-        </div>
-      </div>
 
-      <div className="mt-6 border-t border-ink-100 pt-5">
         <button
           type="button"
           onClick={onSignUpPremium}
-          className="flex w-full items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-3 text-base font-semibold text-white hover:bg-brand-700 sm:w-auto sm:min-w-[14rem]"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-brand-700"
         >
           Subscribe to Premium
           <BetaBadge />
         </button>
+      </div>
+
+      <div className="mt-6 border-t border-ink-100 pt-5">
+        <h4 className="text-sm font-bold text-ink-900">What you get</h4>
+        <ul className="mt-3 space-y-3.5">
+          {PREMIUM_PITCH_BENEFITS.map((benefit) => (
+            <li key={benefit.title} className="flex gap-2.5">
+              <span className="mt-0.5 shrink-0 font-bold text-brand-600" aria-hidden>
+                ✓
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-ink-900">{benefit.title}</p>
+                <p className="mt-0.5 text-sm text-ink-600">{benefit.value}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   )
