@@ -365,6 +365,115 @@
   }
 }
 
+/* —— Flip-reveal event cards (mystery back → shake → flip → confetti) —— */
+
+@keyframes flip-reveal-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  15% {
+    transform: translateX(-5px) rotate(-1.5deg);
+  }
+  30% {
+    transform: translateX(5px) rotate(1.5deg);
+  }
+  45% {
+    transform: translateX(-4px) rotate(-1deg);
+  }
+  60% {
+    transform: translateX(4px) rotate(1deg);
+  }
+  75% {
+    transform: translateX(-2px) rotate(-0.5deg);
+  }
+}
+
+@keyframes flip-reveal-shimmer {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-18deg);
+  }
+}
+
+@keyframes flip-reveal-glow-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.2),
+      0 8px 28px rgb(65 1 111 / 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgb(217 207 114 / 0.55),
+      0 12px 36px rgb(217 207 114 / 0.45);
+  }
+}
+
+.flip-reveal-mystery {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgb(156 99 208 / 0.55), transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgb(47 142 57 / 0.35), transparent 50%),
+    linear-gradient(145deg, var(--color-brand-700), var(--color-brand-600) 45%, var(--color-brand-800));
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.18),
+    0 10px 28px rgb(65 1 111 / 0.28);
+  animation: flip-reveal-glow-pulse 2.4s ease-in-out infinite;
+}
+
+.flip-reveal-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.22) 48%,
+    transparent 62%
+  );
+  animation: flip-reveal-shimmer 2.8s ease-in-out infinite;
+}
+
+.flip-reveal-shake {
+  animation: flip-reveal-shake 0.48s ease-in-out;
+}
+
+.flip-reveal-lift {
+  filter: drop-shadow(0 14px 22px rgb(65 1 111 / 0.35));
+}
+
+.flip-reveal-inner {
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.flip-reveal-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-reveal-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-reveal-face-back {
+  transform: rotateY(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-reveal-mystery,
+  .flip-reveal-shimmer::after,
+  .flip-reveal-shake {
+    animation: none !important;
+  }
+
+  .flip-reveal-inner {
+    transition: none !important;
+  }
+}
+
 @utility perfect-record-inner {
   position: relative;
   z-index: 1;

@@ -203,7 +203,12 @@ export function TournamentRecapSection({
 
         {showBody && (
           <div className="space-y-4 border-t border-ink-100 px-4 py-4 sm:px-5 sm:py-5">
-            <RecapCelebrationHero celebrations={recap.celebrations} features={features} />
+            <RecapCelebrationHero
+              key={recap.key}
+              celebrations={recap.celebrations}
+              features={features}
+              startRevealed={buildStageProp != null}
+            />
 
             {features.showEventSummaries && recap.eventSummaries.length > 0 && (
               <div className="space-y-2">

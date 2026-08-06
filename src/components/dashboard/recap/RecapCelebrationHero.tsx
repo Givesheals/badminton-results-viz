@@ -10,13 +10,17 @@ import {
   fullTournamentRecapBuildFeatures,
   type TournamentRecapBuildFeatures,
 } from '../../../lib/tournamentRecapBuildStage'
+import type { ConfettiIntensity } from '../../../lib/confettiBurst'
 import { getDisciplineStyle } from '../../../lib/disciplineStyle'
 import { DisciplineChip } from '../../discipline/DisciplineChip'
 import { TournamentCategoryChip } from '../../tournament/TournamentCategoryChip'
+import { FlipRevealCard } from '../../ui/FlipRevealCard'
 
 type Props = {
   celebrations: RecapCelebrations
   features?: TournamentRecapBuildFeatures
+  /** Skip the mystery flip (ticket screenshots / reduced-motion demos). */
+  startRevealed?: boolean
 }
 
 const CONFETTI_COLORS = [
@@ -91,96 +95,135 @@ function podiumGridClass(count: number): string {
   return count === 1 ? 'grid gap-3' : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
 }
 
-function WinnerCard({ podium }: { podium: PodiumCelebration }) {
+function WinnerCard({
+  podium,
+  startRevealed,
+}: {
+  podium: PodiumCelebration
+  startRevealed?: boolean
+}) {
   const style = getDisciplineStyle(podium.discipline)
 
   return (
-    <article
-      className={`relative overflow-hidden rounded-2xl border-2 border-shuttle-400/60 border-l-4 bg-gradient-to-br from-shuttle-400/30 via-brand-50 to-court-50 px-4 py-6 shadow-md ${style.borderClass}`}
+    <FlipRevealCard
+      intensity="spectacular"
+      revealLabel={`Reveal: Winner in ${podium.disciplineLabel}`}
+      sealedHint="A big result is sealed inside"
+      startRevealed={startRevealed}
     >
-      <Confetti density="full" />
-      <div className="relative z-10 mx-auto flex max-w-[85%] flex-col items-center text-center">
-        <span className="text-5xl leading-none" aria-hidden>
-          🏆
-        </span>
-        <p className="mt-2 text-3xl font-black tracking-tight text-brand-700 sm:text-4xl">
-          Winner!
-        </p>
-        <p className="mt-1 text-sm font-medium text-ink-700">{podium.disciplineLabel}</p>
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          <DisciplineChip code={podium.discipline} />
-          <TournamentCategoryChip label={podium.tournamentCategoryLabel} />
-        </div>
-        {podium.subtitle && (
-          <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
-            {podium.subtitle}
+      <article
+        className={`relative overflow-hidden rounded-2xl border-2 border-shuttle-400/60 border-l-4 bg-gradient-to-br from-shuttle-400/30 via-brand-50 to-court-50 px-4 py-6 shadow-md ${style.borderClass}`}
+      >
+        <Confetti density="full" />
+        <div className="relative z-10 mx-auto flex max-w-[85%] flex-col items-center text-center">
+          <span className="text-5xl leading-none" aria-hidden>
+            🏆
+          </span>
+          <p className="mt-2 text-3xl font-black tracking-tight text-brand-700 sm:text-4xl">
+            Winner!
           </p>
-        )}
-        <CategoryMilestoneClaimLink
-          tournamentCategoryLabel={podium.tournamentCategoryLabel}
-          competitionAgeLabel={podium.competitionAgeLabel}
-          stage="winner"
-        />
-      </div>
-    </article>
+          <p className="mt-1 text-sm font-medium text-ink-700">{podium.disciplineLabel}</p>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <DisciplineChip code={podium.discipline} />
+            <TournamentCategoryChip label={podium.tournamentCategoryLabel} />
+          </div>
+          {podium.subtitle && (
+            <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
+              {podium.subtitle}
+            </p>
+          )}
+          <CategoryMilestoneClaimLink
+            tournamentCategoryLabel={podium.tournamentCategoryLabel}
+            competitionAgeLabel={podium.competitionAgeLabel}
+            stage="winner"
+          />
+        </div>
+      </article>
+    </FlipRevealCard>
   )
 }
 
-function RunnerUpCard({ podium }: { podium: PodiumCelebration }) {
+function RunnerUpCard({
+  podium,
+  startRevealed,
+}: {
+  podium: PodiumCelebration
+  startRevealed?: boolean
+}) {
   return (
-    <article className="relative overflow-hidden rounded-xl border border-ink-200 bg-gradient-to-br from-slate-100 via-white to-brand-50/40 px-4 py-4 shadow-sm">
-      <Confetti density="light" />
-      <div className="relative z-10 mx-auto flex max-w-[85%] flex-col items-center text-center">
-        <span className="text-3xl leading-none" aria-hidden>
-          🥈
-        </span>
-        <p className="mt-1 text-xl font-bold tracking-tight text-ink-800 sm:text-2xl">
-          Runner-up
-        </p>
-        <p className="mt-0.5 text-sm text-ink-600">{podium.disciplineLabel}</p>
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-          <DisciplineChip code={podium.discipline} />
-          <TournamentCategoryChip label={podium.tournamentCategoryLabel} />
+    <FlipRevealCard
+      intensity="high"
+      revealLabel={`Reveal: Runner-up in ${podium.disciplineLabel}`}
+      sealedHint="A podium finish is waiting"
+      startRevealed={startRevealed}
+    >
+      <article className="relative overflow-hidden rounded-xl border border-ink-200 bg-gradient-to-br from-slate-100 via-white to-brand-50/40 px-4 py-4 shadow-sm">
+        <Confetti density="light" />
+        <div className="relative z-10 mx-auto flex max-w-[85%] flex-col items-center text-center">
+          <span className="text-3xl leading-none" aria-hidden>
+            🥈
+          </span>
+          <p className="mt-1 text-xl font-bold tracking-tight text-ink-800 sm:text-2xl">
+            Runner-up
+          </p>
+          <p className="mt-0.5 text-sm text-ink-600">{podium.disciplineLabel}</p>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+            <DisciplineChip code={podium.discipline} />
+            <TournamentCategoryChip label={podium.tournamentCategoryLabel} />
+          </div>
+          {podium.subtitle && (
+            <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
+          )}
+          <CategoryMilestoneClaimLink
+            tournamentCategoryLabel={podium.tournamentCategoryLabel}
+            competitionAgeLabel={podium.competitionAgeLabel}
+            stage="runner-up"
+          />
         </div>
-        {podium.subtitle && (
-          <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
-        )}
-        <CategoryMilestoneClaimLink
-          tournamentCategoryLabel={podium.tournamentCategoryLabel}
-          competitionAgeLabel={podium.competitionAgeLabel}
-          stage="runner-up"
-        />
-      </div>
-    </article>
+      </article>
+    </FlipRevealCard>
   )
 }
 
-function ThirdPlaceCard({ podium }: { podium: PodiumCelebration }) {
+function ThirdPlaceCard({
+  podium,
+  startRevealed,
+}: {
+  podium: PodiumCelebration
+  startRevealed?: boolean
+}) {
   return (
-    <article className="relative overflow-hidden rounded-xl border border-[color:var(--color-level-bronze)]/70 bg-gradient-to-br from-[color:var(--color-level-bronze)]/25 via-white to-brand-50/20 px-4 py-3.5 shadow-sm">
-      <Confetti density="minimal" />
-      <div className="relative z-10 mx-auto flex max-w-[85%] flex-col items-center text-center">
-        <span className="text-2xl leading-none" aria-hidden>
-          🥉
-        </span>
-        <p className="mt-1 text-lg font-bold tracking-tight text-ink-800 sm:text-xl">
-          Third Place
-        </p>
-        <p className="mt-0.5 text-sm text-ink-600">{podium.disciplineLabel}</p>
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-          <DisciplineChip code={podium.discipline} />
-          <TournamentCategoryChip label={podium.tournamentCategoryLabel} />
+    <FlipRevealCard
+      intensity="medium"
+      revealLabel={`Reveal: Third place in ${podium.disciplineLabel}`}
+      sealedHint="A bronze result is sealed"
+      startRevealed={startRevealed}
+    >
+      <article className="relative overflow-hidden rounded-xl border border-[color:var(--color-level-bronze)]/70 bg-gradient-to-br from-[color:var(--color-level-bronze)]/25 via-white to-brand-50/20 px-4 py-3.5 shadow-sm">
+        <Confetti density="minimal" />
+        <div className="relative z-10 mx-auto flex max-w-[85%] flex-col items-center text-center">
+          <span className="text-2xl leading-none" aria-hidden>
+            🥉
+          </span>
+          <p className="mt-1 text-lg font-bold tracking-tight text-ink-800 sm:text-xl">
+            Third Place
+          </p>
+          <p className="mt-0.5 text-sm text-ink-600">{podium.disciplineLabel}</p>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+            <DisciplineChip code={podium.discipline} />
+            <TournamentCategoryChip label={podium.tournamentCategoryLabel} />
+          </div>
+          {podium.subtitle && (
+            <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
+          )}
+          <CategoryMilestoneClaimLink
+            tournamentCategoryLabel={podium.tournamentCategoryLabel}
+            competitionAgeLabel={podium.competitionAgeLabel}
+            stage="semi-final"
+          />
         </div>
-        {podium.subtitle && (
-          <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
-        )}
-        <CategoryMilestoneClaimLink
-          tournamentCategoryLabel={podium.tournamentCategoryLabel}
-          competitionAgeLabel={podium.competitionAgeLabel}
-          stage="semi-final"
-        />
-      </div>
-    </article>
+      </article>
+    </FlipRevealCard>
   )
 }
 
@@ -199,6 +242,7 @@ function stageReachPresentation(stage: StageReachCelebration['stage']): {
   icon: string
   articleClass: string
   confetti?: 'minimal'
+  intensity: ConfettiIntensity
 } {
   switch (stage) {
     case 'quarter-final':
@@ -207,76 +251,105 @@ function stageReachPresentation(stage: StageReachCelebration['stage']): {
         articleClass:
           'relative overflow-hidden rounded-xl border border-court-200/80 bg-gradient-to-br from-court-50/80 via-white to-brand-50/30 px-4 py-3.5 shadow-sm',
         confetti: 'minimal',
+        intensity: 'medium',
       }
     case 'knockout':
       return {
         icon: '🚀',
         articleClass:
           'rounded-xl border border-brand-200/60 bg-gradient-to-br from-brand-50/50 via-white to-white px-4 py-3 shadow-sm',
+        intensity: 'light',
       }
     case 'group-wins':
       return {
         icon: '✓',
         articleClass:
           'rounded-xl border border-ink-200/80 bg-gradient-to-br from-ink-50/60 via-white to-white px-4 py-3 shadow-sm',
+        intensity: 'minimal',
       }
   }
 }
 
-function StageReachCard({ reach }: { reach: StageReachCelebration }) {
+function StageReachCard({
+  reach,
+  startRevealed,
+}: {
+  reach: StageReachCelebration
+  startRevealed?: boolean
+}) {
   const presentation = stageReachPresentation(reach.stage)
 
   return (
-    <article className={presentation.articleClass}>
-      {presentation.confetti && <Confetti density={presentation.confetti} />}
-      <div
-        className={`flex max-w-[85%] flex-col items-center text-center ${presentation.confetti ? 'relative z-10 mx-auto' : 'mx-auto'}`}
-      >
-        <span className="text-xl leading-none" aria-hidden>
-          {presentation.icon}
-        </span>
-        <p className="mt-1 text-base font-bold tracking-tight text-ink-800 sm:text-lg">
-          {stageReachHeadline(reach)}
-        </p>
-        <p className="mt-0.5 text-sm text-ink-600">{reach.disciplineLabel}</p>
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-          <DisciplineChip code={reach.discipline} />
-          <TournamentCategoryChip label={reach.tournamentCategoryLabel} />
+    <FlipRevealCard
+      intensity={presentation.intensity}
+      revealLabel={`Reveal: ${stageReachHeadline(reach)}`}
+      sealedHint="A stage milestone is waiting"
+      startRevealed={startRevealed}
+    >
+      <article className={presentation.articleClass}>
+        {presentation.confetti && <Confetti density={presentation.confetti} />}
+        <div
+          className={`flex max-w-[85%] flex-col items-center text-center ${presentation.confetti ? 'relative z-10 mx-auto' : 'mx-auto'}`}
+        >
+          <span className="text-xl leading-none" aria-hidden>
+            {presentation.icon}
+          </span>
+          <p className="mt-1 text-base font-bold tracking-tight text-ink-800 sm:text-lg">
+            {stageReachHeadline(reach)}
+          </p>
+          <p className="mt-0.5 text-sm text-ink-600">{reach.disciplineLabel}</p>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+            <DisciplineChip code={reach.discipline} />
+            <TournamentCategoryChip label={reach.tournamentCategoryLabel} />
+          </div>
+          <CategoryMilestoneClaimLink
+            tournamentCategoryLabel={reach.tournamentCategoryLabel}
+            competitionAgeLabel={reach.competitionAgeLabel}
+            stage={reach.stage}
+          />
         </div>
-        <CategoryMilestoneClaimLink
-          tournamentCategoryLabel={reach.tournamentCategoryLabel}
-          competitionAgeLabel={reach.competitionAgeLabel}
-          stage={reach.stage}
-        />
-      </div>
-    </article>
+      </article>
+    </FlipRevealCard>
   )
 }
 
-function PersonalBestCard({ milestone }: { milestone: MilestoneCelebration }) {
+function PersonalBestCard({
+  milestone,
+  startRevealed,
+}: {
+  milestone: MilestoneCelebration
+  startRevealed?: boolean
+}) {
   return (
-    <article className="rounded-xl border border-brand-200/70 bg-gradient-to-br from-brand-50/60 via-white to-white px-4 py-3 shadow-sm">
-      <div className="mx-auto flex max-w-[85%] flex-col items-center text-center">
-        <span className="text-xl leading-none" aria-hidden>
-          ✨
-        </span>
-        <p className="mt-1 text-base font-bold tracking-tight text-brand-800 sm:text-lg">
-          {milestone.discipline} PERSONAL BEST
-        </p>
-        {milestone.detail && (
-          <p className="mt-1 text-sm text-ink-600">{milestone.detail}</p>
-        )}
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-          <DisciplineChip code={milestone.discipline} />
-          <TournamentCategoryChip label={milestone.tournamentCategoryLabel} />
+    <FlipRevealCard
+      intensity="medium"
+      revealLabel={`Reveal: ${milestone.discipline} personal best`}
+      sealedHint="A personal best is sealed"
+      startRevealed={startRevealed}
+    >
+      <article className="rounded-xl border border-brand-200/70 bg-gradient-to-br from-brand-50/60 via-white to-white px-4 py-3 shadow-sm">
+        <div className="mx-auto flex max-w-[85%] flex-col items-center text-center">
+          <span className="text-xl leading-none" aria-hidden>
+            ✨
+          </span>
+          <p className="mt-1 text-base font-bold tracking-tight text-brand-800 sm:text-lg">
+            {milestone.discipline} PERSONAL BEST
+          </p>
+          {milestone.detail && (
+            <p className="mt-1 text-sm text-ink-600">{milestone.detail}</p>
+          )}
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+            <DisciplineChip code={milestone.discipline} />
+            <TournamentCategoryChip label={milestone.tournamentCategoryLabel} />
+          </div>
+          <CategoryMilestoneClaimLink
+            tournamentCategoryLabel={milestone.tournamentCategoryLabel}
+            competitionAgeLabel={milestone.competitionAgeLabel}
+            stage={milestone.stage}
+          />
         </div>
-        <CategoryMilestoneClaimLink
-          tournamentCategoryLabel={milestone.tournamentCategoryLabel}
-          competitionAgeLabel={milestone.competitionAgeLabel}
-          stage={milestone.stage}
-        />
-      </div>
-    </article>
+      </article>
+    </FlipRevealCard>
   )
 }
 
@@ -295,56 +368,85 @@ function milestoneStyle(variant: MilestoneCelebration['variant']): {
   }
 }
 
-function SeniorCountyDebutCard({ debut }: { debut: SeniorCountyDebutCelebration }) {
+function SeniorCountyDebutCard({
+  debut,
+  startRevealed,
+}: {
+  debut: SeniorCountyDebutCelebration
+  startRevealed?: boolean
+}) {
   return (
-    <article className="relative overflow-hidden rounded-2xl border-2 border-level-county/50 border-l-4 bg-gradient-to-br from-level-county/15 via-white to-brand-50/40 px-4 py-5 shadow-md">
-      <Confetti density="light" />
-      <div className="relative z-10 mx-auto flex max-w-[90%] flex-col items-center text-center">
-        <span className="text-4xl leading-none" aria-hidden>
-          🎖️
-        </span>
-        <p className="mt-2 text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">
-          {debut.title}
-        </p>
-        <p className="mt-2 text-sm text-ink-700">{debut.detail}</p>
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          <TournamentCategoryChip label="County" />
-          {debut.disciplines.map((d) => (
-            <DisciplineChip key={d.discipline} code={d.discipline} title={d.disciplineLabel} />
-          ))}
+    <FlipRevealCard
+      intensity="high"
+      revealLabel={`Reveal: ${debut.title}`}
+      sealedHint="A landmark debut is waiting"
+      startRevealed={startRevealed}
+    >
+      <article className="relative overflow-hidden rounded-2xl border-2 border-level-county/50 border-l-4 bg-gradient-to-br from-level-county/15 via-white to-brand-50/40 px-4 py-5 shadow-md">
+        <Confetti density="light" />
+        <div className="relative z-10 mx-auto flex max-w-[90%] flex-col items-center text-center">
+          <span className="text-4xl leading-none" aria-hidden>
+            🎖️
+          </span>
+          <p className="mt-2 text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">
+            {debut.title}
+          </p>
+          <p className="mt-2 text-sm text-ink-700">{debut.detail}</p>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <TournamentCategoryChip label="County" />
+            {debut.disciplines.map((d) => (
+              <DisciplineChip key={d.discipline} code={d.discipline} title={d.disciplineLabel} />
+            ))}
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </FlipRevealCard>
   )
 }
 
-function MilestoneCard({ milestone }: { milestone: MilestoneCelebration }) {
+function MilestoneCard({
+  milestone,
+  startRevealed,
+}: {
+  milestone: MilestoneCelebration
+  startRevealed?: boolean
+}) {
   const style = milestoneStyle(milestone.variant)
+  const intensity: ConfettiIntensity =
+    milestone.variant === 'debut' ? 'light' : 'minimal'
 
   return (
-    <article className={`rounded-xl border px-4 py-3 ${style.border}`}>
-      <div className="flex items-start gap-3">
-        <span className="text-2xl leading-none" aria-hidden>
-          {style.icon}
-        </span>
-        <div className="min-w-0">
-          <p className="font-semibold text-ink-900">{milestone.title}</p>
-          {milestone.detail && (
-            <p className="mt-0.5 text-sm text-ink-600">{milestone.detail}</p>
-          )}
-          <div className="mt-2 flex flex-wrap gap-2">
-            <DisciplineChip code={milestone.discipline} />
-            <TournamentCategoryChip label={milestone.tournamentCategoryLabel} />
+    <FlipRevealCard
+      intensity={intensity}
+      revealLabel={`Reveal: ${milestone.title}`}
+      sealedHint="A milestone is sealed inside"
+      startRevealed={startRevealed}
+    >
+      <article className={`rounded-xl border px-4 py-3 ${style.border}`}>
+        <div className="flex items-start gap-3">
+          <span className="text-2xl leading-none" aria-hidden>
+            {style.icon}
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold text-ink-900">{milestone.title}</p>
+            {milestone.detail && (
+              <p className="mt-0.5 text-sm text-ink-600">{milestone.detail}</p>
+            )}
+            <div className="mt-2 flex flex-wrap gap-2">
+              <DisciplineChip code={milestone.discipline} />
+              <TournamentCategoryChip label={milestone.tournamentCategoryLabel} />
+            </div>
           </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </FlipRevealCard>
   )
 }
 
 export function RecapCelebrationHero({
   celebrations,
   features = fullTournamentRecapBuildFeatures(),
+  startRevealed = false,
 }: Props) {
   const { winners, runnerUps, jointThirds, stageReaches, milestones, seniorCountyDebut } =
     celebrations
@@ -379,11 +481,17 @@ export function RecapCelebrationHero({
 
   return (
     <div className="space-y-4">
-      {visibleSeniorCounty && <SeniorCountyDebutCard debut={visibleSeniorCounty} />}
+      {visibleSeniorCounty && (
+        <SeniorCountyDebutCard debut={visibleSeniorCounty} startRevealed={startRevealed} />
+      )}
       {podiumWinners.length > 0 && (
         <div className={podiumGridClass(podiumWinners.length)}>
           {podiumWinners.map((podium) => (
-            <WinnerCard key={podium.discipline} podium={podium} />
+            <WinnerCard
+              key={podium.discipline}
+              podium={podium}
+              startRevealed={startRevealed}
+            />
           ))}
         </div>
       )}
@@ -391,7 +499,11 @@ export function RecapCelebrationHero({
       {podiumRunnerUps.length > 0 && (
         <div className={podiumGridClass(podiumRunnerUps.length)}>
           {podiumRunnerUps.map((podium) => (
-            <RunnerUpCard key={podium.discipline} podium={podium} />
+            <RunnerUpCard
+              key={podium.discipline}
+              podium={podium}
+              startRevealed={startRevealed}
+            />
           ))}
         </div>
       )}
@@ -399,7 +511,11 @@ export function RecapCelebrationHero({
       {podiumThirds.length > 0 && (
         <div className={podiumGridClass(podiumThirds.length)}>
           {podiumThirds.map((podium) => (
-            <ThirdPlaceCard key={podium.discipline} podium={podium} />
+            <ThirdPlaceCard
+              key={podium.discipline}
+              podium={podium}
+              startRevealed={startRevealed}
+            />
           ))}
         </div>
       )}
@@ -410,6 +526,7 @@ export function RecapCelebrationHero({
             <StageReachCard
               key={`${reach.tournamentCategoryLabel}-${reach.discipline}-${reach.stage}`}
               reach={reach}
+              startRevealed={startRevealed}
             />
           ))}
         </div>
@@ -418,7 +535,11 @@ export function RecapCelebrationHero({
       {personalBests.length > 0 && (
         <div className={podiumGridClass(personalBests.length)}>
           {personalBests.map((milestone) => (
-            <PersonalBestCard key={milestone.id} milestone={milestone} />
+            <PersonalBestCard
+              key={milestone.id}
+              milestone={milestone}
+              startRevealed={startRevealed}
+            />
           ))}
         </div>
       )}
@@ -426,10 +547,18 @@ export function RecapCelebrationHero({
       {(matchedBests.length > 0 || debutMilestones.length > 0) && (
         <div className="grid gap-2 sm:grid-cols-2">
           {matchedBests.map((milestone) => (
-            <MilestoneCard key={milestone.id} milestone={milestone} />
+            <MilestoneCard
+              key={milestone.id}
+              milestone={milestone}
+              startRevealed={startRevealed}
+            />
           ))}
           {debutMilestones.map((milestone) => (
-            <MilestoneCard key={milestone.id} milestone={milestone} />
+            <MilestoneCard
+              key={milestone.id}
+              milestone={milestone}
+              startRevealed={startRevealed}
+            />
           ))}
         </div>
       )}
