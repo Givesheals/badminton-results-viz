@@ -550,7 +550,7 @@ export function isPairNoteWithDifferentDrawnPartner(
 
 export function formatNoteScopeInGroup(
   note: OpponentNote,
-  viewedOpponentName: string,
+  _viewedOpponentName: string,
   options?: { drawnCoOpponent?: string | null; context?: 'notes-list' | 'draw-scout' },
 ): NoteScopeDisplay {
   if (note.target.kind === 'opponent') {
