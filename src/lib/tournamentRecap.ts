@@ -116,7 +116,14 @@ export type PartnerChemistryHighlight = {
   detail: string
 }
 
-export type FreakFlagKind = 'nailbiter' | 'single_digit_scare' | 'money_worth'
+export type FreakFlagKind =
+  | 'nailbiter'
+  | 'single_digit_scare'
+  | 'money_worth'
+  /** Prototype-only: random teaser — winner data not available yet. */
+  | 'lost_to_winner'
+  /** Prototype-only: random teaser — winner data not available yet. */
+  | 'shoulda_been_final'
 
 export type FreakFlagGameHighlight = 'lost_single_digit'
 
@@ -1345,6 +1352,21 @@ function freakFlagMatchDetailForSingleDigit(
   }
 }
 
+/** Deterministic 1-in-`chance` roll from a stable seed (avoids flicker across renders). */
+function stableOneInN(seed: string, chance: number): boolean {
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
+  }
+  return hash % chance === 0
+}
+
+function isLeagueOrCountyEvent(matches: NormalizedMatch[]): boolean {
+  return matches.some(
+    (m) => isCountyTournament(m) || m.tournamentCategoryLabel === 'County',
+  )
+}
+
 function detectFreakFlags(matches: NormalizedMatch[]): FreakFlag[] {
   const competitive = matches.filter(isCompetitiveMatch)
   const flags: FreakFlag[] = []
@@ -1391,6 +1413,43 @@ function detectFreakFlags(matches: NormalizedMatch[]): FreakFlag[] {
       summary: 'All of your games went to three ends.',
       matches: threeGameMatches.map(freakFlagMatchDetail),
     })
+  }
+
+  // Prototype teasers: eventual-winner data is not available yet.
+  // Each card has its own ~1-in-5 roll; never both together (shoulda wins the clash).
+  // Never on league/county fixtures.
+  if (
+    competitive.length > 0 &&
+    !isLeagueOrCountyEvent(competitive)
+  ) {
+    const losses = competitive.filter((m) => m.outcome === 'loss')
+    if (losses.length > 0) {
+      const seedBase = `${competitive[0]!.competitionName}|${competitive[0]!.date}`
+      const showShoulda = stableOneInN(`${seedBase}|shoulda-been-final`, 5)
+      const showLostToWinner = stableOneInN(`${seedBase}|lost-to-winner`, 5)
+
+      if (showShoulda) {
+        const toughLoss =
+          losses.find((m) => getMatchVolume(m).gamesPlayed === 3) ?? losses[0]!
+        flags.push({
+          id: `shoulda-final-${toughLoss.discipline}-${toughLoss.date}`,
+          kind: 'shoulda_been_final',
+          label: 'Shoulda been the final',
+          summary:
+            'You lost to the eventual winners — and gave them the toughest match of their run.',
+          match: freakFlagMatchDetail(toughLoss),
+        })
+      } else if (showLostToWinner) {
+        const loss = losses[0]!
+        flags.push({
+          id: `lost-winner-${loss.discipline}-${loss.date}`,
+          kind: 'lost_to_winner',
+          label: 'Lost to the winner',
+          summary: 'You lost to the eventual champions of this discipline.',
+          match: freakFlagMatchDetail(loss),
+        })
+      }
+    }
   }
 
   return flags

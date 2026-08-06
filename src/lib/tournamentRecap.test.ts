@@ -497,7 +497,86 @@ describe('computeTournamentRecaps', () => {
     ]
 
     const flags = computeTournamentRecaps(matches).recaps[0]!.freakFlags
-    expect(flags.some((f) => f.kind === 'money_worth')).toBe(true)
+    const money = flags.find((f) => f.kind === 'money_worth')!
+    expect(money).toBeTruthy()
+    expect(money.summary).toBe('All of your games went to three ends.')
+  })
+
+  it('never shows prototype winner-path flags on county fixtures', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'County League Night',
+        date: '2026-03-01',
+        discipline: 'WS',
+        outcome: 'loss',
+        tournamentCategory: 'County',
+        tournamentCategoryLabel: 'County',
+        raw: {
+          'Tournament Category': 'County',
+          'Player Game 1 Score': 18,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 16,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+    ]
+
+    const flags = computeTournamentRecaps(matches).recaps[0]!.freakFlags
+    expect(flags.some((f) => f.kind === 'lost_to_winner')).toBe(false)
+    expect(flags.some((f) => f.kind === 'shoulda_been_final')).toBe(false)
+  })
+
+  it('rolls shoulda and lost-to-winner independently and never both', () => {
+    const kinds = new Set<string>()
+
+    for (let i = 0; i < 80; i++) {
+      const flags = computeTournamentRecaps([
+        makeMatch({
+          competitionName: `Winner Path Demo ${i}`,
+          date: '2026-05-01',
+          discipline: 'WS',
+          outcome: 'loss',
+          tournamentCategory: 'bronze',
+          tournamentCategoryLabel: 'Bronze',
+          raw: {
+            'Tournament Category': 'Bronze',
+            'Player Game 1 Score': 19,
+            'Opponent Game 1 Score': 21,
+            'Player Game 2 Score': 18,
+            'Opponent Game 2 Score': 21,
+            'Player Game 3 Score': null,
+            'Opponent Game 3 Score': null,
+          },
+        }),
+      ]).recaps[0]!.freakFlags
+
+      const winnerFlags = flags.filter(
+        (f) => f.kind === 'lost_to_winner' || f.kind === 'shoulda_been_final',
+      )
+      expect(winnerFlags.length).toBeLessThanOrEqual(1)
+
+      for (const flag of winnerFlags) {
+        kinds.add(flag.kind)
+        if (flag.kind === 'lost_to_winner') {
+          expect(flag.label).toBe('Lost to the winner')
+          expect(flag.summary).toBe(
+            'You lost to the eventual champions of this discipline.',
+          )
+        } else {
+          expect(flag.label).toBe('Shoulda been the final')
+          expect(flag.summary).toBe(
+            'You lost to the eventual winners — and gave them the toughest match of their run.',
+          )
+        }
+        expect(flag.match?.opponents).toBeTruthy()
+      }
+    }
+
+    // Separate 1-in-5 seeds means both kinds should appear across many weekends.
+    expect(kinds.has('shoulda_been_final')).toBe(true)
+    expect(kinds.has('lost_to_winner')).toBe(true)
   })
 
   it('skips partner chemistry for new partners', () => {
