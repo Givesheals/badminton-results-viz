@@ -72,6 +72,11 @@
   --color-notes-amber-soft: #fbf6e8;
   --color-notes-amber-ink: #7a5a0a;
 
+  /* Fresh emerald for curiosities — greener (less cyan) so it stays clear of mixed aqua */
+  --color-curiosity: #1f8b55;
+  --color-curiosity-soft: #eaf6ed;
+  --color-curiosity-ink: #145a38;
+
   --color-surface-border: #d0d2dc;
   --border-width-card: 1.5px;
 }

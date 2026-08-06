@@ -5,9 +5,40 @@ import { MatchHighlightChip } from './MatchHighlightChip'
 
 type Props = {
   match: DisciplineMatchRecap
+  /** When false, hide Strongest beaten / Big upset chips (build stage < 7). */
+  showMatchHighlights?: boolean
+  /** When false, hide opponent notes icon (build stage < 10). */
+  showNotes?: boolean
 }
 
-export function DisciplineMatchRow({ match }: Props) {
+function OpponentNames({ match }: { match: DisciplineMatchRecap }) {
+  if (match.opponentMembers.length === 0) {
+    return <>{match.opponents}</>
+  }
+
+  return (
+    <>
+      {match.opponentMembers.map((member, index) => (
+        <span key={`${member.name}-${index}`}>
+          {index > 0 && <span className="text-ink-400"> & </span>}
+          {member.name}
+          {member.rating != null && (
+            <span className="font-normal tabular-nums text-ink-500">
+              {' '}
+              ({member.rating})
+            </span>
+          )}
+        </span>
+      ))}
+    </>
+  )
+}
+
+export function DisciplineMatchRow({
+  match,
+  showMatchHighlights = true,
+  showNotes = true,
+}: Props) {
   const outcomeLabel =
     match.outcome === 'win' ? 'Win' : match.outcome === 'loss' ? 'Loss' : null
 
@@ -31,11 +62,11 @@ export function DisciplineMatchRow({ match }: Props) {
               ) : null}
             </p>
           )}
-          <p className="truncate text-sm font-medium text-ink-900" title={match.opponents}>
-            vs {match.opponents}
+          <p className="break-words text-sm font-medium leading-snug text-ink-900">
+            vs <OpponentNames match={match} />
           </p>
           {match.showPartnerName && match.partnerName && (
-            <p className="truncate text-xs text-ink-600" title={`Partner: ${match.partnerName}`}>
+            <p className="break-words text-xs leading-snug text-ink-600">
               with {match.partnerName}
             </p>
           )}
@@ -55,15 +86,15 @@ export function DisciplineMatchRow({ match }: Props) {
             {match.scoreSummary || '—'}
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1 self-center">
-          {match.highlights.length > 0 && (
-            <div className="flex max-w-[9.5rem] flex-col items-end gap-1">
+        <div className="flex shrink-0 flex-col items-end gap-1 self-start pt-0.5">
+          {showMatchHighlights && match.highlights.length > 0 && (
+            <div className="flex items-center justify-end gap-1">
               {match.highlights.map((highlight) => (
                 <MatchHighlightChip key={highlight.id} highlight={highlight} />
               ))}
             </div>
           )}
-          <OpponentNoteButton context={match.noteContext} />
+          {showNotes && <OpponentNoteButton context={match.noteContext} />}
         </div>
       </div>
     </li>

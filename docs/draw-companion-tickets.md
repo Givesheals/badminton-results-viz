@@ -3,7 +3,7 @@
 Share each ticket below as its own GitHub issue. Attach the matching screenshots to every ticket.
 
 **Product:** Draw companion on the public tournament page  
-**Out of scope for this whole set:** opponent notes, note badges/tabs, share/export, email changes  
+**Out of scope for this whole set:** opponent notes, note badges/tabs, share/export, email changes, gift / free-trial access  
 **Audience:** Engineer building from design (screenshots + this text). Do not assume an existing codebase.
 
 **Suggested order:** 1 → 2 → 3 → 4 → 5 → 6 → 7
@@ -22,28 +22,25 @@ The tournament page already has stage chips such as **Entries · Groups · Final
 | Visitor | Companion chip |
 |---------|----------------|
 | Premium | Always shown |
-| Gift (rare non-Premium) | Shown |
-| Everyone else | Hidden — stage bar unchanged |
-
-When gift users open Companion, show a small one-off gift banner above the companion content (screenshot). Premium users see no gift banner.
+| Non-Premium | Hidden — stage bar unchanged (Entries / Groups / Finals only) |
 
 ### Behaviour
-1. Companion chip label: **Companion**, with a small crown icon (Premium/gift cue).
+1. Companion chip label: **Companion**, with a small crown icon (Premium cue).
 2. Selecting Companion selects that stage and loads Draw companion content below.
 3. Selecting Entries / Groups / Finals restores that stage’s existing content.
 4. Selected chip uses the same selected styling as other stage chips.
 
 ### Acceptance criteria
-- [ ] Companion appears only for Premium and gift visitors
+- [ ] Companion appears only for Premium visitors
+- [ ] Non-Premium visitors do not see the Companion chip or draw companion content
 - [ ] Clicking Companion swaps page content (inline, not a modal)
-- [ ] Gift visitors see the gift banner; Premium do not
 - [ ] Matches stage-bar screenshots
 
 ### Out of scope
-Draw list content, player picker, match history, notes.
+Draw list content, player picker, match history, notes, gift / free access variants.
 
 ### Screenshots
-_Attach: stage bar with Companion; Companion selected; gift banner; Premium without gift banner._
+_Attach: stage bar with Companion (Premium); Companion selected; non-Premium stage bar without Companion._
 
 ---
 
@@ -106,10 +103,7 @@ Let the user view **any entrant’s** draw in this tournament via a **Whose draw
 2. **Favourites** — favourites entered in this draw (gold star)
 3. **All players** — remaining entrants
 
-### Quick chips (under the combobox)
-- **You** chip when entered
-- At most **2** favourite name chips (keep the selected favourite visible when possible)
-- If more favourites exist: **★ +N more** opens the combobox — never a long chip row
+No quick-select chips under the combobox — search and the list above are the only way to change player.
 
 ### Defaults
 - Default to **You** when entered
@@ -130,7 +124,7 @@ When viewing someone other than yourself:
 ### Acceptance criteria
 - [ ] Can select self, a favourite, or any entrant
 - [ ] List sections and stars match design
-- [ ] Chip row caps at You + 2 favourites + overflow control
+- [ ] No chip row under the combobox
 - [ ] Context line only when not viewing self
 - [ ] Matches picker screenshots
 
@@ -138,10 +132,10 @@ When viewing someone other than yourself:
 Ticket 2
 
 ### Out of scope
-Notes, match history, completed cards, busy banner, “You may also meet”.
+Notes, match history, completed cards, busy banner, “You may also meet”, favourite quick chips.
 
 ### Screenshots
-_Attach: combobox open (You / Favourites / All); chips; viewing another player’s draw + context line._
+_Attach: combobox open (You / Favourites / All); viewing another player’s draw + context line._
 
 ---
 
@@ -157,18 +151,21 @@ Turn each **upcoming** draw matchup into an accordion. Expanding it shows the si
 - Optional teaser on the closed card when games exist (e.g. `3 previous games`) — screenshot
 
 ### Expanded content
-- List past matches vs:
-  - the pair as a unit when relevant, and/or
-  - each individual on the opponent side
+- List past matches from the **signed-in user’s** perspective — even when Whose draw is a friend
 - Reuse the product’s existing past-match / head-to-head presentation where one exists; otherwise a clear list: event, score, win/loss, date
-- History is always from the **signed-in user’s** perspective — even when Whose draw is a friend
 
-### Doubles / mixed
-Show history for the pair and for each named opponent when data exists (screenshot).
+### Doubles / mixed — order (important)
+When the opponent side is a pair, structure the expanded panel as:
+
+1. **Pair as a unit first** — past games against that exact pair (both opponents together)
+2. **Then each individual** — past games against each named opponent alone (or with different partners)
+
+Do not interleave individuals above the pair. Pair block always sits above the individual blocks when both exist.
 
 ### Acceptance criteria
 - [ ] Matchups with history expand; those without stay flat
 - [ ] Expanded panel shows past games only (no notes UI)
+- [ ] Doubles/mixed: pair-as-unit games appear **above** individual-player sections
 - [ ] Works for singles and doubles/mixed
 - [ ] Works when viewing another player’s draw (history still = signed-in user vs those opponents)
 - [ ] Matches accordion screenshots
@@ -180,7 +177,7 @@ Ticket 3
 Notes tabs/badges, completed Win/Loss draw card (Ticket 5), busy banner, “You may also meet”.
 
 ### Screenshots
-_Attach: closed card with games teaser; expanded singles; expanded doubles with pair + individuals._
+_Attach: closed card with games teaser; expanded singles; expanded doubles showing pair block first, then individuals._
 
 ---
 
@@ -199,7 +196,7 @@ When a draw match has a result, replace the upcoming scout card with the **compa
 - Clear **Win** or **Loss** for the viewed entrant’s side
 - Score summary (e.g. `21-18, 19-21, 21-15`)
 - Shorter name treatment; **no ratings** on the compact card
-- Still expandable for past-game history when Ticket 4 data exists
+- Still expandable for past-game history when Ticket 4 data exists (same pair-above-individuals order)
 - Played cards **remain in the list** (compact) — do not remove or collapse the whole round away
 
 ### Round progression (same scroll)
@@ -283,12 +280,18 @@ Per discipline, add a collapsible **You may also meet** section listing knockout
 3. Probabilities in a round should sum to ~100%
 4. Show top **2** opponents per round; **Show more** / **Show less** for the rest
 
+### Probability model (engineer-owned)
+- Display a probability badge per candidate (e.g. `53%`).
+- Inputs should include **player/pair ratings** (and any other draw data needed).
+- **Do not prescribe a formula, weighting, or simulation approach in this ticket.**
+- **Chris should design an appropriate mechanism** for estimating these percentages (sensible, explainable, and consistent within a round). Product care is display + ordering, not dictating the algorithm beyond using ratings as a primary signal.
+
 ### Opponent row
-- Leading probability badge (e.g. `53%`)
+- Leading probability badge
 - Opponent name(s)
 - Optional path status under the name when waiting on their bracket (e.g. `1 group game remaining · 14 min ago` or `QF next · 14 min ago`)
 - Busy banner from Ticket 6 when applicable
-- Expandable for past games when history exists (same rules as Ticket 4); if none: muted `No notes or games yet` is fine as empty copy, or simply non-expandable — **no notes feature**
+- Expandable for past games when history exists (same rules as Ticket 4, including pair-above-individuals); if none: non-expandable or muted empty copy — **no notes feature**
 
 ### Exclude promoted rounds
 If a knockout round is already shown in the main draw list as the player’s next match (definite opponent **or** opponent TBD), **do not** also list that round under “You may also meet”.
@@ -305,6 +308,7 @@ When the opponent becomes known, replace with a normal definite upcoming card (T
 ### Acceptance criteria
 - [ ] Per-discipline collapsible section with round groups + probabilities
 - [ ] Top 2 + show more per round
+- [ ] Probabilities use ratings as a primary signal; mechanism designed by the engineer (not prescribed here)
 - [ ] Promoted next rounds excluded from the section
 - [ ] Opponent-TBD next slot works in the main list
 - [ ] History expand and busy banner reuse prior tickets
@@ -314,7 +318,7 @@ When the opponent becomes known, replace with a normal definite upcoming card (T
 Tickets 4–6 recommended (history + completed + busy). Minimum: Ticket 2–3 for structure/picker.
 
 ### Out of scope
-Notes, sharing, email CTA.
+Notes, sharing, email CTA. Specifying a particular probability formula or methodology beyond “use ratings”.
 
 ### Screenshots
 _Attach: collapsed/expanded section; probability rows; show more; opponent TBD next; definite next with section excluding that round._

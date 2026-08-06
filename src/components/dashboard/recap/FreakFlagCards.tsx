@@ -69,10 +69,10 @@ function MatchDetailBlock({
 
 function FreakFlagCard({ flag }: { flag: FreakFlag }) {
   return (
-    <article className="rounded-xl border border-shuttle-400/35 bg-shuttle-400/10 px-4 py-3.5">
-      <h4 className="text-base font-semibold text-shuttle-500">{flag.label}</h4>
+    <article className="rounded-xl border border-curiosity/35 bg-curiosity-soft px-4 py-3.5">
+      <h4 className="text-base font-semibold text-curiosity">{flag.label}</h4>
       {flag.summary && (
-        <p className="mt-1.5 text-sm leading-relaxed text-ink-700">{flag.summary}</p>
+        <p className="mt-1 text-xs leading-relaxed text-ink-500">{flag.summary}</p>
       )}
       {flag.match && (
         <MatchDetailBlock

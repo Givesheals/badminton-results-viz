@@ -76,15 +76,26 @@ describe('customNoteTags', () => {
     expect(rememberCustomTag('Alex', 'selfFeel', 'One too many')).toBeNull()
   })
 
-  it('seeds scouting starter chips once per player', () => {
+  it('seeds scouting starter chips for every player, including existing libraries', () => {
     const first = ensureScoutingChipLibrary('Alex')
     expect(first.opponentStyles).toEqual([...SCOUTING_STARTER_CHIPS])
     expect(first.pairStyles).toEqual([...SCOUTING_STARTER_CHIPS])
     expect(window.localStorage.getItem(scoutingChipsSeededStorageKey('Alex'))).toBe('1')
 
-    removeRememberedCustomTag('Alex', 'opponentStyles', SCOUTING_STARTER_CHIPS[0])
-    const afterDelete = ensureScoutingChipLibrary('Alex')
-    expect(afterDelete.opponentStyles).toEqual([SCOUTING_STARTER_CHIPS[1]])
+    // Simulate a library created before Lefty existed
+    removeRememberedCustomTag('Alex', 'opponentStyles', 'Lefty')
+    const afterMissingStarter = ensureScoutingChipLibrary('Alex')
+    expect(afterMissingStarter.opponentStyles).toContain('Lefty')
+    expect(afterMissingStarter.opponentStyles).toEqual([...SCOUTING_STARTER_CHIPS])
+  })
+
+  it('keeps a single shared scouting library for opponent and pair', () => {
+    rememberCustomTag('Alex', 'opponentStyles', 'Net killer')
+    rememberCustomTag('Alex', 'pairStyles', 'Poachy')
+    const library = ensureScoutingChipLibrary('Alex')
+    expect(library.opponentStyles).toEqual(library.pairStyles)
+    expect(library.opponentStyles).toContain('Net killer')
+    expect(library.opponentStyles).toContain('Poachy')
   })
 
   it('returns in-memory starters when player name is missing', () => {

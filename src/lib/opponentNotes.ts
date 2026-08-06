@@ -566,7 +566,7 @@ export function formatNoteScopeInGroup(
   if (differentPartner) {
     return {
       kind: 'pair',
-      primary: 'Pair note — about how they played together',
+      primary: 'About the pair — not this player alone',
       secondary: `Recorded as ${pairNames}. Different partner in this draw.`,
     }
   }
@@ -574,15 +574,14 @@ export function formatNoteScopeInGroup(
   if (options?.context === 'draw-scout') {
     return {
       kind: 'pair',
-      primary: 'Pair note — about how they played together',
+      primary: 'About the pair — not this player alone',
       secondary: pairNames,
     }
   }
 
   return {
     kind: 'pair',
-    primary: `Pair note — not about ${viewedOpponentName} alone`,
-    secondary: `About how they played together · ${pairNames}`,
+    primary: 'About the pair — not this player alone',
   }
 }
 

@@ -52,7 +52,6 @@ import { formatScoutingTagsForDisplay } from '../../lib/noteTags'
 import {
   formatNoteRecordedSummary,
   formatNoteScopeInGroup,
-  getNoteScoutingAppliesToDisciplineCodes,
   type OpponentNote,
 } from '../../lib/opponentNotes'
 import {
@@ -155,7 +154,6 @@ function DrawScoutNoteContent({
     context: 'draw-scout',
   })
   const tagLabels = formatScoutingTagsForDisplay(note.tags)
-  const appliesTo = getNoteScoutingAppliesToDisciplineCodes(note)
   const hasBody = note.body.trim() !== ''
   const pairScopeLine =
     !hidePairScopeLine && scope.kind === 'pair'
@@ -174,19 +172,7 @@ function DrawScoutNoteContent({
           <span aria-hidden="true">&rdquo;</span>
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-500">
-        {appliesTo.length > 0 && (
-          <>
-            <span className="flex flex-wrap items-center gap-1">
-              {appliesTo.map((code) => (
-                <DisciplineChip key={code} code={code} />
-              ))}
-            </span>
-            <span aria-hidden="true">·</span>
-          </>
-        )}
-        <span>{formatNoteRecordedSummary(note)}</span>
-      </div>
+      <div className="text-xs text-ink-500">{formatNoteRecordedSummary(note)}</div>
       {pairScopeLine != null && <p className="text-xs text-ink-500">{pairScopeLine}</p>}
     </div>
   )

@@ -12,10 +12,8 @@ import {
   type SelfFeelTag,
 } from '../../lib/noteTags'
 import {
-  defaultScoutingAppliesToDisciplineCodes,
   defaultNoteTarget,
   getMatchJournalFields,
-  getNoteScoutingAppliesToDisciplineCodes,
   isDirectNoteContext,
   isMatchNoteTarget,
   MATCH_JOURNAL_UI_ENABLED,
@@ -25,14 +23,12 @@ import {
   noteHasStoredContent,
   noteTargetKey,
   noteTargetsEqual,
-  SCOUTING_APPLIES_TO_DISCIPLINE_CODES,
   type MatchJournalFields,
   type OpponentNote,
   type OpponentNoteMatchContext,
   type OpponentNoteTarget,
 } from '../../lib/opponentNotes'
 import { Modal } from '../ui/Modal'
-import { DisciplineChip } from '../discipline/DisciplineChip'
 import {
   GameEventNoteSection,
   OpponentStyleNoteSection,
@@ -82,19 +78,6 @@ function buildDraftsFromStored(
   return drafts
 }
 
-function buildCodesFromStored(
-  getNotesForMatch: (matchKey: string) => OpponentNote[],
-  matchKey: string,
-): Record<string, string[]> {
-  const codes: Record<string, string[]> = {}
-  for (const note of getNotesForMatch(matchKey)) {
-    if (!isMatchNoteTarget(note.target)) {
-      codes[noteTargetKey(note.target)] = getNoteScoutingAppliesToDisciplineCodes(note)
-    }
-  }
-  return codes
-}
-
 function buildTagsFromStored(
   getNotesForMatch: (matchKey: string) => OpponentNote[],
   matchKey: string,
@@ -132,75 +115,6 @@ function scoutingTagsForTargetState(
     }
   }
   return undefined
-}
-
-function DisciplineAppliesToPicker({
-  selectedCodes,
-  onChange,
-}: {
-  selectedCodes: string[]
-  onChange: (codes: string[]) => void
-}) {
-  const [editing, setEditing] = useState(false)
-
-  function toggleCode(code: string) {
-    const next = selectedCodes.includes(code)
-      ? selectedCodes.filter((item) => item !== code)
-      : [...selectedCodes, code]
-    onChange(next)
-  }
-
-  if (!editing) {
-    return (
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-ink-500">
-        <span>Applies to:</span>
-        {selectedCodes.length === 0 ? (
-          <span className="text-ink-400">None selected</span>
-        ) : (
-          selectedCodes.map((code) => <DisciplineChip key={code} code={code} />)
-        )}
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="font-medium text-brand-600 hover:underline"
-        >
-          Change
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <span className="text-xs text-ink-500">Applies to:</span>
-        <div className="flex flex-wrap gap-1">
-          {SCOUTING_APPLIES_TO_DISCIPLINE_CODES.map((code) => {
-            const isSelected = selectedCodes.includes(code)
-            return (
-              <button
-                key={code}
-                type="button"
-                aria-pressed={isSelected}
-                aria-label={`${code}${isSelected ? ', selected' : ''}`}
-                onClick={() => toggleCode(code)}
-                className={`rounded transition ${isSelected ? '' : 'opacity-35 hover:opacity-60'}`}
-              >
-                <DisciplineChip code={code} />
-              </button>
-            )
-          })}
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={() => setEditing(false)}
-        className="text-xs font-medium text-brand-600 hover:underline"
-      >
-        Done
-      </button>
-    </div>
-  )
 }
 
 function doublesTargetOptions(
@@ -381,9 +295,6 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
   const [draftsByTarget, setDraftsByTarget] = useState<Record<string, string>>(() =>
     buildDraftsFromStored(getNotesForMatch, context.matchKey),
   )
-  const [codesByTarget, setCodesByTarget] = useState<Record<string, string[]>>(() =>
-    buildCodesFromStored(getNotesForMatch, context.matchKey),
-  )
   const [tagsByTarget, setTagsByTarget] = useState<Record<string, NoteTags>>(() =>
     buildTagsFromStored(getNotesForMatch, context.matchKey),
   )
@@ -397,11 +308,6 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
   const body = draftsByTarget[targetKey] ?? ''
   const existingScoutingNote =
     target != null ? getNoteForMatchTarget(context.matchKey, target) : null
-  const appliesToDisciplineCodes =
-    codesByTarget[targetKey] ??
-    (existingScoutingNote != null
-      ? getNoteScoutingAppliesToDisciplineCodes(existingScoutingNote)
-      : defaultScoutingAppliesToDisciplineCodes(context))
   const scoutingTags = tagsByTarget[targetKey]
   const opponentStyles = scoutingTags?.opponentStyles ?? []
   const pairStyles = scoutingTags?.pairStyles ?? []
@@ -414,8 +320,6 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
     target != null ? scoutingTagsForTargetState(target, scoutingTags) : undefined
   const scoutingHasContent = noteHasContent(body, scoutingTagsToSave)
   const gameHasContent = matchNoteHasDraft(matchJournalDraft, journalTags)
-  const scoutingCanSave =
-    !scoutingHasContent || appliesToDisciplineCodes.length > 0
   const hasAnyStoredNote = getNotesForMatch(context.matchKey).some(
     (note) =>
       noteHasStoredContent(note) &&
@@ -430,7 +334,6 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
   const title = hasEdits ? 'Edit personal notes' : 'Add personal notes'
   const canSave =
     !awaitingTarget &&
-    (scoutingHasContent ? scoutingCanSave : true) &&
     (scoutingHasContent ||
       (MATCH_JOURNAL_UI_ENABLED && gameHasContent) ||
       hasAnyStoredNote)
@@ -477,10 +380,6 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
 
   function setCustomGameEvents(values: string[]) {
     setJournalTags((prev) => ({ ...prev, customGameEvents: values }))
-  }
-
-  function setAppliesToDisciplineCodes(codes: string[]) {
-    setCodesByTarget((prev) => ({ ...prev, [targetKey]: codes }))
   }
 
   function setOpponentStyles(styles: OpponentStyleTag[]) {
@@ -534,18 +433,10 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
 
   function persistScoutingDraft() {
     if (target == null) return
-    if (scoutingHasContent && scoutingCanSave) {
-      upsertNote(
-        context,
-        body,
-        target,
-        [],
-        scoutingTagsToSave,
-        undefined,
-        appliesToDisciplineCodes,
-      )
-    } else if (!scoutingHasContent) {
-      upsertNote(context, '', target, [], undefined, undefined, appliesToDisciplineCodes)
+    if (scoutingHasContent) {
+      upsertNote(context, body, target, [], scoutingTagsToSave)
+    } else {
+      upsertNote(context, '', target, [])
     }
   }
 
@@ -565,7 +456,6 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
         if (!noteHasContent(body, scoutingTagsToSave)) delete next[targetKey]
         return next
       })
-      setCodesByTarget((prev) => ({ ...prev, [targetKey]: appliesToDisciplineCodes }))
       setTagsByTarget((prev) => {
         const next = { ...prev }
         const normalized = scoutingTagsForTargetState(target, scoutingTags)
@@ -600,11 +490,6 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
   function handleDeleteScouting() {
     if (existingScoutingNote != null) deleteNote(existingScoutingNote.id)
     setDraftsByTarget((prev) => {
-      const next = { ...prev }
-      delete next[targetKey]
-      return next
-    })
-    setCodesByTarget((prev) => {
       const next = { ...prev }
       delete next[targetKey]
       return next
@@ -702,8 +587,7 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
                     />
                     {target.kind === 'pair' && (
                       <p className="text-xs text-ink-600">
-                        This note is about how they played together as a pair — not about either
-                        opponent on their own.
+                        About the pair — not either player alone
                       </p>
                     )}
                   </>
@@ -729,10 +613,6 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
                     playerName={playerName}
                   />
                 ) : null}
-                <DisciplineAppliesToPicker
-                  selectedCodes={appliesToDisciplineCodes}
-                  onChange={setAppliesToDisciplineCodes}
-                />
               </div>
             ) : (
               <div className="space-y-4" role="tabpanel">

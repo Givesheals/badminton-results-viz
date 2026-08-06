@@ -11,11 +11,11 @@ const SHOWCASE_NOTE_SEEDS = [
   },
   {
     body: 'Attack the forehand corner early in rallies.',
-    customOpponentStyles: ['Weak forehand defence'],
+    customOpponentStyles: ['Smash at forehand'],
   },
   {
     body: 'Loves the wide serve. Stand a half-step back on receive.',
-    customOpponentStyles: ['Flat-pace specialist', 'Weak forehand defence'],
+    customOpponentStyles: ['Flat-pace specialist', 'Smash at forehand'],
   },
 ] as const
 

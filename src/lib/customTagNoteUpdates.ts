@@ -1,5 +1,9 @@
 import type { CustomTagGroup } from './customNoteTags'
-import { normalizeCustomTagLabel, normalizeCustomTagList } from './customNoteTags'
+import {
+  isScoutingTagGroup,
+  normalizeCustomTagLabel,
+  normalizeCustomTagList,
+} from './customNoteTags'
 import { normalizeNoteTags, type NoteTags } from './noteTags'
 import type { OpponentNote } from './opponentNotes'
 
@@ -14,9 +18,18 @@ function tagsMatch(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase()
 }
 
-function getCustomTags(note: OpponentNote, group: CustomTagGroup): string[] {
-  const field = CUSTOM_TAG_FIELD[group]
+function getCustomTagsForField(note: OpponentNote, field: keyof NoteTags): string[] {
   return normalizeCustomTagList(note.tags?.[field] as string[] | undefined)
+}
+
+function getCustomTags(note: OpponentNote, group: CustomTagGroup): string[] {
+  if (isScoutingTagGroup(group)) {
+    return normalizeCustomTagList([
+      ...getCustomTagsForField(note, 'customOpponentStyles'),
+      ...getCustomTagsForField(note, 'customPairStyles'),
+    ])
+  }
+  return getCustomTagsForField(note, CUSTOM_TAG_FIELD[group])
 }
 
 export function countNotesWithCustomTag(
@@ -28,13 +41,12 @@ export function countNotesWithCustomTag(
     .length
 }
 
-function updateNoteCustomTags(
+function updateNoteCustomField(
   note: OpponentNote,
-  group: CustomTagGroup,
+  field: keyof NoteTags,
   mapTags: (tags: string[]) => string[],
 ): OpponentNote | null {
-  const field = CUSTOM_TAG_FIELD[group]
-  const current = getCustomTags(note, group)
+  const current = getCustomTagsForField(note, field)
   const nextTags = normalizeCustomTagList(mapTags(current))
 
   const unchanged =
@@ -51,6 +63,27 @@ function updateNoteCustomTags(
     tags: mergedTags,
     updatedAt: new Date().toISOString(),
   }
+}
+
+function updateNoteCustomTags(
+  note: OpponentNote,
+  group: CustomTagGroup,
+  mapTags: (tags: string[]) => string[],
+): OpponentNote | null {
+  if (isScoutingTagGroup(group)) {
+    let current: OpponentNote = note
+    let changed = false
+    for (const field of ['customOpponentStyles', 'customPairStyles'] as const) {
+      const updated = updateNoteCustomField(current, field, mapTags)
+      if (updated != null) {
+        current = updated
+        changed = true
+      }
+    }
+    return changed ? current : null
+  }
+
+  return updateNoteCustomField(note, CUSTOM_TAG_FIELD[group], mapTags)
 }
 
 export function renameCustomTagOnAllNotes(

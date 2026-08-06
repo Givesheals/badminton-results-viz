@@ -50,7 +50,11 @@ export function RecapShowcaseSlide({ active }: SlideProps) {
       scrollLeaveHiddenPx={520}
     >
       <ShowcaseRecapNotesBootstrap />
-      <TournamentRecapSection allMatches={data.allMatches} initialIndex={initialIndex} />
+      <TournamentRecapSection
+        allMatches={data.allMatches}
+        initialIndex={initialIndex}
+        showBuildStagePicker={false}
+      />
     </PremiumScrollViewport>
   )
 }

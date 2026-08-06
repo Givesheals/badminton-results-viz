@@ -11,6 +11,9 @@ import { RecapSummaryCard } from './RecapSummaryCard'
 
 type Props = {
   recap: DisciplineRecap
+  showDisciplineCallouts?: boolean
+  showMatchHighlights?: boolean
+  showNotes?: boolean
 }
 
 function formatRatingDelta(delta: number): string {
@@ -77,8 +80,14 @@ function DisciplineRecapHeader({ recap }: Props) {
   )
 }
 
-export function DisciplineRecapBlock({ recap }: Props) {
+export function DisciplineRecapBlock({
+  recap,
+  showDisciplineCallouts = true,
+  showMatchHighlights = true,
+  showNotes = true,
+}: Props) {
   const style = getDisciplineStyle(recap.discipline)
+  const callouts = showDisciplineCallouts ? recap.eventCallouts : []
 
   return (
     <article
@@ -86,9 +95,9 @@ export function DisciplineRecapBlock({ recap }: Props) {
     >
       <DisciplineRecapHeader recap={recap} />
 
-      {recap.eventCallouts.length > 0 && (
+      {callouts.length > 0 && (
         <div className="mt-3 space-y-2 border-t border-ink-100/80 pt-3">
-          {recap.eventCallouts.map((callout) => (
+          {callouts.map((callout) => (
             <RecapSummaryCard key={callout.id} card={callout} />
           ))}
         </div>
@@ -97,11 +106,16 @@ export function DisciplineRecapBlock({ recap }: Props) {
       {recap.matches.length > 0 && (
         <ol
           className={`border-t border-ink-200/70 pt-2 ${
-            recap.eventCallouts.length > 0 ? 'mt-3' : 'mt-3 border-ink-100/80'
+            callouts.length > 0 ? 'mt-3' : 'mt-3 border-ink-100/80'
           }`}
         >
           {recap.matches.map((match) => (
-            <DisciplineMatchRow key={match.matchKey} match={match} />
+            <DisciplineMatchRow
+              key={match.matchKey}
+              match={match}
+              showMatchHighlights={showMatchHighlights}
+              showNotes={showNotes}
+            />
           ))}
         </ol>
       )}

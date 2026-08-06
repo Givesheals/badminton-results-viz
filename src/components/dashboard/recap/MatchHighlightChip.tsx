@@ -11,16 +11,27 @@ const BACKDROP_CLASS = 'fixed inset-0 z-40 bg-ink-900/30'
 const PANEL_CLASS =
   'card-frame fixed z-50 rounded-2xl bg-white p-4 text-sm leading-relaxed text-ink-800 shadow-xl ring-2 ring-brand-200 outline-none'
 
+/** Equal-size icon pills so highlight strip stays tidy on narrow screens. */
+const CHIP_ICON_CLASS =
+  'inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-ink-100 px-1.5 text-sm leading-none text-ink-700'
+
+const CHIP_TEXT_CLASS =
+  'inline-flex h-7 shrink-0 items-center justify-center rounded-full bg-ink-100 px-2 text-[10px] font-medium leading-tight text-ink-700'
+
 export function MatchHighlightChip({ highlight }: Props) {
   const { open, toggle, close, triggerRef, panelRef, panelId } = useDismissiblePopover()
   const position = usePopoverPosition(open, triggerRef)
   const isInteractive = highlight.popoverText != null
-
-  const chipClass =
-    'rounded-full bg-ink-100 px-2 py-0.5 text-right text-[10px] font-medium leading-tight text-ink-700'
+  const isIconChip = highlight.chipIcon != null
+  const chipClass = isIconChip ? CHIP_ICON_CLASS : CHIP_TEXT_CLASS
+  const chipContent = isIconChip ? (
+    <span aria-hidden>{highlight.chipIcon}</span>
+  ) : (
+    highlight.label
+  )
 
   if (!isInteractive) {
-    return <span className={chipClass}>{highlight.label}</span>
+    return <span className={chipClass}>{chipContent}</span>
   }
 
   return (
@@ -34,7 +45,7 @@ export function MatchHighlightChip({ highlight }: Props) {
         aria-label={`${highlight.label}: more info`}
         onClick={toggle}
       >
-        {highlight.label}
+        {chipContent}
       </button>
       {open &&
         createPortal(

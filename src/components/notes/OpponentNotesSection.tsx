@@ -7,7 +7,6 @@ import {
   formatNoteRecordedSummary,
   formatNoteScopeInGroup,
   getMatchJournalFields,
-  getNoteScoutingAppliesToDisciplineCodes,
   getMatchJournalNotes,
   groupNotesByOpponent,
   isDirectNoteContext,
@@ -20,7 +19,6 @@ import {
 } from '../../lib/opponentNotes'
 import { recapMatchKey } from '../../lib/tournamentRecap'
 import type { NormalizedMatch } from '../../types/matchHistory'
-import { DisciplineChip } from '../discipline/DisciplineChip'
 import {
   FilePenIcon,
   OPPONENT_NOTE_ICON_BUTTON_CLASS,
@@ -56,7 +54,6 @@ function NoteEntry({
   const scope = formatNoteScopeInGroup(note, groupOpponentName, { context: 'notes-list' })
   const isPairScope = scope.kind === 'pair'
   const matchDetailsId = `note-match-${note.id}`
-  const appliesToDisciplineCodes = getNoteScoutingAppliesToDisciplineCodes(note)
   const isDirectNote = isDirectNoteContext(note.context)
   const tagLabels = formatScoutingTagsForDisplay(note.tags)
   const hasBody = note.body.trim() !== ''
@@ -86,32 +83,23 @@ function NoteEntry({
         </button>
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-500">
-        {appliesToDisciplineCodes.length > 0 && (
+        <span>{formatNoteRecordedSummary(note)}</span>
+        {!isDirectNote && (
           <>
-            <span className="flex flex-wrap items-center gap-1">
-              {appliesToDisciplineCodes.map((code) => (
-                <DisciplineChip key={code} code={code} />
-              ))}
-            </span>
             <span aria-hidden="true">·</span>
+            <button
+              type="button"
+              onClick={() => setMatchOpen((value) => !value)}
+              aria-expanded={matchOpen}
+              aria-controls={matchDetailsId}
+              className="inline-flex items-center gap-1 text-left text-xs text-ink-500 transition hover:text-ink-700"
+            >
+              <span>{matchOpen ? 'Hide match result' : 'View match result'}</span>
+              <ChevronIcon open={matchOpen} className="h-3 w-3 shrink-0 opacity-70" />
+            </button>
           </>
         )}
-        <span>{formatNoteRecordedSummary(note)}</span>
       </div>
-      {!isDirectNote && (
-        <button
-          type="button"
-          onClick={() => setMatchOpen((value) => !value)}
-          aria-expanded={matchOpen}
-          aria-controls={matchDetailsId}
-          className="mt-1 inline-flex w-full items-center gap-1 text-left text-xs text-ink-500 transition hover:text-ink-700"
-        >
-          <span className="min-w-0 flex-1">
-            {matchOpen ? 'Hide match result' : 'View match result'}
-          </span>
-          <ChevronIcon open={matchOpen} className="h-3 w-3 shrink-0 opacity-70" />
-        </button>
-      )}
       {matchOpen && !isDirectNote && (
         <div id={matchDetailsId} className="mt-1.5">
           <OpponentNoteMatchFooter context={note.context} match={match} />
@@ -183,19 +171,20 @@ function MatchJournalEntry({
           <FilePenIcon className="h-4 w-4" />
         </button>
       </div>
-      <div className="mt-1.5 text-xs text-ink-500">{formatNoteRecordedSummary(note)}</div>
-      <button
-        type="button"
-        onClick={() => setMatchOpen((value) => !value)}
-        aria-expanded={matchOpen}
-        aria-controls={matchDetailsId}
-        className="mt-1 inline-flex w-full items-center gap-1 text-left text-xs text-ink-500 transition hover:text-ink-700"
-      >
-        <span className="min-w-0 flex-1">
-          {matchOpen ? 'Hide match result' : 'View match result'}
-        </span>
-        <ChevronIcon open={matchOpen} className="h-3 w-3 shrink-0 opacity-70" />
-      </button>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-500">
+        <span>{formatNoteRecordedSummary(note)}</span>
+        <span aria-hidden="true">·</span>
+        <button
+          type="button"
+          onClick={() => setMatchOpen((value) => !value)}
+          aria-expanded={matchOpen}
+          aria-controls={matchDetailsId}
+          className="inline-flex items-center gap-1 text-left text-xs text-ink-500 transition hover:text-ink-700"
+        >
+          <span>{matchOpen ? 'Hide match result' : 'View match result'}</span>
+          <ChevronIcon open={matchOpen} className="h-3 w-3 shrink-0 opacity-70" />
+        </button>
+      </div>
       {matchOpen && (
         <div id={matchDetailsId} className="mt-1.5">
           <OpponentNoteMatchFooter context={note.context} match={match} />
@@ -369,71 +358,70 @@ export function OpponentNotesSection({ allMatches }: Props) {
               Add new note
             </button>
           </div>
-        <p className="mt-1 text-sm text-ink-600">
-          {MATCH_JOURNAL_UI_ENABLED
-            ? 'Personal notes on opponents for your next draw, plus an optional match journal for how you played.'
-            : 'Personal notes on opponents for your next draw.'}
-        </p>
-        {hasReviewableNotes && (
-          <div className="mt-3">
-            <label htmlFor="opponent-notes-search" className="sr-only">
-              Search notes
-            </label>
-            <input
-              id="opponent-notes-search"
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by opponent, competition, or note text…"
-              className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100"
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="px-4 py-4 sm:px-5">
-        {!hasReviewableNotes ? (
-          <div className="rounded-xl border border-dashed border-ink-200 bg-ink-50/50 px-4 py-8 text-center">
-            <p className="text-sm font-medium text-ink-800">No notes yet</p>
-            <p className="mt-1 text-sm text-ink-600">
-              Tap <strong>Add new note</strong> above, or open the Events tab and use the note icon
-              beside a match.
-            </p>
-          </div>
-        ) : !hasSearchResults ? (
-          <p className="text-sm text-ink-600">No notes match your search.</p>
-        ) : (
-          <div className="space-y-6">
-            {groups.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-ink-700">Opponent notes</h4>
-                <ul className="space-y-3">
-                  {groups.map((group) => (
-                    <li key={group.opponentName}>
-                      <OpponentNoteGroupSection
-                        group={group}
-                        matchByKey={matchByKey}
-                        onOpenNote={setActiveNote}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {MATCH_JOURNAL_UI_ENABLED && (
-              <MatchJournalSection
-                notes={journalNotes}
-                matchByKey={matchByKey}
-                onOpenNote={setActiveNote}
+          <p className="mt-1 text-sm text-ink-600">
+            {MATCH_JOURNAL_UI_ENABLED
+              ? 'Personal notes on opponents for your next draw, plus an optional match journal for how you played.'
+              : 'Personal notes on opponents for your next draw.'}
+          </p>
+          {hasReviewableNotes && (
+            <div className="mt-3">
+              <label htmlFor="opponent-notes-search" className="sr-only">
+                Search notes
+              </label>
+              <input
+                id="opponent-notes-search"
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search by opponent, competition, or note text…"
+                className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100"
               />
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
 
-      <div className="border-t border-ink-100 px-4 py-4 sm:px-5">
-        <YourTagsSection revision={tagLibraryRevision} />
-      </div>
+        <div className="px-4 py-4 sm:px-5">
+          {!hasReviewableNotes ? (
+            <div className="rounded-xl border border-dashed border-ink-200 bg-ink-50/50 px-4 py-8 text-center">
+              <p className="text-sm font-medium text-ink-800">No notes yet</p>
+              <p className="mt-1 text-sm text-ink-600">
+                Tap <strong>Add new note</strong> above, or open the Events tab and use the note icon
+                beside a match.
+              </p>
+            </div>
+          ) : !hasSearchResults ? (
+            <p className="text-sm text-ink-600">No notes match your search.</p>
+          ) : (
+            <div className="space-y-6">
+              {groups.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-ink-700">Opponent notes</h4>
+                  <ul className="space-y-3">
+                    {groups.map((group) => (
+                      <li key={group.opponentName}>
+                        <OpponentNoteGroupSection
+                          group={group}
+                          matchByKey={matchByKey}
+                          onOpenNote={setActiveNote}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {MATCH_JOURNAL_UI_ENABLED && (
+                <MatchJournalSection
+                  notes={journalNotes}
+                  matchByKey={matchByKey}
+                  onOpenNote={setActiveNote}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <YourTagsSection revision={tagLibraryRevision} />
 
       {activeNote != null && (
         <OpponentNoteModal
@@ -470,7 +458,6 @@ export function OpponentNotesSection({ allMatches }: Props) {
           initialTarget={{ kind: 'opponent', name: addNoteState.context.opponentNames[0]! }}
         />
       )}
-      </section>
     </div>
   )
 }

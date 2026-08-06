@@ -22,6 +22,7 @@ import {
 } from './opponentNotes'
 import { isCompetitiveMatch } from './matchExclusions'
 import { getMatchGames, getMatchVolume } from './matchScores'
+import { getOpponentTeamMembers, type TeamMember } from './matchTeams'
 import { getMatchExpectedWinProbability, getPlayerRating } from './ratings'
 import {
   bestStageFromMatches,
@@ -59,6 +60,11 @@ export type RecapSummaryCard = {
 export type DisciplineMatchHighlight = {
   id: string
   label: string
+  /**
+   * When set, the chip shows this icon instead of the label text.
+   * Label is still used for accessibility and the popover title.
+   */
+  chipIcon?: string
   /** When set, the chip opens a tap-friendly explanation popover. */
   popoverText?: string
 }
@@ -67,6 +73,8 @@ export type DisciplineMatchRecap = {
   matchKey: string
   date: string
   opponents: string
+  /** Opponent names with per-player ratings for soft rating display. */
+  opponentMembers: TeamMember[]
   partnerName: string | null
   showPartnerName: boolean
   showDate: boolean
@@ -375,11 +383,55 @@ function countPriorFinishesAtStage(
   return count
 }
 
+/** Prior joint-third podiums at category (+ optional discipline). */
+function countPriorJointThirds(
+  categoryLabel: string,
+  discipline: string | null,
+  currentWeekendKey: string,
+  allWeekends: WeekendBucket[],
+): number {
+  let count = 0
+
+  for (const weekend of allWeekends) {
+    const matches = priorWeekendDisciplineMatches(
+      weekend,
+      categoryLabel,
+      discipline,
+      currentWeekendKey,
+    )
+    if (matches.length === 0) continue
+    const bestStage = bestStageFromMatches(matches)
+    if (bestStage == null) continue
+    if (qualifiesForThirdPlace(matches, bestStage)) count += 1
+  }
+
+  return count
+}
+
 function ordinalFinish(n: number): string {
   if (n === 1) return '1st'
   if (n === 2) return '2nd'
   if (n === 3) return '3rd'
   return `${n}th`
+}
+
+/** “fourth” for small n; falls back to “11th” style for rarer counts. */
+function ordinalOccurrence(n: number): string {
+  const words = [
+    '',
+    'first',
+    'second',
+    'third',
+    'fourth',
+    'fifth',
+    'sixth',
+    'seventh',
+    'eighth',
+    'ninth',
+    'tenth',
+  ]
+  if (n >= 1 && n < words.length) return words[n]!
+  return ordinalFinish(n)
 }
 
 function weekendDisciplineMatches(
@@ -631,12 +683,19 @@ function buildCelebrations(
 
     const categoryLabel = categoryLabelForDiscipline(weekendMatches, d.discipline)
     const competitionAgeLabel = competitionAgeLabelForDiscipline(weekendMatches, d.discipline)
-    const priorMax = priorMaxStageRank(
+    const priorThirdsInDiscipline = countPriorJointThirds(
       categoryLabel,
       d.discipline,
       currentWeekendKey,
       allWeekends,
     )
+    const priorThirdsInCategory = countPriorJointThirds(
+      categoryLabel,
+      null,
+      currentWeekendKey,
+      allWeekends,
+    )
+    const thirdNumber = priorThirdsInDiscipline + 1
 
     const podium: PodiumCelebration = {
       kind: 'joint-third',
@@ -646,8 +705,12 @@ function buildCelebrations(
       competitionAgeLabel,
     }
 
-    if (priorMax < STAGE_RANK['semi-final']) {
-      podium.subtitle = `Your first ${categoryLabel} semi-final finish`
+    if (priorThirdsInCategory === 0) {
+      podium.subtitle = `Your first ${categoryLabel} third place`
+    } else if (priorThirdsInDiscipline === 0) {
+      podium.subtitle = `Your first ${categoryLabel} ${d.discipline} third place`
+    } else {
+      podium.subtitle = `This is your ${ordinalOccurrence(thirdNumber)} time coming third in ${d.discipline} at a ${categoryLabel}`
     }
 
     jointThirds.push(podium)
@@ -1016,11 +1079,12 @@ function buildDisciplineTimeline(
   const bestWin = findBestWinInMatches(disciplineMatches)
 
   if (d.progressionVsTypical === 'above' && d.bestStageLabel) {
+    const categoryLabel = categoryLabelForDiscipline(weekendMatches, d.discipline)
     eventCallouts.push({
       id: 'great-run',
       icon: '🏃',
       label: 'Great run',
-      detail: `Reached ${d.bestStageLabel} — further than you typically get in this event`,
+      detail: `Reached ${d.bestStageLabel} — further than you typically get in ${d.discipline} at ${categoryLabel}`,
     })
   }
 
@@ -1030,7 +1094,7 @@ function buildDisciplineTimeline(
     eventCallouts.push({
       id: `partner-chemistry-${highlight.partnerName}`,
       icon: '🤝',
-      label: `Even better with ${highlight.partnerName}`,
+      label: `Your chemistry with ${highlight.partnerName} increased`,
       detail: partnerChemistryDetailShort(
         highlight.weekendOverperformance,
         highlight.overallOverperformance,
@@ -1052,6 +1116,7 @@ function buildDisciplineTimeline(
     addHighlight(recapMatchKey(bestWin.match), {
       id: 'your-strongest-beaten',
       label: 'Your strongest beaten',
+      chipIcon: '💪',
       popoverText: strongestBeatenPopoverText(
         bestWin,
         d.disciplineLabel,
@@ -1065,6 +1130,7 @@ function buildDisciplineTimeline(
     addHighlight(key, {
       id: `big-upset-${key}`,
       label: 'Big upset!',
+      chipIcon: '😮',
       popoverText: bigUpsetExplanation(upset),
     })
   }
@@ -1075,6 +1141,7 @@ function buildDisciplineTimeline(
         matchKey: key,
         date: match.date,
         opponents: match.opponents,
+        opponentMembers: getOpponentTeamMembers(match),
         partnerName: match.partnerName,
         showPartnerName: match.partnerName != null && sharedPartner == null,
         showDate: showMatchDates,
@@ -1288,6 +1355,8 @@ function detectFreakFlags(matches: NormalizedMatch[]): FreakFlag[] {
         id: `nailbiter-${match.discipline}-${match.date}`,
         kind: 'nailbiter',
         label: 'Nailbiter!',
+        summary:
+          'This match went the full three ends — and every end was decided by two points or fewer.',
         match: freakFlagMatchDetail(match),
       })
       break
@@ -1300,6 +1369,8 @@ function detectFreakFlags(matches: NormalizedMatch[]): FreakFlag[] {
         id: `single-digit-${match.discipline}-${match.date}`,
         kind: 'single_digit_scare',
         label: 'Single-digit scare',
+        summary:
+          'You lost an end into single figures — then still came back to win the match.',
         match: freakFlagMatchDetailForSingleDigit(match),
       })
       break
@@ -1317,6 +1388,7 @@ function detectFreakFlags(matches: NormalizedMatch[]): FreakFlag[] {
       id: 'money-worth',
       kind: 'money_worth',
       label: "Getting your money's worth!",
+      summary: 'All of your games went to three ends.',
       matches: threeGameMatches.map(freakFlagMatchDetail),
     })
   }
@@ -1411,7 +1483,7 @@ function buildDisciplineRecaps(
       if (canProgress) {
         bestStage = bestStageFromMatches(disciplineMatches)
         if (bestStage != null) {
-          bestStageLabel = PROGRESSION_STAGE_LABELS[bestStage]
+          bestStageLabel = recapBestStageLabel(bestStage)
           const rank = STAGE_RANK[bestStage]
           progressionVsTypical = compareToTypical(rank, otherStageRanks)
         }
@@ -1537,15 +1609,22 @@ function buildPartnerChemistryHighlights(
   )
 }
 
+/** Stage label for recap discipline headers (result-focused wording). */
+function recapBestStageLabel(stage: ProgressionStage): string {
+  if (stage === 'runner-up') return 'Runner-up'
+  return PROGRESSION_STAGE_LABELS[stage]
+}
+
 function buildEventSummaries(
   weekendMatches: NormalizedMatch[],
   overallWinPercent: number | null,
 ): RecapSummaryCard[] {
   const summaries: RecapSummaryCard[] = []
   const competitive = weekendMatches.filter(isCompetitiveMatch)
+  const wins = competitive.filter((m) => m.outcome === 'win').length
+  const losses = competitive.filter((m) => m.outcome === 'loss').length
 
   if (overallWinPercent != null && competitive.length > 0) {
-    const wins = competitive.filter((m) => m.outcome === 'win').length
     const weekendWinPercent = roundPercent((wins / competitive.length) * 100)
     if (weekendWinPercent > overallWinPercent) {
       summaries.push({
@@ -1557,12 +1636,22 @@ function buildEventSummaries(
     }
   }
 
+  if (wins === 0 && losses > 0) {
+    summaries.push({
+      id: 'tough-luck',
+      icon: '🌧️',
+      label: 'Tough luck',
+      detail:
+        'Competing when it hurts is how you improve. Keep training and come back stronger.',
+    })
+  }
+
   if (competitive.length >= BUSY_TOURNAMENT_MIN_MATCHES) {
     summaries.push({
       id: 'busy-weekend',
       icon: '🥵',
       label: "You've been busy!",
-      detail: `${competitive.length} competitive matches at this event`,
+      detail: `${competitive.length} competitive matches at this event. That's a lot!`,
     })
   }
 

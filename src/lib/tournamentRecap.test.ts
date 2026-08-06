@@ -199,6 +199,52 @@ describe('computeTournamentRecaps', () => {
     const nailbiter = flags.find((f) => f.kind === 'nailbiter')!
     expect(nailbiter.match?.scoreSummary).toContain('22')
     expect(nailbiter.match?.opponents).toBeTruthy()
+    expect(nailbiter.summary).toBe(
+      'This match went the full three ends — and every end was decided by two points or fewer.',
+    )
+  })
+
+  it('uses the same nailbiter flavour on wins and losses', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Heartbreak',
+        date: '2026-02-01',
+        discipline: 'WS',
+        outcome: 'loss',
+        scoreSummary: '21-19, 19-21, 20-22',
+        raw: {
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 19,
+          'Player Game 2 Score': 19,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': 20,
+          'Opponent Game 3 Score': 22,
+        },
+      }),
+    ]
+
+    const nailbiter = computeTournamentRecaps(matches).recaps[0]!.freakFlags.find(
+      (f) => f.kind === 'nailbiter',
+    )!
+    expect(nailbiter.summary).toBe(
+      'This match went the full three ends — and every end was decided by two points or fewer.',
+    )
+  })
+
+  it('surfaces tough luck when the event has no wins', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Rough',
+        date: '2026-03-01',
+        discipline: 'WS',
+        outcome: 'loss',
+      }),
+    ]
+
+    const summaries = computeTournamentRecaps(matches).recaps[0]!.eventSummaries
+    expect(summaries.some((c) => c.id === 'tough-luck' && c.label === 'Tough luck')).toBe(
+      true,
+    )
   })
 
   it('detects single-digit scare on a win', () => {
@@ -221,7 +267,9 @@ describe('computeTournamentRecaps', () => {
 
     const flags = computeTournamentRecaps(matches).recaps[0]!.freakFlags
     const scare = flags.find((f) => f.kind === 'single_digit_scare')!
-    expect(scare.summary).toBeUndefined()
+    expect(scare.summary).toBe(
+      'You lost an end into single figures — then still came back to win the match.',
+    )
     const lostGame = scare.match?.games?.find((g) => g.highlight === 'lost_single_digit')
     expect(lostGame).toEqual({ player: 8, opponent: 21, highlight: 'lost_single_digit' })
   })
@@ -262,7 +310,7 @@ describe('computeTournamentRecaps', () => {
       busy.eventSummaries.some((c) => c.label === "You've been busy!"),
     ).toBe(true)
     expect(busy.eventSummaries.find((c) => c.id === 'busy-weekend')?.detail).toBe(
-      '7 competitive matches at this event',
+      "7 competitive matches at this event. That's a lot!",
     )
   })
 
@@ -426,6 +474,9 @@ describe('computeTournamentRecaps', () => {
 
     const recap = computeTournamentRecaps(matches).recaps[0]!
     expect(recap.freakFlags.some((f) => f.kind === 'money_worth')).toBe(true)
+    expect(
+      recap.freakFlags.find((f) => f.kind === 'money_worth')?.summary,
+    ).toBe('All of your games went to three ends.')
     expect(recap.emojiInsights.some((i) => i.title.includes("money's worth"))).toBe(
       false,
     )
@@ -563,7 +614,9 @@ describe('computeTournamentRecaps', () => {
 
     const wd = recap.disciplines.find((d) => d.discipline === 'WD')!
     expect(
-      wd.eventCallouts.some((c) => c.label === 'Even better with Sam'),
+      wd.eventCallouts.some(
+        (c) => c.label === 'Your chemistry with Sam increased',
+      ),
     ).toBe(true)
     expect(recap.emojiInsights.some((i) => i.kind === 'partner_chemistry')).toBe(
       false,
@@ -674,6 +727,9 @@ describe('computeTournamentRecaps', () => {
     expect(recap.celebrations.winners[0]!.discipline).toBe('XD')
     expect(recap.celebrations.runnerUps).toHaveLength(1)
     expect(recap.celebrations.runnerUps[0]!.discipline).toBe('WD')
+
+    const wd = recap.disciplines.find((d) => d.discipline === 'WD')!
+    expect(wd.bestStageLabel).toBe('Runner-up')
   })
 
   it('celebrates joint third on semi-final loss', () => {
@@ -763,8 +819,65 @@ describe('computeTournamentRecaps', () => {
     ]).recaps.find((r) => r.competitionName === 'Again')!.celebrations
 
     expect(celebrations.jointThirds).toHaveLength(1)
+    expect(celebrations.jointThirds[0]!.subtitle).toBe(
+      'This is your second time coming third in WS at a Bronze',
+    )
     expect(celebrations.milestones.some((m) => m.variant === 'matched_best')).toBe(
       false,
+    )
+  })
+
+  it('counts prior joint thirds for nth-time subtitle', () => {
+    const semiExit = (comp: string, date: string) => [
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'OD',
+        disciplineLabel: 'Open doubles',
+        partnerName: 'Sam',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'win',
+        raw: {
+          Round: 'Quarter-final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 15,
+          'Player Game 2 Score': 21,
+          'Opponent Game 2 Score': 12,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'OD',
+        disciplineLabel: 'Open doubles',
+        partnerName: 'Sam',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'loss',
+        raw: {
+          Round: 'Semi-final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 19,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 18,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+    ]
+
+    const celebrations = computeTournamentRecaps([
+      ...semiExit('One', '2023-01-01'),
+      ...semiExit('Two', '2024-01-01'),
+      ...semiExit('Three', '2025-01-01'),
+      ...semiExit('Four', '2026-06-01'),
+    ]).recaps.find((r) => r.competitionName === 'Four')!.celebrations
+
+    expect(celebrations.jointThirds[0]!.subtitle).toBe(
+      'This is your fourth time coming third in OD at a Bronze',
     )
   })
 
@@ -1477,7 +1590,7 @@ describe('computeTournamentRecaps', () => {
     expect(celebrations.jointThirds).toHaveLength(1)
     expect(celebrations.jointThirds[0]!.discipline).toBe('XD')
     expect(celebrations.jointThirds[0]!.subtitle).toBe(
-      'Your first Bronze semi-final finish',
+      'Your first Bronze third place',
     )
     expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
       false,
@@ -1875,6 +1988,7 @@ describe('computeTournamentRecaps', () => {
 
     const match = ws.matches[0]!
     expect(match.highlights.map((h) => h.label)).toEqual(['Big upset!'])
+    expect(match.highlights.find((h) => h.label === 'Big upset!')?.chipIcon).toBe('😮')
     expect(match.highlights.find((h) => h.label === 'Big upset!')?.popoverText).toMatch(
       /110 points higher/,
     )
@@ -1978,6 +2092,9 @@ describe('computeTournamentRecaps', () => {
       m.highlights.some((h) => h.id === 'your-strongest-beaten'),
     )
     expect(highlighted?.opponents).toBe('Stronger')
+    const strength = highlighted?.highlights.find((h) => h.id === 'your-strongest-beaten')
+    expect(strength?.chipIcon).toBe('💪')
+    expect(strength?.label).toBe('Your strongest beaten')
   })
 
   it('computes strongest-beaten highlights separately for each discipline', () => {

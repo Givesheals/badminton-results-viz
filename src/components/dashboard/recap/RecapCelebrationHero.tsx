@@ -6,12 +6,17 @@ import type {
   SeniorCountyDebutCelebration,
   StageReachCelebration,
 } from '../../../lib/tournamentRecap'
+import {
+  fullTournamentRecapBuildFeatures,
+  type TournamentRecapBuildFeatures,
+} from '../../../lib/tournamentRecapBuildStage'
 import { getDisciplineStyle } from '../../../lib/disciplineStyle'
 import { DisciplineChip } from '../../discipline/DisciplineChip'
 import { TournamentCategoryChip } from '../../tournament/TournamentCategoryChip'
 
 type Props = {
   celebrations: RecapCelebrations
+  features?: TournamentRecapBuildFeatures
 }
 
 const CONFETTI_COLORS = [
@@ -337,51 +342,71 @@ function MilestoneCard({ milestone }: { milestone: MilestoneCelebration }) {
   )
 }
 
-export function RecapCelebrationHero({ celebrations }: Props) {
+export function RecapCelebrationHero({
+  celebrations,
+  features = fullTournamentRecapBuildFeatures(),
+}: Props) {
   const { winners, runnerUps, jointThirds, stageReaches, milestones, seniorCountyDebut } =
     celebrations
-  const personalBests = milestones.filter((m) => m.variant === 'personal_best')
-  const otherMilestones = milestones.filter((m) => m.variant !== 'personal_best')
+
+  const podiumWinners = features.showPodium ? winners : []
+  const podiumRunnerUps = features.showPodium ? runnerUps : []
+  const podiumThirds = features.showPodium ? jointThirds : []
+  const visibleStageReaches = features.showStageReaches ? stageReaches : []
+  const personalBests = features.showPersonalBests
+    ? milestones.filter((m) => m.variant === 'personal_best')
+    : []
+  const matchedBests = features.showPersonalBests
+    ? milestones.filter((m) => m.variant === 'matched_best')
+    : []
+  const debutMilestones = features.showDebutMilestones
+    ? milestones.filter((m) => m.variant === 'debut')
+    : []
+  const visibleSeniorCounty =
+    features.showSeniorCountyDebut ? seniorCountyDebut : null
+
   const hasContent =
-    winners.length > 0 ||
-    runnerUps.length > 0 ||
-    jointThirds.length > 0 ||
-    stageReaches.length > 0 ||
-    milestones.length > 0 ||
-    seniorCountyDebut != null
+    podiumWinners.length > 0 ||
+    podiumRunnerUps.length > 0 ||
+    podiumThirds.length > 0 ||
+    visibleStageReaches.length > 0 ||
+    personalBests.length > 0 ||
+    matchedBests.length > 0 ||
+    debutMilestones.length > 0 ||
+    visibleSeniorCounty != null
 
   if (!hasContent) return null
 
   return (
     <div className="space-y-4">
-      {seniorCountyDebut && <SeniorCountyDebutCard debut={seniorCountyDebut} />}
-      {winners.length > 0 && (
-        <div className={podiumGridClass(winners.length)}>
-          {winners.map((podium) => (
+      {visibleSeniorCounty && <SeniorCountyDebutCard debut={visibleSeniorCounty} />}
+      {podiumWinners.length > 0 && (
+        <div className={podiumGridClass(podiumWinners.length)}>
+          {podiumWinners.map((podium) => (
             <WinnerCard key={podium.discipline} podium={podium} />
           ))}
         </div>
       )}
 
-      {runnerUps.length > 0 && (
-        <div className={podiumGridClass(runnerUps.length)}>
-          {runnerUps.map((podium) => (
+      {podiumRunnerUps.length > 0 && (
+        <div className={podiumGridClass(podiumRunnerUps.length)}>
+          {podiumRunnerUps.map((podium) => (
             <RunnerUpCard key={podium.discipline} podium={podium} />
           ))}
         </div>
       )}
 
-      {jointThirds.length > 0 && (
-        <div className={podiumGridClass(jointThirds.length)}>
-          {jointThirds.map((podium) => (
+      {podiumThirds.length > 0 && (
+        <div className={podiumGridClass(podiumThirds.length)}>
+          {podiumThirds.map((podium) => (
             <ThirdPlaceCard key={podium.discipline} podium={podium} />
           ))}
         </div>
       )}
 
-      {stageReaches.length > 0 && (
-        <div className={podiumGridClass(stageReaches.length)}>
-          {stageReaches.map((reach) => (
+      {visibleStageReaches.length > 0 && (
+        <div className={podiumGridClass(visibleStageReaches.length)}>
+          {visibleStageReaches.map((reach) => (
             <StageReachCard
               key={`${reach.tournamentCategoryLabel}-${reach.discipline}-${reach.stage}`}
               reach={reach}
@@ -398,9 +423,12 @@ export function RecapCelebrationHero({ celebrations }: Props) {
         </div>
       )}
 
-      {otherMilestones.length > 0 && (
+      {(matchedBests.length > 0 || debutMilestones.length > 0) && (
         <div className="grid gap-2 sm:grid-cols-2">
-          {otherMilestones.map((milestone) => (
+          {matchedBests.map((milestone) => (
+            <MilestoneCard key={milestone.id} milestone={milestone} />
+          ))}
+          {debutMilestones.map((milestone) => (
             <MilestoneCard key={milestone.id} milestone={milestone} />
           ))}
         </div>

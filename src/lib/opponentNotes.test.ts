@@ -352,8 +352,7 @@ describe('opponentNotes', () => {
     expect(martinGroup?.notes).toHaveLength(1)
     expect(formatNoteScopeInGroup(pairNote, 'Scott Carter')).toEqual({
       kind: 'pair',
-      primary: 'Pair note — not about Scott Carter alone',
-      secondary: 'About how they played together · Scott Carter & Martin Crossley',
+      primary: 'About the pair — not this player alone',
     })
     expect(formatNoteScopeInGroup(scottOnly, 'Scott Carter')).toEqual({
       kind: 'opponent',
@@ -377,7 +376,7 @@ describe('opponentNotes', () => {
       }),
     ).toEqual({
       kind: 'pair',
-      primary: 'Pair note — about how they played together',
+      primary: 'About the pair — not this player alone',
       secondary: 'Recorded as Dan Martyres & Jane Smith. Different partner in this draw.',
     })
   })

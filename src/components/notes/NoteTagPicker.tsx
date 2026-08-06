@@ -383,7 +383,7 @@ export function OpponentStyleNoteSection({
       textareaId="opponent-note-body"
       body={body}
       onBodyChange={onBodyChange}
-      placeholder="Weak backhand, slow to the net, favourite serve wide…"
+      placeholder="Strong at net, flicks a lot, punish deep backhand…"
       rows={4}
       builtInOptions={OPPONENT_STYLE_OPTIONS}
       selectedBuiltIn={selected}
@@ -420,14 +420,14 @@ export function PairStyleNoteSection({
       textareaId="opponent-note-body"
       body={body}
       onBodyChange={onBodyChange}
-      placeholder="Weak backhand, slow to the net, favourite serve wide…"
+      placeholder="Strong at net, flicks a lot, punish deep backhand…"
       rows={4}
       builtInOptions={PAIR_STYLE_OPTIONS}
       selectedBuiltIn={selected}
       onSelectedBuiltInChange={onSelectedChange}
       selectedCustom={selectedCustom}
       onSelectedCustomChange={onSelectedCustomChange}
-      customTagGroup="pairStyles"
+      customTagGroup="opponentStyles"
       playerName={playerName}
       diyLibrary
     />

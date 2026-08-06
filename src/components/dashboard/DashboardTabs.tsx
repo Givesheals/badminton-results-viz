@@ -107,13 +107,10 @@ export function DashboardTabs({ importedAt, panels }: Props) {
     selectTab(initialTab)
     clearScrollTarget()
     clearMilestoneTarget()
+    // Keep section scroll suppressed until after mount so deep-link targets
+    // don't jump the page when data first loads.
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document
-          .getElementById('dashboard-results-header')
-          ?.scrollIntoView({ behavior: 'auto', block: 'start' })
-        suppressSectionScrollRef.current = false
-      })
+      suppressSectionScrollRef.current = false
     })
   }, [clearMilestoneTarget, clearScrollTarget, importedAt, selectTab])
 

@@ -1,12 +1,20 @@
 export type CustomTagGroup = 'opponentStyles' | 'pairStyles' | 'selfFeel' | 'gameEvents'
 
+/** Canonical library group for scouting (opponent + pair use the same chip list). */
+export const SCOUTING_TAG_LIBRARY_GROUP: CustomTagGroup = 'opponentStyles'
+
+export function isScoutingTagGroup(group: CustomTagGroup): boolean {
+  return group === 'opponentStyles' || group === 'pairStyles'
+}
+
 export const CUSTOM_TAG_MAX_PER_GROUP = 6
 export const CUSTOM_TAG_MAX_LENGTH = 24
 
-/** Seed chips for scouting (About them). Seeded once per player; stay until deleted. */
+/** Seed chips for scouting (About them). Missing starters are filled in for every player. */
 export const SCOUTING_STARTER_CHIPS = [
   'Flat-pace specialist',
-  'Weak forehand defence',
+  'Smash at forehand',
+  'Lefty',
 ] as const
 
 const STORAGE_PREFIX = 'badminton-custom-note-tags:'
@@ -19,8 +27,6 @@ const EMPTY_REMEMBERED: Record<CustomTagGroup, string[]> = {
   gameEvents: [],
 }
 
-const SCOUTING_LIBRARY_GROUPS: CustomTagGroup[] = ['opponentStyles', 'pairStyles']
-
 export function rememberedCustomTagsStorageKey(playerName: string): string {
   return `${STORAGE_PREFIX}${playerName.trim().toLowerCase()}`
 }
@@ -29,8 +35,19 @@ export function scoutingChipsSeededStorageKey(playerName: string): string {
   return `${SCOUTING_SEED_FLAG_PREFIX}${playerName.trim().toLowerCase()}`
 }
 
+const LEGACY_STARTER_RENAMES: Record<string, string> = {
+  'weak forehand defence': 'Smash at forehand',
+}
+
+function renameLegacyStarters(existing: string[]): string[] {
+  return existing.map((tag) => {
+    const renamed = LEGACY_STARTER_RENAMES[tag.toLowerCase()]
+    return renamed ?? tag
+  })
+}
+
 function mergeScoutingStarters(existing: string[]): string[] {
-  const merged = [...existing]
+  const merged = renameLegacyStarters(existing)
   for (const starter of SCOUTING_STARTER_CHIPS) {
     if (merged.some((tag) => tag.toLowerCase() === starter.toLowerCase())) continue
     if (merged.length >= CUSTOM_TAG_MAX_PER_GROUP) break
@@ -39,34 +56,45 @@ function mergeScoutingStarters(existing: string[]): string[] {
   return merged
 }
 
+function withUnifiedScoutingLibrary(
+  tags: Record<CustomTagGroup, string[]>,
+  scoutingTags: string[],
+): Record<CustomTagGroup, string[]> {
+  return {
+    ...tags,
+    opponentStyles: scoutingTags,
+    pairStyles: scoutingTags,
+  }
+}
+
 /**
- * Ensures opponent/pair scouting chip libraries include the starter chips once per player.
- * If the user later deletes every chip, starters are not re-added.
- * With no player name (e.g. premium demo), returns starters in memory only.
+ * Ensures the shared scouting chip library includes any missing starters.
+ * Opponent and pair always share the same list (pairStyles is kept in sync for storage).
  */
 export function ensureScoutingChipLibrary(
   playerName: string | null,
 ): Record<CustomTagGroup, string[]> {
   if (playerName == null || typeof window === 'undefined') {
-    return {
-      ...EMPTY_REMEMBERED,
-      opponentStyles: [...SCOUTING_STARTER_CHIPS],
-      pairStyles: [...SCOUTING_STARTER_CHIPS],
-    }
+    const starters = [...SCOUTING_STARTER_CHIPS]
+    return withUnifiedScoutingLibrary(EMPTY_REMEMBERED, starters)
   }
 
   const current = loadRememberedCustomTags(playerName)
-  const seededKey = scoutingChipsSeededStorageKey(playerName)
-  if (window.localStorage.getItem(seededKey) === '1') {
-    return current
-  }
+  const unified = mergeScoutingStarters(
+    dedupeTags([...current.opponentStyles, ...current.pairStyles]),
+  ).slice(0, CUSTOM_TAG_MAX_PER_GROUP)
 
-  const next = { ...current }
-  for (const group of SCOUTING_LIBRARY_GROUPS) {
-    next[group] = mergeScoutingStarters(current[group])
+  const next = withUnifiedScoutingLibrary(current, unified)
+  const changed =
+    unified.length !== current.opponentStyles.length ||
+    unified.length !== current.pairStyles.length ||
+    unified.some((tag, index) => tag !== current.opponentStyles[index]) ||
+    unified.some((tag, index) => tag !== current.pairStyles[index])
+
+  if (changed) {
+    saveRememberedCustomTags(playerName, next)
   }
-  saveRememberedCustomTags(playerName, next)
-  window.localStorage.setItem(seededKey, '1')
+  window.localStorage.setItem(scoutingChipsSeededStorageKey(playerName), '1')
   return next
 }
 
@@ -95,9 +123,14 @@ export function parseRememberedCustomTags(raw: string | null): Record<CustomTagG
   if (raw == null || raw.trim() === '') return { ...EMPTY_REMEMBERED }
   try {
     const parsed = JSON.parse(raw) as Partial<Record<CustomTagGroup, string[]>>
+    // Prefer opponentStyles when both exist; merge for any divergent legacy stores.
+    const scouting = dedupeTags([
+      ...(parsed.opponentStyles ?? []),
+      ...(parsed.pairStyles ?? []),
+    ]).slice(0, CUSTOM_TAG_MAX_PER_GROUP)
     return {
-      opponentStyles: dedupeTags(parsed.opponentStyles ?? []).slice(0, CUSTOM_TAG_MAX_PER_GROUP),
-      pairStyles: dedupeTags(parsed.pairStyles ?? []).slice(0, CUSTOM_TAG_MAX_PER_GROUP),
+      opponentStyles: scouting,
+      pairStyles: scouting,
       selfFeel: dedupeTags(parsed.selfFeel ?? []).slice(0, CUSTOM_TAG_MAX_PER_GROUP),
       gameEvents: dedupeTags(parsed.gameEvents ?? []).slice(0, CUSTOM_TAG_MAX_PER_GROUP),
     }
@@ -131,16 +164,19 @@ export function rememberCustomTag(
   if (label == null || playerName == null || typeof window === 'undefined') return null
 
   const current = loadRememberedCustomTags(playerName)
-  const existing = current[group]
+  const existing = isScoutingTagGroup(group) ? current.opponentStyles : current[group]
   const key = label.toLowerCase()
   if (existing.some((tag) => tag.toLowerCase() === key)) {
     return existing
   }
   if (existing.length >= CUSTOM_TAG_MAX_PER_GROUP) return null
 
-  const next = { ...current, [group]: [...existing, label] }
+  const nextGroup = [...existing, label]
+  const next = isScoutingTagGroup(group)
+    ? withUnifiedScoutingLibrary(current, nextGroup)
+    : { ...current, [group]: nextGroup }
   saveRememberedCustomTags(playerName, next)
-  return next[group]
+  return nextGroup
 }
 
 export function normalizeCustomTagList(values?: string[]): string[] {
@@ -168,10 +204,13 @@ export function removeRememberedCustomTag(
   if (playerName == null || typeof window === 'undefined') return null
 
   const current = loadRememberedCustomTags(playerName)
-  const nextGroup = current[group].filter((tag) => tag.toLowerCase() !== label.toLowerCase())
-  if (nextGroup.length === current[group].length) return current[group]
+  const existing = isScoutingTagGroup(group) ? current.opponentStyles : current[group]
+  const nextGroup = existing.filter((tag) => tag.toLowerCase() !== label.toLowerCase())
+  if (nextGroup.length === existing.length) return existing
 
-  const next = { ...current, [group]: nextGroup }
+  const next = isScoutingTagGroup(group)
+    ? withUnifiedScoutingLibrary(current, nextGroup)
+    : { ...current, [group]: nextGroup }
   saveRememberedCustomTags(playerName, next)
   return nextGroup
 }
@@ -187,20 +226,21 @@ export function renameRememberedCustomTag(
   if (normalizedNew == null || playerName == null || typeof window === 'undefined') return null
 
   const current = loadRememberedCustomTags(playerName)
+  const existing = isScoutingTagGroup(group) ? current.opponentStyles : current[group]
   const oldKey = oldLabel.toLowerCase()
   const newKey = normalizedNew.toLowerCase()
 
-  if (!current[group].some((tag) => tag.toLowerCase() === oldKey)) return null
-  if (
-    current[group].some((tag) => tag.toLowerCase() === newKey && tag.toLowerCase() !== oldKey)
-  ) {
+  if (!existing.some((tag) => tag.toLowerCase() === oldKey)) return null
+  if (existing.some((tag) => tag.toLowerCase() === newKey && tag.toLowerCase() !== oldKey)) {
     return null
   }
 
-  const nextGroup = current[group].map((tag) =>
-    tag.toLowerCase() === oldKey ? normalizedNew : tag,
+  const nextGroup = dedupeTags(
+    existing.map((tag) => (tag.toLowerCase() === oldKey ? normalizedNew : tag)),
   )
-  const next = { ...current, [group]: dedupeTags(nextGroup) }
+  const next = isScoutingTagGroup(group)
+    ? withUnifiedScoutingLibrary(current, nextGroup)
+    : { ...current, [group]: nextGroup }
   saveRememberedCustomTags(playerName, next)
-  return next[group]
+  return nextGroup
 }

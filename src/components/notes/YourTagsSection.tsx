@@ -9,19 +9,20 @@ import {
   normalizeCustomTagLabel,
   rememberCustomTag,
   removeRememberedCustomTag,
+  SCOUTING_TAG_LIBRARY_GROUP,
   type CustomTagGroup,
 } from '../../lib/customNoteTags'
 import { MATCH_JOURNAL_UI_ENABLED } from '../../lib/opponentNotes'
 
 type TagLibraryGroup = {
   group: CustomTagGroup
-  title: string
+  title: string | null
 }
 
-const SCOUTING_GROUPS: TagLibraryGroup[] = [
-  { group: 'opponentStyles', title: 'Opponent' },
-  { group: 'pairStyles', title: 'The pair' },
-]
+const SCOUTING_GROUP: TagLibraryGroup = {
+  group: SCOUTING_TAG_LIBRARY_GROUP,
+  title: null,
+}
 
 const JOURNAL_GROUPS: TagLibraryGroup[] = [
   { group: 'selfFeel', title: 'How I played' },
@@ -46,7 +47,7 @@ function TagLibraryBlock({
   revision,
 }: {
   group: CustomTagGroup
-  title: string
+  title: string | null
   playerName: string | null
   revision: number
 }) {
@@ -109,7 +110,7 @@ function TagLibraryBlock({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-ink-600">{title}</p>
+      {title != null && <p className="text-xs font-medium text-ink-600">{title}</p>}
 
       {tags.length === 0 ? (
         <p className="text-xs text-ink-500">No tags yet. Add one below.</p>
@@ -178,7 +179,7 @@ function TagLibraryBlock({
 
       <form onSubmit={handleAdd} className="flex items-center gap-1.5">
         <label htmlFor={addInputId} className="sr-only">
-          Add a tag to {title}
+          Add a tag{title != null ? ` to ${title}` : ''}
         </label>
         <input
           id={addInputId}
@@ -214,25 +215,27 @@ type Props = {
 export function YourTagsSection({ revision = 0 }: Props) {
   const { playerName } = useOpponentNotesContext()
   const groups = MATCH_JOURNAL_UI_ENABLED
-    ? [...SCOUTING_GROUPS, ...JOURNAL_GROUPS]
-    : SCOUTING_GROUPS
+    ? [SCOUTING_GROUP, ...JOURNAL_GROUPS]
+    : [SCOUTING_GROUP]
 
   return (
-    <section>
-      <h4 className="text-sm font-semibold text-ink-900">Your tags</h4>
-      <p className="mt-1 text-xs text-ink-500">
-        Quick-add labels for notes. Remove here anytime — renaming comes later.
-      </p>
-      <div className="mt-4 space-y-5">
-        {groups.map(({ group, title }) => (
-          <TagLibraryBlock
-            key={group}
-            group={group}
-            title={title}
-            playerName={playerName}
-            revision={revision}
-          />
-        ))}
+    <section className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
+      <div className="px-4 py-4 sm:px-5">
+        <h4 className="text-sm font-semibold text-ink-900">Your tags</h4>
+        <p className="mt-1 text-xs text-ink-500">
+          Labels you can tap when writing notes. Remove anytime.
+        </p>
+        <div className="mt-4 space-y-5">
+          {groups.map(({ group, title }) => (
+            <TagLibraryBlock
+              key={group}
+              group={group}
+              title={title}
+              playerName={playerName}
+              revision={revision}
+            />
+          ))}
+        </div>
       </div>
     </section>
   )
