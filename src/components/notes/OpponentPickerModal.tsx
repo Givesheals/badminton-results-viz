@@ -128,11 +128,6 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
           </p>
         ) : (
           <div className="max-h-72 space-y-2 overflow-y-auto">
-            {trimmedQuery.length < 2 && (
-              <p className="text-xs text-ink-500">
-                Your most recent opponents are shown below. Search above to find anyone else.
-              </p>
-            )}
             <ul className="overflow-hidden rounded-lg border border-ink-100">
               {players.map((player) => (
                 <li key={player.id} className="border-b border-ink-100 last:border-b-0">
