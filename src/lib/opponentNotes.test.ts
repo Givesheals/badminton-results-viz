@@ -443,16 +443,22 @@ describe('opponentNotes', () => {
     expect(defaultAppliesToDisciplineFamilies(context)).toEqual(['singles', 'doubles', 'mixed'])
   })
 
-  it('collects unique opponent names from match history', () => {
+  it('collects unique opponent names most recently played first', () => {
     const matches = [
       {
+        date: '2024-01-10',
         raw: { 'Opponent 1 Name': 'Lee', 'Opponent 2 Name': 'Kim' },
       },
       {
+        date: '2024-06-01',
+        raw: { 'Opponent 1 Name': 'Pat' },
+      },
+      {
+        date: '2024-03-15',
         raw: { 'Opponent 1 Name': 'Lee' },
       },
     ] as unknown as NormalizedMatch[]
 
-    expect(collectKnownOpponentNames(matches)).toEqual(['Kim', 'Lee'])
+    expect(collectKnownOpponentNames(matches)).toEqual(['Pat', 'Lee', 'Kim'])
   })
 })

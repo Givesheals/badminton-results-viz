@@ -143,19 +143,19 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
     >
       <div className="space-y-3">
         <p className="text-sm text-ink-600">
-          Search any player by name, county, or BE number. Use county, grades, and BE number to pick
-          the right person when names look similar.
+          Search for any player by name, county, or BE number — whether you have played them or not.
+          County, grades, and BE number help you pick the right person when names look similar.
         </p>
         <div>
           <label htmlFor="opponent-picker-search" className="sr-only">
-            Search players
+            Search for any player
           </label>
           <input
             id="opponent-picker-search"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search players…"
+            placeholder="Search for any player…"
             autoFocus
             className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100"
           />
@@ -163,15 +163,21 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
 
         {opponents.length === 0 && trimmedQuery.length < 2 ? (
           <p className="text-sm text-ink-600">
-            Type at least 2 letters to search the player register, or import match results to see
-            people you have already played.
+            Type at least 2 letters to search the player register.
           </p>
         ) : players.length === 0 && !showFreeText ? (
-          <p className="text-sm text-ink-600">No players match your search.</p>
+          <p className="text-sm text-ink-600">No players match your search. Try another spelling or BE number.</p>
         ) : (
           <div className="max-h-72 space-y-3 overflow-y-auto">
             {players.length > 0 && (
-              <PlayersTable players={players} onSelect={handleSelect} />
+              <>
+                {trimmedQuery.length < 2 && (
+                  <p className="text-xs text-ink-500">
+                    Your most recent opponents are shown below. Search above to find anyone else.
+                  </p>
+                )}
+                <PlayersTable players={players} onSelect={handleSelect} />
+              </>
             )}
 
             {showFreeText && (

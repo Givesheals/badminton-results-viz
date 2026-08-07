@@ -86,8 +86,8 @@ export function listHistoryPlayers(knownOpponents: string[]): NotePlayerResult[]
   return knownOpponents.flatMap(fromHistoryName)
 }
 /**
- * Hybrid search: prior opponents first, then BE register matches not already listed.
- * Empty query returns history only (browse). Query needs 2+ chars for register.
+ * Hybrid search: recent opponents first (caller order), then BE register matches.
+ * Empty query returns history only for the starting screen. Query needs 2+ chars for register.
  */
 export function searchNotePlayers(
   query: string,

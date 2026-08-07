@@ -277,15 +277,27 @@ export function buildDirectNoteContext(opponentName: string): OpponentNoteMatchC
   }
 }
 
-/** Unique opponent names from imported match history (prototype scope for player search). */
+/**
+ * Unique opponent names from match history, most recently played first.
+ * First encounter in date-desc order wins (so the latest match sets position).
+ */
 export function collectKnownOpponentNames(matches: NormalizedMatch[]): string[] {
-  const names = new Set<string>()
-  for (const match of matches) {
+  const newestFirst = [...matches].sort((a, b) => b.date.localeCompare(a.date))
+  const names: string[] = []
+  const seen = new Set<string>()
+
+  for (const match of newestFirst) {
     for (const member of getOpponentTeamMembersFromRow(match.raw)) {
-      names.add(member.name)
+      const trimmed = member.name.trim()
+      if (!trimmed) continue
+      const key = trimmed.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      names.push(trimmed)
     }
   }
-  return [...names].sort((a, b) => a.localeCompare(b, 'en'))
+
+  return names
 }
 
 export function noteMatchesOpponent(note: OpponentNote, opponentName: string): boolean {
