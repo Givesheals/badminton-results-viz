@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { getDisciplineStyle } from '../../lib/disciplineStyle'
 import { getMatchGames } from '../../lib/matchScores'
 import {
@@ -26,33 +27,51 @@ type Props = {
    * `responsive` (default): stacked on phones, columns from `sm` up.
    * `columns`: four-column scoreboard at every width (pair with
    * MATCH_SCOREBOARD_GRID_COMPACT on the parent list).
+   * `stack`: stacked layout at every width (tight cards / note accordions).
    */
-  variant?: 'responsive' | 'columns'
+  variant?: 'responsive' | 'columns' | 'stack'
+  /** Extra content under the competition title (e.g. category / round chips). */
+  titleMeta?: ReactNode
+  /** When false, omit the discipline chip(s). Default true. */
+  showDisciplineChip?: boolean
 }
 
-export function MatchScoreboardRow({ match, variant = 'responsive' }: Props) {
+export function MatchScoreboardRow({
+  match,
+  variant = 'responsive',
+  titleMeta,
+  showDisciplineChip = true,
+}: Props) {
   const style = getDisciplineStyle(match.discipline)
   const games = getMatchGames(match)
   const ourTeam = getOurTeamMembers(match)
   const theirTeam = getOpponentTeamMembers(match)
   const alwaysColumns = variant === 'columns'
+  const alwaysStack = variant === 'stack'
 
   return (
     <li
       className={`col-span-full grid items-start rounded-r border-l-4 ${style.rowBgClass} ${
         alwaysColumns
           ? 'grid-cols-subgrid py-1.5 pl-1.5 pr-0.5'
-          : 'grid-cols-1 py-1.5 pl-2 pr-1 sm:grid-cols-subgrid'
+          : alwaysStack
+            ? 'grid-cols-1 py-1.5 pl-2 pr-1'
+            : 'grid-cols-1 py-1.5 pl-2 pr-1 sm:grid-cols-subgrid'
       } ${style.borderClass}`}
     >
       <div className="col-span-full space-y-0.5 px-0.5">
         <p className="text-sm font-semibold leading-tight text-ink-900">{match.competitionName}</p>
+        {titleMeta != null && <div className="flex flex-wrap items-center gap-1.5 pt-0.5">{titleMeta}</div>}
         <p className="text-xs leading-tight text-ink-500">{formatShortDate(match.date)}</p>
       </div>
 
-      {!alwaysColumns && (
-        <div className="col-span-full space-y-0.5 px-0.5 sm:hidden">
-          <DisciplineChip code={match.discipline} className="w-fit" />
+      {(alwaysStack || !alwaysColumns) && (
+        <div
+          className={`col-span-full space-y-0.5 px-0.5 ${
+            alwaysStack ? '' : 'sm:hidden'
+          }`}
+        >
+          {showDisciplineChip && <DisciplineChip code={match.discipline} className="w-fit" />}
           <TeamInline members={ourTeam} side="ours" emphasize={match.outcome === 'win'} />
           <p className="text-xs leading-snug text-ink-900">
             <span className="text-ink-500">vs </span>
@@ -71,29 +90,37 @@ export function MatchScoreboardRow({ match, variant = 'responsive' }: Props) {
         </div>
       )}
 
-      <DisciplineChip
-        code={match.discipline}
-        className={`w-fit justify-self-start self-start ${
-          alwaysColumns ? '' : 'hidden sm:inline-flex'
-        }`}
-      />
-      <TeamColumn
-        members={ourTeam}
-        side="ours"
-        emphasize={match.outcome === 'win'}
-        alwaysVisible={alwaysColumns}
-      />
-      <MatchScores
-        games={games}
-        scoreSummary={match.scoreSummary}
-        alwaysVisible={alwaysColumns}
-      />
-      <TeamColumn
-        members={theirTeam}
-        side="theirs"
-        emphasize={match.outcome === 'loss'}
-        alwaysVisible={alwaysColumns}
-      />
+      {!alwaysStack && (
+        <>
+          {showDisciplineChip ? (
+            <DisciplineChip
+              code={match.discipline}
+              className={`w-fit justify-self-start self-start ${
+                alwaysColumns ? '' : 'hidden sm:inline-flex'
+              }`}
+            />
+          ) : (
+            <span className={alwaysColumns ? 'block' : 'hidden sm:block'} aria-hidden="true" />
+          )}
+          <TeamColumn
+            members={ourTeam}
+            side="ours"
+            emphasize={match.outcome === 'win'}
+            alwaysVisible={alwaysColumns}
+          />
+          <MatchScores
+            games={games}
+            scoreSummary={match.scoreSummary}
+            alwaysVisible={alwaysColumns}
+          />
+          <TeamColumn
+            members={theirTeam}
+            side="theirs"
+            emphasize={match.outcome === 'loss'}
+            alwaysVisible={alwaysColumns}
+          />
+        </>
+      )}
     </li>
   )
 }

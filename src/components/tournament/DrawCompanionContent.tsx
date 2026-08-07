@@ -13,7 +13,7 @@ type Props = {
   visibility: TournamentPageVisibility
   playerName: string
   onSignUpPremium?: () => void
-  /** Ticket screenshot build-out stage (1–7). */
+  /** Ticket screenshot build-out stage (1–8). */
   buildStage: DrawCompanionBuildStage
 }
 
@@ -61,7 +61,7 @@ export function DrawCompanionContent({
         allNotes={isGift ? [] : allNotes}
         allMatches={allMatches}
         forcedVisible
-        disableNotes
+        disableNotes={isGift}
         buildStage={buildStage}
         initialCompetitionSlug={cambridgeTournamentPage.drawCompanionSlug}
         initialPlayerName={playerName}

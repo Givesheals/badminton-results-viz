@@ -27,6 +27,9 @@ describe('drawCompanionBuildStage', () => {
     expect(getDrawCompanionBuildFeatures(4).earlyDisciplinesOnly).toBe(true)
     expect(getDrawCompanionBuildFeatures(6).showBusyBanner).toBe(true)
     expect(getDrawCompanionBuildFeatures(7).showYouMayAlsoMeet).toBe(true)
+    expect(getDrawCompanionBuildFeatures(7).showNotes).toBe(false)
+    expect(getDrawCompanionBuildFeatures(8).showNotes).toBe(true)
+    expect(getDrawCompanionBuildFeatures(8).showYouMayAlsoMeet).toBe(true)
   })
 
   it('stage 2 keeps OS + OD upcoming cards and strips results / busy / later', () => {
@@ -62,5 +65,9 @@ describe('drawCompanionBuildStage', () => {
     const od = simon(full).disciplineGroups.find((group) => group.disciplineCode === 'OD')!
     expect(od.matchups.some((matchup) => matchup.opponentPending)).toBe(true)
     expect((full.laterOpponentsByEntrant['Simon Parker'] ?? []).length).toBeGreaterThan(0)
+
+    const withNotes = applyDrawCompanionBuildStage(cambs(), 8)
+    expect((withNotes.laterOpponentsByEntrant['Simon Parker'] ?? []).length).toBeGreaterThan(0)
+    expect(withNotes.busyPlayersByName?.['Callum Reed']).toBeDefined()
   })
 })

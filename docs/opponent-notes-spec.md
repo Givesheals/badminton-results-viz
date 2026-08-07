@@ -226,11 +226,11 @@ Two sections, each with the combo-box + quick-add pattern (built-in tags + **Add
 | Tap `+ {label}` below box | Add tag to this note (appears inside combo box) |
 | Tap tag inside combo box | Remove tag from **this note only** |
 | **Add a tag** (compose) | Add to quick-add library **and** this note |
-| Notes tab **Your tags** | Add to library, or remove from library (optional strip from saved notes) |
+| Notes tab **Your note tags** | Add to library, or remove from library (optional strip from saved notes) |
 
 Rename / mass-edit of tag labels across notes is out of scope for now.
 
-#### Your tags (Notes tab)
+#### Your note tags (Notes tab)
 
 Always-visible block at the **bottom** of the Notes tab for the quick-add libraries (Opponent / The pair; plus journal groups when My game UI is enabled):
 
@@ -245,7 +245,7 @@ Areas:
 
 1. **Opponent notes** — grouped by opponent name (pair-scoped notes appear under each player in the pair)
 2. **Match journal** — chronological game notes (`getMatchJournalNotes()`), not grouped by opponent (when enabled)
-3. **Your tags** — manage quick-add libraries (add / remove)
+3. **Your note tags** — manage quick-add libraries (add / remove)
 
 **Review layout:**
 

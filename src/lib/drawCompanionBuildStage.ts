@@ -1,8 +1,8 @@
 import type { DrawDisciplineGroup, DrawMatchup } from './drawTypes'
 import type { DrawScoutCompetition, DrawScoutEntrant } from './drawScout'
 
-/** Ticket build-out stages for screenshotting Draw companion (1 = shell … 7 = full). */
-export const DRAW_COMPANION_BUILD_STAGES = [1, 2, 3, 4, 5, 6, 7] as const
+/** Ticket build-out stages for screenshotting Draw companion (1 = shell … 8 = full + notes). */
+export const DRAW_COMPANION_BUILD_STAGES = [1, 2, 3, 4, 5, 6, 7, 8] as const
 export type DrawCompanionBuildStage = (typeof DRAW_COMPANION_BUILD_STAGES)[number]
 
 export type DrawCompanionBuildFeatures = {
@@ -10,7 +10,7 @@ export type DrawCompanionBuildFeatures = {
   showDraw: boolean
   /** Stage ≥ 3 — Whose draw picker */
   showPlayerPicker: boolean
-  /** Stage ≥ 4 — accordion + past games (no notes) */
+  /** Stage ≥ 4 — accordion + past games (no notes until stage 8) */
   showMatchHistory: boolean
   /** Stage ≥ 5 — compact Win/Loss result cards */
   showCompletedResults: boolean
@@ -18,9 +18,11 @@ export type DrawCompanionBuildFeatures = {
   showBusyBanner: boolean
   /** Stage ≥ 7 — You may also meet + opponent-TBD probable next */
   showYouMayAlsoMeet: boolean
+  /** Stage ≥ 8 — opponent notes badges + Notes / Your games tabs */
+  showNotes: boolean
   /**
    * Stages 2–4 — OS + OD only (singles + one pair draw for screenshots).
-   * Stages 5–7 — full progressive multi-discipline fixture (incl. XD).
+   * Stages 5–8 — full progressive multi-discipline fixture (incl. XD).
    */
   earlyDisciplinesOnly: boolean
 }
@@ -57,6 +59,10 @@ export const DRAW_COMPANION_BUILD_STAGE_META: Record<
     shortLabel: 'May meet',
     summary: 'You may also meet + probable next',
   },
+  8: {
+    shortLabel: 'Notes',
+    summary: 'Opponent notes badges + Notes / Your games tabs',
+  },
 }
 
 export function getDrawCompanionBuildFeatures(
@@ -69,6 +75,7 @@ export function getDrawCompanionBuildFeatures(
     showCompletedResults: stage >= 5,
     showBusyBanner: stage >= 6,
     showYouMayAlsoMeet: stage >= 7,
+    showNotes: stage >= 8,
     earlyDisciplinesOnly: stage >= 2 && stage <= 4,
   }
 }
@@ -126,7 +133,7 @@ function transformEntrant(
 
 /**
  * Shape competition fixture data to match the selected ticket build stage.
- * Notes are never included in build-stage screenshots (handled separately in UI).
+ * Notes visibility is gated separately in UI via `showNotes` (stage ≥ 8).
  */
 export function applyDrawCompanionBuildStage(
   competition: DrawScoutCompetition,

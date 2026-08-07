@@ -350,9 +350,9 @@ describe('opponentNotes', () => {
 
     expect(scottGroup?.notes).toHaveLength(3)
     expect(martinGroup?.notes).toHaveLength(1)
-    expect(formatNoteScopeInGroup(pairNote, 'Scott Carter')).toEqual({
+    expect(formatNoteScopeInGroup(pairNote, 'Scott Carter', { context: 'notes-list' })).toEqual({
       kind: 'pair',
-      primary: 'About the pair — not this player alone',
+      primary: 'About a pair - not this player alone',
     })
     expect(formatNoteScopeInGroup(scottOnly, 'Scott Carter')).toEqual({
       kind: 'opponent',

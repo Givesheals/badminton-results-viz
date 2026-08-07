@@ -127,8 +127,8 @@ function TagLibraryBlock({
                     setMessage(null)
                   }}
                   className="rounded px-1 text-brand-700 transition hover:bg-brand-100 hover:text-brand-900"
-                  aria-label={`Remove ${label} from your tags`}
-                  title="Remove from your tags"
+                  aria-label={`Remove ${label} from your note tags`}
+                  title="Remove from your note tags"
                 >
                   ×
                 </button>
@@ -141,39 +141,55 @@ function TagLibraryBlock({
       {pendingRemove != null && (
         <div className="rounded-lg border border-ink-200 bg-white px-3 py-2.5">
           <p className="text-xs text-ink-700">
-            Remove &ldquo;{pendingRemove}&rdquo; from your quick-add tags?
+            Remove &ldquo;{pendingRemove}&rdquo; from your note tags?
           </p>
           <p className="mt-1 text-[11px] leading-relaxed text-ink-500">
             {pendingUsageCount > 0
-              ? 'Saved notes keep this tag unless you choose to strip it.'
+              ? `This only removes it from your quick-add list. It is on ${pendingUsageCount} saved note${pendingUsageCount === 1 ? '' : 's'} — choose below if you also want it cleared from those.`
               : 'It is not used on any saved notes.'}
           </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={confirmRemoveFromList}
-              className="rounded-lg bg-brand-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700"
-            >
-              {pendingUsageCount > 0 ? 'Keep on notes' : 'Remove'}
-            </button>
-            {pendingUsageCount > 0 && (
+          {pendingUsageCount > 0 ? (
+            <div className="mt-2 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={confirmRemoveFromList}
+                className="w-full rounded-lg bg-brand-600 px-2.5 py-1.5 text-center text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700"
+              >
+                Remove from list
+              </button>
               <button
                 type="button"
                 onClick={confirmRemoveFromListAndNotes}
-                className="rounded-lg border border-loss-200 px-2.5 py-1 text-xs font-medium text-loss-700 transition hover:bg-loss-50"
+                className="w-full rounded-lg border border-loss-200 px-2.5 py-1.5 text-center text-xs font-medium text-loss-700 transition hover:bg-loss-50"
               >
-                Also remove from {pendingUsageCount} note
-                {pendingUsageCount === 1 ? '' : 's'}
+                Remove from list and notes
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setPendingRemove(null)}
-              className="px-2 py-1 text-xs text-ink-500 transition hover:text-ink-700"
-            >
-              Cancel
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => setPendingRemove(null)}
+                className="self-start px-1 py-0.5 text-xs text-ink-500 transition hover:text-ink-700"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={confirmRemoveFromList}
+                className="rounded-lg bg-brand-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700"
+              >
+                Remove
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingRemove(null)}
+                className="px-2 py-1 text-xs text-ink-500 transition hover:text-ink-700"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -221,7 +237,7 @@ export function YourTagsSection({ revision = 0 }: Props) {
   return (
     <section className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
       <div className="px-4 py-4 sm:px-5">
-        <h4 className="text-sm font-semibold text-ink-900">Your tags</h4>
+        <h4 className="text-sm font-semibold text-ink-900">Your note tags</h4>
         <p className="mt-1 text-xs text-ink-500">
           Labels you can tap when writing notes. Remove anytime.
         </p>

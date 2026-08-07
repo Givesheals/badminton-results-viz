@@ -3,10 +3,10 @@
 Share each ticket below as its own GitHub issue. Attach the matching screenshots to every ticket.
 
 **Product:** Draw companion on the public tournament page  
-**Out of scope for this whole set:** opponent notes, note badges/tabs, share/export, email changes, gift / free-trial access  
+**Out of scope for this whole set:** share/export, email changes, gift / free-trial access  
 **Audience:** Engineer building from design (screenshots + this text). Do not assume an existing codebase.
 
-**Suggested order:** 1 → 2 → 3 → 4 → 5 → 6 → 7
+**Suggested order:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 ---
 
@@ -318,7 +318,76 @@ When the opponent becomes known, replace with a normal definite upcoming card (T
 Tickets 4–6 recommended (history + completed + busy). Minimum: Ticket 2–3 for structure/picker.
 
 ### Out of scope
-Notes, sharing, email CTA. Specifying a particular probability formula or methodology beyond “use ratings”.
+Notes (Ticket 8), sharing, email CTA. Specifying a particular probability formula or methodology beyond “use ratings”.
 
 ### Screenshots
 _Attach: collapsed/expanded section; probability rows; show more; opponent TBD next; definite next with section excluding that round._
+
+---
+
+## Ticket 8 — Opponent notes on draw matchups
+
+### Goal
+Bring **personal opponent notes** into Draw companion: closed-card badges, and **Notes / Your games** tabs when a matchup expands. Notes were deferred from Tickets 1–7 so the draw, history, and probability work could ship first.
+
+### Whose notes
+Always the **signed-in user’s** notes — never the viewed entrant’s. Same rule when Whose draw is a friend: you are reading **your** scouting notes on **their** opponents.
+
+### Context line (update Ticket 3 copy)
+When viewing someone other than yourself, use:
+
+> Viewing **{Name}**’s draw — your notes on their opponents
+
+### Where notes appear
+| Surface | Behaviour |
+|---------|-----------|
+| Upcoming matchup cards (Tickets 2–4) | Badge when notes exist; expand → Notes / Your games tabs |
+| Completed Win/Loss cards (Ticket 5) | Same expand + tabs when notes or history exist |
+| “You may also meet” / opponent-TBD rows (Ticket 7) | Same as draw matchups |
+| Busy banner (Ticket 6) | Unchanged; sits above or beside badges, not replaced by them |
+
+### Closed card — badges / teasers
+- Soft **amber** accent on the **View notes** cue (and Notes tab indicator) — distinct from brand purple chrome
+- Past-games teaser from Ticket 4 can sit alongside the notes cue when both exist
+- No badge when the user has no personal notes on that opponent side
+
+### Expanded panel — tabs
+When the card expands (notes and/or past games):
+
+1. **Notes** — personal opponent notes for that opponent side
+2. **Your games** — past match history (same content and doubles order as Ticket 4: pair-as-unit first, then individuals)
+
+Tab default: prefer **Notes** when notes exist; otherwise **Your games**.
+
+### Rows with no intel
+If there are **neither** notes nor past games: keep the flat / non-expandable card, or a muted empty line such as **No notes or games yet** — do not force empty tabs.
+
+### Note content rules
+- Reuse existing note UI (`NoteEntry`, discipline chips, tag chips, match footer) from the Notes feature
+- **Exclude** match journal notes (`kind: 'match'`) — scouting / opponent notes only
+- Filter by discipline scope where the note system supports it
+- Newest notes first
+- Doubles / mixed: show notes that target the **pair** and notes that target **each individual**; apply any existing pairing caveat when a pair note was written against a different partner
+
+### Add / edit from companion (if already in product)
+If the product already supports opening the note modal from a match context, allow the same from an expanded companion row. Do **not** invent a new notes editor for this ticket. If add/edit is not wired yet, read-only notes in the tabs are enough for acceptance.
+
+### Acceptance criteria
+- [ ] Closed cards show a notes cue when personal notes exist (amber accent)
+- [ ] Expanded panels use **Notes** / **Your games** tabs
+- [ ] Notes are always the signed-in user’s; viewing another draw does not show their notes
+- [ ] Match journal notes never appear in companion
+- [ ] Doubles/mixed: pair and individual notes resolve correctly; history tab keeps Ticket 4 order
+- [ ] Works on upcoming, completed, “may also meet”, and opponent-TBD rows
+- [ ] No-intel rows stay flat / muted empty — no empty tab chrome
+- [ ] Context line mentions notes when viewing someone else
+- [ ] Matches notes-on-companion screenshots
+
+### Depends on
+Ticket 4 (expand + history). Ideally after Tickets 5–7 so notes land on completed cards and probable rows in one pass. Minimum: Tickets 2–4.
+
+### Out of scope
+Share / export notes, email CTA / draw-out note count, gift / free-trial access, match journal in companion, redesigning the Notes dashboard tab.
+
+### Screenshots
+_Attach: closed card with notes badge; notes-only expand; both notes + games (tabs); doubles pair/individual notes; “may also meet” row with notes; viewing another player’s draw with your notes._

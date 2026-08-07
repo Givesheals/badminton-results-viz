@@ -1686,8 +1686,8 @@ export function DrawScoutCard({
   /** Gift / non-Premium preview: hide scouting notes (past games still show). */
   disableNotes = false,
   /**
-   * Ticket screenshot mode (1–7). Gates features and reshapes fixture data.
-   * When set, notes are always hidden regardless of `disableNotes`.
+   * Ticket screenshot mode (1–8). Gates features and reshapes fixture data.
+   * Notes stay hidden on stages 1–7; stage 8 enables them (unless `disableNotes`).
    */
   buildStage = null,
 }: Props & {
@@ -1700,7 +1700,8 @@ export function DrawScoutCard({
   const playerPickerId = useId()
   const deepLink = useMemo(() => readDrawScoutDeepLink(), [])
   const buildFeatures = buildStage != null ? getDrawCompanionBuildFeatures(buildStage) : null
-  const hideNotes = disableNotes || buildStage != null
+  const hideNotes =
+    disableNotes || (buildFeatures != null && !buildFeatures.showNotes)
   const resolvedCompetitions = useMemo(() => {
     const base = competitions ?? getDrawScoutPreviewCompetitions()
     if (buildStage == null) return base

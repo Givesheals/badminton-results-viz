@@ -593,7 +593,7 @@ export function formatNoteScopeInGroup(
 
   return {
     kind: 'pair',
-    primary: 'About the pair — not this player alone',
+    primary: 'About a pair - not this player alone',
   }
 }
 

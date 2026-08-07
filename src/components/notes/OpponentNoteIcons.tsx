@@ -16,3 +16,21 @@ export function FileCirclePlusIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
+/** Compact lined-page glyph for ~12px badges (segment “has a note” markers). */
+export function LinedNoteIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="3.25" y="2.25" width="9.5" height="11.5" rx="1.5" />
+      <path d="M5.5 6h5M5.5 8.5h5M5.5 11h3" />
+    </svg>
+  )
+}
