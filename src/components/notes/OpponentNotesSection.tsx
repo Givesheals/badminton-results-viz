@@ -1,9 +1,21 @@
 import { useMemo, useState } from 'react'
 import { useOpponentNotesContext } from '../../context/OpponentNotesContext'
-import { formatGameEventTagsForDisplay, formatScoutingTagsForDisplay, formatSelfFeelTagsForDisplay } from '../../lib/noteTags'
+import {
+  formatGameEventTagsForDisplay,
+  formatScoutingTagsForDisplay,
+  formatSelfFeelTagsForDisplay,
+} from '../../lib/noteTags'
+import {
+  getNotesBuildFeatures,
+  NOTES_BUILD_STAGE_META,
+  NOTES_BUILD_STAGES,
+  type NotesBuildFeatures,
+  type NotesBuildStage,
+} from '../../lib/notesBuildStage'
 import {
   buildDirectNoteContext,
   collectKnownOpponentNames,
+  formatIsoTimestampShort,
   formatNoteRecordedSummary,
   formatNoteScopeInGroup,
   getMatchJournalFields,
@@ -28,7 +40,6 @@ import { OpponentNoteMatchFooter } from './OpponentNoteMatchFooter'
 import { OpponentNoteModal } from './OpponentNoteModal'
 import { OpponentPickerModal } from './OpponentPickerModal'
 import { YourTagsSection } from './YourTagsSection'
-import { PairNoteScopeBanner } from './PairNoteScopeBanner'
 
 type Props = {
   allMatches: NormalizedMatch[]
@@ -44,11 +55,13 @@ function NoteEntry({
   groupOpponentName,
   match,
   onOpen,
+  features,
 }: {
   note: OpponentNote
   groupOpponentName: string
   match: NormalizedMatch | null
   onOpen: () => void
+  features: NotesBuildFeatures
 }) {
   const [matchOpen, setMatchOpen] = useState(false)
   const scope = formatNoteScopeInGroup(note, groupOpponentName, { context: 'notes-list' })
@@ -58,12 +71,26 @@ function NoteEntry({
   const tagLabels = formatScoutingTagsForDisplay(note.tags)
   const hasBody = note.body.trim() !== ''
 
+  const pairScopeLine =
+    isPairScope
+      ? scope.secondary != null && scope.secondary !== ''
+        ? `${scope.primary} · ${scope.secondary}`
+        : scope.primary
+      : null
+
+  const recordedSummary = features.showEdit
+    ? formatNoteRecordedSummary(note)
+    : `Recorded ${formatIsoTimestampShort(note.createdAt)}`
+
+  const showMatchResultToggle = features.showMatchResult && !isDirectNote
+
   return (
     <li className="px-3 py-2.5">
-      {isPairScope && <PairNoteScopeBanner scope={scope} />}
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1 space-y-1.5">
-          {tagLabels.length > 0 && <NoteTagChips labels={tagLabels} />}
+          {features.showTagsOnNotes && tagLabels.length > 0 && (
+            <NoteTagChips labels={tagLabels} />
+          )}
           {hasBody && (
             <p className="text-sm leading-relaxed text-ink-900">
               <span aria-hidden="true">&ldquo;</span>
@@ -72,19 +99,24 @@ function NoteEntry({
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onOpen}
-          aria-label="Edit note"
-          title="Edit note"
-          className={OPPONENT_NOTE_ICON_BUTTON_CLASS}
-        >
-          <FilePenIcon className="h-4 w-4" />
-        </button>
+        {features.showEdit && (
+          <button
+            type="button"
+            onClick={onOpen}
+            aria-label="Edit note"
+            title="Edit note"
+            className={OPPONENT_NOTE_ICON_BUTTON_CLASS}
+          >
+            <FilePenIcon className="h-4 w-4" />
+          </button>
+        )}
       </div>
+      {features.showPairScope && pairScopeLine != null && (
+        <p className="mt-1.5 text-xs text-ink-500">{pairScopeLine}</p>
+      )}
       <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-500">
-        <span>{formatNoteRecordedSummary(note)}</span>
-        {!isDirectNote && (
+        <span>{recordedSummary}</span>
+        {showMatchResultToggle && (
           <>
             <span aria-hidden="true">·</span>
             <button
@@ -100,7 +132,7 @@ function NoteEntry({
           </>
         )}
       </div>
-      {matchOpen && !isDirectNote && (
+      {showMatchResultToggle && matchOpen && (
         <div id={matchDetailsId} className="mt-1.5">
           <OpponentNoteMatchFooter context={note.context} match={match} />
         </div>
@@ -243,10 +275,12 @@ function OpponentNoteGroupSection({
   group,
   matchByKey,
   onOpenNote,
+  features,
 }: {
   group: OpponentNoteGroup
   matchByKey: Map<string, NormalizedMatch>
   onOpenNote: (note: OpponentNote) => void
+  features: NotesBuildFeatures
 }) {
   const [open, setOpen] = useState(false)
 
@@ -276,6 +310,7 @@ function OpponentNoteGroupSection({
               groupOpponentName={group.opponentName}
               match={matchByKey.get(note.context.matchKey) ?? null}
               onOpen={() => onOpenNote(note)}
+              features={features}
             />
           ))}
         </ul>
@@ -303,10 +338,13 @@ function ChevronIcon({ open, className = 'h-4 w-4' }: { open: boolean; className
 
 export function OpponentNotesSection({ allMatches }: Props) {
   const { allNotes } = useOpponentNotesContext()
+  const [buildStage, setBuildStage] = useState<NotesBuildStage>(11)
   const [search, setSearch] = useState('')
   const [activeNote, setActiveNote] = useState<OpponentNote | null>(null)
   const [addNoteState, setAddNoteState] = useState<AddNoteState>({ step: 'closed' })
   const [tagLibraryRevision, setTagLibraryRevision] = useState(0)
+
+  const features = getNotesBuildFeatures(buildStage)
 
   function bumpTagLibraryRevision() {
     setTagLibraryRevision((value) => value + 1)
@@ -339,24 +377,65 @@ export function OpponentNotesSection({ allMatches }: Props) {
   )
 
   const hasReviewableNotes =
-    scoutingNotes.length > 0 ||
-    (MATCH_JOURNAL_UI_ENABLED && allNotes.some((note) => !isScoutingNote(note)))
+    features.showNotesList &&
+    (scoutingNotes.length > 0 ||
+      (MATCH_JOURNAL_UI_ENABLED && allNotes.some((note) => !isScoutingNote(note))))
 
   const hasSearchResults = groups.length > 0 || journalNotes.length > 0
 
+  const emptyHint = features.showAddNote
+    ? 'Tap Add new note above, or open the Events tab and use the note icon beside a match.'
+    : 'Notes you record will show up here.'
+
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border border-dashed border-brand-200 bg-brand-50/40 px-3 py-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-brand-800">Ticket build:</span>
+          <div
+            role="group"
+            aria-label="Notes ticket build stage"
+            className="flex flex-wrap gap-1"
+          >
+            {NOTES_BUILD_STAGES.map((ticketStage) => {
+              const selected = buildStage === ticketStage
+              const meta = NOTES_BUILD_STAGE_META[ticketStage]
+              return (
+                <button
+                  key={ticketStage}
+                  type="button"
+                  title={meta.summary}
+                  onClick={() => setBuildStage(ticketStage)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
+                    selected
+                      ? 'bg-brand-600 text-white shadow-sm'
+                      : 'bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50'
+                  }`}
+                >
+                  {ticketStage}. {meta.shortLabel}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <p className="mt-1.5 text-[11px] text-ink-500">
+          {NOTES_BUILD_STAGE_META[buildStage].summary}
+        </p>
+      </div>
+
       <section className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
         <div className="border-b border-ink-100 px-4 py-4 sm:px-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-lg font-semibold text-ink-900">Notes</h3>
-            <button
-              type="button"
-              onClick={() => setAddNoteState({ step: 'pick-opponent' })}
-              className="shrink-0 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-            >
-              Add new note
-            </button>
+            {features.showAddNote && (
+              <button
+                type="button"
+                onClick={() => setAddNoteState({ step: 'pick-opponent' })}
+                className="shrink-0 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+              >
+                Add new note
+              </button>
+            )}
           </div>
           <p className="mt-1 text-sm text-ink-600">
             {MATCH_JOURNAL_UI_ENABLED
@@ -384,10 +463,7 @@ export function OpponentNotesSection({ allMatches }: Props) {
           {!hasReviewableNotes ? (
             <div className="rounded-xl border border-dashed border-ink-200 bg-ink-50/50 px-4 py-8 text-center">
               <p className="text-sm font-medium text-ink-800">No notes yet</p>
-              <p className="mt-1 text-sm text-ink-600">
-                Tap <strong>Add new note</strong> above, or open the Events tab and use the note icon
-                beside a match.
-              </p>
+              <p className="mt-1 text-sm text-ink-600">{emptyHint}</p>
             </div>
           ) : !hasSearchResults ? (
             <p className="text-sm text-ink-600">No notes match your search.</p>
@@ -403,6 +479,7 @@ export function OpponentNotesSection({ allMatches }: Props) {
                           group={group}
                           matchByKey={matchByKey}
                           onOpenNote={setActiveNote}
+                          features={features}
                         />
                       </li>
                     ))}
@@ -421,9 +498,9 @@ export function OpponentNotesSection({ allMatches }: Props) {
         </div>
       </section>
 
-      <YourTagsSection revision={tagLibraryRevision} />
+      {features.showYourTags && <YourTagsSection revision={tagLibraryRevision} />}
 
-      {activeNote != null && (
+      {activeNote != null && features.showEdit && (
         <OpponentNoteModal
           open
           onClose={() => {
@@ -432,22 +509,25 @@ export function OpponentNotesSection({ allMatches }: Props) {
           }}
           context={activeNote.context}
           initialTarget={activeNote.target}
+          buildFeatures={features}
         />
       )}
 
-      <OpponentPickerModal
-        open={addNoteState.step === 'pick-opponent'}
-        onClose={() => setAddNoteState({ step: 'closed' })}
-        opponents={knownOpponents}
-        onSelect={(opponentName) => {
-          setAddNoteState({
-            step: 'compose',
-            context: buildDirectNoteContext(opponentName),
-          })
-        }}
-      />
+      {features.showAddNote && (
+        <OpponentPickerModal
+          open={addNoteState.step === 'pick-opponent'}
+          onClose={() => setAddNoteState({ step: 'closed' })}
+          opponents={knownOpponents}
+          onSelect={(opponentName) => {
+            setAddNoteState({
+              step: 'compose',
+              context: buildDirectNoteContext(opponentName),
+            })
+          }}
+        />
+      )}
 
-      {addNoteState.step === 'compose' && (
+      {features.showAddNote && addNoteState.step === 'compose' && (
         <OpponentNoteModal
           open
           onClose={() => {
@@ -456,6 +536,7 @@ export function OpponentNotesSection({ allMatches }: Props) {
           }}
           context={addNoteState.context}
           initialTarget={{ kind: 'opponent', name: addNoteState.context.opponentNames[0]! }}
+          buildFeatures={features}
         />
       )}
     </div>

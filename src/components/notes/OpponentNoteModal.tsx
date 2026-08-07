@@ -35,12 +35,19 @@ import {
   PairStyleNoteSection,
   SelfFeelNoteSection,
 } from './NoteTagPicker'
+import { LinedNoteIcon } from './OpponentNoteIcons'
+import {
+  fullNotesBuildFeatures,
+  type NotesBuildFeatures,
+} from '../../lib/notesBuildStage'
 
 type Props = {
   open: boolean
   onClose: () => void
   context: OpponentNoteMatchContext
   initialTarget?: OpponentNoteTarget
+  /** Notes-tab ticket build gating. Omitted callers (e.g. Events) get full features. */
+  buildFeatures?: NotesBuildFeatures
 }
 
 type ModalMode = 'scout' | 'game'
@@ -146,10 +153,12 @@ function OpponentSegmentedControl({
   opponentNames,
   target,
   onChange,
+  targetsWithNotes,
 }: {
   opponentNames: string[]
   target: OpponentNoteTarget
   onChange: (target: OpponentNoteTarget) => void
+  targetsWithNotes: ReadonlySet<string>
 }) {
   if (opponentNames.length < 2) return null
 
@@ -163,12 +172,14 @@ function OpponentSegmentedControl({
     >
       {options.map((option) => {
         const selected = noteTargetsEqual(option.value, target)
+        const hasNote = targetsWithNotes.has(noteTargetKey(option.value))
         return (
           <button
             key={option.label}
             type="button"
             role="tab"
             aria-selected={selected}
+            aria-label={hasNote ? `${option.label}, has a note` : option.label}
             onClick={() => onChange(option.value)}
             className={`min-w-0 flex-1 rounded-md px-1.5 py-1.5 text-center text-xs font-medium leading-snug transition ${
               selected
@@ -176,7 +187,12 @@ function OpponentSegmentedControl({
                 : 'text-ink-600 hover:text-ink-800'
             }`}
           >
-            {option.label}
+            <span className="inline-flex max-w-full items-center justify-center gap-1">
+              <span className="min-w-0 truncate">{option.label}</span>
+              {hasNote ? (
+                <LinedNoteIcon className="h-3 w-3 shrink-0 text-notes-amber-ink" />
+              ) : null}
+            </span>
           </button>
         )
       })}
@@ -266,9 +282,10 @@ type FormProps = {
   context: OpponentNoteMatchContext
   initialTarget?: OpponentNoteTarget
   onClose: () => void
+  buildFeatures: NotesBuildFeatures
 }
 
-function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
+function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: FormProps) {
   const { playerName, getNotesForMatch, getNoteForMatchTarget, upsertNote, deleteNote } =
     useOpponentNotesContext()
 
@@ -319,6 +336,16 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
   const scoutingTagsToSave =
     target != null ? scoutingTagsForTargetState(target, scoutingTags) : undefined
   const scoutingHasContent = noteHasContent(body, scoutingTagsToSave)
+  const targetsWithNotes = new Set(
+    doublesTargetOptions(context.opponentNames)
+      .filter((option) => {
+        const key = noteTargetKey(option.value)
+        const draftBody = draftsByTarget[key] ?? ''
+        const optionTags = scoutingTagsForTargetState(option.value, tagsByTarget[key])
+        return noteHasContent(draftBody, optionTags)
+      })
+      .map((option) => noteTargetKey(option.value)),
+  )
   const gameHasContent = matchNoteHasDraft(matchJournalDraft, journalTags)
   const hasAnyStoredNote = getNotesForMatch(context.matchKey).some(
     (note) =>
@@ -513,7 +540,8 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
     onClose()
   }
 
-  const showDeleteScouting = mode === 'scout' && existingScoutingNote != null
+  const showDeleteScouting =
+    buildFeatures.showEdit && mode === 'scout' && existingScoutingNote != null
   const showDeleteGame =
     MATCH_JOURNAL_UI_ENABLED && mode === 'game' && gameTabHasNote
   const showModeTabs = MATCH_JOURNAL_UI_ENABLED && !isDirectNote && !awaitingTarget
@@ -584,8 +612,9 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
                       opponentNames={context.opponentNames}
                       target={target}
                       onChange={handleTargetChange}
+                      targetsWithNotes={targetsWithNotes}
                     />
-                    {target.kind === 'pair' && (
+                    {buildFeatures.showPairScope && target.kind === 'pair' && (
                       <p className="text-xs text-ink-600">
                         About the pair — not either player alone
                       </p>
@@ -601,6 +630,8 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
                     selectedCustom={customPairStyles}
                     onSelectedCustomChange={setCustomPairStyles}
                     playerName={playerName}
+                    showTags={buildFeatures.showTagsInModal}
+                    showCreateTag={buildFeatures.showCreateTagInModal}
                   />
                 ) : target.kind === 'opponent' ? (
                   <OpponentStyleNoteSection
@@ -611,6 +642,8 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
                     selectedCustom={customOpponentStyles}
                     onSelectedCustomChange={setCustomOpponentStyles}
                     playerName={playerName}
+                    showTags={buildFeatures.showTagsInModal}
+                    showCreateTag={buildFeatures.showCreateTagInModal}
                   />
                 ) : null}
               </div>
@@ -645,7 +678,13 @@ function OpponentNoteForm({ context, initialTarget, onClose }: FormProps) {
   )
 }
 
-export function OpponentNoteModal({ open, onClose, context, initialTarget }: Props) {
+export function OpponentNoteModal({
+  open,
+  onClose,
+  context,
+  initialTarget,
+  buildFeatures = fullNotesBuildFeatures(),
+}: Props) {
   if (!open) return null
 
   return (
@@ -654,6 +693,7 @@ export function OpponentNoteModal({ open, onClose, context, initialTarget }: Pro
       context={context}
       initialTarget={initialTarget}
       onClose={onClose}
+      buildFeatures={buildFeatures}
     />
   )
 }

@@ -54,6 +54,7 @@ function TaggedNoteComboBox({
   rows = 2,
   selectedLabels,
   onRemoveLabel,
+  showSelectedTags = true,
 }: {
   textareaId: string
   body: string
@@ -62,8 +63,9 @@ function TaggedNoteComboBox({
   rows?: number
   selectedLabels: string[]
   onRemoveLabel: (label: string) => void
+  showSelectedTags?: boolean
 }) {
-  const hasChips = selectedLabels.length > 0
+  const hasChips = showSelectedTags && selectedLabels.length > 0
 
   return (
     <div className={COMBO_BOX_CLASS}>
@@ -104,6 +106,8 @@ function TagAddRow({
   onRememberedChange,
   onCreatedNew,
   emphasizeAddLabel,
+  showQuickAdd = true,
+  showCreateTag = true,
 }: {
   unselectedOptions: { label: string; hint?: string }[]
   onAdd: (label: string) => void
@@ -114,6 +118,8 @@ function TagAddRow({
   /** Called when a brand-new library chip is created from the add field. */
   onCreatedNew?: (label: string) => void
   emphasizeAddLabel?: string | null
+  showQuickAdd?: boolean
+  showCreateTag?: boolean
 }) {
   const addInputId = useId()
   const [addDraft, setAddDraft] = useState('')
@@ -142,9 +148,11 @@ function TagAddRow({
     setMessage(null)
   }
 
+  if (!showQuickAdd && !showCreateTag) return null
+
   return (
     <div className="space-y-2">
-      {unselectedOptions.length > 0 && (
+      {showQuickAdd && unselectedOptions.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
           {unselectedOptions.map((option) => (
             <button
@@ -164,32 +172,34 @@ function TagAddRow({
           ))}
         </div>
       )}
-      <form onSubmit={handleAdd} className="flex items-center gap-1.5">
-        <label htmlFor={addInputId} className="sr-only">
-          Add a tag
-        </label>
-        <input
-          id={addInputId}
-          type="text"
-          value={addDraft}
-          maxLength={CUSTOM_TAG_MAX_LENGTH}
-          disabled={atLimit}
-          placeholder={atLimit ? 'Tag limit reached' : 'Add a tag…'}
-          onChange={(event) => {
-            setAddDraft(event.target.value)
-            setMessage(null)
-          }}
-          className="min-w-0 flex-1 rounded-lg border border-ink-200 bg-white px-2.5 py-1.5 text-xs text-ink-900 placeholder:text-ink-400 focus:border-brand-300 focus:outline-none focus:ring-1 focus:ring-brand-100 disabled:bg-ink-50"
-        />
-        <button
-          type="submit"
-          disabled={atLimit || !canSubmit}
-          className="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-800 hover:bg-brand-100 disabled:opacity-40"
-        >
-          Add
-        </button>
-      </form>
-      {message != null && <p className="text-xs text-ink-500">{message}</p>}
+      {showCreateTag && (
+        <form onSubmit={handleAdd} className="flex items-center gap-1.5">
+          <label htmlFor={addInputId} className="sr-only">
+            Add a tag
+          </label>
+          <input
+            id={addInputId}
+            type="text"
+            value={addDraft}
+            maxLength={CUSTOM_TAG_MAX_LENGTH}
+            disabled={atLimit}
+            placeholder={atLimit ? 'Tag limit reached' : 'Add a tag…'}
+            onChange={(event) => {
+              setAddDraft(event.target.value)
+              setMessage(null)
+            }}
+            className="min-w-0 flex-1 rounded-lg border border-ink-200 bg-white px-2.5 py-1.5 text-xs text-ink-900 placeholder:text-ink-400 focus:border-brand-300 focus:outline-none focus:ring-1 focus:ring-brand-100 disabled:bg-ink-50"
+          />
+          <button
+            type="submit"
+            disabled={atLimit || !canSubmit}
+            className="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-800 hover:bg-brand-100 disabled:opacity-40"
+          >
+            Add
+          </button>
+        </form>
+      )}
+      {showCreateTag && message != null && <p className="text-xs text-ink-500">{message}</p>}
     </div>
   )
 }
@@ -210,6 +220,8 @@ function TaggedNoteSection<T extends string>({
   playerName,
   emphasizeAddLabel,
   diyLibrary = false,
+  showTags = true,
+  showCreateTag = true,
 }: {
   sectionTitle?: string
   textareaId: string
@@ -227,6 +239,10 @@ function TaggedNoteSection<T extends string>({
   emphasizeAddLabel?: string | null
   /** About them: library-only quick-add. Built-ins stay for legacy note display. */
   diyLibrary?: boolean
+  /** Ticket build ≥ 5 — selected chips + quick-add row */
+  showTags?: boolean
+  /** Ticket build ≥ 8 — “Add a tag…” create field */
+  showCreateTag?: boolean
 }) {
   const [rememberedCustom, setRememberedCustom] = useState(() =>
     diyLibrary
@@ -312,6 +328,7 @@ function TaggedNoteSection<T extends string>({
         rows={rows}
         selectedLabels={selectedLabels}
         onRemoveLabel={removeByLabel}
+        showSelectedTags={showTags}
       />
       <TagAddRow
         unselectedOptions={unselectedOptions}
@@ -324,6 +341,8 @@ function TaggedNoteSection<T extends string>({
           setCreatedThisSession((prev) => new Set(prev).add(label.toLowerCase()))
         }}
         emphasizeAddLabel={emphasizeAddLabel}
+        showQuickAdd={showTags}
+        showCreateTag={showTags && showCreateTag}
       />
     </section>
   )
@@ -368,6 +387,8 @@ export function OpponentStyleNoteSection({
   onSelectedCustomChange,
   playerName,
   emphasizeAddLabel,
+  showTags = true,
+  showCreateTag = true,
 }: {
   body: string
   onBodyChange: (value: string) => void
@@ -377,6 +398,8 @@ export function OpponentStyleNoteSection({
   onSelectedCustomChange: (values: string[]) => void
   playerName: string | null
   emphasizeAddLabel?: string | null
+  showTags?: boolean
+  showCreateTag?: boolean
 }) {
   return (
     <TaggedNoteSection
@@ -394,6 +417,8 @@ export function OpponentStyleNoteSection({
       playerName={playerName}
       emphasizeAddLabel={emphasizeAddLabel}
       diyLibrary
+      showTags={showTags}
+      showCreateTag={showCreateTag}
     />
   )
 }
@@ -406,6 +431,8 @@ export function PairStyleNoteSection({
   selectedCustom,
   onSelectedCustomChange,
   playerName,
+  showTags = true,
+  showCreateTag = true,
 }: {
   body: string
   onBodyChange: (value: string) => void
@@ -414,6 +441,8 @@ export function PairStyleNoteSection({
   selectedCustom: string[]
   onSelectedCustomChange: (values: string[]) => void
   playerName: string | null
+  showTags?: boolean
+  showCreateTag?: boolean
 }) {
   return (
     <TaggedNoteSection
@@ -430,6 +459,8 @@ export function PairStyleNoteSection({
       customTagGroup="opponentStyles"
       playerName={playerName}
       diyLibrary
+      showTags={showTags}
+      showCreateTag={showCreateTag}
     />
   )
 }
