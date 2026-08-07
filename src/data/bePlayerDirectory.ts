@@ -78,8 +78,36 @@ export const BE_PLAYER_DIRECTORY: BePlayerRecord[] = [
     county: 'East Sussex',
     maskedEmail: 'ale***@icloud.com',
   },
+  // Surname demos for notes picker disambiguation (BadMinfo-style search)
+  {
+    beNumber: '1419401',
+    name: 'Alexandra Simon',
+    club: 'Ealing BC',
+    county: 'Middlesex',
+    maskedEmail: 'ale***@gmail.com',
+  },
+  {
+    beNumber: '1195857',
+    name: 'Edwin Simon',
+    club: 'Guildford BC',
+    county: 'Surrey',
+    maskedEmail: 'edw***@outlook.com',
+  },
+  {
+    beNumber: '1315265',
+    name: 'Joel Simon',
+    club: 'Chelmsford BC',
+    county: 'Essex',
+    maskedEmail: 'joe***@icloud.com',
+  },
+  {
+    beNumber: '1323880',
+    name: 'Joseph Simon',
+    club: 'Maidstone BC',
+    county: 'Kent',
+    maskedEmail: 'jos***@yahoo.co.uk',
+  },
 ]
-
 export function searchBePlayers(query: string): BePlayerRecord[] {
   const trimmed = query.trim().toLowerCase()
   if (trimmed.length < 2) return []
