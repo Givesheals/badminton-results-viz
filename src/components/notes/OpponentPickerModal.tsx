@@ -144,7 +144,6 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
       <div className="space-y-3">
         <p className="text-sm text-ink-600">
           Search for any player by name, county, or BE number — whether you have played them or not.
-          County, grades, and BE number help you pick the right person when names look similar.
         </p>
         <div>
           <label htmlFor="opponent-picker-search" className="sr-only">
