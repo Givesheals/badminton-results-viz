@@ -248,7 +248,7 @@ function OpponentNoteGroupSection({
   matchByKey: Map<string, NormalizedMatch>
   onOpenNote: (note: OpponentNote) => void
 }) {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
 
   return (
     <section className="overflow-hidden rounded-xl card-frame bg-white">
