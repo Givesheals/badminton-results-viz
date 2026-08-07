@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Modal } from '../ui/Modal'
 import {
   searchNotePlayers,
@@ -12,6 +12,8 @@ type Props = {
   opponents: string[]
   onSelect: (opponentName: string) => void
 }
+
+const INITIAL_RECENT_COUNT = 8
 
 function GradeBoxes({ grades }: { grades: [PlayerGrade, PlayerGrade, PlayerGrade] }) {
   return (
@@ -59,26 +61,43 @@ function PlayerResultButton({
 
 export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Props) {
   const [query, setQuery] = useState('')
+  const [showAllRecent, setShowAllRecent] = useState(false)
+
+  useEffect(() => {
+    if (!open) {
+      setQuery('')
+      setShowAllRecent(false)
+    }
+  }, [open])
 
   const { fromHistory, fromRegister } = useMemo(
     () => searchNotePlayers(query, opponents),
     [opponents, query],
   )
 
-  const players = useMemo(
-    () => [...fromHistory, ...fromRegister],
-    [fromHistory, fromRegister],
-  )
-
   const trimmedQuery = query.trim()
+  const isBrowsingRecent = trimmedQuery.length < 2
+
+  const players = useMemo(() => {
+    if (!isBrowsingRecent) {
+      return [...fromHistory, ...fromRegister]
+    }
+    if (showAllRecent) return fromHistory
+    return fromHistory.slice(0, INITIAL_RECENT_COUNT)
+  }, [fromHistory, fromRegister, isBrowsingRecent, showAllRecent])
+
+  const canShowMore =
+    isBrowsingRecent && !showAllRecent && fromHistory.length > INITIAL_RECENT_COUNT
 
   function handleClose() {
     setQuery('')
+    setShowAllRecent(false)
     onClose()
   }
 
   function handleSelect(name: string) {
     setQuery('')
+    setShowAllRecent(false)
     onSelect(name)
   }
 
@@ -109,14 +128,17 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
             id="opponent-picker-search"
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value)
+              setShowAllRecent(false)
+            }}
             placeholder="Search for any player…"
             autoFocus
             className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100"
           />
         </div>
 
-        {opponents.length === 0 && trimmedQuery.length < 2 ? (
+        {opponents.length === 0 && isBrowsingRecent ? (
           <p className="text-sm text-ink-600">
             Type at least 2 letters to search the player register.
           </p>
@@ -125,15 +147,24 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
             No players match your search. Try another spelling or BE number.
           </p>
         ) : (
-          <div className="max-h-72 space-y-2 overflow-y-auto">
-            <ul className="overflow-hidden rounded-lg border border-ink-100">
-              {players.map((player) => (
-                <li key={player.id} className="border-b border-ink-100 last:border-b-0">
-                  <PlayerResultButton player={player} onSelect={handleSelect} />
-                </li>
-              ))}
-            </ul>
-          </div>
+          <ul className="max-h-56 overflow-y-auto rounded-lg border border-ink-100">
+            {players.map((player) => (
+              <li key={player.id} className="border-b border-ink-100">
+                <PlayerResultButton player={player} onSelect={handleSelect} />
+              </li>
+            ))}
+            {canShowMore && (
+              <li className="border-t border-ink-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAllRecent(true)}
+                  className="w-full px-3 py-2.5 text-center text-sm font-medium text-brand-700 transition hover:bg-brand-50"
+                >
+                  Show more
+                </button>
+              </li>
+            )}
+          </ul>
         )}
       </div>
     </Modal>
