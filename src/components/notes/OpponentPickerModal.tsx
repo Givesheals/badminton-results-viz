@@ -41,9 +41,7 @@ function PlayerResultButton({
       onClick={() => onSelect(player.name)}
       className="flex w-full flex-col gap-1 px-3 py-2.5 text-left transition hover:bg-brand-50"
     >
-      <span className="text-sm font-medium text-brand-700 underline-offset-2 hover:underline">
-        {player.name}
-      </span>
+      <span className="text-sm font-medium text-brand-700">{player.name}</span>
       <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-ink-600">
         <GradeBoxes grades={player.grades} />
         <span aria-hidden className="text-ink-300">
