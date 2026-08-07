@@ -111,9 +111,6 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
   )
 
   const trimmedQuery = query.trim()
-  const showFreeText =
-    trimmedQuery.length >= 2 &&
-    !players.some((player) => player.name.toLowerCase() === trimmedQuery.toLowerCase())
 
   function handleClose() {
     setQuery('')
@@ -164,33 +161,18 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
           <p className="text-sm text-ink-600">
             Type at least 2 letters to search the player register.
           </p>
-        ) : players.length === 0 && !showFreeText ? (
-          <p className="text-sm text-ink-600">No players match your search. Try another spelling or BE number.</p>
+        ) : players.length === 0 ? (
+          <p className="text-sm text-ink-600">
+            No players match your search. Try another spelling or BE number.
+          </p>
         ) : (
           <div className="max-h-72 space-y-3 overflow-y-auto">
-            {players.length > 0 && (
-              <>
-                {trimmedQuery.length < 2 && (
-                  <p className="text-xs text-ink-500">
-                    Your most recent opponents are shown below. Search above to find anyone else.
-                  </p>
-                )}
-                <PlayersTable players={players} onSelect={handleSelect} />
-              </>
+            {trimmedQuery.length < 2 && (
+              <p className="text-xs text-ink-500">
+                Your most recent opponents are shown below. Search above to find anyone else.
+              </p>
             )}
-
-            {showFreeText && (
-              <button
-                type="button"
-                onClick={() => handleSelect(trimmedQuery)}
-                className="w-full rounded-lg border border-dashed border-ink-200 px-3 py-2.5 text-left text-sm text-ink-700 transition hover:border-brand-300 hover:bg-brand-50"
-              >
-                Use “{trimmedQuery}” as typed
-                <span className="mt-0.5 block text-xs font-normal text-ink-500">
-                  Not in the register — note will be saved under this name
-                </span>
-              </button>
-            )}
+            <PlayersTable players={players} onSelect={handleSelect} />
           </div>
         )}
       </div>
