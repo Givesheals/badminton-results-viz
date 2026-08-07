@@ -19,7 +19,7 @@ function GradeBoxes({ grades }: { grades: [PlayerGrade, PlayerGrade, PlayerGrade
       {grades.map((grade, index) => (
         <span
           key={`${grade}-${index}`}
-          className="inline-flex h-5 w-5 items-center justify-center rounded-sm border border-ink-300 bg-white text-[10px] font-semibold leading-none text-ink-800"
+          className="inline-flex h-[1.125rem] w-[1.125rem] items-center justify-center border border-ink-800 bg-white text-[11px] font-medium leading-none text-ink-900"
         >
           {grade}
         </span>
@@ -28,30 +28,72 @@ function GradeBoxes({ grades }: { grades: [PlayerGrade, PlayerGrade, PlayerGrade
   )
 }
 
-function PlayerResultButton({
-  player,
+function PlayersTable({
+  players,
   onSelect,
 }: {
-  player: NotePlayerResult
+  players: NotePlayerResult[]
   onSelect: (name: string) => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(player.name)}
-      className="flex w-full items-start justify-between gap-3 px-3 py-2.5 text-left transition hover:bg-brand-50"
-    >
-      <span className="min-w-0">
-        <span className="block text-sm font-medium text-brand-700 underline-offset-2 hover:underline">
-          {player.name}
-        </span>
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-600">
-          <span>{player.county || '—'}</span>
-          <GradeBoxes grades={player.grades} />
-          <span className="tabular-nums">BE {player.beNumber}</span>
-        </span>
-      </span>
-    </button>
+    <div className="overflow-hidden rounded-lg border border-ink-200 bg-white shadow-sm">
+      <div className="flex items-center gap-2 border-b border-ink-100 px-3 py-2.5">
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          className="h-4 w-4 shrink-0 text-ink-700"
+          fill="currentColor"
+        >
+          <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
+        </svg>
+        <h3 className="text-sm font-semibold text-ink-800">Players</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[32rem] border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-ink-200 text-ink-900">
+              <th scope="col" className="px-3 py-2 font-semibold">
+                Name
+              </th>
+              <th scope="col" className="px-3 py-2 font-semibold">
+                County
+              </th>
+              <th scope="col" className="px-3 py-2 font-semibold">
+                Grades
+              </th>
+              <th scope="col" className="px-3 py-2 font-semibold">
+                BE Number
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {players.map((player) => (
+              <tr
+                key={player.id}
+                className="border-b border-ink-100 last:border-b-0 hover:bg-ink-50"
+              >
+                <td className="px-3 py-2.5 align-middle">
+                  <button
+                    type="button"
+                    onClick={() => onSelect(player.name)}
+                    className="text-left font-medium text-brand-700 underline underline-offset-2 hover:text-brand-800"
+                  >
+                    {player.name}
+                  </button>
+                </td>
+                <td className="px-3 py-2.5 align-middle text-ink-800">{player.county || ''}</td>
+                <td className="px-3 py-2.5 align-middle">
+                  <GradeBoxes grades={player.grades} />
+                </td>
+                <td className="px-3 py-2.5 align-middle tabular-nums text-ink-800">
+                  {player.beNumber}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   )
 }
 
@@ -63,12 +105,15 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
     [opponents, query],
   )
 
+  const players = useMemo(
+    () => [...fromHistory, ...fromRegister],
+    [fromHistory, fromRegister],
+  )
+
   const trimmedQuery = query.trim()
-  const totalResults = fromHistory.length + fromRegister.length
   const showFreeText =
     trimmedQuery.length >= 2 &&
-    !fromHistory.some((player) => player.name.toLowerCase() === trimmedQuery.toLowerCase()) &&
-    !fromRegister.some((player) => player.name.toLowerCase() === trimmedQuery.toLowerCase())
+    !players.some((player) => player.name.toLowerCase() === trimmedQuery.toLowerCase())
 
   function handleClose() {
     setQuery('')
@@ -85,6 +130,7 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
       open={open}
       onClose={handleClose}
       title="Who is this note about?"
+      size="lg"
       footer={
         <button
           type="button"
@@ -120,38 +166,12 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
             Type at least 2 letters to search the player register, or import match results to see
             people you have already played.
           </p>
-        ) : totalResults === 0 && !showFreeText ? (
+        ) : players.length === 0 && !showFreeText ? (
           <p className="text-sm text-ink-600">No players match your search.</p>
         ) : (
           <div className="max-h-72 space-y-3 overflow-y-auto">
-            {fromHistory.length > 0 && (
-              <section>
-                <h3 className="mb-1 px-0.5 text-xs font-semibold uppercase tracking-wide text-ink-500">
-                  People you have played
-                </h3>
-                <ul className="overflow-hidden rounded-lg border border-ink-100">
-                  {fromHistory.map((player) => (
-                    <li key={player.id} className="border-b border-ink-100 last:border-b-0">
-                      <PlayerResultButton player={player} onSelect={handleSelect} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {fromRegister.length > 0 && (
-              <section>
-                <h3 className="mb-1 px-0.5 text-xs font-semibold uppercase tracking-wide text-ink-500">
-                  All players
-                </h3>
-                <ul className="overflow-hidden rounded-lg border border-ink-100">
-                  {fromRegister.map((player) => (
-                    <li key={player.id} className="border-b border-ink-100 last:border-b-0">
-                      <PlayerResultButton player={player} onSelect={handleSelect} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
+            {players.length > 0 && (
+              <PlayersTable players={players} onSelect={handleSelect} />
             )}
 
             {showFreeText && (

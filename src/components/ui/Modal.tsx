@@ -8,13 +8,19 @@ type Props = {
   children: ReactNode
   /** Optional footer actions (Save, Cancel, etc.) */
   footer?: ReactNode
+  /** Wider panel for dense tables (e.g. player search). */
+  size?: 'md' | 'lg'
 }
 
 const BACKDROP_CLASS = 'fixed inset-0 z-40 bg-ink-900/40'
-const PANEL_CLASS =
-  'card-frame fixed left-1/2 top-1/2 z-50 flex max-h-[min(90vh,640px)] w-[min(100vw-2rem,28rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-2 ring-brand-200 outline-none'
+const PANEL_BASE_CLASS =
+  'card-frame fixed left-1/2 top-1/2 z-50 flex max-h-[min(90vh,640px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-2 ring-brand-200 outline-none'
+const PANEL_WIDTH: Record<'md' | 'lg', string> = {
+  md: 'w-[min(100vw-2rem,28rem)]',
+  lg: 'w-[min(100vw-2rem,40rem)]',
+}
 
-export function Modal({ open, onClose, title, children, footer }: Props) {
+export function Modal({ open, onClose, title, children, footer, size = 'md' }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
 
@@ -44,7 +50,7 @@ export function Modal({ open, onClose, title, children, footer }: Props) {
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={PANEL_CLASS}
+        className={`${PANEL_BASE_CLASS} ${PANEL_WIDTH[size]}`}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             event.stopPropagation()
