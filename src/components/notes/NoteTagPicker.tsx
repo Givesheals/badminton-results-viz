@@ -41,7 +41,7 @@ const COMBO_TEXTAREA_CLASS =
   'w-full resize-y border-0 bg-transparent px-3 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-0'
 
 const BADGE_CLASS =
-  'inline-flex shrink-0 items-center rounded-md border border-brand-300 bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-800 transition hover:bg-brand-100'
+  'inline-flex shrink-0 items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-2 py-0.5 text-xs font-medium text-notes-amber-ink transition hover:bg-notes-amber/15'
 
 const ADD_TAG_CLASS =
   'inline-flex items-center gap-0.5 rounded-lg border border-ink-100 bg-white px-2 py-1 text-xs font-medium text-ink-600 transition hover:bg-ink-50'
@@ -162,7 +162,7 @@ function TagAddRow({
               onClick={() => onAdd(option.label)}
               className={`${ADD_TAG_CLASS} ${
                 emphasizeAddLabel === option.label
-                  ? 'premium-notes-demo-chip-press scale-95 border-brand-300 bg-brand-50 text-brand-800 ring-2 ring-brand-200'
+                  ? 'premium-notes-demo-chip-press scale-95 border-notes-amber/35 bg-notes-amber-soft text-notes-amber-ink ring-2 ring-notes-amber/30'
                   : ''
               }`}
             >
@@ -576,7 +576,7 @@ export function NoteTagChips({ labels }: { labels: string[] }) {
       {labels.map((label) => (
         <span
           key={label}
-          className="inline-flex rounded-md border border-brand-300 bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-800"
+          className="inline-flex rounded-md border border-notes-amber/35 bg-notes-amber-soft px-2 py-0.5 text-xs font-medium text-notes-amber-ink"
         >
           {label}
         </span>

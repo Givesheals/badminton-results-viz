@@ -118,7 +118,7 @@ function TagLibraryBlock({
         <ul className="flex flex-wrap gap-1.5">
           {tags.map((label) => (
             <li key={label}>
-              <span className="inline-flex items-center gap-1 rounded-md border border-brand-300 bg-brand-50 py-0.5 pl-2 pr-1 text-xs font-medium text-brand-800">
+              <span className="inline-flex items-center gap-1 rounded-md border border-notes-amber/35 bg-notes-amber-soft py-0.5 pl-2 pr-1 text-xs font-medium text-notes-amber-ink">
                 {label}
                 <button
                   type="button"
@@ -126,7 +126,7 @@ function TagLibraryBlock({
                     setPendingRemove(label)
                     setMessage(null)
                   }}
-                  className="rounded px-1 text-brand-700 transition hover:bg-brand-100 hover:text-brand-900"
+                  className="rounded px-1 text-notes-amber-ink transition hover:bg-notes-amber/15 hover:text-notes-amber"
                   aria-label={`Remove ${label} from your note tags`}
                   title="Remove from your note tags"
                 >

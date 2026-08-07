@@ -35,7 +35,7 @@ import {
   PairStyleNoteSection,
   SelfFeelNoteSection,
 } from './NoteTagPicker'
-import { LinedNoteIcon } from './OpponentNoteIcons'
+import { NoteStickyIcon } from './OpponentNoteIcons'
 import {
   fullNotesBuildFeatures,
   type NotesBuildFeatures,
@@ -190,7 +190,7 @@ function OpponentSegmentedControl({
             <span className="inline-flex max-w-full items-center justify-center gap-1">
               <span className="min-w-0 truncate">{option.label}</span>
               {hasNote ? (
-                <LinedNoteIcon className="h-3 w-3 shrink-0 text-notes-amber-ink" />
+                <NoteStickyIcon className="h-3 w-3 shrink-0 text-notes-amber-ink" />
               ) : null}
             </span>
           </button>

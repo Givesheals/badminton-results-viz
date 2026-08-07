@@ -1,5 +1,5 @@
 export const OPPONENT_NOTE_ICON_BUTTON_CLASS =
-  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-brand-600 transition hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
+  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-notes-amber-ink transition hover:bg-notes-amber-soft hover:text-notes-amber focus:outline-none focus-visible:ring-2 focus-visible:ring-notes-amber/35'
 
 export function FilePenIcon({ className }: { className?: string }) {
   return (
@@ -17,20 +17,11 @@ export function FileCirclePlusIcon({ className }: { className?: string }) {
   )
 }
 
-/** Compact lined-page glyph for ~12px badges (segment “has a note” markers). */
-export function LinedNoteIcon({ className }: { className?: string }) {
+/** Font Awesome free `note-sticky` — compact “has a note” marker for segment tabs. */
+export function NoteStickyIcon({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      className={className}
-      aria-hidden
-    >
-      <rect x="3.25" y="2.25" width="9.5" height="11.5" rx="1.5" />
-      <path d="M5.5 6h5M5.5 8.5h5M5.5 11h3" />
+    <svg viewBox="0 0 448 512" fill="currentColor" className={className} aria-hidden>
+      <path d="M64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l224 0 0-112c0-26.5 21.5-48 48-48l112 0 0-224c0-35.3-28.7-64-64-64L64 32zM448 352l-45.3 0L336 352c-8.8 0-16 7.2-16 16l0 66.7 0 45.3 32-32 64-64 32-32z" />
     </svg>
   )
 }
