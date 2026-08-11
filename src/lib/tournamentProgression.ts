@@ -1,4 +1,5 @@
 import type { MatchOutcome, NormalizedMatch } from '../types/matchHistory'
+import { DEFAULT_MATCH_FILTERS, type MatchFilters } from '../types/filters'
 import { compareCompetitionAgeOldestFirst } from './competitionAge'
 import { isCompetitiveMatch, isWalkoverWin } from './matchExclusions'
 import { formatTournamentCategory } from './tournamentCategory'
@@ -86,6 +87,8 @@ export type TournamentEntry = {
   competitionName: string
   discipline: string
   disciplineLabel: string
+  /** Raw tournament category value (filter key), e.g. `bronze`. */
+  tournamentCategory: string
   tournamentCategoryLabel: string
   competitionAgeLabel: string | null
   /** Earliest match date at this event — used for first-milestone chronology. */
@@ -204,6 +207,10 @@ export function pickDefaultVisibleAgeLabels(
 
 export type PrimaryComboProgression = {
   label: string
+  /** Raw tournament category value (filter key), e.g. `bronze`. */
+  tournamentCategory: string
+  tournamentCategoryLabel: string
+  competitionAgeLabel: string | null
   tournamentCount: number
   typicalRank: number | null
   typicalLabel: string | null
@@ -233,7 +240,7 @@ export type TournamentProgressionStats = {
   /** Share of tournaments with best finish at knockout or deeper. */
   knockoutOrBetterPercent: number
   tournamentCount: number
-  /** Median depth scoped to the most-played tournament level + age combination. */
+  /** Most-played level + age combo — used to default this section’s filters. */
   primaryCombo: PrimaryComboProgression | null
   /** Best-ever milestones per tournament level + age combination. */
   categoryCompletions: CategoryCompletionRow[]
@@ -817,8 +824,44 @@ export function isRoundRobinChampion(
 }
 
 /**
+ * Intended pure-RR place mapping (not used in the prototype — see rule 1 in the spec).
+ * Place proxy from win count in a complete schedule: 1st → winner, 2nd → runner-up,
+ * middle → group-wins, last → group-stages.
+ *
+ * Deferred because group-only rows usually mean “exited in the box before knockout”,
+ * not a finished round-robin event; applying this mapping over-credits 2nd in the group.
+ */
+export function roundRobinOnlyBestStageFromWinCount(
+  matches: NormalizedMatch[],
+  forAchievements: boolean,
+): ProgressionStage | null {
+  if (!isRoundRobinOnlyEvent(matches)) return null
+
+  const entrantCount = inferGroupEntrantCount(matches)
+  if (entrantCount == null || entrantCount < 3) {
+    return groupExitStage(matches, forAchievements)
+  }
+
+  const expectedMatches = entrantCount - 1
+  const groupMatches = matches.filter(
+    (m) => parseRoundToStage(getMatchRound(m)) === 'group-stages',
+  )
+  if (groupMatches.length < expectedMatches) {
+    return groupExitStage(matches, forAchievements)
+  }
+
+  const wins = countGroupMatchWins(matches, forAchievements)
+  const place = expectedMatches - wins + 1
+
+  if (place <= 1) return 'winner'
+  if (place === 2) return 'runner-up'
+  if (place >= entrantCount) return 'group-stages'
+  return 'group-wins'
+}
+
+/**
  * Apply format rules: pure-knockout depth requires wins; box→KO keeps played depth;
- * RR-only champions promote to winner.
+ * RR-only undefeated full slate promotes to winner (prototype assumes group rows are a box).
  */
 export function refineEarnedBestStage(
   matches: NormalizedMatch[],
@@ -1113,11 +1156,27 @@ function buildPrimaryCombo(
 
   return {
     label: formatCategoryAgeLabel(sample.tournamentCategoryLabel, sample.competitionAgeLabel),
+    tournamentCategory: sample.tournamentCategory,
+    tournamentCategoryLabel: sample.tournamentCategoryLabel,
+    competitionAgeLabel: sample.competitionAgeLabel,
     tournamentCount: slice.tournamentCount,
     typicalRank: slice.typicalRank,
     typicalLabel: slice.typicalLabel,
     depthBarSegments: slice.depthBarSegments,
     knockoutOrBetterPercent: slice.knockoutOrBetterPercent,
+  }
+}
+
+/** Section defaults: most-played knockout level + age, other filters unchanged. */
+export function matchFiltersForPrimaryCombo(
+  primaryCombo: PrimaryComboProgression | null,
+): MatchFilters {
+  if (primaryCombo == null) return { ...DEFAULT_MATCH_FILTERS }
+
+  return {
+    ...DEFAULT_MATCH_FILTERS,
+    competition: primaryCombo.tournamentCategory,
+    competitionAge: primaryCombo.competitionAgeLabel ?? '',
   }
 }
 
@@ -1243,6 +1302,7 @@ export function computeTournamentProgression(
       competitionName: sample.competitionName,
       discipline: sample.discipline,
       disciplineLabel: sample.disciplineLabel,
+      tournamentCategory: sample.tournamentCategory,
       tournamentCategoryLabel: sample.tournamentCategoryLabel,
       competitionAgeLabel: competitionAgeLabelFromMatch(sample),
       eventDate: earliestMatchDate(tournamentMatches),

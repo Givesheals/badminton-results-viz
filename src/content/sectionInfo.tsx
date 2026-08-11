@@ -115,26 +115,18 @@ export const categoryMilestonesInfo = (
 export const tournamentProgressionInfo = (
   <div className={infoBlockClass}>
     <p>
-      One entry per competition and discipline. Typical depth is the median finish at your
-      most-played tournament level and age — so a harder Gold run does not pull down your Bronze
-      average.
+      Defaults to your most-played tournament level and age. Typical run and finish distribution
+      both use the same filters — change age, level, discipline, or time to explore a different
+      slice.
     </p>
     <p>
-      Finish distribution covers every classified tournament in your current filter.
+      Typical depth is the median finish across events in the current filter (one entry per
+      competition and discipline). Leaving in the groups is split into with or without a group
+      match win; early knockout rounds are grouped with quarter-finals on the charts.
     </p>
     <p>
-      County events and tournaments without recognizable group or knockout rounds are excluded.
-      Only competitive matches count — walkovers and no-match rows are left out.
-    </p>
-    <p>
-      If you leave in the group phase, we distinguish exiting in group stages from exiting after
-      at least one group match win. Early knockout rounds are grouped with quarter-finals on the
-      depth bar.
-    </p>
-    <p>
-      Knockout-only draws require a win to reach that round; a single quarter-final loss without
-      a group phase stays at group depth. After a box or round-robin phase, reaching semi-finals
-      or finals counts even when quarter-finals were not played.
+      County events and tournaments without clear group or knockout rounds are excluded. Only
+      competitive matches count — walkovers and no-match rows are left out.
     </p>
   </div>
 )

@@ -5,12 +5,15 @@ import {
   progressionBarMarkerPercentFromTypicalRank,
   progressionBarMarkerRankForUI,
   progressionBarMobileLabel,
-  type PrimaryComboProgression,
   type ProgressionDistributionRow,
 } from '../../lib/tournamentProgression'
 
 type Props = {
-  primaryCombo: PrimaryComboProgression | null
+  typicalLabel: string | null
+  typicalRank: number | null
+  depthBarSegments: ProgressionDistributionRow[]
+  knockoutOrBetterPercent: number
+  tournamentCount: number
 }
 
 function DistributionBar({
@@ -81,48 +84,46 @@ function DistributionBar({
   )
 }
 
-export function TournamentProgressionAverage({ primaryCombo }: Props) {
-  if (
-    primaryCombo == null ||
-    primaryCombo.tournamentCount === 0 ||
-    primaryCombo.typicalLabel == null ||
-    primaryCombo.typicalRank == null
-  ) {
+export function TournamentProgressionAverage({
+  typicalLabel,
+  typicalRank,
+  depthBarSegments,
+  knockoutOrBetterPercent,
+  tournamentCount,
+}: Props) {
+  if (tournamentCount === 0 || typicalLabel == null || typicalRank == null) {
     return (
-      <p className="text-sm text-ink-700">
-        Typical depth appears once you have at least one classified progression tournament.
-      </p>
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium text-ink-900">Typical run</h4>
+        <p className="text-sm text-ink-700">
+          Typical depth appears once you have at least one classified progression tournament in
+          this filter.
+        </p>
+      </div>
     )
   }
-
-  const { label, typicalLabel, typicalRank, depthBarSegments, knockoutOrBetterPercent, tournamentCount } =
-    primaryCombo
 
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-medium text-ink-900">Typical run</h4>
-      <p className="text-center text-sm text-ink-700">
-        <span className="font-medium text-ink-900">{label}</span>
-        <span className="mt-0.5 block text-xs text-ink-500">
-          Your most-played level and age — {tournamentCount}{' '}
-          {tournamentCount === 1 ? 'event' : 'events'}
-        </span>
-      </p>
+
       <p className="text-center text-sm text-ink-700">
         <span className="font-medium text-ink-900">Median depth:</span> {typicalLabel}
         <span className="block text-xs text-ink-500">
           In a typical draw, 66% of players do not get past the group stages.
         </span>
       </p>
+
+      {depthBarSegments.length > 0 ? (
+        <DistributionBar segments={depthBarSegments} typicalRank={typicalRank} />
+      ) : null}
+
       {knockoutOrBetterPercent > 0 ? (
         <p className="text-center text-xs text-ink-500">
           Knockout or better in{' '}
           <span className="font-medium text-ink-700">{knockoutOrBetterPercent}%</span> of these
           events
         </p>
-      ) : null}
-      {depthBarSegments.length > 0 ? (
-        <DistributionBar segments={depthBarSegments} typicalRank={typicalRank} />
       ) : null}
     </div>
   )

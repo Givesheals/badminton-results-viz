@@ -48,12 +48,26 @@ In the dashboard UI, shallower achieved rounds are **auto-claimed on load**; onl
 
 ### Rule 1 — Winning counts regardless of format
 
-**Status:** Implemented  
+**Status:** Implemented (prototype)  
 
 A main final win → `winner`. Walkover final wins count in the achievements path (`bestStageFromMatchesForAchievements`).
 
-**Round-robin-only events** (every parseable round is a group/box/RR label; no knockout bracket): if the player won every group match in a **complete** schedule for a draw of **3+ teams**, depth is `winner`. Draw size is inferred from unique group opponents + 1 (see §5).
+**Group / box rows in the prototype:** Match history often only includes the games the player played. Exiting in a box before knockout looks identical to a finished round-robin (group labels only). For this prototype we **assume group-only rows are a box before knockout**: depth stays `group-stages` / `group-wins`, except the small undefeated pure-RR champion case below.
 
+**Round-robin-only champion (implemented):** if every parseable round is a group/box/RR label, the player won every group match in a **complete** schedule for a draw of **3+** teams, depth is `winner`. Draw size is inferred from unique group opponents + 1 (see §5).
+
+**Intended pure-RR place mapping (deferred — not wired into `bestStageFromMatches`):** when we can tell a true round-robin event from a box→KO group exit (e.g. draw-format metadata), map win count in a complete schedule to:
+
+| Inferred place (from wins) | Depth |
+|----------------------------|--------|
+| 1st (won all group matches) | `winner` |
+| 2nd (one loss in a full slate) | `runner-up` |
+| 3rd … 2nd-last (some wins) | `group-wins` |
+| Last (zero wins) | `group-stages` |
+
+Examples: 5-player RR → 4W `winner`, 3W `runner-up`, 2W/1W `group-wins`, 0W `group-stages`. 4-player RR → 3W `winner`, 2W `runner-up`, 1W `group-wins`, 0W `group-stages`.
+
+Helper kept for that future switch: `roundRobinOnlyBestStageFromWinCount` in `tournamentProgression.ts`. Do not call it from progression until format detection exists — it over-credits 2nd-in-box as `runner-up`.
 ### Rule 2 — Runner-up always counts as runner-up
 
 **Status:** Implemented  
@@ -129,8 +143,8 @@ unique opponents in group-phase matches + 1
 
 - Based on this player’s opponents only; incomplete data may mis-classify.
 - Small round-robin (≤3 teams inferred) blocks 3rd-place podium.
-- RR champion promotion requires entrant count ≥ 3 and a full RR schedule (`group match count ≥ entrantCount − 1`).
-
+- RR champion promotion (prototype) requires entrant count ≥ 3 and a full RR schedule (`group match count ≥ entrantCount − 1`).
+- Deferred win-count place mapping (`roundRobinOnlyBestStageFromWinCount`) needs a way to distinguish true RR events from box→KO group exits.
 **Future:** a `Draw Size` column could replace inference.
 
 ---
@@ -175,6 +189,7 @@ All depth consumers should use `bestStageFromMatches*` (not raw round labels per
 | Box win + R16 loss | `knockout` |
 | 3-team RR, won all group | `winner` |
 | 3-team RR, 1W 1L | `group-wins`; no 3rd |
+| 5-team group-only, 3W 1L (box exit lookalike) | `group-wins` — not `runner-up` (prototype) |
 | QF win + SF loss, no group | `semi-final`; joint-3rd eligible |
 | SF loss, zero competitive wins | No 3rd |
 | WO group win + bronze final win | No 3rd |

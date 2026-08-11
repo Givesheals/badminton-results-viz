@@ -16,6 +16,7 @@ import {
   wonBronzeFinal,
   medianRank,
   mergeKnockoutCountsForProgressionUI,
+  matchFiltersForPrimaryCombo,
   parseRoundToStage,
   percentAtOrBeyondRank,
   progressionBarDisplayWidths,
@@ -48,6 +49,7 @@ function completionEntry(
     competitionName: 'Test Open',
     discipline: 'WD',
     disciplineLabel: "Women's doubles",
+    tournamentCategory: 'bronze',
     tournamentCategoryLabel: 'Bronze',
     competitionAgeLabel: 'U15',
     eventDate: '2025-10-15',
@@ -241,6 +243,21 @@ describe('tournament format rules', () => {
     ]
     expect(bestStageFromMatches(matches)).toBe('group-wins')
     expect(qualifiesForThirdPlace(matches, 'semi-final')).toBe(false)
+  })
+
+  it('treats group-only rows as box exit, not RR place (prototype)', () => {
+    const opponents = ['Team B', 'Team C', 'Team D', 'Team E'] as const
+    const matches = opponents.map((opp, index) =>
+      makeProgressionMatch({
+        round: 'Group A',
+        outcome: index < 3 ? 'win' : 'loss',
+        opponents: opp,
+        date: `2025-10-${15 + index}`,
+      }),
+    )
+    // 3W 1L looks like “2nd in a 5-team RR”, but without KO rows we assume box→KO
+    // and stay on group depth rather than runner-up.
+    expect(bestStageFromMatches(matches)).toBe('group-wins')
   })
 
   it('does not award third place on semi-final loss without a competitive win', () => {
@@ -578,8 +595,18 @@ describe('computeTournamentProgression category combos', () => {
     const stats = computeTournamentProgression(matches)
 
     expect(stats.primaryCombo?.label).toBe('U15 Bronze')
+    expect(stats.primaryCombo?.tournamentCategory).toBe('bronze')
+    expect(stats.primaryCombo?.tournamentCategoryLabel).toBe('Bronze')
+    expect(stats.primaryCombo?.competitionAgeLabel).toBe('U15')
     expect(stats.primaryCombo?.tournamentCount).toBe(3)
     expect(stats.primaryCombo?.typicalLabel).toBe('Group match wins')
+    expect(matchFiltersForPrimaryCombo(stats.primaryCombo)).toEqual({
+      competition: 'bronze',
+      discipline: '',
+      partner: '',
+      time: 'all',
+      competitionAge: 'U15',
+    })
     expect(stats.typicalLabel).toBe('Group match wins')
   })
 
