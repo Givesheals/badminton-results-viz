@@ -13,6 +13,7 @@ type Props = {
   onOpenUserSettings: () => void
   onOpenNotifications: () => void
   onOpenTournamentPreview: () => void
+  onOpenAddNewData: () => void
 }
 
 function InertLink({ children }: { children: ReactNode }) {
@@ -36,6 +37,7 @@ export function UserMenuDrawer({
   onOpenUserSettings,
   onOpenNotifications,
   onOpenTournamentPreview,
+  onOpenAddNewData,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -140,6 +142,18 @@ export function UserMenuDrawer({
           <section>
             <h3 className="mb-3 text-sm font-semibold text-ink-900">Your Account</h3>
             <ul className="space-y-3">
+              <li>
+                <button
+                  type="button"
+                  className="text-left text-base font-medium text-brand-700 hover:text-brand-600"
+                  onClick={() => {
+                    onClose()
+                    onOpenAddNewData()
+                  }}
+                >
+                  Add new data
+                </button>
+              </li>
               <li>
                 <button
                   type="button"

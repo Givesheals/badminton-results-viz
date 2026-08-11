@@ -7,14 +7,19 @@ import {
   type ReactNode,
 } from 'react'
 import { sampleDataset } from '../data/sampleDataset'
-import { parseSpreadsheetFile } from '../lib/parseSpreadsheet'
+import { parseSpreadsheetFile, parseSpreadsheetUrl } from '../lib/parseSpreadsheet'
 import type { ParsedDataset } from '../types/dataset'
+
+/** Bundled prototype dataset — loaded automatically on startup. */
+export const DEFAULT_DATASET_FILE = 'DanBatesAugust.xlsx'
+export const DEFAULT_DATASET_URL = `${import.meta.env.BASE_URL}samples/${DEFAULT_DATASET_FILE}`
 
 type DatasetContextValue = {
   dataset: ParsedDataset | null
   isLoading: boolean
   error: string | null
-  loadFile: (file: File) => Promise<void>
+  loadFile: (file: File) => Promise<boolean>
+  loadFromUrl: (url: string, fileName: string) => Promise<boolean>
   loadSample: () => void
   loadParsed: (parsed: ParsedDataset) => void
   clearDataset: () => void
@@ -36,23 +41,43 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const applyParsed = useCallback((parsed: ParsedDataset) => {
+    if (parsed.rows.length === 0) {
+      throw new Error('No data rows found. Check that the first row contains column headers.')
+    }
+    clearDashboardSectionHash()
+    setDataset(parsed)
+  }, [])
+
   const loadFile = useCallback(async (file: File) => {
     setIsLoading(true)
     setError(null)
     try {
-      const parsed = await parseSpreadsheetFile(file)
-      if (parsed.rows.length === 0) {
-        throw new Error('No data rows found. Check that the first row contains column headers.')
-      }
-      clearDashboardSectionHash()
-      setDataset(parsed)
+      applyParsed(await parseSpreadsheetFile(file))
+      return true
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to read file.'
       setError(message)
+      return false
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [applyParsed])
+
+  const loadFromUrl = useCallback(async (url: string, fileName: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      applyParsed(await parseSpreadsheetUrl(url, fileName))
+      return true
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load file.'
+      setError(message)
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }, [applyParsed])
 
   const loadSample = useCallback(() => {
     setError(null)
@@ -77,11 +102,12 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
       isLoading,
       error,
       loadFile,
+      loadFromUrl,
       loadSample,
       loadParsed,
       clearDataset,
     }),
-    [dataset, isLoading, error, loadFile, loadSample, loadParsed, clearDataset],
+    [dataset, isLoading, error, loadFile, loadFromUrl, loadSample, loadParsed, clearDataset],
   )
 
   return (

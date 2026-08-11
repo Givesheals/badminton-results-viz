@@ -16,9 +16,10 @@ import { getPlayerInitials } from '../../lib/getPlayerInitials'
 
 type Props = {
   playerName: string
+  onOpenAddNewData: () => void
 }
 
-export function PremiumUserMenu({ playerName }: Props) {
+export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
   const { premium, clearSubscription } = usePremium()
   const [menuOpen, setMenuOpen] = useState(false)
   const [signupOpen, setSignupOpen] = useState(false)
@@ -55,6 +56,7 @@ export function PremiumUserMenu({ playerName }: Props) {
         onOpenUserSettings={() => setSettingsOpen(true)}
         onOpenNotifications={() => setNotificationsOpen(true)}
         onOpenTournamentPreview={() => setTournamentPreviewOpen(true)}
+        onOpenAddNewData={onOpenAddNewData}
       />
 
       <UserSettingsPage

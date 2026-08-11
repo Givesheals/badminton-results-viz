@@ -1,7 +1,11 @@
 import { useRef, useState, type DragEvent } from 'react'
 import { useDataset } from '../../context/DatasetContext'
 
-export function FileUpload() {
+type Props = {
+  onLoaded?: () => void
+}
+
+export function FileUpload({ onLoaded }: Props) {
   const { loadFile, loadSample, isLoading, error } = useDataset()
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -9,13 +13,19 @@ export function FileUpload() {
   async function handleFiles(files: FileList | null) {
     const file = files?.[0]
     if (!file) return
-    await loadFile(file)
+    const ok = await loadFile(file)
+    if (ok) onLoaded?.()
   }
 
   function onDrop(event: DragEvent) {
     event.preventDefault()
     setIsDragging(false)
     void handleFiles(event.dataTransfer.files)
+  }
+
+  function handleLoadSample() {
+    loadSample()
+    onLoaded?.()
   }
 
   return (
@@ -78,7 +88,7 @@ export function FileUpload() {
         <p className="text-sm text-ink-700">No file handy?</p>
         <button
           type="button"
-          onClick={loadSample}
+          onClick={handleLoadSample}
           disabled={isLoading}
           className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:opacity-60"
         >

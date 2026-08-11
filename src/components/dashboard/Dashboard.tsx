@@ -23,10 +23,11 @@ import { OpponentNotesProvider } from '../../context/OpponentNotesContext'
 
 type Props = {
   showcaseMode?: boolean
+  onOpenAddNewData?: () => void
 }
 
-export function Dashboard({ showcaseMode = false }: Props) {
-  const { dataset, clearDataset } = useDataset()
+export function Dashboard({ showcaseMode = false, onOpenAddNewData }: Props) {
+  const { dataset } = useDataset()
 
   const allMatches = useMemo(
     () => (dataset ? normalizeDataset(dataset) : []),
@@ -68,13 +69,13 @@ export function Dashboard({ showcaseMode = false }: Props) {
             <p className="text-sm text-ink-700">{dateRange}</p>
           )}
         </div>
-        {!showcaseMode && (
+        {!showcaseMode && onOpenAddNewData && (
           <button
             type="button"
-            onClick={clearDataset}
+            onClick={onOpenAddNewData}
             className="rounded-lg border border-ink-100 bg-white px-3 py-1.5 text-sm text-ink-700 hover:bg-ink-50"
           >
-            Clear & upload another
+            Add new data
           </button>
         )}
       </section>

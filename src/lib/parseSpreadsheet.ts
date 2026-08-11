@@ -66,12 +66,15 @@ function pickSheet(workbook: XLSX.WorkBook): { sheetName: string; sheet: XLSX.Wo
   return { sheetName, sheet }
 }
 
-export async function parseSpreadsheetFile(file: File): Promise<ParsedDataset> {
-  if (!isAcceptedSpreadsheet(file)) {
+export async function parseSpreadsheetArrayBuffer(
+  buffer: ArrayBuffer,
+  fileName: string,
+): Promise<ParsedDataset> {
+  const lower = fileName.toLowerCase()
+  if (!ACCEPTED_EXTENSIONS.some((ext) => lower.endsWith(ext))) {
     throw new Error('Please upload an Excel (.xlsx, .xls) or CSV file.')
   }
 
-  const buffer = await file.arrayBuffer()
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: true })
   const { sheetName, sheet } = pickSheet(workbook)
   const { headers, rows } = sheetToRows(sheet)
@@ -83,11 +86,29 @@ export async function parseSpreadsheetFile(file: File): Promise<ParsedDataset> {
   }
 
   return {
-    fileName: file.name,
+    fileName,
     sheetName,
     headers,
     rows,
     importedAt: new Date().toISOString(),
     format: 'match-history',
   }
+}
+
+export async function parseSpreadsheetFile(file: File): Promise<ParsedDataset> {
+  if (!isAcceptedSpreadsheet(file)) {
+    throw new Error('Please upload an Excel (.xlsx, .xls) or CSV file.')
+  }
+
+  const buffer = await file.arrayBuffer()
+  return parseSpreadsheetArrayBuffer(buffer, file.name)
+}
+
+export async function parseSpreadsheetUrl(url: string, fileName: string): Promise<ParsedDataset> {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to load ${fileName}.`)
+  }
+  const buffer = await response.arrayBuffer()
+  return parseSpreadsheetArrayBuffer(buffer, fileName)
 }
