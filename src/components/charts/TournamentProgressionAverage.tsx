@@ -120,7 +120,7 @@ export function TournamentProgressionAverage({
 
       {knockoutOrBetterPercent > 0 ? (
         <p className="text-center text-xs text-ink-500">
-          Knockout or better in{' '}
+          You reached knockout or better in{' '}
           <span className="font-medium text-ink-700">{knockoutOrBetterPercent}%</span> of these
           events
         </p>

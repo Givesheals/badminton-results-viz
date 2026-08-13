@@ -40,6 +40,27 @@ function percentDomain(rows: Row[]): [number, number] {
   return [0, Math.min(100, Math.ceil(padded / step) * step)]
 }
 
+function FinishDistributionTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: { payload: Row }[]
+}) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload
+  if (!row) return null
+
+  return (
+    <div className="rounded-lg card-frame bg-white px-3 py-2 text-sm shadow-md">
+      <p className="font-medium text-ink-900">{row.label}</p>
+      <p className="mt-1 text-ink-700">
+        {row.count} ({row.percent}%)
+      </p>
+    </div>
+  )
+}
+
 function BarPercentLabel(props: LabelProps & { rows: Row[] }) {
   const { x, y, width, height, value, index, rows } = props
   if (
@@ -116,12 +137,7 @@ export function TournamentProgressionChart({ data, tournamentCount }: Props) {
           width={yAxisWidth}
           tick={{ fontSize: 12, fill: 'var(--color-ink-700)' }}
         />
-        <Tooltip
-          formatter={(_value, _name, item) => {
-            const row = item.payload as Row
-            return [`${row.count} (${row.percent}%)`, row.label]
-          }}
-        />
+        <Tooltip content={<FinishDistributionTooltip />} />
         <Bar dataKey="percent" radius={[0, 4, 4, 0]}>
           {data.map((entry) => (
             <Cell key={entry.stage} fill={PROGRESSION_STAGE_COLORS[entry.stage]} />
