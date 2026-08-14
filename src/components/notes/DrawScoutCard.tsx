@@ -14,6 +14,7 @@ import {
   getDefaultCompetitionSlug,
   getDefaultPlayerName,
   getDisciplinePairIdentityLabel,
+  getDisciplineProgressStatus,
   getDrawRoundSectionRoles,
   getEntrantForCompetition,
   getExactDrawPairNotes,
@@ -27,6 +28,9 @@ import {
   laterOpponentToMatchup,
   listActiveDrawScoutCompetitions,
   shouldAutoShowDrawScoutCard,
+  shouldShowYouMayAlsoMeet,
+  splitPlayedAndNextMatchups,
+  type DisciplineProgressStatus,
   type DrawRoundSectionRole,
   type DrawScoutCompetition,
   type DrawScoutLaterOpponent,
@@ -135,6 +139,30 @@ function ChevronIcon({ open }: { open: boolean }) {
         clipRule="evenodd"
       />
     </svg>
+  )
+}
+
+/** Live-feed status on the discipline title: green/pink chip, or a gold medal for champions. */
+function DisciplineProgressMark({ status }: { status: DisciplineProgressStatus }) {
+  if (status.tone === 'champion') {
+    return (
+      <span className="text-base leading-none" title="Champion" aria-label="Champion">
+        🥇
+      </span>
+    )
+  }
+
+  const chipClass =
+    status.tone === 'lost'
+      ? 'bg-loss-100 text-loss-700'
+      : 'bg-court-100 text-court-700'
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipClass}`}
+    >
+      {status.label}
+    </span>
   )
 }
 
@@ -714,6 +742,49 @@ function ProbableNextMatchupBlock({
   )
 }
 
+function RoundMatchupList({
+  matchups,
+  compact,
+  disciplineCode,
+  displayNotes,
+  displayMatches,
+  playerName,
+  matchByKey,
+  viewingOwnDraw,
+  competitionStatus,
+  matchHistoryEnabled,
+}: {
+  matchups: DrawMatchup[]
+  compact: boolean
+  disciplineCode: string
+  displayNotes: OpponentNote[]
+  displayMatches: NormalizedMatch[]
+  playerName: string
+  matchByKey: Map<string, NormalizedMatch>
+  viewingOwnDraw?: boolean
+  competitionStatus?: DrawCompetitionStatus | null
+  matchHistoryEnabled?: boolean
+}) {
+  return (
+    <div className={compact ? 'mt-1 space-y-1' : 'mt-1.5 space-y-2'}>
+      {matchups.map((matchup) => (
+        <MatchupBlock
+          key={matchup.id}
+          matchup={matchup}
+          displayNotes={displayNotes}
+          displayMatches={displayMatches}
+          playerName={playerName}
+          matchByKey={matchByKey}
+          disciplineCode={disciplineCode}
+          viewingOwnDraw={viewingOwnDraw}
+          competitionStatus={competitionStatus}
+          matchHistoryEnabled={matchHistoryEnabled}
+        />
+      ))}
+    </div>
+  )
+}
+
 function RoundGroupBlock({
   disciplineCode,
   roundLabel,
@@ -741,6 +812,29 @@ function RoundGroupBlock({
 }) {
   const heading = formatDrawRoundSectionHeading(roundLabel, sectionRole)
   const isUpNext = sectionRole === 'up-next'
+  const { played, next } = splitPlayedAndNextMatchups(matchups)
+  const mixed = played.length > 0 && next.length > 0
+  const listProps = {
+    disciplineCode,
+    displayNotes,
+    displayMatches,
+    playerName,
+    matchByKey,
+    viewingOwnDraw,
+    competitionStatus,
+    matchHistoryEnabled,
+  }
+
+  if (mixed) {
+    return (
+      <div className="mt-3 first:mt-2">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-ink-400">Played</p>
+        <RoundMatchupList matchups={played} compact {...listProps} />
+        <p className="mt-3 text-sm font-semibold tracking-tight text-ink-900">Next</p>
+        <RoundMatchupList matchups={next} compact={false} {...listProps} />
+      </div>
+    )
+  }
 
   return (
     <div className={`mt-3 first:mt-2 ${isUpNext ? 'mt-4 first:mt-3' : ''}`}>
@@ -758,22 +852,11 @@ function RoundGroupBlock({
           {heading.title}
         </p>
       )}
-      <div className={`${isUpNext ? 'mt-1.5' : 'mt-1'} ${isUpNext ? 'space-y-2' : 'space-y-1'}`}>
-        {matchups.map((matchup) => (
-          <MatchupBlock
-            key={matchup.id}
-            matchup={matchup}
-            displayNotes={displayNotes}
-            displayMatches={displayMatches}
-            playerName={playerName}
-            matchByKey={matchByKey}
-            disciplineCode={disciplineCode}
-            viewingOwnDraw={viewingOwnDraw}
-            competitionStatus={competitionStatus}
-            matchHistoryEnabled={matchHistoryEnabled}
-          />
-        ))}
-      </div>
+      <RoundMatchupList
+        matchups={matchups}
+        compact={!isUpNext}
+        {...listProps}
+      />
     </div>
   )
 }
@@ -1159,12 +1242,18 @@ function DisciplineBlock({
       ),
     [group.disciplineCode, group.matchups, laterOpponents],
   )
+  const progress = useMemo(
+    () => getDisciplineProgressStatus(group, laterOpponents),
+    [group, laterOpponents],
+  )
+  const showLater = shouldShowYouMayAlsoMeet(progress)
 
   return (
     <div className="border-t border-ink-200/80 pt-4 first:border-t-0 first:pt-0">
-      <div className="flex items-center gap-2">
-        <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} aria-hidden />
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dotClass}`} aria-hidden />
         <h4 className="text-sm font-bold text-ink-900">{group.disciplineLabel}</h4>
+        <DisciplineProgressMark status={progress} />
       </div>
       {entrantIdentity != null ? (
         <p className="mt-0.5 text-sm text-ink-600">{entrantIdentity}</p>
@@ -1186,17 +1275,19 @@ function DisciplineBlock({
             matchHistoryEnabled={matchHistoryEnabled}
           />
         ))}
-        <DisciplineLaterSection
-          laterOpponents={disciplineLaterOpponents}
-          disciplineCode={group.disciplineCode}
-          displayNotes={displayNotes}
-          displayMatches={displayMatches}
-          playerName={playerName}
-          matchByKey={matchByKey}
-          viewingOwnDraw={viewingOwnDraw}
-          viewedPlayerName={viewedPlayerName}
-          matchHistoryEnabled={matchHistoryEnabled}
-        />
+        {showLater ? (
+          <DisciplineLaterSection
+            laterOpponents={disciplineLaterOpponents}
+            disciplineCode={group.disciplineCode}
+            displayNotes={displayNotes}
+            displayMatches={displayMatches}
+            playerName={playerName}
+            matchByKey={matchByKey}
+            viewingOwnDraw={viewingOwnDraw}
+            viewedPlayerName={viewedPlayerName}
+            matchHistoryEnabled={matchHistoryEnabled}
+          />
+        ) : null}
       </div>
     </div>
   )

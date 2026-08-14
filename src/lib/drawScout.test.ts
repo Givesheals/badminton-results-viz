@@ -18,8 +18,12 @@ import {
   groupMatchupsByRound,
   groupLaterOpponentsByRound,
   formatDrawRoundSectionHeading,
+  formatLiveFeedRoundPhrase,
+  getDisciplineProgressStatus,
   getDrawRoundSectionRoles,
   isDrawScoutCompetitionActive,
+  shouldShowYouMayAlsoMeet,
+  splitPlayedAndNextMatchups,
   isDrawScoutCompetitionExpired,
   laterOpponentDisplayName,
   shouldAutoShowDrawScoutCard,
@@ -424,16 +428,148 @@ describe('drawScout', () => {
       subtitle: null,
     })
     expect(formatDrawRoundSectionHeading('Group A', 'up-next')).toEqual({
-      title: 'Still in group stages',
-      subtitle: 'Group A',
+      title: 'Next',
+      subtitle: null,
     })
     expect(formatDrawRoundSectionHeading('Quarter-finals', 'up-next')).toEqual({
-      title: 'Up next · Quarter-finals',
+      title: 'Quarter-finals',
       subtitle: null,
     })
     expect(formatDrawRoundSectionHeading('Semi-finals', 'up-next')).toEqual({
-      title: 'Up next · Semi-finals',
+      title: 'Semi-finals',
       subtitle: null,
+    })
+  })
+
+  it('splits mixed group matchups into played then next, keeping fixture order', () => {
+    const os = simon.disciplineGroups.find((group) => group.disciplineCode === 'OS')!
+    const { played, next } = splitPlayedAndNextMatchups(os.matchups)
+    expect(played.map((matchup) => matchup.id)).toEqual(['os3'])
+    expect(next.map((matchup) => matchup.id)).toEqual(['os1', 'os2'])
+  })
+
+  it('formats live-feed round phrases for companion chips', () => {
+    expect(formatLiveFeedRoundPhrase('Group B')).toBe('group stages')
+    expect(formatLiveFeedRoundPhrase('Quarter-finals')).toBe('quarter final')
+    expect(formatLiveFeedRoundPhrase('Semi-finals')).toBe('semi final')
+    expect(formatLiveFeedRoundPhrase('Final')).toBe('final')
+    expect(formatLiveFeedRoundPhrase('Round of 16')).toBe('round of 16')
+  })
+
+  it('derives discipline progress: still in groups, knockout next, lost, champion', () => {
+    const os = simon.disciplineGroups.find((group) => group.disciplineCode === 'OS')!
+    const od = simon.disciplineGroups.find((group) => group.disciplineCode === 'OD')!
+    const later = cambs.laterOpponentsByEntrant['Simon Parker'] ?? []
+
+    expect(getDisciplineProgressStatus(os, later)).toEqual({
+      kind: 'group-stages',
+      label: 'Group stages',
+      tone: 'next',
+    })
+    expect(getDisciplineProgressStatus(od, later)).toEqual({
+      kind: 'knockout-next',
+      label: 'Quarter final next',
+      tone: 'next',
+    })
+    expect(shouldShowYouMayAlsoMeet(getDisciplineProgressStatus(os, later))).toBe(true)
+
+    const lostGroup = {
+      disciplineCode: 'OS',
+      disciplineLabel: 'Open Singles',
+      matchups: [
+        {
+          id: 'l1',
+          roundLabel: 'Group A',
+          yourSide: [{ name: 'You', url: '' }],
+          opponentSide: [{ name: 'A', url: '' }],
+          result: { outcome: 'win' as const, scoreSummary: '21-10' },
+        },
+        {
+          id: 'l2',
+          roundLabel: 'Group A',
+          yourSide: [{ name: 'You', url: '' }],
+          opponentSide: [{ name: 'B', url: '' }],
+          result: { outcome: 'loss' as const, scoreSummary: '15-21' },
+        },
+      ],
+    }
+    expect(getDisciplineProgressStatus(lostGroup, [
+      {
+        opponentSide: [{ name: 'Later', url: '' }],
+        disciplineCode: 'OS',
+        roundLabel: 'Quarter-finals',
+        probability: 0.5,
+      },
+    ])).toEqual({
+      kind: 'lost-in-groups',
+      label: 'Lost in group stages',
+      tone: 'lost',
+    })
+    expect(shouldShowYouMayAlsoMeet(getDisciplineProgressStatus(lostGroup))).toBe(false)
+
+    const championGroup = {
+      disciplineCode: 'OS',
+      disciplineLabel: 'Open Singles',
+      matchups: [
+        {
+          id: 'c1',
+          roundLabel: 'Group A',
+          yourSide: [{ name: 'You', url: '' }],
+          opponentSide: [{ name: 'A', url: '' }],
+          result: { outcome: 'win' as const, scoreSummary: '21-10' },
+        },
+        {
+          id: 'c2',
+          roundLabel: 'Group A',
+          yourSide: [{ name: 'You', url: '' }],
+          opponentSide: [{ name: 'B', url: '' }],
+          result: { outcome: 'win' as const, scoreSummary: '21-12' },
+        },
+      ],
+    }
+    expect(getDisciplineProgressStatus(championGroup)).toEqual({
+      kind: 'champion',
+      label: 'Champion',
+      tone: 'champion',
+    })
+    expect(shouldShowYouMayAlsoMeet(getDisciplineProgressStatus(championGroup))).toBe(false)
+
+    const lostQf = {
+      disciplineCode: 'OS',
+      disciplineLabel: 'Open Singles',
+      matchups: [
+        {
+          id: 'q1',
+          roundLabel: 'Quarter-finals',
+          yourSide: [{ name: 'You', url: '' }],
+          opponentSide: [{ name: 'A', url: '' }],
+          result: { outcome: 'loss' as const, scoreSummary: '19-21' },
+        },
+      ],
+    }
+    expect(getDisciplineProgressStatus(lostQf)).toEqual({
+      kind: 'lost-in-round',
+      label: 'Lost in quarter final',
+      tone: 'lost',
+    })
+
+    const wonFinal = {
+      disciplineCode: 'OS',
+      disciplineLabel: 'Open Singles',
+      matchups: [
+        {
+          id: 'f1',
+          roundLabel: 'Final',
+          yourSide: [{ name: 'You', url: '' }],
+          opponentSide: [{ name: 'A', url: '' }],
+          result: { outcome: 'win' as const, scoreSummary: '21-15' },
+        },
+      ],
+    }
+    expect(getDisciplineProgressStatus(wonFinal)).toEqual({
+      kind: 'champion',
+      label: 'Champion',
+      tone: 'champion',
     })
   })
 

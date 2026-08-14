@@ -221,7 +221,27 @@ const simonSinglesDoublesMixed: DrawDisciplineGroup[] = [
   },
 ]
 
-const saraXd: DrawDisciplineGroup[] = [
+const saraDraw: DrawDisciplineGroup[] = [
+  {
+    disciplineCode: 'OS',
+    disciplineLabel: 'Open Singles',
+    matchups: [
+      {
+        id: 'sara-os1',
+        roundLabel: 'Group A',
+        yourSide: [player('Sara Moore')],
+        opponentSide: [player('Isla Bennett')],
+        result: { outcome: 'loss', scoreSummary: '19-21, 16-21' },
+      },
+      {
+        id: 'sara-os2',
+        roundLabel: 'Group A',
+        yourSide: [player('Sara Moore')],
+        opponentSide: [player('Chloe Adams')],
+        result: { outcome: 'loss', scoreSummary: '21-18, 19-21, 18-21' },
+      },
+    ],
+  },
   {
     disciplineCode: 'XD',
     disciplineLabel: 'Mixed Doubles',
@@ -242,7 +262,27 @@ const saraXd: DrawDisciplineGroup[] = [
   },
 ]
 
-const martinOd: DrawDisciplineGroup[] = [
+const martinDraw: DrawDisciplineGroup[] = [
+  {
+    disciplineCode: 'OS',
+    disciplineLabel: 'Open Singles',
+    matchups: [
+      {
+        id: 'martin-os1',
+        roundLabel: 'Group D',
+        yourSide: [player('Martin Crossley')],
+        opponentSide: [player('Noah Price')],
+        result: { outcome: 'win', scoreSummary: '21-12, 21-16' },
+      },
+      {
+        id: 'martin-os2',
+        roundLabel: 'Group D',
+        yourSide: [player('Martin Crossley')],
+        opponentSide: [player('Ryan Cole')],
+        result: { outcome: 'win', scoreSummary: '21-14, 21-18' },
+      },
+    ],
+  },
   {
     disciplineCode: 'OD',
     disciplineLabel: 'Open Doubles',
@@ -341,12 +381,12 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
       {
         name: 'Sara Moore',
         isFavourite: true,
-        disciplineGroups: saraXd,
+        disciplineGroups: saraDraw,
       },
       {
         name: 'Martin Crossley',
         isFavourite: true,
-        disciplineGroups: martinOd,
+        disciplineGroups: martinDraw,
       },
       ...EXTRA_FAVOURITE_NAMES.map((name) => ({
         name,

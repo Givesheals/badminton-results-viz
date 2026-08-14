@@ -372,7 +372,10 @@ export type DrawRoundSectionHeading = {
   subtitle: string | null
 }
 
-/** Copy for round headers: played archive vs clear “still in groups” / “up next”. */
+/**
+ * Copy for round headers. Discipline-level chips now carry “still in groups”;
+ * round labels stay short so mixed played/next lists can use Played / Next.
+ */
 export function formatDrawRoundSectionHeading(
   roundLabel: string,
   role: DrawRoundSectionRole,
@@ -381,9 +384,149 @@ export function formatDrawRoundSectionHeading(
     return { title: `Played · ${roundLabel}`, subtitle: null }
   }
   if (isGroupRoundLabel(roundLabel)) {
-    return { title: 'Still in group stages', subtitle: roundLabel }
+    return { title: 'Next', subtitle: null }
   }
-  return { title: `Up next · ${roundLabel}`, subtitle: null }
+  return { title: roundLabel, subtitle: null }
+}
+
+/** Split a round’s cards into played archive vs still to play, keeping fixture order. */
+export function splitPlayedAndNextMatchups(matchups: readonly DrawMatchup[]): {
+  played: DrawMatchup[]
+  next: DrawMatchup[]
+} {
+  const played: DrawMatchup[] = []
+  const next: DrawMatchup[] = []
+  for (const matchup of matchups) {
+    if (isPlayedMatchup(matchup)) played.push(matchup)
+    else next.push(matchup)
+  }
+  return { played, next }
+}
+
+export function isFinalRoundLabel(roundLabel: string): boolean {
+  return /^(the\s+)?finals?$/i.test(roundLabel.trim())
+}
+
+/**
+ * Live-feed style round phrase: “quarter final”, “semi final”, “group stages”.
+ * Used in companion chips (“Quarter final next”, “Lost in group stages”).
+ */
+export function formatLiveFeedRoundPhrase(roundLabel: string): string {
+  if (isGroupRoundLabel(roundLabel)) return 'group stages'
+  const normalized = roundLabel.trim().toLowerCase().replace(/-/g, ' ')
+  return normalized.replace(/finals\b/, 'final')
+}
+
+function capitalizeFirst(value: string): string {
+  if (value.length === 0) return value
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
+export type DisciplineProgressKind =
+  | 'group-stages'
+  | 'knockout-next'
+  | 'lost-in-groups'
+  | 'lost-in-round'
+  | 'champion'
+
+export type DisciplineProgressTone = 'next' | 'lost' | 'champion'
+
+export type DisciplineProgressStatus = {
+  kind: DisciplineProgressKind
+  /** Chip or accessible label, e.g. “Group stages”, “Quarter final next”, “Champion”. */
+  label: string
+  tone: DisciplineProgressTone
+}
+
+function progressStatus(
+  kind: DisciplineProgressKind,
+  label: string,
+  tone: DisciplineProgressTone,
+): DisciplineProgressStatus {
+  return { kind, label, tone }
+}
+
+function groupStagesStatus(): DisciplineProgressStatus {
+  return progressStatus('group-stages', 'Group stages', 'next')
+}
+
+function knockoutNextStatus(roundLabel: string): DisciplineProgressStatus {
+  const phrase = formatLiveFeedRoundPhrase(roundLabel)
+  return progressStatus('knockout-next', `${capitalizeFirst(phrase)} next`, 'next')
+}
+
+function lostInGroupsStatus(): DisciplineProgressStatus {
+  return progressStatus('lost-in-groups', 'Lost in group stages', 'lost')
+}
+
+function lostInRoundStatus(roundLabel: string): DisciplineProgressStatus {
+  return progressStatus(
+    'lost-in-round',
+    `Lost in ${formatLiveFeedRoundPhrase(roundLabel)}`,
+    'lost',
+  )
+}
+
+function championStatus(): DisciplineProgressStatus {
+  return progressStatus('champion', 'Champion', 'champion')
+}
+
+/**
+ * Where the viewed player stands in this discipline — drives the heading chip
+ * or gold medal, and whether “may also meet” still belongs on screen.
+ */
+export function getDisciplineProgressStatus(
+  group: DrawDisciplineGroup,
+  laterOpponents: readonly DrawScoutLaterOpponent[] = [],
+): DisciplineProgressStatus {
+  const laterForDiscipline = laterOpponents.filter(
+    (opponent) => opponent.disciplineCode === group.disciplineCode,
+  )
+  const groupMatchups = group.matchups.filter((matchup) =>
+    isGroupRoundLabel(matchup.roundLabel),
+  )
+  const knockoutMatchups = group.matchups.filter(
+    (matchup) => !isGroupRoundLabel(matchup.roundLabel),
+  )
+
+  const unfinishedGroup = groupMatchups.filter(
+    (matchup) => !isPlayedMatchup(matchup),
+  )
+  if (unfinishedGroup.length > 0) return groupStagesStatus()
+
+  const unfinishedKnockout = knockoutMatchups.filter(
+    (matchup) => isProbableNextMatchup(matchup) || !isPlayedMatchup(matchup),
+  )
+  if (unfinishedKnockout.length > 0) {
+    return knockoutNextStatus(unfinishedKnockout[0]!.roundLabel)
+  }
+
+  const playedKnockout = knockoutMatchups.filter(isPlayedMatchup)
+  if (playedKnockout.length > 0) {
+    const last = playedKnockout[playedKnockout.length - 1]!
+    if (last.result?.outcome === 'win') {
+      if (isFinalRoundLabel(last.roundLabel) || laterForDiscipline.length === 0) {
+        return championStatus()
+      }
+      return knockoutNextStatus(laterForDiscipline[0]!.roundLabel)
+    }
+    return lostInRoundStatus(last.roundLabel)
+  }
+
+  if (groupMatchups.length > 0 && groupMatchups.every(isPlayedMatchup)) {
+    const allWins = groupMatchups.every((matchup) => matchup.result?.outcome === 'win')
+    if (allWins && laterForDiscipline.length > 0) {
+      return knockoutNextStatus(laterForDiscipline[0]!.roundLabel)
+    }
+    if (allWins) return championStatus()
+    return lostInGroupsStatus()
+  }
+
+  return groupStagesStatus()
+}
+
+export function shouldShowYouMayAlsoMeet(status: DisciplineProgressStatus): boolean {
+  return status.kind === 'group-stages' || status.kind === 'knockout-next'
 }
 
 export function formatMatchResultOutcome(outcome: 'win' | 'loss'): string {

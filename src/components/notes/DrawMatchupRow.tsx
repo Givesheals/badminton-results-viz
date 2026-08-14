@@ -175,6 +175,14 @@ function PlayedMatchupBody({
   )
 }
 
+function NextInline() {
+  return (
+    <p className="text-[11px] leading-tight">
+      <span className="font-bold uppercase tracking-wide text-court-700">Next</span>
+    </p>
+  )
+}
+
 /**
  * Unplayed / definite up-next: opponents only — your side lives under the
  * discipline title for doubles/mixed, so repeating it here is redundant.
@@ -190,7 +198,11 @@ function UpcomingOpponentBody({
 }) {
   return (
     <div className="min-w-0">
-      <DrawPairNames players={matchup.opponentSide} />
+      <NextInline />
+      <DrawPairNames
+        players={matchup.opponentSide}
+        className="mt-0.5 min-w-0 text-sm leading-snug text-ink-900"
+      />
       {teaser != null ? (
         <UpcomingIntelTeaserLine teaser={teaser} />
       ) : showEmptyHint ? (
