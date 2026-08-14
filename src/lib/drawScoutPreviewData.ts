@@ -89,8 +89,8 @@ function player(name: string, extra: { seedLabel?: string; rating?: number } = {
 
 /**
  * Simon’s progressive draw story (one scroll, three stages):
- * - Singles: groups not started (upcoming cards + QF/SF in “may also meet”);
- *   Callum still busy in OD
+ * - Singles: one group game played, two still to play (mixed compact + upcoming
+ *   cards + QF/SF in “may also meet”); Callum still busy in OD
  * - Doubles: groups done (compact results) + QF probable with path status per side
  * - Mixed: groups done with wins (compact results) + QF definite opponent (advanced)
  */
@@ -113,12 +113,13 @@ const simonSinglesDoublesMixed: DrawDisciplineGroup[] = [
         yourSide: [player('Simon Parker')],
         opponentSide: [player('Callum Reed')],
       },
-      // Neither notes nor games — unplayed (box of four)
+      // Neither notes nor games — played win (two group games still to play)
       {
         id: 'os3',
         roundLabel: 'Group C',
         yourSide: [player('Simon Parker')],
         opponentSide: [player('Owen Blake')],
+        result: { outcome: 'win', scoreSummary: '21-15, 21-12' },
       },
     ],
   },

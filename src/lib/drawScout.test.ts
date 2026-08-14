@@ -519,12 +519,17 @@ describe('drawScout', () => {
     expect(owen).toEqual({ noteCount: 0, gamesPlayed: 0 })
   })
 
-  it('includes progressive draw states: unplayed singles, probable OD QF, definite XD QF', () => {
+  it('includes progressive draw states: mixed singles group, probable OD QF, definite XD QF', () => {
     const os = simon.disciplineGroups.find((group) => group.disciplineCode === 'OS')!
     const od = simon.disciplineGroups.find((group) => group.disciplineCode === 'OD')!
     const xd = simon.disciplineGroups.find((group) => group.disciplineCode === 'XD')!
 
-    expect(os.matchups.every((matchup) => matchup.result == null)).toBe(true)
+    expect(os.matchups.filter((matchup) => matchup.result != null)).toHaveLength(1)
+    expect(os.matchups.filter((matchup) => matchup.result == null)).toHaveLength(2)
+    expect(os.matchups.find((matchup) => matchup.id === 'os3')?.result).toEqual({
+      outcome: 'win',
+      scoreSummary: '21-15, 21-12',
+    })
     expect(os.matchups.every((matchup) => matchup.opponentPending !== true)).toBe(true)
 
     expect(od.matchups.filter((matchup) => matchup.result != null)).toHaveLength(2)
