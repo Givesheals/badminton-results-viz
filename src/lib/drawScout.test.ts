@@ -424,19 +424,19 @@ describe('drawScout', () => {
     expect(roles.get('Group G')).toBe('played')
     expect(roles.get('Quarter-finals')).toBe('up-next')
     expect(formatDrawRoundSectionHeading('Group G', 'played')).toEqual({
-      title: 'Played · Group G',
+      title: 'Played · Group stages',
       subtitle: null,
     })
     expect(formatDrawRoundSectionHeading('Group A', 'up-next')).toEqual({
-      title: 'Next',
+      title: 'Next · Group stages',
       subtitle: null,
     })
     expect(formatDrawRoundSectionHeading('Quarter-finals', 'up-next')).toEqual({
-      title: 'Quarter-finals',
+      title: 'Next · Quarter-finals',
       subtitle: null,
     })
     expect(formatDrawRoundSectionHeading('Semi-finals', 'up-next')).toEqual({
-      title: 'Semi-finals',
+      title: 'Next · Semi-finals',
       subtitle: null,
     })
   })

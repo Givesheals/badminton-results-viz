@@ -697,7 +697,7 @@ function ProbableNextMatchupBlock({
     'mt-2 w-fit rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
   // Full-width matchup cards on a shared tinted ground — groups the section without
-  // nesting cards inside another card shell. Round header (“Up next · …”) lives above.
+  // nesting cards inside another card shell. Round header (“Next · …”) lives above.
   // Path-until-decided lives on each probable row (pathStatus), not as a section lead-in.
   return (
     <div className={`rounded-xl border border-ink-100 ${disciplineStyle.rowBgClass} p-2`}>
@@ -828,9 +828,13 @@ function RoundGroupBlock({
   if (mixed) {
     return (
       <div className="mt-3 first:mt-2">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-ink-400">Played</p>
+        <p className="text-[11px] font-medium uppercase tracking-wide text-ink-400">
+          {formatDrawRoundSectionHeading(roundLabel, 'played').title}
+        </p>
         <RoundMatchupList matchups={played} compact {...listProps} />
-        <p className="mt-3 text-sm font-semibold tracking-tight text-ink-900">Next</p>
+        <p className="mt-3 text-sm font-semibold tracking-tight text-ink-900">
+          {formatDrawRoundSectionHeading(roundLabel, 'up-next').title}
+        </p>
         <RoundMatchupList matchups={next} compact={false} {...listProps} />
       </div>
     )

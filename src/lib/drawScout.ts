@@ -372,21 +372,25 @@ export type DrawRoundSectionHeading = {
   subtitle: string | null
 }
 
+/** Round name in Played / Next headings — groups use “Group stages”, not the box letter. */
+export function formatRoundSectionName(roundLabel: string): string {
+  if (isGroupRoundLabel(roundLabel)) return 'Group stages'
+  return roundLabel
+}
+
 /**
- * Copy for round headers. Discipline-level chips now carry “still in groups”;
- * round labels stay short so mixed played/next lists can use Played / Next.
+ * Copy for round headers: always Played/Next plus the round, so the list
+ * still makes sense without looking back at the discipline chip.
  */
 export function formatDrawRoundSectionHeading(
   roundLabel: string,
   role: DrawRoundSectionRole,
 ): DrawRoundSectionHeading {
+  const roundName = formatRoundSectionName(roundLabel)
   if (role === 'played') {
-    return { title: `Played · ${roundLabel}`, subtitle: null }
+    return { title: `Played · ${roundName}`, subtitle: null }
   }
-  if (isGroupRoundLabel(roundLabel)) {
-    return { title: 'Next', subtitle: null }
-  }
-  return { title: roundLabel, subtitle: null }
+  return { title: `Next · ${roundName}`, subtitle: null }
 }
 
 /** Split a round’s cards into played archive vs still to play, keeping fixture order. */
