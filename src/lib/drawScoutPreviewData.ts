@@ -76,6 +76,7 @@ const PLAYER_RATINGS: Record<string, number> = {
   'Callum Reed': 548,
   'Harry Quinn': 540,
   'Owen Blake': 536,
+  'Lewis Hart': 529,
 }
 
 function player(name: string, extra: { seedLabel?: string; rating?: number } = {}): DrawPlayer {
@@ -89,7 +90,7 @@ function player(name: string, extra: { seedLabel?: string; rating?: number } = {
 
 /**
  * Simon’s progressive draw story (one scroll, three stages):
- * - Singles: one group game played, two still to play (mixed compact + upcoming
+ * - Singles: one group game played, three still to play (mixed compact + upcoming
  *   cards + QF/SF in “may also meet”); Callum still busy in OD
  * - Doubles: groups done (compact results) + QF probable with path status per side
  * - Mixed: groups done with wins (compact results) + QF definite opponent (advanced)
@@ -113,13 +114,20 @@ const simonSinglesDoublesMixed: DrawDisciplineGroup[] = [
         yourSide: [player('Simon Parker')],
         opponentSide: [player('Callum Reed')],
       },
-      // Neither notes nor games — played win (two group games still to play)
+      // Neither notes nor games — played win
       {
         id: 'os3',
         roundLabel: 'Group C',
         yourSide: [player('Simon Parker')],
         opponentSide: [player('Owen Blake')],
         result: { outcome: 'win', scoreSummary: '21-15, 21-12' },
+      },
+      // Neither notes nor games — unplayed (plain card, fourth group game)
+      {
+        id: 'os4',
+        roundLabel: 'Group C',
+        yourSide: [player('Simon Parker')],
+        opponentSide: [player('Lewis Hart')],
       },
     ],
   },
@@ -328,6 +336,48 @@ const EXTRA_FAVOURITE_NAMES = [
   'Corinna Wong',
 ]
 
+/** Callum is Simon’s OS opponent and still in OD — Whose draw can land on his OD run. */
+const callumDraw: DrawDisciplineGroup[] = [
+  {
+    disciplineCode: 'OS',
+    disciplineLabel: 'Open Singles',
+    matchups: [
+      {
+        id: 'callum-os1',
+        roundLabel: 'Group C',
+        yourSide: [player('Callum Reed')],
+        opponentSide: [player('Simon Parker')],
+      },
+      {
+        id: 'callum-os2',
+        roundLabel: 'Group C',
+        yourSide: [player('Callum Reed')],
+        opponentSide: [player('Theo Marsh')],
+        result: { outcome: 'win', scoreSummary: '21-18, 21-16' },
+      },
+    ],
+  },
+  {
+    disciplineCode: 'OD',
+    disciplineLabel: 'Open Doubles',
+    matchups: [
+      {
+        id: 'callum-od1',
+        roundLabel: 'Group B',
+        yourSide: [player('Callum Reed'), player('Harry Quinn')],
+        opponentSide: [player('Oliver Brooks'), player('Sophie Lane')],
+        result: { outcome: 'win', scoreSummary: '21-14, 21-17' },
+      },
+      {
+        id: 'callum-od-qf',
+        roundLabel: 'Quarter-finals',
+        yourSide: [player('Callum Reed'), player('Harry Quinn')],
+        opponentSide: [player('Daniel Hughes'), player('Morgan Taylor')],
+      },
+    ],
+  },
+]
+
 function toIsoDate(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -377,6 +427,10 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
         name: 'Simon Parker',
         isYou: true,
         disciplineGroups: simonSinglesDoublesMixed,
+      },
+      {
+        name: 'Callum Reed',
+        disciplineGroups: callumDraw,
       },
       {
         name: 'Sara Moore',

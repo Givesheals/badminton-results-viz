@@ -1,5 +1,15 @@
 import { createPortal } from 'react-dom'
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { getDisciplineFamily, getDisciplineStyle } from '../../lib/disciplineStyle'
 import {
   filterLaterOpponentsForDisciplineDraw,
@@ -13,10 +23,12 @@ import {
   getBusyStatusesForPlayers,
   getDefaultCompetitionSlug,
   getDefaultPlayerName,
-  getDisciplinePairIdentityLabel,
+  getDisciplinePairIdentityPlayers,
   getDisciplineProgressStatus,
   getDrawRoundSectionRoles,
   getEntrantForCompetition,
+  drawCompanionDisciplineSectionId,
+  resolveDrawCompanionBusyJump,
   getExactDrawPairNotes,
   getIndividualDrawScoutNotes,
   getLaterOpponentIntelCounts,
@@ -39,6 +51,7 @@ import {
 import type {
   DrawDisciplineGroup,
   DrawMatchup,
+  DrawPlayer,
   DrawPlayerBusyStatus,
   DrawProbableOpponent,
 } from '../../lib/drawTypes'
@@ -67,9 +80,8 @@ import {
 } from '../../lib/drawScoutMatches'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { DisciplineChip } from '../discipline/DisciplineChip'
-import type { MatchupIntelTeaser } from '../../lib/drawScout'
-import { DrawMatchupRow } from './DrawMatchupRow'
-import { DrawPairNames } from './DrawPairNames'
+import { DrawIntelToggle, DrawMatchupRow } from './DrawMatchupRow'
+import { DrawPairNames, DrawPlayerNameLink } from './DrawPairNames'
 import { DrawScoutPreviousGames } from './DrawScoutPreviousGames'
 import { NoteTagChips } from './NoteTagPicker'
 import { recapMatchKey } from '../../lib/tournamentRecap'
@@ -86,6 +98,12 @@ type DrawCompetitionStatus = {
   busyPlayersByName?: Record<string, DrawPlayerBusyStatus>
 }
 
+type DrawCompanionJumpContextValue = {
+  onBusyPlayer: (playerName: string, disciplineCode: string, profileUrl?: string) => void
+}
+
+const DrawCompanionJumpContext = createContext<DrawCompanionJumpContextValue | null>(null)
+
 type Props = {
   playerName: string
   allNotes: OpponentNote[]
@@ -97,9 +115,10 @@ function CrossDisciplineBusyBanners({
   players,
   competitionStatus,
 }: {
-  players: { name: string }[]
+  players: DrawPlayer[]
   competitionStatus?: DrawCompetitionStatus | null
 }) {
+  const jump = useContext(DrawCompanionJumpContext)
   if (competitionStatus == null) return null
   const rows = getBusyStatusesForPlayers(players, competitionStatus.busyPlayersByName)
   if (rows.length === 0) return null
@@ -110,18 +129,50 @@ function CrossDisciplineBusyBanners({
         const copy = formatCrossDisciplineBusyBanner(playerName, status, {
           resultsLastUpdatedAt: competitionStatus.resultsLastUpdatedAt,
         })
-        return (
-          <div
-            key={playerName}
-            className="mt-1.5 rounded-md border border-loss-100 bg-loss-50 px-2 py-1"
-            role="status"
-          >
+        const profileUrl = players.find((player) => player.name === playerName)?.url
+        const className =
+          'mt-1.5 w-full rounded-md border border-loss-100 bg-loss-50 px-2 py-1 text-left transition hover:border-loss-200 hover:bg-loss-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-loss-200'
+        const body = (
+          <>
             <p className="text-[11px] font-semibold leading-tight text-loss-700">{copy.lead}</p>
             <p className="text-[10px] font-medium leading-tight text-loss-600/85">{copy.support}</p>
-          </div>
+          </>
+        )
+
+        if (jump == null) {
+          return (
+            <div key={playerName} className={className} role="status">
+              {body}
+            </div>
+          )
+        }
+
+        return (
+          <button
+            key={playerName}
+            type="button"
+            className={className}
+            onClick={() => jump.onBusyPlayer(playerName, status.disciplineCode, profileUrl)}
+            aria-label={`View ${playerName}'s ${status.disciplineCode} draw`}
+          >
+            {body}
+          </button>
         )
       })}
     </div>
+  )
+}
+
+function DisciplineIdentityLine({ players }: { players: DrawPlayer[] }) {
+  return (
+    <p className="mt-0.5 text-sm text-ink-600">
+      {players.map((player, index) => (
+        <span key={player.name}>
+          {index > 0 ? <span className="text-ink-400"> & </span> : null}
+          <DrawPlayerNameLink player={player} />
+        </span>
+      ))}
+    </p>
   )
 }
 
@@ -611,7 +662,6 @@ function ScoutMatchupBlock({
         matchup={matchup}
         disciplineCode={disciplineCode}
         statusBanner={statusBanner}
-        showEmptyIntelHint={matchHistoryEnabled}
       />
     )
   }
@@ -865,23 +915,6 @@ function RoundGroupBlock({
   )
 }
 
-function LaterOpponentIntelTeaserLine({ teaser }: { teaser: MatchupIntelTeaser }) {
-  return (
-    <div className="mt-1.5 flex flex-nowrap items-center gap-1.5">
-      {teaser.notesCta != null ? (
-        <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-1.5 py-0.5 text-[11px] font-semibold leading-none text-notes-amber-ink">
-          {teaser.notesCta}
-        </span>
-      ) : null}
-      {teaser.gamesLabel != null ? (
-        <span className="inline-flex items-center rounded-md border border-ink-200 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-ink-600">
-          {teaser.gamesLabel}
-        </span>
-      ) : null}
-    </div>
-  )
-}
-
 function LaterOpponentBlock({
   opponent,
   displayNotes,
@@ -959,16 +992,11 @@ function LaterOpponentBlock({
         <p className="mt-1 text-[10px] font-medium leading-tight text-ink-500">{pathStatusLine}</p>
       ) : null}
       {busyBanner}
-      {teaser != null ? (
-        <LaterOpponentIntelTeaserLine teaser={teaser} />
-      ) : matchHistoryEnabled ? (
-        <p className="mt-2 text-xs text-ink-400">No notes or games yet</p>
-      ) : null}
     </>
   )
 
   const expanded = open && teaser != null && (
-    <div className="space-y-2 border-t border-ink-100 bg-ink-50/40 px-3 py-3">
+    <div className="space-y-2 border-t border-ink-100 bg-white px-3 py-3">
       {showTabs && <MatchupIntelTabs active={panel} onChange={setPanel} />}
       <MatchupNotes
         matchup={matchup}
@@ -990,60 +1018,32 @@ function LaterOpponentBlock({
     })
   }
 
+  const intelLayer =
+    teaser != null ? (
+      <>
+        <DrawIntelToggle open={open} onToggle={toggleOpen} teaser={teaser} />
+        {expanded}
+      </>
+    ) : null
+
   // Flat row inside a shared section — full width of the outer card, no nested shell.
   if (variant === 'section') {
-    if (teaser == null) {
-      return (
-        <div className="border-t border-ink-100 px-3 py-2.5 first:border-t-0">{body}</div>
-      )
-    }
     return (
       <div className="border-t border-ink-100 first:border-t-0">
-        <button
-          type="button"
-          onClick={toggleOpen}
-          aria-expanded={open}
-          className="flex w-full items-stretch gap-2 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200"
-        >
-          <div className="min-w-0 flex-1 px-3 py-2.5">{body}</div>
-          <span
-            className="flex w-10 shrink-0 items-center justify-center border-l border-ink-100"
-            aria-hidden
-          >
-            <ChevronIcon open={open} />
-          </span>
-        </button>
-        {expanded}
+        <div className="px-3 py-2.5">{body}</div>
+        {intelLayer}
       </div>
     )
   }
 
-  const card =
-    teaser == null ? (
-      <div className={cardShell}>
-        <div className={`rounded-r border-l-4 px-3 py-2.5 ${disciplineStyle.borderClass}`}>
-          {body}
-        </div>
+  const card = (
+    <div className={cardShell}>
+      <div className={`rounded-r border-l-4 ${disciplineStyle.borderClass}`}>
+        <div className="px-3 py-2.5">{body}</div>
+        {intelLayer}
       </div>
-    ) : (
-      <div className={cardShell}>
-        <button
-          type="button"
-          onClick={toggleOpen}
-          aria-expanded={open}
-          className={`flex w-full items-stretch gap-2 rounded-r border-l-4 text-left transition hover:bg-ink-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200 ${disciplineStyle.borderClass}`}
-        >
-          <div className="min-w-0 flex-1 px-3 py-2.5">{body}</div>
-          <span
-            className="flex w-10 shrink-0 items-center justify-center border-l border-ink-100 bg-ink-50/70"
-            aria-hidden
-          >
-            <ChevronIcon open={open} />
-          </span>
-        </button>
-        {expanded}
-      </div>
-    )
+    </div>
+  )
 
   if (variant === 'standalone') return card
 
@@ -1063,6 +1063,7 @@ function LaterOpponentRoundGroup({
   disciplineCode,
   viewingOwnDraw,
   matchHistoryEnabled = true,
+  competitionStatus,
 }: {
   group: LaterOpponentRoundGroup
   displayNotes: OpponentNote[]
@@ -1072,6 +1073,7 @@ function LaterOpponentRoundGroup({
   disciplineCode: string
   viewingOwnDraw: boolean
   matchHistoryEnabled?: boolean
+  competitionStatus?: DrawCompetitionStatus | null
 }) {
   const [open, setOpen] = useState(false)
   const [showAll, setShowAll] = useState(false)
@@ -1112,6 +1114,7 @@ function LaterOpponentRoundGroup({
                 disciplineCode={disciplineCode}
                 viewingOwnDraw={viewingOwnDraw}
                 matchHistoryEnabled={matchHistoryEnabled}
+                competitionStatus={competitionStatus}
               />
             ))}
           </div>
@@ -1149,6 +1152,7 @@ function DisciplineLaterSection({
   viewingOwnDraw,
   viewedPlayerName,
   matchHistoryEnabled = true,
+  competitionStatus,
 }: {
   laterOpponents: DrawScoutLaterOpponent[]
   disciplineCode: string
@@ -1159,6 +1163,7 @@ function DisciplineLaterSection({
   viewingOwnDraw: boolean
   viewedPlayerName: string
   matchHistoryEnabled?: boolean
+  competitionStatus?: DrawCompetitionStatus | null
 }) {
   const [open, setOpen] = useState(false)
   const roundGroups = useMemo(
@@ -1199,6 +1204,7 @@ function DisciplineLaterSection({
               disciplineCode={disciplineCode}
               viewingOwnDraw={viewingOwnDraw}
               matchHistoryEnabled={matchHistoryEnabled}
+              competitionStatus={competitionStatus}
             />
           ))}
         </div>
@@ -1233,8 +1239,8 @@ function DisciplineBlock({
   const dotClass = DISCIPLINE_DOT[getDisciplineFamily(group.disciplineCode)]
   const roundGroups = useMemo(() => groupMatchupsByRound(group.matchups), [group.matchups])
   const roundRoles = useMemo(() => getDrawRoundSectionRoles(roundGroups), [roundGroups])
-  const entrantIdentity = useMemo(
-    () => getDisciplinePairIdentityLabel(group, viewedPlayerName),
+  const identityPlayers = useMemo(
+    () => getDisciplinePairIdentityPlayers(group, viewedPlayerName),
     [group, viewedPlayerName],
   )
   const disciplineLaterOpponents = useMemo(
@@ -1253,14 +1259,17 @@ function DisciplineBlock({
   const showLater = shouldShowYouMayAlsoMeet(progress)
 
   return (
-    <div className="border-t border-ink-200/80 pt-4 first:border-t-0 first:pt-0">
+    <div
+      id={drawCompanionDisciplineSectionId(group.disciplineCode)}
+      className="border-t border-ink-200/80 pt-4 first:border-t-0 first:pt-0 scroll-mt-3"
+    >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dotClass}`} aria-hidden />
         <h4 className="text-sm font-bold text-ink-900">{group.disciplineLabel}</h4>
         <DisciplineProgressMark status={progress} />
       </div>
-      {entrantIdentity != null ? (
-        <p className="mt-0.5 text-sm text-ink-600">{entrantIdentity}</p>
+      {identityPlayers != null ? (
+        <DisciplineIdentityLine players={identityPlayers} />
       ) : null}
       <div className="mt-1">
         {roundGroups.map((roundGroup) => (
@@ -1290,6 +1299,7 @@ function DisciplineBlock({
             viewingOwnDraw={viewingOwnDraw}
             viewedPlayerName={viewedPlayerName}
             matchHistoryEnabled={matchHistoryEnabled}
+            competitionStatus={competitionStatus}
           />
         ) : null}
       </div>
@@ -1887,6 +1897,46 @@ export function DrawScoutCard({
     return map
   }, [displayMatches])
 
+  const pendingDisciplineScrollRef = useRef<string | null>(null)
+
+  const scrollToDiscipline = useCallback((disciplineCode: string) => {
+    const el = document.getElementById(drawCompanionDisciplineSectionId(disciplineCode))
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+
+  useLayoutEffect(() => {
+    const disciplineCode = pendingDisciplineScrollRef.current
+    if (disciplineCode == null) return
+    pendingDisciplineScrollRef.current = null
+    scrollToDiscipline(disciplineCode)
+  }, [viewingPlayerName, scrollToDiscipline])
+
+  const onBusyPlayer = useCallback(
+    (busyPlayerName: string, disciplineCode: string, profileUrl?: string) => {
+      const jump = resolveDrawCompanionBusyJump(
+        busyPlayerName,
+        disciplineCode,
+        competition,
+        profileUrl,
+      )
+      if (jump.kind === 'companion') {
+        if (viewingPlayerName === jump.playerName) {
+          scrollToDiscipline(jump.disciplineCode)
+        } else {
+          pendingDisciplineScrollRef.current = jump.disciplineCode
+          setViewingPlayerName(jump.playerName)
+        }
+        return
+      }
+      if (jump.kind === 'profile') {
+        window.location.assign(jump.url)
+      }
+    },
+    [competition, scrollToDiscipline, viewingPlayerName],
+  )
+
+  const jumpContext = useMemo(() => ({ onBusyPlayer }), [onBusyPlayer])
+
   if (!showCard || activeCompetitions.length === 0) return null
 
   const showDraw = buildFeatures == null || buildFeatures.showDraw
@@ -1909,6 +1959,7 @@ export function DrawScoutCard({
       : null
 
   return (
+    <DrawCompanionJumpContext.Provider value={jumpContext}>
     <section className="overflow-hidden rounded-2xl border border-brand-200/80 bg-gradient-to-b from-brand-50/50 to-white shadow-sm">
       <div className="border-b border-brand-100/80 px-4 py-3 sm:px-5">
         <h3 className="text-lg font-semibold text-ink-900">Draw companion</h3>
@@ -1957,6 +2008,7 @@ export function DrawScoutCard({
         )}
       </div>
     </section>
+    </DrawCompanionJumpContext.Provider>
   )
 }
 

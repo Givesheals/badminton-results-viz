@@ -248,11 +248,43 @@ export function listActiveDrawScoutCompetitions(
 }
 
 export function getEntrantForCompetition(
-  comp: DrawScoutCompetition,
+  comp: Pick<DrawScoutCompetition, 'entrants'>,
   playerName: string,
 ): DrawScoutEntrant | null {
   const normalized = playerName.trim().toLowerCase()
   return comp.entrants.find((entrant) => entrant.name.trim().toLowerCase() === normalized) ?? null
+}
+
+/** DOM id for a discipline block in Draw companion — used to scroll after a busy-banner jump. */
+export function drawCompanionDisciplineSectionId(disciplineCode: string): string {
+  return `draw-companion-discipline-${disciplineCode}`
+}
+
+export type DrawCompanionBusyJump =
+  | { kind: 'companion'; playerName: string; disciplineCode: string }
+  | { kind: 'profile'; url: string }
+  | { kind: 'none' }
+
+/**
+ * Red “still playing” strip: stay in companion when that person is in this
+ * draw; otherwise open their profile. No destination → `none`.
+ */
+export function resolveDrawCompanionBusyJump(
+  playerName: string,
+  disciplineCode: string,
+  competition: Pick<DrawScoutCompetition, 'entrants'> | null | undefined,
+  profileUrl?: string,
+): DrawCompanionBusyJump {
+  if (competition != null) {
+    const entrant = getEntrantForCompetition(competition, playerName)
+    if (entrant != null) {
+      return { kind: 'companion', playerName: entrant.name, disciplineCode }
+    }
+  }
+  if (profileUrl != null && profileUrl !== '') {
+    return { kind: 'profile', url: profileUrl }
+  }
+  return { kind: 'none' }
 }
 
 export function collectOpponentNamesFromDraw(groups: DrawDisciplineGroup[]): string[] {
@@ -273,20 +305,15 @@ export function collectOpponentNamesFromDraw(groups: DrawDisciplineGroup[]): str
 }
 
 /**
- * Discipline header identity: singles = viewed player + rating;
- * doubles/mixed = viewed player & partner with ratings.
+ * Discipline header identity players: singles = viewed player;
+ * doubles/mixed = viewed player then partner.
  */
-export function getDisciplinePairIdentityLabel(
+export function getDisciplinePairIdentityPlayers(
   group: DrawDisciplineGroup,
   viewedPlayerName: string,
-): string | null {
+): DrawPlayer[] | null {
   const family = getDisciplineFamily(group.disciplineCode)
   const viewedKey = viewedPlayerName.trim().toLowerCase()
-
-  const formatPlayer = (player: DrawPlayer): string => {
-    const rating = player.rating != null ? ` (${player.rating})` : ''
-    return `${player.name}${rating}`
-  }
 
   if (family === 'singles') {
     const yourSide =
@@ -294,7 +321,7 @@ export function getDisciplinePairIdentityLabel(
     if (yourSide == null || yourSide.length === 0) return null
     const viewed =
       yourSide.find((player) => player.name.trim().toLowerCase() === viewedKey) ?? yourSide[0]!
-    return formatPlayer(viewed)
+    return [viewed]
   }
 
   if (family !== 'doubles' && family !== 'mixed') return null
@@ -311,7 +338,25 @@ export function getDisciplinePairIdentityLabel(
       ? yourSide
       : [yourSide[viewedIndex]!, ...yourSide.filter((_, index) => index !== viewedIndex)]
 
-  return ordered.slice(0, 2).map(formatPlayer).join(' & ')
+  return ordered.slice(0, 2)
+}
+
+/**
+ * Discipline header identity: singles = viewed player + rating;
+ * doubles/mixed = viewed player & partner with ratings.
+ */
+export function getDisciplinePairIdentityLabel(
+  group: DrawDisciplineGroup,
+  viewedPlayerName: string,
+): string | null {
+  const players = getDisciplinePairIdentityPlayers(group, viewedPlayerName)
+  if (players == null) return null
+  return players
+    .map((player) => {
+      const rating = player.rating != null ? ` (${player.rating})` : ''
+      return `${player.name}${rating}`
+    })
+    .join(' & ')
 }
 
 /** Group-stage round labels (e.g. "Group A"); everything else is treated as knockout. */

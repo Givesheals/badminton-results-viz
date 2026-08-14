@@ -119,7 +119,11 @@ function KnockoutBracket() {
   )
 }
 
-function StagePlaceholder({ stage }: { stage: 'Entries' | 'Groups' }) {
+function StagePlaceholder({
+  stage,
+}: {
+  stage: Exclude<TournamentPageStage, 'Companion' | 'Finals'>
+}) {
   return (
     <section className="rounded-xl border border-dashed border-ink-200 bg-white px-4 py-8 text-center">
       <p className="text-sm font-medium text-ink-700">{stage} content</p>

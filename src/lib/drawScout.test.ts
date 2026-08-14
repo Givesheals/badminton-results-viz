@@ -10,6 +10,9 @@ import {
   getDefaultCompetitionSlug,
   getDefaultPlayerName,
   getDisciplinePairIdentityLabel,
+  getDisciplinePairIdentityPlayers,
+  drawCompanionDisciplineSectionId,
+  resolveDrawCompanionBusyJump,
   getEventWeekendLastDay,
   getExactDrawPairNotes,
   getIndividualDrawScoutNotes,
@@ -445,7 +448,7 @@ describe('drawScout', () => {
     const os = simon.disciplineGroups.find((group) => group.disciplineCode === 'OS')!
     const { played, next } = splitPlayedAndNextMatchups(os.matchups)
     expect(played.map((matchup) => matchup.id)).toEqual(['os3'])
-    expect(next.map((matchup) => matchup.id)).toEqual(['os1', 'os2'])
+    expect(next.map((matchup) => matchup.id)).toEqual(['os1', 'os2', 'os4'])
   })
 
   it('formats live-feed round phrases for companion chips', () => {
@@ -585,6 +588,31 @@ describe('drawScout', () => {
     expect(getDisciplinePairIdentityLabel(xd, 'Simon Parker')).toBe(
       'Simon Parker (572) & Sara Moore (568)',
     )
+
+    const xdPlayers = getDisciplinePairIdentityPlayers(xd, 'Simon Parker')
+    expect(xdPlayers?.map((player) => player.name)).toEqual(['Simon Parker', 'Sara Moore'])
+    expect(xdPlayers?.[1]?.url).toContain('Sara%20Moore')
+  })
+
+  it('jumps the busy strip to companion when the player is in this draw', () => {
+    expect(
+      resolveDrawCompanionBusyJump('Callum Reed', 'OD', cambs, 'https://badminfo.com/player?name=Callum'),
+    ).toEqual({
+      kind: 'companion',
+      playerName: 'Callum Reed',
+      disciplineCode: 'OD',
+    })
+    expect(drawCompanionDisciplineSectionId('OD')).toBe('draw-companion-discipline-OD')
+  })
+
+  it('falls back to a profile URL when the busy player is not an entrant', () => {
+    expect(
+      resolveDrawCompanionBusyJump('Nobody Here', 'OD', cambs, 'https://badminfo.com/player?name=Nobody'),
+    ).toEqual({
+      kind: 'profile',
+      url: 'https://badminfo.com/player?name=Nobody',
+    })
+    expect(resolveDrawCompanionBusyJump('Nobody Here', 'OD', cambs)).toEqual({ kind: 'none' })
   })
 
   it('counts notes and unique previous meetings across a matchup', () => {
@@ -642,6 +670,12 @@ describe('drawScout', () => {
       drawScoutDemoMatches,
       'Simon Parker',
     )
+    const lewis = getMatchupIntelCounts(
+      os.matchups.find((item) => item.id === 'os4')!,
+      notes,
+      drawScoutDemoMatches,
+      'Simon Parker',
+    )
 
     expect(murray).toEqual({ noteCount: expect.any(Number), gamesPlayed: 0 })
     expect(murray.noteCount).toBeGreaterThan(0)
@@ -653,6 +687,7 @@ describe('drawScout', () => {
     expect(callum.noteCount).toBe(0)
     expect(callum.gamesPlayed).toBeGreaterThan(0)
     expect(owen).toEqual({ noteCount: 0, gamesPlayed: 0 })
+    expect(lewis).toEqual({ noteCount: 0, gamesPlayed: 0 })
   })
 
   it('includes progressive draw states: mixed singles group, probable OD QF, definite XD QF', () => {
@@ -661,7 +696,7 @@ describe('drawScout', () => {
     const xd = simon.disciplineGroups.find((group) => group.disciplineCode === 'XD')!
 
     expect(os.matchups.filter((matchup) => matchup.result != null)).toHaveLength(1)
-    expect(os.matchups.filter((matchup) => matchup.result == null)).toHaveLength(2)
+    expect(os.matchups.filter((matchup) => matchup.result == null)).toHaveLength(3)
     expect(os.matchups.find((matchup) => matchup.id === 'os3')?.result).toEqual({
       outcome: 'win',
       scoreSummary: '21-15, 21-12',
@@ -688,6 +723,9 @@ describe('drawScout', () => {
       disciplineCode: 'OD',
       nextRoundShort: 'QF',
     })
+    expect(cambs.entrants.some((entrant) => entrant.name === 'Callum Reed')).toBe(true)
+    const callum = cambs.entrants.find((entrant) => entrant.name === 'Callum Reed')!
+    expect(callum.disciplineGroups.map((group) => group.disciplineCode)).toEqual(['OS', 'OD'])
     expect(cambs.updateCadence).toBe('frequent')
 
     const odPaths = odQf.probableOpponents ?? []
