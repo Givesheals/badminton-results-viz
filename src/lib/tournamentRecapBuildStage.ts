@@ -11,8 +11,6 @@ export type TournamentRecapBuildFeatures = {
   showPodium: boolean
   /** Stage ≥ 4 — first-tournament (`debut`) milestone cards */
   showDebutMilestones: boolean
-  /** Stage ≥ 4 — first stage-reach cards (QF / knockout / group win) */
-  showStageReaches: boolean
   /** Stage ≥ 4 — personal best + matched best cards */
   showPersonalBests: boolean
   /** Stage ≥ 4 — Senior County Debut card */
@@ -50,7 +48,7 @@ export const TOURNAMENT_RECAP_BUILD_STAGE_META: Record<
   4: {
     shortLabel: 'Results',
     summary:
-      'Podium, first tournament, stage reaches, personal best / matched best, Senior County Debut',
+      'Podium, first tournament, personal best / matched best, Senior County Debut',
   },
   5: {
     shortLabel: 'Event callouts',
@@ -91,7 +89,6 @@ export function getTournamentRecapBuildFeatures(
     showWinPercent: stage >= 3,
     showPodium: stage >= 4,
     showDebutMilestones: stage >= 4,
-    showStageReaches: stage >= 4,
     showPersonalBests: stage >= 4,
     showSeniorCountyDebut: stage >= 4,
     showEventSummaries: stage >= 5,

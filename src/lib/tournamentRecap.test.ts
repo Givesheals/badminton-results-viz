@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { NormalizedMatch } from '../types/matchHistory'
-import { computeTournamentRecaps, partnerChemistryDetail } from './tournamentRecap'
+import { computeTournamentRecaps, featuredCelebrationHeroKind, partnerChemistryDetail } from './tournamentRecap'
 
 function makeMatch(
   overrides: Partial<NormalizedMatch> &
@@ -984,7 +984,7 @@ describe('computeTournamentRecaps', () => {
     expect(celebrations.jointThirds).toHaveLength(0)
   })
 
-  it('shows podium stage reach for first quarter-final at category and discipline', () => {
+  it('shows a personal best for first quarter-final at category and discipline', () => {
     const priorGroup = makeMatch({
       competitionName: 'Earlier Silver',
       date: '2025-01-01',
@@ -1046,19 +1046,20 @@ describe('computeTournamentRecaps', () => {
       (r) => r.competitionName === 'Silver Open',
     )!.celebrations
 
-    expect(celebrations.stageReaches).toHaveLength(1)
-    expect(celebrations.stageReaches[0]).toMatchObject({
+    expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
+      true,
+    )
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'personal_best'),
+    ).toMatchObject({
       stage: 'quarter-final',
       discipline: 'WS',
       tournamentCategoryLabel: 'Silver',
       competitionAgeLabel: null,
     })
-    expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
-      false,
-    )
   })
 
-  it('scopes stage reach to category and discipline separately', () => {
+  it('scopes personal best to category and discipline separately', () => {
     const priorBronzeQf = makeMatch({
       competitionName: 'Bronze earlier',
       date: '2025-01-01',
@@ -1136,12 +1137,16 @@ describe('computeTournamentRecaps', () => {
       ...silverQfWeekend,
     ]).recaps.find((r) => r.competitionName === 'Silver Open')!.celebrations
 
-    expect(celebrations.stageReaches).toHaveLength(1)
-    expect(celebrations.stageReaches[0]!.tournamentCategoryLabel).toBe('Silver')
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'personal_best'),
+    ).toMatchObject({
+      tournamentCategoryLabel: 'Silver',
+      discipline: 'WS',
+    })
     expect(celebrations.milestones.some((m) => m.variant === 'debut')).toBe(false)
   })
 
-  it('shows first knockout stage reach when exiting in the box for the first time', () => {
+  it('shows a personal best for first knockout when exiting in the box for the first time', () => {
     const priorGroup = makeMatch({
       competitionName: 'Earlier Bronze',
       date: '2025-01-01',
@@ -1200,11 +1205,15 @@ describe('computeTournamentRecaps', () => {
       (r) => r.competitionName === 'Bronze Cup',
     )!.celebrations
 
-    expect(celebrations.stageReaches).toHaveLength(1)
-    expect(celebrations.stageReaches[0]!.stage).toBe('knockout')
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'personal_best'),
+    ).toMatchObject({
+      stage: 'knockout',
+      discipline: 'XD',
+    })
   })
 
-  it('shows stage reach instead of personal best when both apply at the same depth', () => {
+  it('shows a personal best when first quarter-final is also a new depth', () => {
     const priorKnockout = makeMatch({
       competitionName: 'Earlier Bronze',
       date: '2025-01-01',
@@ -1263,11 +1272,15 @@ describe('computeTournamentRecaps', () => {
       (r) => r.competitionName === 'Bronze Cup',
     )!.celebrations
 
-    expect(celebrations.stageReaches).toHaveLength(1)
-    expect(celebrations.stageReaches[0]!.stage).toBe('quarter-final')
     expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
-      false,
+      true,
     )
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'personal_best'),
+    ).toMatchObject({
+      stage: 'quarter-final',
+      discipline: 'XD',
+    })
   })
 
   it('does not show first quarter-final when dropped straight into QF with no wins', () => {
@@ -1310,10 +1323,12 @@ describe('computeTournamentRecaps', () => {
       (r) => r.competitionName === 'Silver Open',
     )!.celebrations
 
-    expect(celebrations.stageReaches).toHaveLength(0)
+    expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
+      false,
+    )
   })
 
-  it('shows first group win stage reach when not category debut', () => {
+  it('shows a personal best for first group win when not category debut', () => {
     const priorAllLosses = makeMatch({
       competitionName: 'Bronze earlier',
       date: '2025-01-01',
@@ -1357,18 +1372,16 @@ describe('computeTournamentRecaps', () => {
       (r) => r.competitionName === 'Bronze Cup',
     )!.celebrations
 
-    expect(celebrations.stageReaches).toHaveLength(1)
-    expect(celebrations.stageReaches[0]).toMatchObject({
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'personal_best'),
+    ).toMatchObject({
       stage: 'group-wins',
       discipline: 'XD',
       tournamentCategoryLabel: 'Bronze',
     })
-    expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
-      false,
-    )
   })
 
-  it('shows first group win stage reach when group round label is Groups', () => {
+  it('shows a personal best for first group win when group round label is Groups', () => {
     const priorAllLosses = makeMatch({
       competitionName: 'Silver earlier',
       date: '2025-01-01',
@@ -1408,8 +1421,12 @@ describe('computeTournamentRecaps', () => {
       (r) => r.competitionName === 'Silver Open',
     )!.celebrations
 
-    expect(celebrations.stageReaches).toHaveLength(1)
-    expect(celebrations.stageReaches[0]!.stage).toBe('group-wins')
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'personal_best'),
+    ).toMatchObject({
+      stage: 'group-wins',
+      discipline: 'WS',
+    })
   })
 
   it('does not celebrate quarter-final depth with zero wins at the event', () => {
@@ -1456,13 +1473,12 @@ describe('computeTournamentRecaps', () => {
       (r) => r.competitionName === 'Silver Open',
     )!.celebrations
 
-    expect(celebrations.stageReaches).toHaveLength(0)
     expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
       false,
     )
   })
 
-  it('scopes first group win to tournament category as well as discipline', () => {
+  it('scopes first group-win personal best to tournament category as well as discipline', () => {
     const priorBronzeWin = makeMatch({
       competitionName: 'Bronze earlier',
       date: '2025-01-01',
@@ -1521,9 +1537,13 @@ describe('computeTournamentRecaps', () => {
       silverGroupWin,
     ]).recaps.find((r) => r.competitionName === 'Silver Open')!.celebrations
 
-    expect(celebrations.stageReaches).toHaveLength(1)
-    expect(celebrations.stageReaches[0]!.stage).toBe('group-wins')
-    expect(celebrations.stageReaches[0]!.tournamentCategoryLabel).toBe('Silver')
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'personal_best'),
+    ).toMatchObject({
+      stage: 'group-wins',
+      tournamentCategoryLabel: 'Silver',
+      discipline: 'XD',
+    })
   })
 
   it('does not show first group win for unrecognised round labels without a group win', () => {
@@ -1566,7 +1586,9 @@ describe('computeTournamentRecaps', () => {
       (r) => r.competitionName === 'Bronze Cup',
     )!.celebrations
 
-    expect(celebrations.stageReaches).toHaveLength(0)
+    expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
+      false,
+    )
   })
 
   it('does not show first group win on category debut', () => {
@@ -1589,7 +1611,9 @@ describe('computeTournamentRecaps', () => {
     })
 
     const celebrations = computeTournamentRecaps([firstWin]).recaps[0]!.celebrations
-    expect(celebrations.stageReaches).toHaveLength(0)
+    expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
+      false,
+    )
     expect(celebrations.milestones.some((m) => m.variant === 'debut')).toBe(true)
   })
 
@@ -1909,10 +1933,9 @@ describe('computeTournamentRecaps', () => {
 
     expect(celebrations.jointThirds).toHaveLength(1)
     expect(celebrations.milestones.some((m) => m.variant === 'debut')).toBe(false)
-    expect(celebrations.stageReaches).toHaveLength(0)
   })
 
-  it('does not show stage reach when joint third covers semi-final exit', () => {
+  it('does not show a personal best when joint third covers semi-final exit', () => {
     const priorQf = makeMatch({
       competitionName: 'Earlier Bronze',
       date: '2025-01-01',
@@ -1975,7 +1998,6 @@ describe('computeTournamentRecaps', () => {
     expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
       false,
     )
-    expect(celebrations.stageReaches).toHaveLength(0)
   })
 
   it('surfaces all-time record milestones for best wins and nemeses', () => {
@@ -2520,5 +2542,79 @@ describe('tournament recap display hierarchy', () => {
     expect(ws.partnerName).toBeNull()
     expect(ws.matches.every((m) => m.showPartnerName === false)).toBe(true)
     expect(ws.matches.every((m) => m.showDate === false)).toBe(true)
+  })
+})
+
+describe('featuredCelebrationHeroKind', () => {
+  it('picks winner over every lower card, ignoring discipline', () => {
+    expect(
+      featuredCelebrationHeroKind({
+        winners: [{ discipline: 'WS' }],
+        runnerUps: [{ discipline: 'XD' }],
+        jointThirds: [{ discipline: 'MD' }],
+        milestones: [
+          { variant: 'personal_best' },
+          { variant: 'matched_best' },
+          { variant: 'debut' },
+        ],
+      }),
+    ).toBe('winner')
+  })
+
+  it('picks runner-up when there is no winner', () => {
+    expect(
+      featuredCelebrationHeroKind({
+        winners: [],
+        runnerUps: [{ discipline: 'WD' }],
+        jointThirds: [{ discipline: 'XD' }],
+        milestones: [{ variant: 'personal_best' }],
+      }),
+    ).toBe('runner-up')
+  })
+
+  it('follows the rest of the hierarchy', () => {
+    expect(
+      featuredCelebrationHeroKind({
+        winners: [],
+        runnerUps: [],
+        jointThirds: [{ discipline: 'XD' }],
+        milestones: [{ variant: 'personal_best' }],
+      }),
+    ).toBe('joint-third')
+    expect(
+      featuredCelebrationHeroKind({
+        winners: [],
+        runnerUps: [],
+        jointThirds: [],
+        milestones: [{ variant: 'personal_best' }, { variant: 'debut' }],
+      }),
+    ).toBe('personal_best')
+    expect(
+      featuredCelebrationHeroKind({
+        winners: [],
+        runnerUps: [],
+        jointThirds: [],
+        milestones: [{ variant: 'matched_best' }, { variant: 'debut' }],
+      }),
+    ).toBe('matched_best')
+    expect(
+      featuredCelebrationHeroKind({
+        winners: [],
+        runnerUps: [],
+        jointThirds: [],
+        milestones: [{ variant: 'debut' }],
+      }),
+    ).toBe('debut')
+  })
+
+  it('returns null when nothing is showing', () => {
+    expect(
+      featuredCelebrationHeroKind({
+        winners: [],
+        runnerUps: [],
+        jointThirds: [],
+        milestones: [],
+      }),
+    ).toBeNull()
   })
 })

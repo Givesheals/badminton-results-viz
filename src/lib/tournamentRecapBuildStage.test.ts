@@ -20,7 +20,6 @@ describe('tournamentRecapBuildStage', () => {
     const results = getTournamentRecapBuildFeatures(4)
     expect(results.showPodium).toBe(true)
     expect(results.showDebutMilestones).toBe(true)
-    expect(results.showStageReaches).toBe(true)
     expect(results.showPersonalBests).toBe(true)
     expect(results.showSeniorCountyDebut).toBe(true)
     expect(results.showEventSummaries).toBe(false)

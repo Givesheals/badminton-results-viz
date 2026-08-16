@@ -103,7 +103,6 @@ export function TournamentRecapSection({
   const showBody =
     features.showPodium ||
     features.showDebutMilestones ||
-    features.showStageReaches ||
     features.showPersonalBests ||
     features.showSeniorCountyDebut ||
     features.showEventSummaries ||

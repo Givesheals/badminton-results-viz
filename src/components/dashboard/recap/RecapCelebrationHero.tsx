@@ -1,11 +1,12 @@
 import { CategoryMilestoneClaimLink } from './CategoryMilestoneClaimLink'
 import type {
+  CelebrationHeroKind,
   MilestoneCelebration,
   PodiumCelebration,
   RecapCelebrations,
   SeniorCountyDebutCelebration,
-  StageReachCelebration,
 } from '../../../lib/tournamentRecap'
+import { featuredCelebrationHeroKind } from '../../../lib/tournamentRecap'
 import {
   fullTournamentRecapBuildFeatures,
   type TournamentRecapBuildFeatures,
@@ -95,6 +96,60 @@ function podiumGridClass(count: number): string {
   return count === 1 ? 'grid gap-3' : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
 }
 
+function compactGridClass(count: number): string {
+  return count === 1 ? 'grid gap-2' : 'grid gap-2 sm:grid-cols-2'
+}
+
+function CompactCelebrationRow({
+  icon,
+  title,
+  detail,
+  discipline,
+  tournamentCategoryLabel,
+  articleClass,
+  intensity,
+  revealLabel,
+  sealedHint,
+  startRevealed,
+}: {
+  icon: string
+  title: string
+  detail?: string
+  discipline: string
+  tournamentCategoryLabel: string
+  articleClass: string
+  intensity: ConfettiIntensity
+  revealLabel: string
+  sealedHint: string
+  startRevealed?: boolean
+}) {
+  return (
+    <FlipRevealCard
+      size="compact"
+      intensity={intensity}
+      revealLabel={revealLabel}
+      sealedHint={sealedHint}
+      startRevealed={startRevealed}
+    >
+      <article
+        className={`flex min-h-[3.25rem] items-center gap-2.5 rounded-lg border px-3 py-2 ${articleClass}`}
+      >
+        <span className="shrink-0 text-base leading-none" aria-hidden>
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-ink-900">{title}</p>
+          {detail && <p className="truncate text-xs text-ink-500">{detail}</p>}
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+          <DisciplineChip code={discipline} />
+          <TournamentCategoryChip label={tournamentCategoryLabel} />
+        </div>
+      </article>
+    </FlipRevealCard>
+  )
+}
+
 function WinnerCard({
   podium,
   startRevealed,
@@ -145,11 +200,30 @@ function WinnerCard({
 
 function RunnerUpCard({
   podium,
+  compact,
   startRevealed,
 }: {
   podium: PodiumCelebration
+  compact?: boolean
   startRevealed?: boolean
 }) {
+  if (compact) {
+    return (
+      <CompactCelebrationRow
+        icon="🥈"
+        title="Runner-up"
+        detail={podium.disciplineLabel}
+        discipline={podium.discipline}
+        tournamentCategoryLabel={podium.tournamentCategoryLabel}
+        articleClass="border-ink-200 bg-gradient-to-r from-slate-50 to-white"
+        intensity="light"
+        revealLabel={`Reveal: Runner-up in ${podium.disciplineLabel}`}
+        sealedHint="A podium finish is waiting"
+        startRevealed={startRevealed}
+      />
+    )
+  }
+
   return (
     <FlipRevealCard
       intensity="high"
@@ -187,11 +261,30 @@ function RunnerUpCard({
 
 function ThirdPlaceCard({
   podium,
+  compact,
   startRevealed,
 }: {
   podium: PodiumCelebration
+  compact?: boolean
   startRevealed?: boolean
 }) {
+  if (compact) {
+    return (
+      <CompactCelebrationRow
+        icon="🥉"
+        title="Third place"
+        detail={podium.disciplineLabel}
+        discipline={podium.discipline}
+        tournamentCategoryLabel={podium.tournamentCategoryLabel}
+        articleClass="border-[color:var(--color-level-bronze)]/50 bg-gradient-to-r from-[color:var(--color-level-bronze)]/15 to-white"
+        intensity="minimal"
+        revealLabel={`Reveal: Third place in ${podium.disciplineLabel}`}
+        sealedHint="A bronze result is sealed"
+        startRevealed={startRevealed}
+      />
+    )
+  }
+
   return (
     <FlipRevealCard
       intensity="medium"
@@ -227,99 +320,32 @@ function ThirdPlaceCard({
   )
 }
 
-function stageReachHeadline(reach: StageReachCelebration): string {
-  switch (reach.stage) {
-    case 'quarter-final':
-      return `First ${reach.tournamentCategoryLabel} ${reach.discipline} quarter-final`
-    case 'knockout':
-      return `${reach.discipline} FIRST KNOCKOUT`
-    case 'group-wins':
-      return `First ${reach.tournamentCategoryLabel} ${reach.discipline} group win`
-  }
-}
-
-function stageReachPresentation(stage: StageReachCelebration['stage']): {
-  icon: string
-  articleClass: string
-  confetti?: 'minimal'
-  intensity: ConfettiIntensity
-} {
-  switch (stage) {
-    case 'quarter-final':
-      return {
-        icon: '🎯',
-        articleClass:
-          'relative overflow-hidden rounded-xl border border-court-200/80 bg-gradient-to-br from-court-50/80 via-white to-brand-50/30 px-4 py-3.5 shadow-sm',
-        confetti: 'minimal',
-        intensity: 'medium',
-      }
-    case 'knockout':
-      return {
-        icon: '🚀',
-        articleClass:
-          'rounded-xl border border-brand-200/60 bg-gradient-to-br from-brand-50/50 via-white to-white px-4 py-3 shadow-sm',
-        intensity: 'light',
-      }
-    case 'group-wins':
-      return {
-        icon: '✓',
-        articleClass:
-          'rounded-xl border border-ink-200/80 bg-gradient-to-br from-ink-50/60 via-white to-white px-4 py-3 shadow-sm',
-        intensity: 'minimal',
-      }
-  }
-}
-
-function StageReachCard({
-  reach,
-  startRevealed,
-}: {
-  reach: StageReachCelebration
-  startRevealed?: boolean
-}) {
-  const presentation = stageReachPresentation(reach.stage)
-
-  return (
-    <FlipRevealCard
-      intensity={presentation.intensity}
-      revealLabel={`Reveal: ${stageReachHeadline(reach)}`}
-      sealedHint="A stage milestone is waiting"
-      startRevealed={startRevealed}
-    >
-      <article className={presentation.articleClass}>
-        {presentation.confetti && <Confetti density={presentation.confetti} />}
-        <div
-          className={`flex max-w-[85%] flex-col items-center text-center ${presentation.confetti ? 'relative z-10 mx-auto' : 'mx-auto'}`}
-        >
-          <span className="text-xl leading-none" aria-hidden>
-            {presentation.icon}
-          </span>
-          <p className="mt-1 text-base font-bold tracking-tight text-ink-800 sm:text-lg">
-            {stageReachHeadline(reach)}
-          </p>
-          <p className="mt-0.5 text-sm text-ink-600">{reach.disciplineLabel}</p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-            <DisciplineChip code={reach.discipline} />
-            <TournamentCategoryChip label={reach.tournamentCategoryLabel} />
-          </div>
-          <CategoryMilestoneClaimLink
-            tournamentCategoryLabel={reach.tournamentCategoryLabel}
-            competitionAgeLabel={reach.competitionAgeLabel}
-            stage={reach.stage}
-          />
-        </div>
-      </article>
-    </FlipRevealCard>
-  )
-}
-
 function PersonalBestCard({
   milestone,
+  compact,
   startRevealed,
 }: {
   milestone: MilestoneCelebration
+  compact?: boolean
   startRevealed?: boolean
 }) {
+  if (compact) {
+    return (
+      <CompactCelebrationRow
+        icon="✨"
+        title={`${milestone.discipline} personal best`}
+        detail={milestone.detail}
+        discipline={milestone.discipline}
+        tournamentCategoryLabel={milestone.tournamentCategoryLabel}
+        articleClass="border-brand-200/70 bg-gradient-to-r from-brand-50/60 to-white"
+        intensity="minimal"
+        revealLabel={`Reveal: ${milestone.discipline} personal best`}
+        sealedHint="A personal best is sealed"
+        startRevealed={startRevealed}
+      />
+    )
+  }
+
   return (
     <FlipRevealCard
       intensity="medium"
@@ -406,14 +432,33 @@ function SeniorCountyDebutCard({
 
 function MilestoneCard({
   milestone,
+  compact,
   startRevealed,
 }: {
   milestone: MilestoneCelebration
+  compact?: boolean
   startRevealed?: boolean
 }) {
   const style = milestoneStyle(milestone.variant)
   const intensity: ConfettiIntensity =
     milestone.variant === 'debut' ? 'light' : 'minimal'
+
+  if (compact) {
+    return (
+      <CompactCelebrationRow
+        icon={style.icon}
+        title={milestone.title}
+        detail={milestone.detail}
+        discipline={milestone.discipline}
+        tournamentCategoryLabel={milestone.tournamentCategoryLabel}
+        articleClass={style.border}
+        intensity="minimal"
+        revealLabel={`Reveal: ${milestone.title}`}
+        sealedHint="A milestone is sealed inside"
+        startRevealed={startRevealed}
+      />
+    )
+  }
 
   return (
     <FlipRevealCard
@@ -443,18 +488,24 @@ function MilestoneCard({
   )
 }
 
+function isFeatured(
+  kind: CelebrationHeroKind,
+  featured: CelebrationHeroKind | null,
+): boolean {
+  return featured === kind
+}
+
 export function RecapCelebrationHero({
   celebrations,
   features = fullTournamentRecapBuildFeatures(),
   startRevealed = false,
 }: Props) {
-  const { winners, runnerUps, jointThirds, stageReaches, milestones, seniorCountyDebut } =
+  const { winners, runnerUps, jointThirds, milestones, seniorCountyDebut } =
     celebrations
 
   const podiumWinners = features.showPodium ? winners : []
   const podiumRunnerUps = features.showPodium ? runnerUps : []
   const podiumThirds = features.showPodium ? jointThirds : []
-  const visibleStageReaches = features.showStageReaches ? stageReaches : []
   const personalBests = features.showPersonalBests
     ? milestones.filter((m) => m.variant === 'personal_best')
     : []
@@ -467,11 +518,33 @@ export function RecapCelebrationHero({
   const visibleSeniorCounty =
     features.showSeniorCountyDebut ? seniorCountyDebut : null
 
+  const featured = featuredCelebrationHeroKind({
+    winners: podiumWinners,
+    runnerUps: podiumRunnerUps,
+    jointThirds: podiumThirds,
+    milestones: [...personalBests, ...matchedBests, ...debutMilestones],
+  })
+
+  const compactRunnerUps = isFeatured('runner-up', featured) ? [] : podiumRunnerUps
+  const compactThirds = isFeatured('joint-third', featured) ? [] : podiumThirds
+  const compactPersonalBests = isFeatured('personal_best', featured)
+    ? []
+    : personalBests
+  const compactMatchedBests = isFeatured('matched_best', featured)
+    ? []
+    : matchedBests
+  const compactDebuts = isFeatured('debut', featured) ? [] : debutMilestones
+  const compactCount =
+    compactRunnerUps.length +
+    compactThirds.length +
+    compactPersonalBests.length +
+    compactMatchedBests.length +
+    compactDebuts.length
+
   const hasContent =
     podiumWinners.length > 0 ||
     podiumRunnerUps.length > 0 ||
     podiumThirds.length > 0 ||
-    visibleStageReaches.length > 0 ||
     personalBests.length > 0 ||
     matchedBests.length > 0 ||
     debutMilestones.length > 0 ||
@@ -496,7 +569,7 @@ export function RecapCelebrationHero({
         </div>
       )}
 
-      {podiumRunnerUps.length > 0 && (
+      {isFeatured('runner-up', featured) && podiumRunnerUps.length > 0 && (
         <div className={podiumGridClass(podiumRunnerUps.length)}>
           {podiumRunnerUps.map((podium) => (
             <RunnerUpCard
@@ -508,7 +581,7 @@ export function RecapCelebrationHero({
         </div>
       )}
 
-      {podiumThirds.length > 0 && (
+      {isFeatured('joint-third', featured) && podiumThirds.length > 0 && (
         <div className={podiumGridClass(podiumThirds.length)}>
           {podiumThirds.map((podium) => (
             <ThirdPlaceCard
@@ -520,19 +593,7 @@ export function RecapCelebrationHero({
         </div>
       )}
 
-      {visibleStageReaches.length > 0 && (
-        <div className={podiumGridClass(visibleStageReaches.length)}>
-          {visibleStageReaches.map((reach) => (
-            <StageReachCard
-              key={`${reach.tournamentCategoryLabel}-${reach.discipline}-${reach.stage}`}
-              reach={reach}
-              startRevealed={startRevealed}
-            />
-          ))}
-        </div>
-      )}
-
-      {personalBests.length > 0 && (
+      {isFeatured('personal_best', featured) && personalBests.length > 0 && (
         <div className={podiumGridClass(personalBests.length)}>
           {personalBests.map((milestone) => (
             <PersonalBestCard
@@ -544,7 +605,7 @@ export function RecapCelebrationHero({
         </div>
       )}
 
-      {(matchedBests.length > 0 || debutMilestones.length > 0) && (
+      {isFeatured('matched_best', featured) && matchedBests.length > 0 && (
         <div className="grid gap-2 sm:grid-cols-2">
           {matchedBests.map((milestone) => (
             <MilestoneCard
@@ -553,10 +614,60 @@ export function RecapCelebrationHero({
               startRevealed={startRevealed}
             />
           ))}
+        </div>
+      )}
+
+      {isFeatured('debut', featured) && debutMilestones.length > 0 && (
+        <div className="grid gap-2 sm:grid-cols-2">
           {debutMilestones.map((milestone) => (
             <MilestoneCard
               key={milestone.id}
               milestone={milestone}
+              startRevealed={startRevealed}
+            />
+          ))}
+        </div>
+      )}
+
+      {compactCount > 0 && (
+        <div className={compactGridClass(compactCount)}>
+          {compactRunnerUps.map((podium) => (
+            <RunnerUpCard
+              key={podium.discipline}
+              podium={podium}
+              compact
+              startRevealed={startRevealed}
+            />
+          ))}
+          {compactThirds.map((podium) => (
+            <ThirdPlaceCard
+              key={podium.discipline}
+              podium={podium}
+              compact
+              startRevealed={startRevealed}
+            />
+          ))}
+          {compactPersonalBests.map((milestone) => (
+            <PersonalBestCard
+              key={milestone.id}
+              milestone={milestone}
+              compact
+              startRevealed={startRevealed}
+            />
+          ))}
+          {compactMatchedBests.map((milestone) => (
+            <MilestoneCard
+              key={milestone.id}
+              milestone={milestone}
+              compact
+              startRevealed={startRevealed}
+            />
+          ))}
+          {compactDebuts.map((milestone) => (
+            <MilestoneCard
+              key={milestone.id}
+              milestone={milestone}
+              compact
               startRevealed={startRevealed}
             />
           ))}

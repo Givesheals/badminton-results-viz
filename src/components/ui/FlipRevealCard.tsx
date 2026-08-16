@@ -16,6 +16,8 @@ type Props = {
   sealedHint?: string
   /** Start already open (e.g. screenshots / reduced experimentation). */
   startRevealed?: boolean
+  /** Compact supporting cards use a slim mystery back so they don't dominate. */
+  size?: 'hero' | 'compact'
   className?: string
 }
 
@@ -29,7 +31,33 @@ function prefersReducedMotion(): boolean {
   )
 }
 
-function MysteryBack({ hint }: { hint?: string }) {
+function MysteryBack({
+  hint,
+  compact,
+}: {
+  hint?: string
+  compact?: boolean
+}) {
+  if (compact) {
+    return (
+      <div className="flip-reveal-mystery relative flex h-full min-h-[3.25rem] items-center justify-center gap-2 overflow-hidden rounded-lg px-3 py-2">
+        <div className="flip-reveal-shimmer pointer-events-none absolute inset-0" aria-hidden />
+        <span
+          className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-sm shadow-inner ring-1 ring-white/25"
+          aria-hidden
+        >
+          ?
+        </span>
+        <p className="relative z-10 text-sm font-bold tracking-wide text-white drop-shadow-sm">
+          Reveal
+        </p>
+        {hint && (
+          <p className="relative z-10 hidden text-xs text-white/80 sm:block">{hint}</p>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="flip-reveal-mystery relative flex h-full min-h-[11.5rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl px-4 py-6 text-center">
       <div className="flip-reveal-shimmer pointer-events-none absolute inset-0" aria-hidden />
@@ -60,6 +88,7 @@ export function FlipRevealCard({
   revealLabel = 'Reveal result',
   sealedHint = 'Tap to flip this result card',
   startRevealed = false,
+  size = 'hero',
   className = '',
 }: Props) {
   const labelId = useId()
@@ -105,6 +134,9 @@ export function FlipRevealCard({
 
   const isFlipping = phase === 'flipping'
   const isShaking = phase === 'shaking'
+  const compact = size === 'compact'
+  const minHeightClass = compact ? 'min-h-[3.25rem]' : 'min-h-[11.5rem]'
+  const backRadiusClass = compact ? 'rounded-lg' : 'rounded-2xl'
 
   return (
     <div
@@ -125,15 +157,17 @@ export function FlipRevealCard({
           {revealLabel}
         </span>
         <div
-          className={`flip-reveal-inner relative min-h-[11.5rem] w-full ${
+          className={`flip-reveal-inner relative w-full ${minHeightClass} ${
             isFlipping ? 'is-flipped' : ''
           }`}
         >
           <div className="flip-reveal-face flip-reveal-face-front absolute inset-0">
-            <MysteryBack hint={sealedHint} />
+            <MysteryBack hint={sealedHint} compact={compact} />
           </div>
-          <div className="flip-reveal-face flip-reveal-face-back absolute inset-0 overflow-hidden rounded-2xl">
-            <div className="h-full min-h-[11.5rem]">{children}</div>
+          <div
+            className={`flip-reveal-face flip-reveal-face-back absolute inset-0 overflow-hidden ${backRadiusClass}`}
+          >
+            <div className={`h-full ${minHeightClass}`}>{children}</div>
           </div>
         </div>
       </button>

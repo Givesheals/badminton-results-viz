@@ -35,7 +35,6 @@ import {
   isProgressionTournament,
   isSeniorCountyMatch,
   medianRank,
-  parseRoundToStage,
   hasGroupMatchWins,
   qualifiesForThirdPlace,
   PROGRESSION_STAGE_LABELS,
@@ -197,15 +196,6 @@ export type MilestoneCelebration = {
   detail?: string
 }
 
-/** First time reaching a stage at this category + discipline (below semi-final). */
-export type StageReachCelebration = {
-  stage: 'group-wins' | 'knockout' | 'quarter-final'
-  discipline: string
-  disciplineLabel: string
-  tournamentCategoryLabel: string
-  competitionAgeLabel: string | null
-}
-
 export type SeniorCountyDebutCelebration = {
   title: string
   detail: string
@@ -216,9 +206,40 @@ export type RecapCelebrations = {
   winners: PodiumCelebration[]
   runnerUps: PodiumCelebration[]
   jointThirds: PodiumCelebration[]
-  stageReaches: StageReachCelebration[]
   milestones: MilestoneCelebration[]
   seniorCountyDebut: SeniorCountyDebutCelebration | null
+}
+
+/** Highest card kind shown in the recap hero. County debut is outside this list. */
+export type CelebrationHeroKind =
+  | 'winner'
+  | 'runner-up'
+  | 'joint-third'
+  | 'personal_best'
+  | 'matched_best'
+  | 'debut'
+
+/**
+ * Which celebration kind gets the expanded card.
+ * Discipline is ignored — a singles winner demotes a doubles runner-up.
+ */
+export function featuredCelebrationHeroKind(celebrations: {
+  winners: readonly unknown[]
+  runnerUps: readonly unknown[]
+  jointThirds: readonly unknown[]
+  milestones: readonly Pick<MilestoneCelebration, 'variant'>[]
+}): CelebrationHeroKind | null {
+  if (celebrations.winners.length > 0) return 'winner'
+  if (celebrations.runnerUps.length > 0) return 'runner-up'
+  if (celebrations.jointThirds.length > 0) return 'joint-third'
+  if (celebrations.milestones.some((m) => m.variant === 'personal_best')) {
+    return 'personal_best'
+  }
+  if (celebrations.milestones.some((m) => m.variant === 'matched_best')) {
+    return 'matched_best'
+  }
+  if (celebrations.milestones.some((m) => m.variant === 'debut')) return 'debut'
+  return null
 }
 
 export type TournamentRecap = {
@@ -247,13 +268,6 @@ export type TournamentRecapsResult = {
 const BUSY_TOURNAMENT_MIN_MATCHES = 7
 const RATING_TYPICAL_TOLERANCE = 2
 const MAX_PARTNER_CHEMISTRY_CALLOUTS_PER_DISCIPLINE = 1
-
-/** First-time depth milestones shown as podium cards (semi-final+ uses winner/runner-up/joint-3rd). */
-const STAGE_REACH_PODIUM_STAGES = [
-  'group-wins',
-  'knockout',
-  'quarter-final',
-] as const satisfies readonly ProgressionStage[]
 
 function historyKey(categoryLabel: string, discipline: string): string {
   return `${categoryLabel}\0${discipline}`
@@ -467,24 +481,6 @@ function categoryDisciplineMatches(
   )
 }
 
-function canCelebrateStageDepth(
-  disciplineMatches: NormalizedMatch[],
-  stage: StageReachCelebration['stage'],
-  celebrateFirstGroupWins: boolean,
-  bestStage: ProgressionStage | null,
-): boolean {
-  if (stage === 'group-wins') {
-    return celebrateFirstGroupWins
-  }
-  if (stage === 'knockout') {
-    return earnedKnockoutOrBetterDepth(disciplineMatches, 'knockout', bestStage)
-  }
-  if (stage === 'quarter-final') {
-    return earnedKnockoutOrBetterDepth(disciplineMatches, 'quarter-final', bestStage)
-  }
-  return false
-}
-
 function canCelebratePersonalBest(
   disciplineMatches: NormalizedMatch[],
   bestStage: ProgressionStage,
@@ -527,34 +523,6 @@ function hasJointThirdPodium(
   return qualifiesForThirdPlace(disciplineMatches, d.bestStage)
 }
 
-function hasPodiumCrowningDepth(
-  d: DisciplineRecap,
-  weekendMatches: NormalizedMatch[],
-): boolean {
-  if (d.bestStage === 'winner' || d.bestStage === 'runner-up') return true
-  if (hasJointThirdPodium(d, weekendMatches)) return true
-  if (d.bestStage == null) return false
-  return STAGE_RANK[d.bestStage] >= STAGE_RANK['semi-final']
-}
-
-function hadPriorWinAtCategoryDiscipline(
-  categoryLabel: string,
-  discipline: string,
-  currentWeekendKey: string,
-  allWeekends: WeekendBucket[],
-): boolean {
-  for (const weekend of allWeekends) {
-    if (weekend.key === currentWeekendKey) continue
-    const matches = priorCategoryDisciplineMatches(
-      weekend,
-      categoryLabel,
-      discipline,
-    )
-    if (matches.some((m) => m.outcome === 'win')) return true
-  }
-  return false
-}
-
 function effectiveStageRank(
   bestStage: ProgressionStage,
   disciplineMatches: NormalizedMatch[],
@@ -566,58 +534,6 @@ function effectiveStageRank(
   return rank
 }
 
-function deepestNewStageReach(
-  currentRank: number,
-  priorMax: number,
-  podiumRank: number,
-  disciplineMatches: NormalizedMatch[],
-  celebrateFirstGroupWins: boolean,
-  bestStage: ProgressionStage | null,
-): StageReachCelebration['stage'] | null {
-  let reached: StageReachCelebration['stage'] | null = null
-  let reachedRank = 0
-
-  for (const stage of STAGE_REACH_PODIUM_STAGES) {
-    const stageRank = STAGE_RANK[stage]
-    if (currentRank < stageRank) continue
-    if (stage === 'group-wins') {
-      if (!celebrateFirstGroupWins) continue
-    } else if (priorMax >= stageRank) {
-      continue
-    }
-    if (podiumRank > 0 && stageRank <= podiumRank) continue
-    if (!stagePlayedAtEvent(disciplineMatches, stage, celebrateFirstGroupWins)) {
-      continue
-    }
-    if (!canCelebrateStageDepth(disciplineMatches, stage, celebrateFirstGroupWins, bestStage)) {
-      continue
-    }
-    if (stageRank > reachedRank) {
-      reached = stage
-      reachedRank = stageRank
-    }
-  }
-
-  return reached
-}
-
-function stagePlayedAtEvent(
-  disciplineMatches: NormalizedMatch[],
-  stage: ProgressionStage,
-  celebrateFirstGroupWins: boolean,
-): boolean {
-  if (stage === 'group-wins') {
-    if (celebrateFirstGroupWins) {
-      return disciplineMatches.some((m) => m.outcome === 'win')
-    }
-    return hasGroupMatchWins(disciplineMatches)
-  }
-
-  return disciplineMatches.some(
-    (m) => parseRoundToStage(getMatchRound(m)) === stage,
-  )
-}
-
 function buildCelebrations(
   disciplines: DisciplineRecap[],
   weekendMatches: NormalizedMatch[],
@@ -627,7 +543,6 @@ function buildCelebrations(
   const winners: PodiumCelebration[] = []
   const runnerUps: PodiumCelebration[] = []
   const jointThirds: PodiumCelebration[] = []
-  const stageReaches: StageReachCelebration[] = []
   const milestones: MilestoneCelebration[] = []
 
   for (const d of disciplines) {
@@ -772,114 +687,60 @@ function buildCelebrations(
       currentWeekendKey,
       allWeekends,
     )
-    const celebrateFirstGroupWins =
-      hasPrior &&
-      eventHasCompetitiveWin(disciplineMatches) &&
-      hasGroupMatchWins(disciplineMatches) &&
-      !hadPriorWinAtCategoryDiscipline(
-        categoryLabel,
-        d.discipline,
-        currentWeekendKey,
-        allWeekends,
-      )
 
-    if (d.bestStage == null && !celebrateFirstGroupWins) continue
-    if (!isProgressionTournament(disciplineMatches) && !celebrateFirstGroupWins) continue
+    if (d.bestStage == null) continue
+    if (!isProgressionTournament(disciplineMatches)) continue
     if (!hasPrior) continue
 
-    const jointThirdPodium = hasJointThirdPodium(d, weekendMatches)
-    const baseStage: ProgressionStage = d.bestStage ?? 'group-stages'
-    const currentRank = effectiveStageRank(baseStage, disciplineMatches)
+    if (
+      d.bestStage === 'winner' ||
+      d.bestStage === 'runner-up' ||
+      hasJointThirdPodium(d, weekendMatches)
+    ) {
+      continue
+    }
+
+    const currentRank = effectiveStageRank(d.bestStage, disciplineMatches)
     const priorMax = priorMaxStageRank(
       categoryLabel,
       d.discipline,
       currentWeekendKey,
       allWeekends,
     )
+    const stageLabel = d.bestStageLabel ?? PROGRESSION_STAGE_LABELS[d.bestStage]
 
-    const podiumRank =
-      d.bestStage === 'winner' || d.bestStage === 'runner-up'
-        ? currentRank
-        : jointThirdPodium
-          ? STAGE_RANK['semi-final']
-          : 0
-
-    const stageLabel =
-      d.bestStageLabel ??
-      PROGRESSION_STAGE_LABELS[d.bestStage ?? 'group-wins']
-
-    // Podium cards cover those finishes — no duplicate depth cards.
-    let depthCardCoversMilestones = jointThirdPodium
-
-    if (!hasPodiumCrowningDepth(d, weekendMatches)) {
-      const newReach = deepestNewStageReach(
-        currentRank,
-        priorMax,
-        podiumRank,
-        disciplineMatches,
-        celebrateFirstGroupWins,
-        d.bestStage,
-      )
-      if (newReach != null) {
-        stageReaches.push({
-          stage: newReach,
-          discipline: d.discipline,
-          disciplineLabel: d.disciplineLabel,
-          tournamentCategoryLabel: categoryLabel,
-          competitionAgeLabel,
-        })
-        if (STAGE_RANK[newReach] >= currentRank) {
-          depthCardCoversMilestones = true
-        }
-      }
-    }
-
-    if (
-      !jointThirdPodium &&
-      d.bestStage !== 'winner' &&
-      d.bestStage !== 'runner-up' &&
-      !depthCardCoversMilestones &&
-      d.bestStage != null
+    if (canCelebratePersonalBest(disciplineMatches, d.bestStage, currentRank, priorMax)) {
+      milestones.push({
+        id: `pb-${historyKey(categoryLabel, d.discipline)}`,
+        variant: 'personal_best',
+        discipline: d.discipline,
+        disciplineLabel: d.disciplineLabel,
+        tournamentCategoryLabel: categoryLabel,
+        competitionAgeLabel,
+        stage: d.bestStage,
+        stageLabel,
+        title: 'Personal best',
+        detail: `Your deepest ${categoryLabel} ${d.disciplineLabel} run — ${stageLabel}`,
+      })
+    } else if (
+      currentRank === priorMax &&
+      priorMax >= STAGE_RANK['knockout'] &&
+      canCelebrateMatchedBest(disciplineMatches, d.bestStage)
     ) {
-      if (canCelebratePersonalBest(disciplineMatches, d.bestStage, currentRank, priorMax)) {
-        milestones.push({
-          id: `pb-${historyKey(categoryLabel, d.discipline)}`,
-          variant: 'personal_best',
-          discipline: d.discipline,
-          disciplineLabel: d.disciplineLabel,
-          tournamentCategoryLabel: categoryLabel,
-          competitionAgeLabel,
-          stage: d.bestStage,
-          stageLabel,
-          title: 'Personal best',
-          detail: `Your deepest ${categoryLabel} ${d.disciplineLabel} run — ${stageLabel}`,
-        })
-      } else if (
-        currentRank === priorMax &&
-        priorMax >= STAGE_RANK['knockout'] &&
-        canCelebrateMatchedBest(disciplineMatches, d.bestStage)
-      ) {
-        milestones.push({
-          id: `matched-${historyKey(categoryLabel, d.discipline)}`,
-          variant: 'matched_best',
-          discipline: d.discipline,
-          disciplineLabel: d.disciplineLabel,
-          tournamentCategoryLabel: categoryLabel,
-          competitionAgeLabel,
-          stage: d.bestStage,
-          stageLabel,
-          title: 'Matched your best',
-          detail: `As deep as you've gone at ${categoryLabel} ${d.disciplineLabel} before — ${stageLabel}`,
-        })
-      }
+      milestones.push({
+        id: `matched-${historyKey(categoryLabel, d.discipline)}`,
+        variant: 'matched_best',
+        discipline: d.discipline,
+        disciplineLabel: d.disciplineLabel,
+        tournamentCategoryLabel: categoryLabel,
+        competitionAgeLabel,
+        stage: d.bestStage,
+        stageLabel,
+        title: 'Matched your best',
+        detail: `As deep as you've gone at ${categoryLabel} ${d.disciplineLabel} before — ${stageLabel}`,
+      })
     }
   }
-
-  stageReaches.sort((a, b) => {
-    const rankDiff = STAGE_RANK[b.stage] - STAGE_RANK[a.stage]
-    if (rankDiff !== 0) return rankDiff
-    return a.discipline.localeCompare(b.discipline)
-  })
 
   const seen = new Set<string>()
   const dedupedMilestones = milestones.filter((m) => {
@@ -903,7 +764,6 @@ function buildCelebrations(
     winners,
     runnerUps,
     jointThirds,
-    stageReaches,
     milestones: dedupedMilestones,
     seniorCountyDebut: buildSeniorCountyDebutCelebration(
       weekendMatches,
