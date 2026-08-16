@@ -54,6 +54,7 @@ export function RecapShowcaseSlide({ active }: SlideProps) {
         allMatches={data.allMatches}
         initialIndex={initialIndex}
         showBuildStagePicker={false}
+        includeFictionalFeatureRecap={false}
       />
     </PremiumScrollViewport>
   )

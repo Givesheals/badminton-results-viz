@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { CategoryMilestoneClaimLink } from './CategoryMilestoneClaimLink'
 import type {
   CelebrationHeroKind,
@@ -22,6 +23,16 @@ type Props = {
   features?: TournamentRecapBuildFeatures
   /** Skip the mystery flip (ticket screenshots / reduced-motion demos). */
   startRevealed?: boolean
+  /**
+   * Show every celebration as its full card (no featured/compact demotion).
+   * Used by the fictional kitchen-sink recap.
+   */
+  expandAllCelebrations?: boolean
+  /**
+   * Show every celebration as its compact strip, including Winner.
+   * Used by the condensed-cards fictional recap.
+   */
+  compactAllCelebrations?: boolean
 }
 
 const CONFETTI_COLORS = [
@@ -106,6 +117,7 @@ function CompactCelebrationRow({
   detail,
   discipline,
   tournamentCategoryLabel,
+  extraChips,
   articleClass,
   intensity,
   revealLabel,
@@ -115,8 +127,9 @@ function CompactCelebrationRow({
   icon: string
   title: string
   detail?: string
-  discipline: string
+  discipline?: string
   tournamentCategoryLabel: string
+  extraChips?: ReactNode
   articleClass: string
   intensity: ConfettiIntensity
   revealLabel: string
@@ -142,8 +155,9 @@ function CompactCelebrationRow({
           {detail && <p className="truncate text-xs text-ink-500">{detail}</p>}
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-          <DisciplineChip code={discipline} />
+          {discipline && <DisciplineChip code={discipline} />}
           <TournamentCategoryChip label={tournamentCategoryLabel} />
+          {extraChips}
         </div>
       </article>
     </FlipRevealCard>
@@ -152,11 +166,30 @@ function CompactCelebrationRow({
 
 function WinnerCard({
   podium,
+  compact,
   startRevealed,
 }: {
   podium: PodiumCelebration
+  compact?: boolean
   startRevealed?: boolean
 }) {
+  if (compact) {
+    return (
+      <CompactCelebrationRow
+        icon="🏆"
+        title="Winner"
+        detail={podium.disciplineLabel}
+        discipline={podium.discipline}
+        tournamentCategoryLabel={podium.tournamentCategoryLabel}
+        articleClass="border-shuttle-400/60 bg-gradient-to-r from-shuttle-400/25 to-white"
+        intensity="light"
+        revealLabel={`Reveal: Winner in ${podium.disciplineLabel}`}
+        sealedHint="A big result is sealed inside"
+        startRevealed={startRevealed}
+      />
+    )
+  }
+
   const style = getDisciplineStyle(podium.discipline)
 
   return (
@@ -396,11 +429,32 @@ function milestoneStyle(variant: MilestoneCelebration['variant']): {
 
 function SeniorCountyDebutCard({
   debut,
+  compact,
   startRevealed,
 }: {
   debut: SeniorCountyDebutCelebration
+  compact?: boolean
   startRevealed?: boolean
 }) {
+  if (compact) {
+    return (
+      <CompactCelebrationRow
+        icon="🎖️"
+        title={debut.title}
+        detail={debut.detail}
+        tournamentCategoryLabel="County"
+        extraChips={debut.disciplines.map((d) => (
+          <DisciplineChip key={d.discipline} code={d.discipline} title={d.disciplineLabel} />
+        ))}
+        articleClass="border-level-county/40 bg-gradient-to-r from-level-county/10 to-white"
+        intensity="light"
+        revealLabel={`Reveal: ${debut.title}`}
+        sealedHint="A landmark debut is waiting"
+        startRevealed={startRevealed}
+      />
+    )
+  }
+
   return (
     <FlipRevealCard
       intensity="high"
@@ -499,6 +553,8 @@ export function RecapCelebrationHero({
   celebrations,
   features = fullTournamentRecapBuildFeatures(),
   startRevealed = false,
+  expandAllCelebrations = false,
+  compactAllCelebrations = false,
 }: Props) {
   const { winners, runnerUps, jointThirds, milestones, seniorCountyDebut } =
     celebrations
@@ -518,23 +574,31 @@ export function RecapCelebrationHero({
   const visibleSeniorCounty =
     features.showSeniorCountyDebut ? seniorCountyDebut : null
 
-  const featured = featuredCelebrationHeroKind({
-    winners: podiumWinners,
-    runnerUps: podiumRunnerUps,
-    jointThirds: podiumThirds,
-    milestones: [...personalBests, ...matchedBests, ...debutMilestones],
-  })
+  const featured =
+    expandAllCelebrations || compactAllCelebrations
+      ? null
+      : featuredCelebrationHeroKind({
+          winners: podiumWinners,
+          runnerUps: podiumRunnerUps,
+          jointThirds: podiumThirds,
+          milestones: [...personalBests, ...matchedBests, ...debutMilestones],
+        })
 
-  const compactRunnerUps = isFeatured('runner-up', featured) ? [] : podiumRunnerUps
-  const compactThirds = isFeatured('joint-third', featured) ? [] : podiumThirds
-  const compactPersonalBests = isFeatured('personal_best', featured)
-    ? []
-    : personalBests
-  const compactMatchedBests = isFeatured('matched_best', featured)
-    ? []
-    : matchedBests
-  const compactDebuts = isFeatured('debut', featured) ? [] : debutMilestones
+  const expand = (kind: CelebrationHeroKind) => {
+    if (compactAllCelebrations) return false
+    return expandAllCelebrations || isFeatured(kind, featured)
+  }
+
+  const compactCounty = compactAllCelebrations ? visibleSeniorCounty : null
+  const compactWinners = compactAllCelebrations ? podiumWinners : []
+  const compactRunnerUps = expand('runner-up') ? [] : podiumRunnerUps
+  const compactThirds = expand('joint-third') ? [] : podiumThirds
+  const compactPersonalBests = expand('personal_best') ? [] : personalBests
+  const compactMatchedBests = expand('matched_best') ? [] : matchedBests
+  const compactDebuts = expand('debut') ? [] : debutMilestones
   const compactCount =
+    (compactCounty ? 1 : 0) +
+    compactWinners.length +
     compactRunnerUps.length +
     compactThirds.length +
     compactPersonalBests.length +
@@ -554,10 +618,10 @@ export function RecapCelebrationHero({
 
   return (
     <div className="space-y-4">
-      {visibleSeniorCounty && (
+      {visibleSeniorCounty && !compactAllCelebrations && (
         <SeniorCountyDebutCard debut={visibleSeniorCounty} startRevealed={startRevealed} />
       )}
-      {podiumWinners.length > 0 && (
+      {!compactAllCelebrations && podiumWinners.length > 0 && (
         <div className={podiumGridClass(podiumWinners.length)}>
           {podiumWinners.map((podium) => (
             <WinnerCard
@@ -569,7 +633,7 @@ export function RecapCelebrationHero({
         </div>
       )}
 
-      {isFeatured('runner-up', featured) && podiumRunnerUps.length > 0 && (
+      {expand('runner-up') && podiumRunnerUps.length > 0 && (
         <div className={podiumGridClass(podiumRunnerUps.length)}>
           {podiumRunnerUps.map((podium) => (
             <RunnerUpCard
@@ -581,7 +645,7 @@ export function RecapCelebrationHero({
         </div>
       )}
 
-      {isFeatured('joint-third', featured) && podiumThirds.length > 0 && (
+      {expand('joint-third') && podiumThirds.length > 0 && (
         <div className={podiumGridClass(podiumThirds.length)}>
           {podiumThirds.map((podium) => (
             <ThirdPlaceCard
@@ -593,7 +657,7 @@ export function RecapCelebrationHero({
         </div>
       )}
 
-      {isFeatured('personal_best', featured) && personalBests.length > 0 && (
+      {expand('personal_best') && personalBests.length > 0 && (
         <div className={podiumGridClass(personalBests.length)}>
           {personalBests.map((milestone) => (
             <PersonalBestCard
@@ -605,7 +669,7 @@ export function RecapCelebrationHero({
         </div>
       )}
 
-      {isFeatured('matched_best', featured) && matchedBests.length > 0 && (
+      {expand('matched_best') && matchedBests.length > 0 && (
         <div className="grid gap-2 sm:grid-cols-2">
           {matchedBests.map((milestone) => (
             <MilestoneCard
@@ -617,7 +681,7 @@ export function RecapCelebrationHero({
         </div>
       )}
 
-      {isFeatured('debut', featured) && debutMilestones.length > 0 && (
+      {expand('debut') && debutMilestones.length > 0 && (
         <div className="grid gap-2 sm:grid-cols-2">
           {debutMilestones.map((milestone) => (
             <MilestoneCard
@@ -631,6 +695,21 @@ export function RecapCelebrationHero({
 
       {compactCount > 0 && (
         <div className={compactGridClass(compactCount)}>
+          {compactCounty && (
+            <SeniorCountyDebutCard
+              debut={compactCounty}
+              compact
+              startRevealed={startRevealed}
+            />
+          )}
+          {compactWinners.map((podium) => (
+            <WinnerCard
+              key={podium.discipline}
+              podium={podium}
+              compact
+              startRevealed={startRevealed}
+            />
+          ))}
           {compactRunnerUps.map((podium) => (
             <RunnerUpCard
               key={podium.discipline}

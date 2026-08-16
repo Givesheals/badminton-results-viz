@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { formatDisplayDate } from '../../lib/formatDate'
 import { formatWholePercent } from '../../lib/formatNumbers'
+import {
+  fictionalCelebrationPresentation,
+  insertFictionalTournamentRecap,
+} from '../../lib/fictionalTournamentRecap'
 import { computeTournamentRecaps } from '../../lib/tournamentRecap'
 import {
   fullTournamentRecapBuildFeatures,
@@ -31,6 +35,11 @@ type Props = {
   buildStage?: TournamentRecapBuildStage | null
   /** Show the ticket build stage chips above the card. Default true. */
   showBuildStagePicker?: boolean
+  /**
+   * Insert kitchen-sink fictional recaps as the fifth and sixth carousel cards.
+   * Off for premium showcase recordings so a real weekend is used.
+   */
+  includeFictionalFeatureRecap?: boolean
 }
 
 function formatDateRange(from: string, to: string): string {
@@ -43,11 +52,13 @@ export function TournamentRecapSection({
   initialIndex = 0,
   buildStage: buildStageProp = null,
   showBuildStagePicker = true,
+  includeFictionalFeatureRecap = true,
 }: Props) {
-  const { recaps } = useMemo(
-    () => computeTournamentRecaps(allMatches),
-    [allMatches],
-  )
+  const recaps = useMemo(() => {
+    const computed = computeTournamentRecaps(allMatches).recaps
+    if (!includeFictionalFeatureRecap || computed.length === 0) return computed
+    return insertFictionalTournamentRecap(computed)
+  }, [allMatches, includeFictionalFeatureRecap])
 
   const [index, setIndex] = useState(() =>
     Math.min(Math.max(0, initialIndex), Math.max(0, recaps.length - 1)),
@@ -61,7 +72,7 @@ export function TournamentRecapSection({
         ? localBuildStage
         : null
 
-  const features =
+  const featuresForStage =
     buildStage != null
       ? getTournamentRecapBuildFeatures(buildStage)
       : fullTournamentRecapBuildFeatures()
@@ -86,6 +97,11 @@ export function TournamentRecapSection({
   }
 
   const recap = recaps[index]!
+  const celebrationPresentation = fictionalCelebrationPresentation(recap.key)
+  const isFictionalFeatureRecap = celebrationPresentation != null
+  const features = isFictionalFeatureRecap
+    ? fullTournamentRecapBuildFeatures()
+    : featuresForStage
   const positionLabel = `${index + 1} of ${recaps.length}`
   const canGoOlder = index < recaps.length - 1
   const canGoNewer = index > 0
@@ -206,7 +222,9 @@ export function TournamentRecapSection({
               key={recap.key}
               celebrations={recap.celebrations}
               features={features}
-              startRevealed={buildStageProp != null}
+              startRevealed={buildStageProp != null || isFictionalFeatureRecap}
+              expandAllCelebrations={celebrationPresentation === 'expanded'}
+              compactAllCelebrations={celebrationPresentation === 'compact'}
             />
 
             {features.showEventSummaries && recap.eventSummaries.length > 0 && (
