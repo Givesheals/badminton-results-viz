@@ -165,12 +165,21 @@ function freakMatch(
 }
 
 function podium(discipline: (typeof DISCIPLINES)[number], kind: 'winner' | 'runner-up' | 'joint-third') {
+  const disciplineLabel = DISCIPLINE_LABELS[discipline] ?? discipline
+  const subtitle =
+    kind === 'winner'
+      ? `Your first ${CATEGORY} title`
+      : kind === 'runner-up'
+        ? `Your first ${CATEGORY} runner-up finish`
+        : `Your first ${CATEGORY} third place`
+
   return {
     kind,
     discipline,
-    disciplineLabel: DISCIPLINE_LABELS[discipline] ?? discipline,
+    disciplineLabel,
     tournamentCategoryLabel: CATEGORY,
     competitionAgeLabel: AGE,
+    subtitle,
   }
 }
 

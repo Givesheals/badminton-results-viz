@@ -31,15 +31,15 @@ describe('buildFictionalTournamentRecap', () => {
     expect(recap.weekendWinPercent).not.toBe(100)
   })
 
-  it('shows every top-layer celebration card once, without subtitle variants', () => {
+  it('shows every top-layer celebration card once, with first-time flavour text', () => {
     const { celebrations } = recap
     expect(celebrations.seniorCountyDebut).not.toBeNull()
     expect(celebrations.winners).toHaveLength(1)
     expect(celebrations.runnerUps).toHaveLength(1)
     expect(celebrations.jointThirds).toHaveLength(1)
-    expect(celebrations.winners[0]!.subtitle).toBeUndefined()
-    expect(celebrations.runnerUps[0]!.subtitle).toBeUndefined()
-    expect(celebrations.jointThirds[0]!.subtitle).toBeUndefined()
+    expect(celebrations.winners[0]!.subtitle).toBe('Your first Gold title')
+    expect(celebrations.runnerUps[0]!.subtitle).toBe('Your first Gold runner-up finish')
+    expect(celebrations.jointThirds[0]!.subtitle).toBe('Your first Gold third place')
     expect(celebrations.milestones.map((milestone) => milestone.variant).sort()).toEqual([
       'debut',
       'matched_best',

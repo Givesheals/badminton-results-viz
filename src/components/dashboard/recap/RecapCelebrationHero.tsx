@@ -106,6 +106,14 @@ function podiumGridClass(count: number): string {
   return count === 1 ? 'grid gap-3' : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
 }
 
+function podiumFlavorText(podium: PodiumCelebration): string {
+  if (podium.subtitle) return podium.subtitle
+  const level = podium.tournamentCategoryLabel
+  if (podium.kind === 'winner') return `Your first ${level} title`
+  if (podium.kind === 'runner-up') return `Your first ${level} runner-up finish`
+  return `Your first ${level} third place`
+}
+
 function CompactCelebrationRow({
   icon,
   title,
@@ -224,7 +232,7 @@ function RunnerUpCard({
       <CompactCelebrationRow
         icon="🥈"
         title="Runner-up"
-        detail={podium.subtitle}
+        detail={podiumFlavorText(podium)}
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
         articleClass="border-ink-200 bg-gradient-to-r from-slate-50 to-white"
@@ -285,7 +293,7 @@ function ThirdPlaceCard({
       <CompactCelebrationRow
         icon="🥉"
         title="Third place"
-        detail={podium.subtitle}
+        detail={podiumFlavorText(podium)}
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
         articleClass="border-[color:var(--color-level-bronze)]/50 bg-gradient-to-r from-[color:var(--color-level-bronze)]/15 to-white"
