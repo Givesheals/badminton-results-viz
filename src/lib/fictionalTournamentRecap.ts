@@ -420,7 +420,7 @@ export function buildFictionalTournamentRecap(
           'debut',
           'semi-final',
           `First ${CATEGORY} tournament`,
-          DISCIPLINE_LABELS.XD,
+          `Your first ${CATEGORY} tournament in mixed doubles`,
         ),
       ],
       seniorCountyDebut: {

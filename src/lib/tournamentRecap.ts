@@ -334,6 +334,25 @@ function hasPriorCategoryDisciplineEvent(
   return false
 }
 
+function hasPriorCategoryEvent(
+  categoryLabel: string,
+  currentWeekendKey: string,
+  allWeekends: WeekendBucket[],
+): boolean {
+  for (const weekend of allWeekends) {
+    if (weekend.key === currentWeekendKey) continue
+    if (
+      weekend.matches.some(
+        (m) =>
+          isCompetitiveMatch(m) && m.tournamentCategoryLabel === categoryLabel,
+      )
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
 function priorMaxStageRank(
   categoryLabel: string,
   discipline: string,
@@ -550,12 +569,6 @@ function buildCelebrations(
 
     const categoryLabel = categoryLabelForDiscipline(weekendMatches, d.discipline)
     const competitionAgeLabel = competitionAgeLabelForDiscipline(weekendMatches, d.discipline)
-    const priorMax = priorMaxStageRank(
-      categoryLabel,
-      d.discipline,
-      currentWeekendKey,
-      allWeekends,
-    )
 
     const podium: PodiumCelebration = {
       kind: d.bestStage === 'winner' ? 'winner' : 'runner-up',
@@ -590,8 +603,27 @@ function buildCelebrations(
       }
       winners.push(podium)
     } else {
-      if (priorMax < STAGE_RANK['runner-up']) {
+      const priorRunnerUpsInDiscipline = countPriorFinishesAtStage(
+        categoryLabel,
+        d.discipline,
+        'runner-up',
+        currentWeekendKey,
+        allWeekends,
+      )
+      const priorRunnerUpsInCategory = countPriorFinishesAtStage(
+        categoryLabel,
+        null,
+        'runner-up',
+        currentWeekendKey,
+        allWeekends,
+      )
+      const runnerUpNumber = priorRunnerUpsInDiscipline + 1
+      if (priorRunnerUpsInCategory === 0) {
         podium.subtitle = `Your first ${categoryLabel} runner-up finish`
+      } else if (priorRunnerUpsInDiscipline === 0) {
+        podium.subtitle = `Your first ${categoryLabel} ${d.disciplineLabel} runner-up finish`
+      } else {
+        podium.subtitle = `This is your ${ordinalOccurrence(runnerUpNumber)} time as a ${categoryLabel} ${d.discipline} runner-up`
       }
       runnerUps.push(podium)
     }
@@ -658,6 +690,11 @@ function buildCelebrations(
     if (hasJointThirdPodium(d, weekendMatches)) continue
 
     const debutStage: ProgressionStage = d.bestStage ?? 'group-stages'
+    const priorCategoryAnywhere = hasPriorCategoryEvent(
+      categoryLabel,
+      currentWeekendKey,
+      allWeekends,
+    )
     milestones.push({
       id: `debut-${historyKey(categoryLabel, d.discipline)}`,
       variant: 'debut',
@@ -669,7 +706,9 @@ function buildCelebrations(
       stageLabel:
         d.bestStageLabel ?? PROGRESSION_STAGE_LABELS[debutStage],
       title: `First ${categoryLabel} tournament`,
-      detail: d.disciplineLabel,
+      detail: priorCategoryAnywhere
+        ? `Your first ${categoryLabel} tournament in ${d.disciplineLabel.toLowerCase()}`
+        : `Your first ${categoryLabel} tournament in any discipline`,
     })
   }
 

@@ -224,7 +224,7 @@ function RunnerUpCard({
       <CompactCelebrationRow
         icon="🥈"
         title="Runner-up"
-        detail={podium.disciplineLabel}
+        detail={podium.subtitle}
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
         articleClass="border-ink-200 bg-gradient-to-r from-slate-50 to-white"
@@ -285,7 +285,7 @@ function ThirdPlaceCard({
       <CompactCelebrationRow
         icon="🥉"
         title="Third place"
-        detail={podium.disciplineLabel}
+        detail={podium.subtitle}
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
         articleClass="border-[color:var(--color-level-bronze)]/50 bg-gradient-to-r from-[color:var(--color-level-bronze)]/15 to-white"

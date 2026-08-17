@@ -1644,8 +1644,54 @@ describe('computeTournamentRecaps', () => {
     expect(milestones.some((m) => m.variant === 'personal_best')).toBe(false)
     const debut = milestones.find((m) => m.variant === 'debut')
     expect(debut?.title).toBe('First Bronze tournament')
-    expect(debut?.detail).toBe('Mixed doubles')
+    expect(debut?.detail).toBe('Your first Bronze tournament in any discipline')
     expect(debut?.detail).not.toContain('Group stages')
+  })
+
+  it('says first category tournament in a discipline when that level was already played elsewhere', () => {
+    const priorGoldSingles = makeMatch({
+      competitionName: 'Gold earlier',
+      date: '2025-01-01',
+      discipline: 'WS',
+      tournamentCategoryLabel: 'Gold',
+      outcome: 'loss',
+      raw: {
+        Round: 'Group 1',
+        'Tournament Category': 'Gold',
+        'Player Game 1 Score': 15,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 12,
+        'Opponent Game 2 Score': 21,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+    const firstGoldDoubles = makeMatch({
+      competitionName: 'Gold Open',
+      date: '2026-06-01',
+      discipline: 'XD',
+      disciplineLabel: 'Mixed doubles',
+      partnerName: 'Sam',
+      tournamentCategoryLabel: 'Gold',
+      outcome: 'loss',
+      raw: {
+        Round: 'Group 1',
+        'Tournament Category': 'Gold',
+        'Player Game 1 Score': 15,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 12,
+        'Opponent Game 2 Score': 21,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const debut = computeTournamentRecaps([priorGoldSingles, firstGoldDoubles])
+      .recaps.find((r) => r.competitionName === 'Gold Open')!
+      .celebrations.milestones.find((m) => m.variant === 'debut')
+
+    expect(debut?.title).toBe('First Gold tournament')
+    expect(debut?.detail).toBe('Your first Gold tournament in mixed doubles')
   })
 
   it('shows joint third card instead of debut on semi-final loss category debut', () => {
@@ -1699,6 +1745,38 @@ describe('computeTournamentRecaps', () => {
       false,
     )
     expect(celebrations.milestones.some((m) => m.variant === 'debut')).toBe(false)
+  })
+
+  it('counts prior runner-up finishes for nth-time subtitle', () => {
+    const loseFinal = (comp: string, date: string) =>
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'XD',
+        partnerName: 'Sam',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'loss',
+        raw: {
+          Round: 'Final',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 19,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 18,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      })
+
+    const celebrations = computeTournamentRecaps([
+      loseFinal('Earlier Bronze', '2025-01-01'),
+      loseFinal('Bronze Cup', '2026-06-01'),
+    ]).recaps.find((r) => r.competitionName === 'Bronze Cup')!.celebrations
+
+    expect(celebrations.runnerUps).toHaveLength(1)
+    expect(celebrations.runnerUps[0]!.subtitle).toBe(
+      'This is your second time as a Bronze XD runner-up',
+    )
   })
 
   it('does not show county debut when prior county matches exist in that discipline', () => {
