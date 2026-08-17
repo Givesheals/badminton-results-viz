@@ -81,7 +81,7 @@ export function PlayerSummaryShowcaseSlide({ active }: SlideProps) {
         <SummarySection {...sectionProps} />
         <ResultsOverTimeSection key={data.importedAt} {...sectionProps} />
         <CategoryMilestonesSection {...sectionProps} maxMilestoneCards={4} />
-        <TournamentProgressionSection {...sectionProps} />
+        <TournamentProgressionSection {...sectionProps} showBuildStagePicker={false} />
       </div>
     </PremiumScrollViewport>
   )

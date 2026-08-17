@@ -7,6 +7,13 @@ import {
   computeTournamentProgression,
   matchFiltersForPrimaryCombo,
 } from '../../lib/tournamentProgression'
+import {
+  fullTournamentProgressionBuildFeatures,
+  getTournamentProgressionBuildFeatures,
+  TOURNAMENT_PROGRESSION_BUILD_STAGE_META,
+  TOURNAMENT_PROGRESSION_BUILD_STAGES,
+  type TournamentProgressionBuildStage,
+} from '../../lib/tournamentProgressionBuildStage'
 import type { FilterOptions } from '../../types/filters'
 import { DEFAULT_MATCH_FILTERS, type MatchFilters } from '../../types/filters'
 import type { NormalizedMatch } from '../../types/matchHistory'
@@ -25,12 +32,22 @@ type Props = {
   allMatches: NormalizedMatch[]
   filterOptions: FilterOptions
   importedAt: string | undefined
+  /**
+   * Progressive build stage for ticket screenshots.
+   * When null/omitted with picker enabled, local state defaults to 5 (full).
+   * When picker is hidden and stage is omitted, full features are always shown.
+   */
+  buildStage?: TournamentProgressionBuildStage | null
+  /** Show the ticket build stage chips above the card. Default true. */
+  showBuildStagePicker?: boolean
 }
 
 export function TournamentProgressionSection({
   allMatches,
   filterOptions,
   importedAt,
+  buildStage: buildStageProp = null,
+  showBuildStagePicker = true,
 }: Props) {
   const fields = ['time', 'competition', 'discipline', 'competitionAge'] as const
 
@@ -53,6 +70,20 @@ export function TournamentProgressionSection({
   )
 
   const [filters, setFilters] = useState<MatchFilters>(() => sectionDefaultFilters)
+  const [localBuildStage, setLocalBuildStage] =
+    useState<TournamentProgressionBuildStage>(5)
+
+  const buildStage =
+    buildStageProp != null
+      ? buildStageProp
+      : showBuildStagePicker
+        ? localBuildStage
+        : null
+
+  const features =
+    buildStage != null
+      ? getTournamentProgressionBuildFeatures(buildStage)
+      : fullTournamentProgressionBuildFeatures()
 
   useEffect(() => {
     setFilters(sectionDefaultFilters)
@@ -73,71 +104,142 @@ export function TournamentProgressionSection({
     title: 'Tournament progression',
   })
 
-  return (
-    <article className="rounded-2xl card-frame bg-white p-4 shadow-sm sm:p-5">
-      <SectionHeaderWithFilters
-        title={
-          <SectionHeading
-            info={tournamentProgressionInfo}
-            infoLabel="About Tournament progression"
-          >
-            <h3 className="font-medium text-ink-900">Tournament progression</h3>
-          </SectionHeading>
-        }
-        description={
-          <FilterMatchCount filteredCount={matches.length} totalCount={allMatches.length} />
-        }
-        titleActions={
-          <ShareButton
-            onClick={() => void shareSection()}
-            status={shareStatus}
-            disabled={progression.tournamentCount === 0}
-          />
-        }
-        filters={
-          <CollapsibleFilters
-            storageKey="filters:tournament-progression"
-            activeCount={countActiveSectionFilters(filters, [...fields])}
-            onReset={() => setFilters(DEFAULT_MATCH_FILTERS)}
-          >
-            <SectionFilterBar
-              fields={[...fields]}
-              filters={filters}
-              options={progressionFilterOptions}
-              onChange={setFilters}
-              idPrefix="progression"
-            />
-          </CollapsibleFilters>
-        }
-      />
+  const activeStage = buildStage ?? 5
+  /** Share is outside the ticket story — only when the picker is off. */
+  const showShare = !showBuildStagePicker
 
-      <div ref={shareRef} data-share-root>
-        <div className="border-b border-ink-100 py-3">
-          <TournamentProgressionScope
-            filters={filters}
-            filterOptions={progressionFilterOptions}
-            tournamentCount={progression.tournamentCount}
-          />
-        </div>
-        <div className="py-3">
-          <TournamentProgressionAverage
-            typicalLabel={progression.typicalLabel}
-            typicalRank={progression.typicalRank}
-            depthBarSegments={progression.depthBarSegments}
-            knockoutOrBetterPercent={progression.knockoutOrBetterPercent}
-            tournamentCount={progression.tournamentCount}
-          />
-        </div>
-        <div className="border-t border-ink-100 pt-4">
-          <h4 className="text-sm font-medium text-ink-900">Finish distribution</h4>
-          <div className="mt-2">
-            <TournamentProgressionChart
-              data={progression.distribution}
-              tournamentCount={progression.tournamentCount}
-            />
+  return (
+    <div className="space-y-3">
+      {showBuildStagePicker && (
+        <div className="rounded-lg border border-dashed border-brand-200 bg-brand-50/40 px-3 py-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-brand-800">Ticket build:</span>
+            <div
+              role="group"
+              aria-label="Tournament progression ticket build stage"
+              className="flex flex-wrap gap-1"
+            >
+              {TOURNAMENT_PROGRESSION_BUILD_STAGES.map((ticketStage) => {
+                const selected = activeStage === ticketStage
+                const meta = TOURNAMENT_PROGRESSION_BUILD_STAGE_META[ticketStage]
+                return (
+                  <button
+                    key={ticketStage}
+                    type="button"
+                    title={meta.summary}
+                    onClick={() => {
+                      if (buildStageProp == null) setLocalBuildStage(ticketStage)
+                    }}
+                    className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
+                      selected
+                        ? 'bg-brand-600 text-white shadow-sm'
+                        : 'bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50'
+                    }`}
+                  >
+                    {ticketStage}. {meta.shortLabel}
+                  </button>
+                )
+              })}
+            </div>
           </div>
+          <p className="mt-1.5 text-[11px] text-ink-500">
+            {TOURNAMENT_PROGRESSION_BUILD_STAGE_META[activeStage].summary}
+          </p>
         </div>
-      </div>
-    </article>
+      )}
+
+      <article className="rounded-2xl card-frame bg-white p-4 shadow-sm sm:p-5">
+        {features.showFilters ? (
+          <SectionHeaderWithFilters
+            title={
+              <SectionHeading
+                info={features.showInfo ? tournamentProgressionInfo : undefined}
+                infoLabel="About Tournament progression"
+              >
+                <h3 className="font-medium text-ink-900">Tournament progression</h3>
+              </SectionHeading>
+            }
+            description={
+              <FilterMatchCount filteredCount={matches.length} totalCount={allMatches.length} />
+            }
+            titleActions={
+              showShare ? (
+                <ShareButton
+                  onClick={() => void shareSection()}
+                  status={shareStatus}
+                  disabled={progression.tournamentCount === 0}
+                />
+              ) : undefined
+            }
+            filters={
+              <CollapsibleFilters
+                storageKey={showBuildStagePicker ? undefined : 'filters:tournament-progression'}
+                defaultOpen={showBuildStagePicker}
+                activeCount={countActiveSectionFilters(filters, [...fields])}
+                onReset={() => setFilters(DEFAULT_MATCH_FILTERS)}
+              >
+                <SectionFilterBar
+                  fields={[...fields]}
+                  filters={filters}
+                  options={progressionFilterOptions}
+                  onChange={setFilters}
+                  idPrefix="progression"
+                />
+              </CollapsibleFilters>
+            }
+          />
+        ) : (
+          <div className="flex items-start justify-between gap-3">
+            <SectionHeading
+              info={features.showInfo ? tournamentProgressionInfo : undefined}
+              infoLabel="About Tournament progression"
+            >
+              <h3 className="font-medium text-ink-900">Tournament progression</h3>
+            </SectionHeading>
+            {showShare ? (
+              <ShareButton
+                onClick={() => void shareSection()}
+                status={shareStatus}
+                disabled={progression.tournamentCount === 0}
+              />
+            ) : null}
+          </div>
+        )}
+
+        <div ref={shareRef} data-share-root>
+          {features.showFilters ? (
+            <div className="border-b border-ink-100 py-3">
+              <TournamentProgressionScope
+                filters={filters}
+                filterOptions={progressionFilterOptions}
+                tournamentCount={progression.tournamentCount}
+              />
+            </div>
+          ) : null}
+          {features.showTypicalRun ? (
+            <div className="py-3">
+              <TournamentProgressionAverage
+                typicalLabel={progression.typicalLabel}
+                typicalRank={progression.typicalRank}
+                depthBarSegments={progression.depthBarSegments}
+                knockoutOrBetterPercent={progression.knockoutOrBetterPercent}
+                tournamentCount={progression.tournamentCount}
+              />
+            </div>
+          ) : null}
+          {features.showFinishDistribution ? (
+            <div className="border-t border-ink-100 pt-4">
+              <h4 className="text-sm font-medium text-ink-900">Finish distribution</h4>
+              <div className="mt-2">
+                <TournamentProgressionChart
+                  data={progression.distribution}
+                  tournamentCount={progression.tournamentCount}
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </article>
+    </div>
   )
 }
