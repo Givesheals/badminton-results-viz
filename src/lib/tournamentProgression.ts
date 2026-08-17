@@ -246,7 +246,7 @@ export type TournamentProgressionStats = {
   categoryCompletions: CategoryCompletionRow[]
 }
 
-/** Minimum stage rank counted as "knockout or better" for aspiration stats. */
+/** Minimum stage rank counted as "quarterfinals or better" (early KO merges into QF on charts). */
 export const KNOCKOUT_OR_BETTER_MIN_RANK = STAGE_RANK['knockout']
 
 export function percentAtOrBeyondRank(
@@ -567,7 +567,7 @@ export const SENIOR_COUNTY_DEBUT_TITLE = 'First senior county appearance'
 
 /** Wording avoids implying squad selection — players may appear as subs. */
 export const SENIOR_COUNTY_DEBUT_DETAIL =
-  'Your first time playing at senior county level — a milestone many players work towards.'
+  'Your first time playing at senior county level - a milestone many players work towards.'
 
 function normalizeRoundText(round: string): string {
   return round
