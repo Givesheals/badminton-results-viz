@@ -228,7 +228,7 @@ export function TournamentProgressionSection({
               className={
                 features.showFilters
                   ? 'py-3'
-                  : 'border-t border-ink-100 py-3'
+                  : 'mt-3 border-t border-ink-100 py-3'
               }
             >
               <TournamentProgressionAverage
