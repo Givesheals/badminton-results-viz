@@ -35,7 +35,7 @@ export const TOURNAMENT_RECAP_BUILD_STAGE_META: Record<
 > = {
   1: {
     shortLabel: 'Shell',
-    summary: 'Event title, prev/next nav, category chip, date range',
+    summary: 'Event title, older/newer nav, category chip, date range',
   },
   2: {
     shortLabel: 'Disciplines',

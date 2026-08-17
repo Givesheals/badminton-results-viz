@@ -121,16 +121,16 @@ export function TournamentProgressionChart({ data, tournamentCount }: Props) {
 
   if (tournamentCount === 0) {
     return (
-      <p className="flex h-48 items-center justify-center text-sm text-ink-700">
-        No tournaments with bracket progression in this selection.
+      <p className="text-sm text-ink-700">
+        No tournaments in this selection.
       </p>
     )
   }
 
   if (data.length === 0) {
     return (
-      <p className="flex h-48 items-center justify-center text-sm text-ink-700">
-        Round data could not be classified for the tournaments in this selection.
+      <p className="text-sm text-ink-700">
+        No classified tournaments in this selection.
       </p>
     )
   }

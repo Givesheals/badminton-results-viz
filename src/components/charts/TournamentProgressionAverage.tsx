@@ -96,8 +96,7 @@ export function TournamentProgressionAverage({
       <div className="space-y-2">
         <h4 className="text-sm font-medium text-ink-900">Typical run</h4>
         <p className="text-sm text-ink-700">
-          Typical depth appears once you have at least one classified progression tournament in
-          this filter.
+          No tournaments in this selection.
         </p>
       </div>
     )

@@ -660,9 +660,9 @@ function buildCelebrations(
     }
 
     if (priorThirdsInCategory === 0) {
-      podium.subtitle = `Your first ${categoryLabel} third place`
+      podium.subtitle = `Your first ${categoryLabel} third place finish`
     } else if (priorThirdsInDiscipline === 0) {
-      podium.subtitle = `Your first ${categoryLabel} ${d.discipline} third place`
+      podium.subtitle = `Your first ${categoryLabel} ${d.discipline} third place finish`
     } else {
       podium.subtitle = `This is your ${ordinalOccurrence(thirdNumber)} time coming third in ${d.discipline} at a ${categoryLabel}`
     }
@@ -759,7 +759,7 @@ function buildCelebrations(
         stage: d.bestStage,
         stageLabel,
         title: 'Personal best',
-        detail: `Your deepest ${categoryLabel} ${d.disciplineLabel} run — ${stageLabel}`,
+        detail: `Your deepest ${categoryLabel} ${d.disciplineLabel} run - ${stageLabel}`,
       })
     } else if (
       currentRank === priorMax &&
@@ -776,7 +776,7 @@ function buildCelebrations(
         stage: d.bestStage,
         stageLabel,
         title: 'Matched your best',
-        detail: `As deep as you've gone at ${categoryLabel} ${d.disciplineLabel} before — ${stageLabel}`,
+        detail: `As deep as you've gone at ${categoryLabel} ${d.disciplineLabel} before - ${stageLabel}`,
       })
     }
   }

@@ -171,7 +171,7 @@ function podium(discipline: (typeof DISCIPLINES)[number], kind: 'winner' | 'runn
       ? `Your first ${CATEGORY} title`
       : kind === 'runner-up'
         ? `Your first ${CATEGORY} runner-up finish`
-        : `Your first ${CATEGORY} third place`
+        : `Your first ${CATEGORY} third place finish`
 
   return {
     kind,
@@ -415,14 +415,14 @@ export function buildFictionalTournamentRecap(
           'personal_best',
           'winner',
           'Personal best',
-          `Your deepest ${CATEGORY} ${DISCIPLINE_LABELS.MD} run — Winner`,
+          `Your deepest ${CATEGORY} ${DISCIPLINE_LABELS.MD} run - Winner`,
         ),
         milestone(
           'WD',
           'matched_best',
           'runner-up',
           'Matched your best',
-          `As deep as you've gone at ${CATEGORY} ${DISCIPLINE_LABELS.WD} before — Runner-up`,
+          `As deep as you've gone at ${CATEGORY} ${DISCIPLINE_LABELS.WD} before - Runner-up`,
         ),
         milestone(
           'XD',
