@@ -29,7 +29,7 @@ type Props = {
    */
   expandAllCelebrations?: boolean
   /**
-   * Show every celebration as its compact strip, including Winner.
+   * Show every celebration as its compact strip, except Winner (always large).
    * Used by the condensed-cards fictional recap.
    */
   compactAllCelebrations?: boolean
@@ -107,10 +107,6 @@ function podiumGridClass(count: number): string {
   return count === 1 ? 'grid gap-3' : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
 }
 
-function compactGridClass(count: number): string {
-  return count === 1 ? 'grid gap-2' : 'grid gap-2 sm:grid-cols-2'
-}
-
 function CompactCelebrationRow({
   icon,
   title,
@@ -144,20 +140,22 @@ function CompactCelebrationRow({
       sealedHint={sealedHint}
       startRevealed={startRevealed}
     >
-      <article
-        className={`flex min-h-[3.25rem] items-center gap-2.5 rounded-lg border px-3 py-2 ${articleClass}`}
-      >
-        <span className="shrink-0 text-base leading-none" aria-hidden>
-          {icon}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-ink-900">{title}</p>
-          {detail && <p className="truncate text-xs text-ink-500">{detail}</p>}
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-          {discipline && <DisciplineChip code={discipline} />}
-          <TournamentCategoryChip label={tournamentCategoryLabel} />
-          {extraChips}
+      <article className={`rounded-lg border px-3 py-2.5 ${articleClass}`}>
+        <div className="flex items-start gap-2.5">
+          <span className="mt-0.5 shrink-0 text-base leading-none" aria-hidden>
+            {icon}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold leading-snug text-ink-900">{title}</p>
+            {detail && (
+              <p className="mt-0.5 text-xs leading-snug text-ink-500">{detail}</p>
+            )}
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {discipline && <DisciplineChip code={discipline} />}
+              <TournamentCategoryChip label={tournamentCategoryLabel} />
+              {extraChips}
+            </div>
+          </div>
         </div>
       </article>
     </FlipRevealCard>
@@ -166,30 +164,11 @@ function CompactCelebrationRow({
 
 function WinnerCard({
   podium,
-  compact,
   startRevealed,
 }: {
   podium: PodiumCelebration
-  compact?: boolean
   startRevealed?: boolean
 }) {
-  if (compact) {
-    return (
-      <CompactCelebrationRow
-        icon="🏆"
-        title="Winner"
-        detail={podium.disciplineLabel}
-        discipline={podium.discipline}
-        tournamentCategoryLabel={podium.tournamentCategoryLabel}
-        articleClass="border-shuttle-400/60 bg-gradient-to-r from-shuttle-400/25 to-white"
-        intensity="light"
-        revealLabel={`Reveal: Winner in ${podium.disciplineLabel}`}
-        sealedHint="A big result is sealed inside"
-        startRevealed={startRevealed}
-      />
-    )
-  }
-
   const style = getDisciplineStyle(podium.discipline)
 
   return (
@@ -590,15 +569,12 @@ export function RecapCelebrationHero({
   }
 
   const compactCounty = compactAllCelebrations ? visibleSeniorCounty : null
-  const compactWinners = compactAllCelebrations ? podiumWinners : []
   const compactRunnerUps = expand('runner-up') ? [] : podiumRunnerUps
   const compactThirds = expand('joint-third') ? [] : podiumThirds
   const compactPersonalBests = expand('personal_best') ? [] : personalBests
   const compactMatchedBests = expand('matched_best') ? [] : matchedBests
   const compactDebuts = expand('debut') ? [] : debutMilestones
   const compactCount =
-    (compactCounty ? 1 : 0) +
-    compactWinners.length +
     compactRunnerUps.length +
     compactThirds.length +
     compactPersonalBests.length +
@@ -618,10 +594,17 @@ export function RecapCelebrationHero({
 
   return (
     <div className="space-y-4">
+      {compactCounty && (
+        <SeniorCountyDebutCard
+          debut={compactCounty}
+          compact
+          startRevealed={startRevealed}
+        />
+      )}
       {visibleSeniorCounty && !compactAllCelebrations && (
         <SeniorCountyDebutCard debut={visibleSeniorCounty} startRevealed={startRevealed} />
       )}
-      {!compactAllCelebrations && podiumWinners.length > 0 && (
+      {podiumWinners.length > 0 && (
         <div className={podiumGridClass(podiumWinners.length)}>
           {podiumWinners.map((podium) => (
             <WinnerCard
@@ -694,22 +677,7 @@ export function RecapCelebrationHero({
       )}
 
       {compactCount > 0 && (
-        <div className={compactGridClass(compactCount)}>
-          {compactCounty && (
-            <SeniorCountyDebutCard
-              debut={compactCounty}
-              compact
-              startRevealed={startRevealed}
-            />
-          )}
-          {compactWinners.map((podium) => (
-            <WinnerCard
-              key={podium.discipline}
-              podium={podium}
-              compact
-              startRevealed={startRevealed}
-            />
-          ))}
+        <div className="grid gap-2">
           {compactRunnerUps.map((podium) => (
             <RunnerUpCard
               key={podium.discipline}
