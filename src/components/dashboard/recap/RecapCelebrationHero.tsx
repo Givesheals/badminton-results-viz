@@ -146,15 +146,19 @@ function CompactCelebrationRow({
             {icon}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold leading-snug text-ink-900">{title}</p>
+            <div className="flex items-start gap-2">
+              <p className="min-w-0 flex-1 text-sm font-semibold leading-snug text-ink-900">
+                {title}
+              </p>
+              <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                {discipline && <DisciplineChip code={discipline} />}
+                <TournamentCategoryChip label={tournamentCategoryLabel} />
+                {extraChips}
+              </div>
+            </div>
             {detail && (
               <p className="mt-0.5 text-xs leading-snug text-ink-500">{detail}</p>
             )}
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {discipline && <DisciplineChip code={discipline} />}
-              <TournamentCategoryChip label={tournamentCategoryLabel} />
-              {extraChips}
-            </div>
           </div>
         </div>
       </article>
@@ -182,7 +186,7 @@ function WinnerCard({
         className={`relative overflow-hidden rounded-2xl border-2 border-shuttle-400/60 border-l-4 bg-gradient-to-br from-shuttle-400/30 via-brand-50 to-court-50 px-4 py-6 shadow-md ${style.borderClass}`}
       >
         <Confetti density="full" />
-        <div className="relative z-10 mx-auto flex max-w-[85%] flex-col items-center text-center">
+        <div className="relative z-[1] mx-auto flex max-w-[85%] flex-col items-center text-center">
           <span className="text-5xl leading-none" aria-hidden>
             🏆
           </span>
@@ -245,7 +249,7 @@ function RunnerUpCard({
     >
       <article className="relative overflow-hidden rounded-xl border border-ink-200 bg-gradient-to-br from-slate-100 via-white to-brand-50/40 px-4 py-4 shadow-sm">
         <Confetti density="light" />
-        <div className="relative z-10 mx-auto flex max-w-[85%] flex-col items-center text-center">
+        <div className="relative z-[1] mx-auto flex max-w-[85%] flex-col items-center text-center">
           <span className="text-3xl leading-none" aria-hidden>
             🥈
           </span>
@@ -306,7 +310,7 @@ function ThirdPlaceCard({
     >
       <article className="relative overflow-hidden rounded-xl border border-[color:var(--color-level-bronze)]/70 bg-gradient-to-br from-[color:var(--color-level-bronze)]/25 via-white to-brand-50/20 px-4 py-3.5 shadow-sm">
         <Confetti density="minimal" />
-        <div className="relative z-10 mx-auto flex max-w-[85%] flex-col items-center text-center">
+        <div className="relative z-[1] mx-auto flex max-w-[85%] flex-col items-center text-center">
           <span className="text-2xl leading-none" aria-hidden>
             🥉
           </span>
@@ -443,7 +447,7 @@ function SeniorCountyDebutCard({
     >
       <article className="relative overflow-hidden rounded-2xl border-2 border-level-county/50 border-l-4 bg-gradient-to-br from-level-county/15 via-white to-brand-50/40 px-4 py-5 shadow-md">
         <Confetti density="light" />
-        <div className="relative z-10 mx-auto flex max-w-[90%] flex-col items-center text-center">
+        <div className="relative z-[1] mx-auto flex max-w-[90%] flex-col items-center text-center">
           <span className="text-4xl leading-none" aria-hidden>
             🎖️
           </span>

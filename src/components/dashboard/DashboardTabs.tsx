@@ -175,7 +175,7 @@ export function DashboardTabs({ importedAt, panels }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="sticky top-0 z-10 -mx-1 space-y-2 bg-white/95 px-1 pb-2 pt-1 backdrop-blur-sm">
+      <div className="sticky top-0 z-30 -mx-1 space-y-2 bg-white/95 px-1 pb-2 pt-1 backdrop-blur-sm">
         <div
           role="tablist"
           aria-label="Dashboard sections"

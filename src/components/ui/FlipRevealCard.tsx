@@ -141,7 +141,7 @@ export function FlipRevealCard({
   return (
     <div
       ref={rootRef}
-      className={`flip-reveal-root perspective-[1200px] ${className}`}
+      className={`flip-reveal-root isolate overflow-hidden perspective-[1200px] ${className}`}
     >
       <button
         type="button"
