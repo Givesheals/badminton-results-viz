@@ -76,15 +76,33 @@ function BarPercentLabel(props: LabelProps & { rows: Row[] }) {
 
   const label = `${value}%`
   const minWidth = 7 * label.length + 10
-  if (Number(width) < minWidth) return null
+  const barWidth = Number(width)
+  const labelY = Number(y) + Number(height) / 2
+  const fitsInside = barWidth >= minWidth
+
+  if (!fitsInside) {
+    return (
+      <text
+        x={Number(x) + barWidth + 6}
+        y={labelY}
+        dy="0.35em"
+        textAnchor="start"
+        fill="var(--color-ink-700)"
+        fontSize={11}
+        fontWeight={500}
+      >
+        {label}
+      </text>
+    )
+  }
 
   const stage = index != null ? rows[index]?.stage : undefined
   const lightGroup = stage != null && isLightGroupProgressionStage(stage)
 
   return (
     <text
-      x={Number(x) + Number(width) - 8}
-      y={Number(y) + Number(height) / 2}
+      x={Number(x) + barWidth - 8}
+      y={labelY}
       dy="0.35em"
       textAnchor="end"
       fill={lightGroup ? '#000000' : 'var(--color-ink-50)'}
