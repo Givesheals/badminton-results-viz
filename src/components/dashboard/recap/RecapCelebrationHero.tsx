@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { CategoryMilestoneClaimLink } from './CategoryMilestoneClaimLink'
 import type {
   CelebrationHeroKind,
@@ -113,7 +112,6 @@ function CompactCelebrationRow({
   detail,
   discipline,
   tournamentCategoryLabel,
-  extraChips,
   articleClass,
   intensity,
   revealLabel,
@@ -125,7 +123,6 @@ function CompactCelebrationRow({
   detail?: string
   discipline?: string
   tournamentCategoryLabel: string
-  extraChips?: ReactNode
   articleClass: string
   intensity: ConfettiIntensity
   revealLabel: string
@@ -153,7 +150,6 @@ function CompactCelebrationRow({
               <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
                 {discipline && <DisciplineChip code={discipline} />}
                 <TournamentCategoryChip label={tournamentCategoryLabel} />
-                {extraChips}
               </div>
             </div>
             {detail && (
@@ -426,9 +422,6 @@ function SeniorCountyDebutCard({
         title={debut.title}
         detail={debut.detail}
         tournamentCategoryLabel="County"
-        extraChips={debut.disciplines.map((d) => (
-          <DisciplineChip key={d.discipline} code={d.discipline} title={d.disciplineLabel} />
-        ))}
         articleClass="border-level-county/40 bg-gradient-to-r from-level-county/10 to-white"
         intensity="light"
         revealLabel={`Reveal: ${debut.title}`}
