@@ -224,7 +224,13 @@ export function TournamentProgressionSection({
             </div>
           ) : null}
           {features.showTypicalRun ? (
-            <div className="py-3">
+            <div
+              className={
+                features.showFilters
+                  ? 'py-3'
+                  : 'border-t border-ink-100 py-3'
+              }
+            >
               <TournamentProgressionAverage
                 typicalLabel={progression.typicalLabel}
                 typicalRank={progression.typicalRank}
