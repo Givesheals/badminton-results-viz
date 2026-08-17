@@ -1,16 +1,18 @@
-/** Ticket build-out stages for screenshotting Tournament progression (1 = shell … 5 = full). */
-export const TOURNAMENT_PROGRESSION_BUILD_STAGES = [1, 2, 3, 4, 5] as const
+/** Ticket build-out stages for screenshotting Tournament progression (1 = shell … 6 = full). */
+export const TOURNAMENT_PROGRESSION_BUILD_STAGES = [1, 2, 3, 4, 5, 6] as const
 export type TournamentProgressionBuildStage =
   (typeof TOURNAMENT_PROGRESSION_BUILD_STAGES)[number]
 
 export type TournamentProgressionBuildFeatures = {
-  /** Stage ≥ 2 — Typical run (median, bar, flavor text) */
+  /** Stage ≥ 2 — Showing X of Y matches (full dataset before filters) */
+  showMatchCount: boolean
+  /** Stage ≥ 3 — Typical run (median, bar, flavor text) */
   showTypicalRun: boolean
-  /** Stage ≥ 3 — Finish distribution chart */
+  /** Stage ≥ 4 — Finish distribution chart */
   showFinishDistribution: boolean
-  /** Stage ≥ 4 — Filters + Showing… scope line (default primary combo) */
+  /** Stage ≥ 5 — Filters + Showing… scope line (default primary combo) */
   showFilters: boolean
-  /** Stage ≥ 5 — Info icon + pop-out on the section title */
+  /** Stage ≥ 6 — Info icon + pop-out on the section title */
   showInfo: boolean
 }
 
@@ -23,35 +25,40 @@ export const TOURNAMENT_PROGRESSION_BUILD_STAGE_META: Record<
     summary: 'Card frame + Tournament progression title only',
   },
   2: {
+    shortLabel: 'Data',
+    summary: 'Showing N of N matches — full dataset for narration',
+  },
+  3: {
     shortLabel: 'Typical run',
     summary: 'Typical run — median depth, bar, and flavor text',
   },
-  3: {
+  4: {
     shortLabel: 'Distribution',
     summary: 'Finish distribution heading + graph',
   },
-  4: {
+  5: {
     shortLabel: 'Filters',
     summary: 'Filters + Showing… line with default primary-combo selection',
   },
-  5: {
+  6: {
     shortLabel: 'Info',
     summary: 'Info icon + pop-out on the section title',
   },
 }
 
-/** Full feature set (stage 5 / no progressive gating). */
+/** Full feature set (stage 6 / no progressive gating). */
 export function fullTournamentProgressionBuildFeatures(): TournamentProgressionBuildFeatures {
-  return getTournamentProgressionBuildFeatures(5)
+  return getTournamentProgressionBuildFeatures(6)
 }
 
 export function getTournamentProgressionBuildFeatures(
   stage: TournamentProgressionBuildStage,
 ): TournamentProgressionBuildFeatures {
   return {
-    showTypicalRun: stage >= 2,
-    showFinishDistribution: stage >= 3,
-    showFilters: stage >= 4,
-    showInfo: stage >= 5,
+    showMatchCount: stage >= 2,
+    showTypicalRun: stage >= 3,
+    showFinishDistribution: stage >= 4,
+    showFilters: stage >= 5,
+    showInfo: stage >= 6,
   }
 }

@@ -34,7 +34,7 @@ type Props = {
   importedAt: string | undefined
   /**
    * Progressive build stage for ticket screenshots.
-   * When null/omitted with picker enabled, local state defaults to 5 (full).
+   * When null/omitted with picker enabled, local state defaults to 6 (full).
    * When picker is hidden and stage is omitted, full features are always shown.
    */
   buildStage?: TournamentProgressionBuildStage | null
@@ -69,9 +69,8 @@ export function TournamentProgressionSection({
     [filterOptions],
   )
 
-  const [filters, setFilters] = useState<MatchFilters>(() => sectionDefaultFilters)
   const [localBuildStage, setLocalBuildStage] =
-    useState<TournamentProgressionBuildStage>(5)
+    useState<TournamentProgressionBuildStage>(6)
 
   const buildStage =
     buildStageProp != null
@@ -85,9 +84,16 @@ export function TournamentProgressionSection({
       ? getTournamentProgressionBuildFeatures(buildStage)
       : fullTournamentProgressionBuildFeatures()
 
+  /** Before the Filters ticket, keep the full dataset so “N of N” is truthful. */
+  const useUnfilteredDataset = buildStage != null && !features.showFilters
+
+  const [filters, setFilters] = useState<MatchFilters>(() =>
+    useUnfilteredDataset ? DEFAULT_MATCH_FILTERS : sectionDefaultFilters,
+  )
+
   useEffect(() => {
-    setFilters(sectionDefaultFilters)
-  }, [importedAt, sectionDefaultFilters])
+    setFilters(useUnfilteredDataset ? DEFAULT_MATCH_FILTERS : sectionDefaultFilters)
+  }, [importedAt, sectionDefaultFilters, useUnfilteredDataset])
 
   const matches = useSectionMatches(allMatches, filters)
   const progression = useMemo(
@@ -104,9 +110,35 @@ export function TournamentProgressionSection({
     title: 'Tournament progression',
   })
 
-  const activeStage = buildStage ?? 5
+  const activeStage = buildStage ?? 6
   /** Share is outside the ticket story — only when the picker is off. */
   const showShare = !showBuildStagePicker
+
+  const titleBlock = (
+    <SectionHeading
+      info={features.showInfo ? tournamentProgressionInfo : undefined}
+      infoLabel="About Tournament progression"
+    >
+      <h3 className="font-medium text-ink-900">Tournament progression</h3>
+    </SectionHeading>
+  )
+
+  const matchCount =
+    features.showMatchCount ? (
+      <FilterMatchCount
+        filteredCount={matches.length}
+        totalCount={allMatches.length}
+        showWhenUnfiltered={useUnfilteredDataset}
+      />
+    ) : null
+
+  const shareAction = showShare ? (
+    <ShareButton
+      onClick={() => void shareSection()}
+      status={shareStatus}
+      disabled={progression.tournamentCount === 0}
+    />
+  ) : null
 
   return (
     <div className="space-y-3">
@@ -151,26 +183,9 @@ export function TournamentProgressionSection({
       <article className="rounded-2xl card-frame bg-white p-4 shadow-sm sm:p-5">
         {features.showFilters ? (
           <SectionHeaderWithFilters
-            title={
-              <SectionHeading
-                info={features.showInfo ? tournamentProgressionInfo : undefined}
-                infoLabel="About Tournament progression"
-              >
-                <h3 className="font-medium text-ink-900">Tournament progression</h3>
-              </SectionHeading>
-            }
-            description={
-              <FilterMatchCount filteredCount={matches.length} totalCount={allMatches.length} />
-            }
-            titleActions={
-              showShare ? (
-                <ShareButton
-                  onClick={() => void shareSection()}
-                  status={shareStatus}
-                  disabled={progression.tournamentCount === 0}
-                />
-              ) : undefined
-            }
+            title={titleBlock}
+            description={matchCount}
+            titleActions={shareAction ?? undefined}
             filters={
               <CollapsibleFilters
                 storageKey={showBuildStagePicker ? undefined : 'filters:tournament-progression'}
@@ -189,20 +204,12 @@ export function TournamentProgressionSection({
             }
           />
         ) : (
-          <div className="flex items-start justify-between gap-3">
-            <SectionHeading
-              info={features.showInfo ? tournamentProgressionInfo : undefined}
-              infoLabel="About Tournament progression"
-            >
-              <h3 className="font-medium text-ink-900">Tournament progression</h3>
-            </SectionHeading>
-            {showShare ? (
-              <ShareButton
-                onClick={() => void shareSection()}
-                status={shareStatus}
-                disabled={progression.tournamentCount === 0}
-              />
-            ) : null}
+          <div className="space-y-1">
+            <div className="flex items-start justify-between gap-3">
+              {titleBlock}
+              {shareAction}
+            </div>
+            {matchCount}
           </div>
         )}
 
