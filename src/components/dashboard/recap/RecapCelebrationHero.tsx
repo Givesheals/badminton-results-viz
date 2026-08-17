@@ -145,7 +145,7 @@ function CompactCelebrationRow({
       sealedHint={sealedHint}
       startRevealed={startRevealed}
     >
-      <article className={`rounded-lg border px-3 py-2.5 ${articleClass}`}>
+      <article className={`rounded-lg px-3 py-2.5 ${articleClass}`}>
         <div className="flex items-start gap-2.5">
           <span className="mt-0.5 shrink-0 text-base leading-none" aria-hidden>
             {icon}
@@ -235,7 +235,7 @@ function RunnerUpCard({
         detail={podiumFlavorText(podium)}
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
-        articleClass="border-ink-200 bg-gradient-to-r from-slate-50 to-white"
+        articleClass="border-2 border-level-silver/70 bg-gradient-to-r from-level-silver/25 to-white"
         intensity="light"
         revealLabel={`Reveal: Runner-up in ${podium.disciplineLabel}`}
         sealedHint="A podium finish is waiting"
@@ -296,7 +296,7 @@ function ThirdPlaceCard({
         detail={podiumFlavorText(podium)}
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
-        articleClass="border-[color:var(--color-level-bronze)]/50 bg-gradient-to-r from-[color:var(--color-level-bronze)]/15 to-white"
+        articleClass="border border-[color:var(--color-level-bronze)]/50 bg-gradient-to-r from-[color:var(--color-level-bronze)]/15 to-white"
         intensity="minimal"
         revealLabel={`Reveal: Third place in ${podium.disciplineLabel}`}
         sealedHint="A bronze result is sealed"
@@ -357,7 +357,7 @@ function PersonalBestCard({
         detail={milestone.detail}
         discipline={milestone.discipline}
         tournamentCategoryLabel={milestone.tournamentCategoryLabel}
-        articleClass="border-brand-200/70 bg-gradient-to-r from-brand-50/60 to-white"
+        articleClass="border border-brand-200/70 bg-gradient-to-r from-brand-50/60 to-white"
         intensity="minimal"
         revealLabel={`Reveal: ${milestone.discipline} personal best`}
         sealedHint="A personal best is sealed"
@@ -405,12 +405,12 @@ function milestoneStyle(variant: MilestoneCelebration['variant']): {
 } {
   switch (variant) {
     case 'matched_best':
-      return { border: 'border-ink-200 bg-gradient-to-r from-ink-50 to-white', icon: '↔️' }
+      return { border: 'border border-ink-200 bg-gradient-to-r from-ink-50 to-white', icon: '↔️' }
     case 'debut':
-      return { border: 'border-court-200 bg-gradient-to-r from-court-50/80 to-white', icon: '🌟' }
+      return { border: 'border border-court-200 bg-gradient-to-r from-court-50/80 to-white', icon: '🌟' }
     case 'personal_best':
     default:
-      return { border: 'border-brand-200 bg-gradient-to-r from-brand-50 to-white', icon: '🏆' }
+      return { border: 'border border-brand-200 bg-gradient-to-r from-brand-50 to-white', icon: '🏆' }
   }
 }
 
@@ -430,7 +430,7 @@ function SeniorCountyDebutCard({
         title={debut.title}
         detail={debut.detail}
         tournamentCategoryLabel="County"
-        articleClass="border-level-county/40 bg-gradient-to-r from-level-county/10 to-white"
+        articleClass="border border-level-county/40 bg-gradient-to-r from-level-county/10 to-white"
         intensity="light"
         revealLabel={`Reveal: ${debut.title}`}
         sealedHint="A landmark debut is waiting"
