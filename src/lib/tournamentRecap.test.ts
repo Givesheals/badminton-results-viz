@@ -1739,7 +1739,7 @@ describe('computeTournamentRecaps', () => {
     expect(celebrations.jointThirds).toHaveLength(1)
     expect(celebrations.jointThirds[0]!.discipline).toBe('XD')
     expect(celebrations.jointThirds[0]!.subtitle).toBe(
-      'Your first Bronze third place',
+      'Your first Bronze third place finish',
     )
     expect(celebrations.milestones.some((m) => m.variant === 'personal_best')).toBe(
       false,

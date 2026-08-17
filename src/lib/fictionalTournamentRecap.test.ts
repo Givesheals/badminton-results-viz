@@ -39,7 +39,7 @@ describe('buildFictionalTournamentRecap', () => {
     expect(celebrations.jointThirds).toHaveLength(1)
     expect(celebrations.winners[0]!.subtitle).toBe('Your first Gold title')
     expect(celebrations.runnerUps[0]!.subtitle).toBe('Your first Gold runner-up finish')
-    expect(celebrations.jointThirds[0]!.subtitle).toBe('Your first Gold third place')
+    expect(celebrations.jointThirds[0]!.subtitle).toBe('Your first Gold third place finish')
     expect(celebrations.milestones.map((milestone) => milestone.variant).sort()).toEqual([
       'debut',
       'matched_best',

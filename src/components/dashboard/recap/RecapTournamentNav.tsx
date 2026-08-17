@@ -21,7 +21,7 @@ export function RecapTournamentNav({
         disabled={!canGoOlder}
         className="rounded-lg border border-ink-100 bg-white px-3 py-1.5 text-sm font-medium text-ink-700 shadow-sm transition hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        ← Previous
+        ← Older
       </button>
       <span className="text-sm text-ink-600">{positionLabel}</span>
       <button
@@ -30,7 +30,7 @@ export function RecapTournamentNav({
         disabled={!canGoNewer}
         className="rounded-lg border border-ink-100 bg-white px-3 py-1.5 text-sm font-medium text-ink-700 shadow-sm transition hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        Next →
+        Newer →
       </button>
     </div>
   )

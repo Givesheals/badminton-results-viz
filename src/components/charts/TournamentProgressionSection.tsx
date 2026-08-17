@@ -241,7 +241,7 @@ export function TournamentProgressionSection({
             </div>
           ) : null}
           {features.showFinishDistribution ? (
-            <div className="border-t border-ink-100 pt-4">
+            <div className="border-t border-ink-100 py-3">
               <h4 className="text-sm font-medium text-ink-900">Finish distribution</h4>
               <div className="mt-2">
                 <TournamentProgressionChart

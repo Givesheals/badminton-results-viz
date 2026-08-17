@@ -305,7 +305,7 @@ function buildPersonalBestDetail(
   stageLabel: string,
 ): string {
   const scopedCategoryLabel = categoryAgeLabel(categoryLabel, ageLabel)
-  return `Your deepest ${scopedCategoryLabel} ${disciplineLabel} run — ${stageLabel}`
+  return `Your deepest ${scopedCategoryLabel} ${disciplineLabel} run - ${stageLabel}`
 }
 
 export function computeSeasonPersonalBests(

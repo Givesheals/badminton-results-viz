@@ -115,14 +115,9 @@ export const categoryMilestonesInfo = (
 export const tournamentProgressionInfo = (
   <div className={infoBlockClass}>
     <p>
-      Defaults to your most-played tournament level and age. Typical run and finish distribution
-      both use the same filters — change age, level, discipline, or time to explore a different
-      slice.
-    </p>
-    <p>
       Typical depth is the median finish across events in the current filter (one entry per
-      competition and discipline). Leaving in the groups is split into with or without a group
-      match win; early knockout rounds are grouped with quarter-finals on the charts.
+      competition and discipline). Early knockout rounds are grouped with quarter-finals on the
+      charts.
     </p>
     <p>
       County events and tournaments without clear group or knockout rounds are excluded. Only
