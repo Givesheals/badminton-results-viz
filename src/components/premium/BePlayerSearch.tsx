@@ -18,7 +18,7 @@ export function BePlayerSearch({ defaultQuery = '', selected, onSelect, onClear,
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-ink-900">
-        Find player on Badminton England
+        Select a BadmInfo player profile
         <input
           type="search"
           value={query}
@@ -27,18 +27,23 @@ export function BePlayerSearch({ defaultQuery = '', selected, onSelect, onClear,
             if (selected) onClear()
           }}
           className="mt-1 w-full rounded-lg border border-ink-200 px-3 py-2 text-ink-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
-          placeholder="Search by name, club, or BE number"
+          placeholder="Search by name, club, or player number"
           autoComplete="off"
         />
       </label>
 
       <p className="text-xs text-ink-500">
-        Search the Badminton England register and select the correct player if there are multiple
-        matches.
+        Search and select the BadmInfo player profile this Premium subscription should be linked to.
+        If there are multiple matches, pick the correct one.
+      </p>
+
+      <p className="rounded-lg border border-ink-100 bg-ink-50 px-3 py-2 text-xs text-ink-600">
+        Please check you&apos;ve selected the right profile. Premium will be linked to this BadmInfo
+        Profile and cannot be transferred to another profile after purchase.
       </p>
 
       {query.trim().length >= 2 && results.length === 0 && !selected && (
-        <p className="text-sm text-ink-600">No players found. Try a different spelling or BE number.</p>
+        <p className="text-sm text-ink-600">No players found. Try a different spelling or player number.</p>
       )}
 
       {results.length > 0 && !selected && (

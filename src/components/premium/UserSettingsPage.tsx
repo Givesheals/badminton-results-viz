@@ -430,6 +430,11 @@ function UnsubscribedPremiumTab({
           </div>
         </fieldset>
 
+        <p className="mt-3 text-xs text-ink-500">
+          Cancel anytime. Your Premium access will continue until the end of your current paid
+          period.
+        </p>
+
         <button
           type="button"
           onClick={() => onSignUpPremium(plan)}

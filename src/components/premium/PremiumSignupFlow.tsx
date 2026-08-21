@@ -44,6 +44,7 @@ export function PremiumSignupFlow({ open, onClose, playerName, initialPlan = 'ye
   const [playerError, setPlayerError] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [agreedTerms, setAgreedTerms] = useState(false)
+  const [agreedImmediateStart, setAgreedImmediateStart] = useState(false)
   const [agreedRenewal, setAgreedRenewal] = useState(false)
   const [agreedBeta, setAgreedBeta] = useState(false)
   const [cardNumber, setCardNumber] = useState('')
@@ -59,6 +60,7 @@ export function PremiumSignupFlow({ open, onClose, playerName, initialPlan = 'ye
     setPlayerError(null)
     setEmailError(null)
     setAgreedTerms(false)
+    setAgreedImmediateStart(false)
     setAgreedRenewal(false)
     setAgreedBeta(false)
     setCardNumber('')
@@ -87,7 +89,7 @@ export function PremiumSignupFlow({ open, onClose, playerName, initialPlan = 'ye
     setEmailError(null)
 
     if (!selectedPlayer) {
-      setPlayerError('Search for and select a player from the Badminton England register.')
+      setPlayerError('Search for and select a BadmInfo player profile.')
       valid = false
     } else {
       const check = checkBeNumber(selectedPlayer.beNumber)
@@ -126,6 +128,7 @@ export function PremiumSignupFlow({ open, onClose, playerName, initialPlan = 'ye
 
   const canPay =
     agreedTerms &&
+    agreedImmediateStart &&
     agreedRenewal &&
     agreedBeta &&
     cardNumber.replace(/\s/g, '').length >= 12 &&
@@ -249,6 +252,11 @@ export function PremiumSignupFlow({ open, onClose, playerName, initialPlan = 'ye
                   </label>
                 </div>
               </fieldset>
+
+              <p className="text-xs text-ink-500">
+                Cancel anytime. Your Premium access will continue until the end of your current paid
+                period.
+              </p>
             </div>
           )}
 
@@ -355,12 +363,21 @@ export function PremiumSignupFlow({ open, onClose, playerName, initialPlan = 'ye
                   <span>
                     I agree to the{' '}
                     <a href="#" className="text-brand-700 hover:underline" onClick={(e) => e.preventDefault()}>
-                      Terms of Service
-                    </a>{' '}
-                    and{' '}
-                    <a href="#" className="text-brand-700 hover:underline" onClick={(e) => e.preventDefault()}>
-                      Privacy Policy
+                      BadmInfo Premium Terms
                     </a>
+                    .
+                  </span>
+                </label>
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={agreedImmediateStart}
+                    onChange={(event) => setAgreedImmediateStart(event.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    I want my Premium access to start immediately and understand that by starting it
+                    now I will lose my 14-day right to cancel.
                   </span>
                 </label>
                 <label className="flex items-start gap-2">
