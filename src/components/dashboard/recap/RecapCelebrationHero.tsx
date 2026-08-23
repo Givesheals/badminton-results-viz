@@ -13,7 +13,9 @@ import {
 } from '../../../lib/tournamentRecapBuildStage'
 import type { ConfettiIntensity } from '../../../lib/confettiBurst'
 import { getDisciplineStyle } from '../../../lib/disciplineStyle'
+import { formatCategoryAgeLabel } from '../../../lib/tournamentProgression'
 import { DisciplineChip } from '../../discipline/DisciplineChip'
+import { CompetitionAgeChip } from '../../tournament/CompetitionAgeChip'
 import { TournamentCategoryChip } from '../../tournament/TournamentCategoryChip'
 import { FlipRevealCard } from '../../ui/FlipRevealCard'
 
@@ -108,10 +110,33 @@ function podiumGridClass(count: number): string {
 
 function podiumFlavorText(podium: PodiumCelebration): string {
   if (podium.subtitle) return podium.subtitle
-  const level = podium.tournamentCategoryLabel
+  const level = formatCategoryAgeLabel(
+    podium.tournamentCategoryLabel,
+    podium.competitionAgeLabel,
+  )
   if (podium.kind === 'winner') return `Your first ${level} title`
   if (podium.kind === 'runner-up') return `Your first ${level} runner-up finish`
   return `Your first ${level} third place`
+}
+
+function CelebrationIdentityChips({
+  discipline,
+  tournamentCategoryLabel,
+  competitionAgeLabel,
+  className = '',
+}: {
+  discipline: string
+  tournamentCategoryLabel: string
+  competitionAgeLabel: string | null
+  className?: string
+}) {
+  return (
+    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+      <DisciplineChip code={discipline} />
+      <CompetitionAgeChip label={competitionAgeLabel} />
+      <TournamentCategoryChip label={tournamentCategoryLabel} />
+    </div>
+  )
 }
 
 function CompactCelebrationRow({
@@ -120,6 +145,7 @@ function CompactCelebrationRow({
   detail,
   discipline,
   tournamentCategoryLabel,
+  competitionAgeLabel,
   articleClass,
   intensity,
   revealLabel,
@@ -131,6 +157,7 @@ function CompactCelebrationRow({
   detail?: string
   discipline?: string
   tournamentCategoryLabel: string
+  competitionAgeLabel?: string | null
   articleClass: string
   intensity: ConfettiIntensity
   revealLabel: string
@@ -157,6 +184,7 @@ function CompactCelebrationRow({
               </p>
               <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
                 {discipline && <DisciplineChip code={discipline} />}
+                <CompetitionAgeChip label={competitionAgeLabel} />
                 <TournamentCategoryChip label={tournamentCategoryLabel} />
               </div>
             </div>
@@ -198,10 +226,12 @@ function WinnerCard({
             Winner!
           </p>
           <p className="mt-1 text-sm font-medium text-ink-700">{podium.disciplineLabel}</p>
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-            <DisciplineChip code={podium.discipline} />
-            <TournamentCategoryChip label={podium.tournamentCategoryLabel} />
-          </div>
+          <CelebrationIdentityChips
+            className="mt-3 justify-center"
+            discipline={podium.discipline}
+            tournamentCategoryLabel={podium.tournamentCategoryLabel}
+            competitionAgeLabel={podium.competitionAgeLabel}
+          />
           {podium.subtitle && (
             <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
               {podium.subtitle}
@@ -235,6 +265,7 @@ function RunnerUpCard({
         detail={podiumFlavorText(podium)}
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
+        competitionAgeLabel={podium.competitionAgeLabel}
         articleClass="border-2 border-level-silver/70 bg-gradient-to-r from-level-silver/25 to-white"
         intensity="light"
         revealLabel={`Reveal: Runner-up in ${podium.disciplineLabel}`}
@@ -261,10 +292,12 @@ function RunnerUpCard({
             Runner-up
           </p>
           <p className="mt-0.5 text-sm text-ink-600">{podium.disciplineLabel}</p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-            <DisciplineChip code={podium.discipline} />
-            <TournamentCategoryChip label={podium.tournamentCategoryLabel} />
-          </div>
+          <CelebrationIdentityChips
+            className="mt-2 justify-center"
+            discipline={podium.discipline}
+            tournamentCategoryLabel={podium.tournamentCategoryLabel}
+            competitionAgeLabel={podium.competitionAgeLabel}
+          />
           {podium.subtitle && (
             <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
           )}
@@ -296,6 +329,7 @@ function ThirdPlaceCard({
         detail={podiumFlavorText(podium)}
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
+        competitionAgeLabel={podium.competitionAgeLabel}
         articleClass="border border-[color:var(--color-level-bronze)]/50 bg-gradient-to-r from-[color:var(--color-level-bronze)]/15 to-white"
         intensity="minimal"
         revealLabel={`Reveal: Third place in ${podium.disciplineLabel}`}
@@ -322,10 +356,12 @@ function ThirdPlaceCard({
             Third Place
           </p>
           <p className="mt-0.5 text-sm text-ink-600">{podium.disciplineLabel}</p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-            <DisciplineChip code={podium.discipline} />
-            <TournamentCategoryChip label={podium.tournamentCategoryLabel} />
-          </div>
+          <CelebrationIdentityChips
+            className="mt-2 justify-center"
+            discipline={podium.discipline}
+            tournamentCategoryLabel={podium.tournamentCategoryLabel}
+            competitionAgeLabel={podium.competitionAgeLabel}
+          />
           {podium.subtitle && (
             <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
           )}
@@ -357,6 +393,7 @@ function PersonalBestCard({
         detail={milestone.detail}
         discipline={milestone.discipline}
         tournamentCategoryLabel={milestone.tournamentCategoryLabel}
+        competitionAgeLabel={milestone.competitionAgeLabel}
         articleClass="border border-brand-200/70 bg-gradient-to-r from-brand-50/60 to-white"
         intensity="minimal"
         revealLabel={`Reveal: ${milestone.discipline} personal best`}
@@ -384,10 +421,12 @@ function PersonalBestCard({
           {milestone.detail && (
             <p className="mt-1 text-sm text-ink-600">{milestone.detail}</p>
           )}
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-            <DisciplineChip code={milestone.discipline} />
-            <TournamentCategoryChip label={milestone.tournamentCategoryLabel} />
-          </div>
+          <CelebrationIdentityChips
+            className="mt-2 justify-center"
+            discipline={milestone.discipline}
+            tournamentCategoryLabel={milestone.tournamentCategoryLabel}
+            competitionAgeLabel={milestone.competitionAgeLabel}
+          />
           <CategoryMilestoneClaimLink
             tournamentCategoryLabel={milestone.tournamentCategoryLabel}
             competitionAgeLabel={milestone.competitionAgeLabel}
@@ -489,6 +528,7 @@ function MilestoneCard({
         detail={milestone.detail}
         discipline={milestone.discipline}
         tournamentCategoryLabel={milestone.tournamentCategoryLabel}
+        competitionAgeLabel={milestone.competitionAgeLabel}
         articleClass={style.border}
         intensity="minimal"
         revealLabel={`Reveal: ${milestone.title}`}
@@ -515,10 +555,12 @@ function MilestoneCard({
             {milestone.detail && (
               <p className="mt-0.5 text-sm text-ink-600">{milestone.detail}</p>
             )}
-            <div className="mt-2 flex flex-wrap gap-2">
-              <DisciplineChip code={milestone.discipline} />
-              <TournamentCategoryChip label={milestone.tournamentCategoryLabel} />
-            </div>
+            <CelebrationIdentityChips
+              className="mt-2"
+              discipline={milestone.discipline}
+              tournamentCategoryLabel={milestone.tournamentCategoryLabel}
+              competitionAgeLabel={milestone.competitionAgeLabel}
+            />
           </div>
         </div>
       </article>

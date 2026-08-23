@@ -428,6 +428,158 @@ describe('computeTournamentRecaps', () => {
     ).toBe(false)
   })
 
+  it('names matched-best copy with the specific competition age', () => {
+    const qfWeekend = (comp: string, date: string) => [
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'OS',
+        disciplineLabel: 'open singles',
+        tournamentCategoryLabel: 'Gold',
+        competitionAgeGroup: 'Junior',
+        competitionSubAgeGroup: 'U19',
+        outcome: 'win',
+        raw: {
+          Round: 'Group 1',
+          'Tournament Category': 'Gold',
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 15,
+          'Player Game 2 Score': 21,
+          'Opponent Game 2 Score': 12,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'OS',
+        disciplineLabel: 'open singles',
+        tournamentCategoryLabel: 'Gold',
+        competitionAgeGroup: 'Junior',
+        competitionSubAgeGroup: 'U19',
+        outcome: 'loss',
+        raw: {
+          Round: 'QF',
+          'Tournament Category': 'Gold',
+          'Player Game 1 Score': 19,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 18,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+    ]
+
+    const recap = computeTournamentRecaps([
+      ...qfWeekend('Earlier U19 Gold', '2025-06-01'),
+      ...qfWeekend('Again U19 Gold', '2026-06-01'),
+    ]).recaps.find((r) => r.competitionName === 'Again U19 Gold')!
+
+    const matched = recap.celebrations.milestones.find((m) => m.variant === 'matched_best')
+    expect(matched).toBeDefined()
+    expect(matched!.competitionAgeLabel).toBe('U19')
+    expect(matched!.detail).toContain('U19 Gold open singles')
+  })
+
+  it('does not treat a Senior Gold run as matching a U19 Gold best', () => {
+    const qfWeekend = (
+      comp: string,
+      date: string,
+      ageGroup: string,
+      subAge: string,
+    ) => [
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'OS',
+        disciplineLabel: 'open singles',
+        tournamentCategoryLabel: 'Gold',
+        competitionAgeGroup: ageGroup,
+        competitionSubAgeGroup: subAge,
+        outcome: 'win',
+        raw: {
+          Round: 'Group 1',
+          'Tournament Category': 'Gold',
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 15,
+          'Player Game 2 Score': 21,
+          'Opponent Game 2 Score': 12,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'OS',
+        disciplineLabel: 'open singles',
+        tournamentCategoryLabel: 'Gold',
+        competitionAgeGroup: ageGroup,
+        competitionSubAgeGroup: subAge,
+        outcome: 'loss',
+        raw: {
+          Round: 'QF',
+          'Tournament Category': 'Gold',
+          'Player Game 1 Score': 19,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 18,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+    ]
+
+    const recap = computeTournamentRecaps([
+      ...qfWeekend('Senior Gold', '2025-06-01', 'Senior', 'Senior'),
+      ...qfWeekend('U19 Gold', '2026-06-01', 'Junior', 'U19'),
+    ]).recaps.find((r) => r.competitionName === 'U19 Gold')!
+
+    expect(
+      recap.celebrations.milestones.some((m) => m.variant === 'matched_best'),
+    ).toBe(false)
+    const debut = recap.celebrations.milestones.find((m) => m.variant === 'debut')
+    expect(debut?.title).toBe('First U19 Gold tournament')
+  })
+
+  it('counts titles within the same competition age group', () => {
+    const winFinal = (
+      comp: string,
+      date: string,
+      ageGroup: string,
+      subAge: string,
+    ) =>
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'OS',
+        disciplineLabel: 'open singles',
+        tournamentCategoryLabel: 'Gold',
+        competitionAgeGroup: ageGroup,
+        competitionSubAgeGroup: subAge,
+        outcome: 'win',
+        raw: {
+          Round: 'Final',
+          'Tournament Category': 'Gold',
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 15,
+          'Player Game 2 Score': 21,
+          'Opponent Game 2 Score': 10,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      })
+
+    const recap = computeTournamentRecaps([
+      winFinal('Senior Gold', '2025-01-01', 'Senior', 'Senior'),
+      winFinal('U19 Gold', '2026-05-01', 'Junior', 'U19'),
+    ]).recaps.find((r) => r.competitionName === 'U19 Gold')!
+
+    expect(recap.celebrations.winners[0]!.subtitle).toBe('Your first U19 Gold title')
+  })
+
   it('does not show matched your best when still in the box', () => {
     const groupOnly = (comp: string, date: string) =>
       makeMatch({
