@@ -77,6 +77,15 @@ export function DesignAssetsPage({ open, onClose }: Props) {
     if (open) panelRef.current?.focus()
   }, [open])
 
+  useEffect(() => {
+    if (!open) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [open])
+
   if (!open) return null
 
   return createPortal(
@@ -86,9 +95,9 @@ export function DesignAssetsPage({ open, onClose }: Props) {
       aria-modal="true"
       aria-labelledby={titleId}
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex flex-col bg-ink-50 outline-none"
+      className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-ink-50 outline-none"
     >
-      <header className="border-b border-ink-200 bg-white px-5 py-3">
+      <header className="sticky top-0 z-10 border-b border-ink-200 bg-white px-5 py-3">
         <div className="flex items-center justify-between gap-3">
           <h1 id={titleId} className="text-base font-semibold text-ink-900">
             Design Assets
@@ -104,7 +113,7 @@ export function DesignAssetsPage({ open, onClose }: Props) {
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6">
+      <div className="px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-3xl flex-col gap-2">
           <AssetGroup title="Tournament levels">
             <TournamentCategoryChip label="Copper" />
