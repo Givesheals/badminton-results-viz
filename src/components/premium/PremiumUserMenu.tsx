@@ -12,6 +12,7 @@ import { UserMenuDrawer } from './UserMenuDrawer'
 import { UserSettingsPage } from './UserSettingsPage'
 import { NotificationsPreview } from '../notifications/NotificationsPreview'
 import { TournamentPagePreview } from '../tournament/TournamentPagePreview'
+import { DesignAssetsPage } from '../design/DesignAssetsPage'
 import { getPlayerInitials } from '../../lib/getPlayerInitials'
 
 type Props = {
@@ -28,6 +29,7 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [tournamentPreviewOpen, setTournamentPreviewOpen] = useState(false)
+  const [designAssetsOpen, setDesignAssetsOpen] = useState(false)
 
   const initials = getPlayerInitials(playerName)
 
@@ -56,6 +58,7 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
         onOpenUserSettings={() => setSettingsOpen(true)}
         onOpenNotifications={() => setNotificationsOpen(true)}
         onOpenTournamentPreview={() => setTournamentPreviewOpen(true)}
+        onOpenDesignAssets={() => setDesignAssetsOpen(true)}
         onOpenAddNewData={onOpenAddNewData}
       />
 
@@ -78,6 +81,8 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
         playerName={playerName}
         onSignUpPremium={() => openSignup('yearly')}
       />
+
+      <DesignAssetsPage open={designAssetsOpen} onClose={() => setDesignAssetsOpen(false)} />
 
       <PremiumSignupFlow
         open={signupOpen}
