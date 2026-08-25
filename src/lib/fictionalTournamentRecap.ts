@@ -40,11 +40,17 @@ export function fictionalCelebrationPresentation(
 }
 
 const CATEGORY = 'Gold'
-const AGE = 'Senior'
 const DATE_SAT = '2026-08-15'
 const DATE_SUN = '2026-08-16'
 
 const DISCIPLINES = ['MD', 'WD', 'XD'] as const
+
+/** Simulation-only mix so Senior / Junior / Masters chips appear together. */
+const AGES: Record<(typeof DISCIPLINES)[number], string> = {
+  MD: 'Senior',
+  WD: 'Junior',
+  XD: 'Masters',
+}
 
 const PARTNERS: Record<(typeof DISCIPLINES)[number], string> = {
   MD: 'Jordan Hale',
@@ -178,7 +184,7 @@ function podium(discipline: (typeof DISCIPLINES)[number], kind: 'winner' | 'runn
     discipline,
     disciplineLabel,
     tournamentCategoryLabel: CATEGORY,
-    competitionAgeLabel: AGE,
+    competitionAgeLabel: AGES[discipline],
     subtitle,
   }
 }
@@ -196,7 +202,7 @@ function milestone(
     discipline,
     disciplineLabel: DISCIPLINE_LABELS[discipline] ?? discipline,
     tournamentCategoryLabel: CATEGORY,
-    competitionAgeLabel: AGE,
+    competitionAgeLabel: AGES[discipline],
     stage,
     stageLabel: STAGE_LABELS[discipline],
     title,

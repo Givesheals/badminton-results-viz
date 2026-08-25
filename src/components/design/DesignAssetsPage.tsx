@@ -8,6 +8,10 @@ import {
   OPPONENT_NOTE_ICON_BUTTON_CLASS,
 } from '../notes/OpponentNoteIcons'
 import { CompetitionAgeChip } from '../tournament/CompetitionAgeChip'
+import { CountyAffiliationChip } from '../tournament/CountyAffiliationChip'
+import { EntryStatusBadge } from '../tournament/EntryStatusBadge'
+import { FavouritePlayerName } from '../tournament/FavouritePlayerName'
+import { TournamentBoxCallout } from '../tournament/TournamentBoxCallout'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
 import {
   isLightGroupProgressionStage,
@@ -30,14 +34,16 @@ const PARTNER_STAGES: ProgressionStage[] = PROGRESSION_STAGE_CHIP_ORDER.filter(
 function AssetGroup({
   title,
   children,
+  contentClassName = 'flex flex-wrap items-center gap-2',
 }: {
   title: string
   children: ReactNode
+  contentClassName?: string
 }) {
   return (
     <section className="rounded-lg border border-ink-100 bg-white p-3">
       <h2 className="text-sm font-semibold tracking-tight text-ink-900">{title}</h2>
-      <div className="mt-2 flex flex-wrap items-center gap-2">{children}</div>
+      <div className={`mt-2 ${contentClassName}`}>{children}</div>
     </section>
   )
 }
@@ -122,6 +128,25 @@ export function DesignAssetsPage({ open, onClose }: Props) {
             <TournamentCategoryChip label="Gold" />
             <TournamentCategoryChip label="Other" />
             <TournamentCategoryChip label="County" />
+            <CountyAffiliationChip shortName="Cambs" program="shires" />
+          </AssetGroup>
+
+          <AssetGroup title="In tournament — square callouts">
+            <TournamentBoxCallout variant="favourite" playerName="Daniel Bates" />
+            <TournamentBoxCallout variant="you" />
+          </AssetGroup>
+
+          <AssetGroup
+            title="Favourite players"
+            contentClassName="flex flex-col items-start gap-1"
+          >
+            <FavouritePlayerName name="Martin Crossley" showAmpersand />
+            <FavouritePlayerName name="Polly Thisdell" />
+          </AssetGroup>
+
+          <AssetGroup title="Entry status">
+            <EntryStatusBadge status="closed" />
+            <EntryStatusBadge status="closes-soon" />
           </AssetGroup>
 
           <AssetGroup title="Age bands">

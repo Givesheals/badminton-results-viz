@@ -54,11 +54,20 @@
   --color-level-silver: #b0b0b0;
   --color-level-gold: #fff500;
   --color-level-county: #159eda;
+  --color-level-shires: #4ca765;
   --color-level-medal-text: #41016f;
 
   /* Favourite star: deeper gold than medal chips so it reads on light grey */
   --color-favourite-star: #c9a227;
   --color-favourite-star-stroke: #8a7018;
+  /* Brighter yellow used next to names on tournament pages */
+  --color-favourite-star-page: #f7d35b;
+
+  --color-box-callout-you: #543391;
+  --color-box-callout-favourite: #a592d0;
+
+  --color-entry-closed: #941c12;
+  --color-entry-closes-soon: #e3a641;
 
   --color-discipline-mixed: #7acfd2;
   --color-discipline-doubles: #a0acda;

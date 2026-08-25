@@ -82,6 +82,7 @@ import type { NormalizedMatch } from '../../types/matchHistory'
 import { DisciplineChip } from '../discipline/DisciplineChip'
 import { DrawIntelToggle, DrawMatchupRow } from './DrawMatchupRow'
 import { DrawPairNames, DrawPlayerNameLink } from './DrawPairNames'
+import { FavouriteStarIcon } from './FavouriteStarIcon'
 import { DrawScoutPreviousGames } from './DrawScoutPreviousGames'
 import { NoteTagChips } from './NoteTagPicker'
 import { recapMatchKey } from '../../lib/tournamentRecap'
@@ -1359,24 +1360,6 @@ function resolvePlayerOption(query: string, options: PlayerOption[]): PlayerOpti
   if (exact) return exact
 
   return options.find((option) => matchPlayerOption(normalized, option)) ?? null
-}
-
-function FavouriteStarIcon({ className = 'h-3 w-3' }: { className?: string }) {
-  return (
-    <svg
-      className={`shrink-0 text-favourite-star ${className}`}
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path
-        stroke="var(--color-favourite-star-stroke)"
-        strokeWidth="0.75"
-        strokeLinejoin="round"
-        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-      />
-    </svg>
-  )
 }
 
 function PlayerListOption({

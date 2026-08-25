@@ -61,8 +61,17 @@ export function MatchScoreboardRow({
     >
       <div className="col-span-full space-y-0.5 px-0.5">
         <p className="text-sm font-semibold leading-tight text-ink-900">{match.competitionName}</p>
-        {titleMeta != null && <div className="flex flex-wrap items-center gap-1.5 pt-0.5">{titleMeta}</div>}
-        <p className="text-xs leading-tight text-ink-500">{formatShortDate(match.date)}</p>
+        {titleMeta != null ? (
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            {titleMeta}
+            <span className="text-ink-300" aria-hidden>
+              ·
+            </span>
+            <span className="text-xs leading-tight text-ink-500">{formatShortDate(match.date)}</span>
+          </div>
+        ) : (
+          <p className="text-xs leading-tight text-ink-500">{formatShortDate(match.date)}</p>
+        )}
       </div>
 
       {(alwaysStack || !alwaysColumns) && (

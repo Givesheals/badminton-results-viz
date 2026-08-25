@@ -130,7 +130,7 @@ export function PremiumNotesCaptureDemo({ active = true }: Props) {
               </span>
             ))}
             <span className="min-w-0 flex-1 rounded-md px-1.5 py-1.5 text-center text-xs font-medium leading-snug text-ink-600">
-              The pair
+              The Pair
             </span>
           </div>
 

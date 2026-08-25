@@ -17,7 +17,7 @@ export function FileCirclePlusIcon({ className }: { className?: string }) {
   )
 }
 
-/** Font Awesome free `note-sticky` — compact “has a note” marker for segment tabs. */
+/** Font Awesome free `note-sticky` — compact “has a note” marker on the target picker. */
 export function NoteStickyIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 448 512" fill="currentColor" className={className} aria-hidden>

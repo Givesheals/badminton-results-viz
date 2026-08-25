@@ -7,6 +7,7 @@ import {
   defaultAppliesToDisciplines,
   defaultScoutingAppliesToDisciplineCodes,
   defaultNoteTarget,
+  shouldPromptForDoublesNoteTarget,
   deleteNote,
   disciplineCodesFromFamilies,
   disciplineFamiliesFromCodes,
@@ -24,6 +25,7 @@ import {
   isDirectNoteContext,
   formatNoteMatchTriggerLabel,
   formatNoteScopeInGroup,
+  formatOpponentNoteModalTitle,
   formatIsoTimestampShort,
   formatMatchDateShort,
   formatNoteRecordedSummary,
@@ -73,9 +75,35 @@ describe('opponentNotes', () => {
     expect(opponentNotesStorageKey('  Jane Doe  ')).toBe('opponent-notes:jane doe')
   })
 
+  it('names the player in the add/edit notes modal title', () => {
+    expect(
+      formatOpponentNoteModalTitle(false, { kind: 'opponent', name: 'Kacper Banas' }, 'Kacper Banas'),
+    ).toBe('Add note - Kacper Banas')
+    expect(
+      formatOpponentNoteModalTitle(true, { kind: 'opponent', name: 'Kacper Banas' }, 'Kacper Banas'),
+    ).toBe('Edit note - Kacper Banas')
+    expect(formatOpponentNoteModalTitle(false, { kind: 'pair' }, 'Smith & Jones')).toBe(
+      'Add note - Smith & Jones',
+    )
+    expect(formatOpponentNoteModalTitle(false, null, 'Smith & Jones')).toBe('Add note')
+    expect(formatOpponentNoteModalTitle(true, null, 'Smith & Jones')).toBe('Edit note')
+  })
+
   it('defaults target to pair for doubles and opponent for singles', () => {
     expect(defaultNoteTarget(['Smith', 'Jones'])).toEqual({ kind: 'opponent', name: 'Smith' })
     expect(defaultNoteTarget(['Smith'])).toEqual({ kind: 'opponent', name: 'Smith' })
+  })
+
+  it('prompts for a doubles recap target even when notes already exist', () => {
+    const doubles = makeContext()
+    expect(shouldPromptForDoublesNoteTarget(doubles)).toBe(true)
+    expect(
+      shouldPromptForDoublesNoteTarget(doubles, { kind: 'opponent', name: 'Smith' }),
+    ).toBe(false)
+    expect(shouldPromptForDoublesNoteTarget(makeContext({ opponentNames: ['Smith'] }))).toBe(
+      false,
+    )
+    expect(shouldPromptForDoublesNoteTarget(buildDirectNoteContext('Smith'))).toBe(false)
   })
 
   it('finds pair-targeted notes for either opponent name', () => {
@@ -352,7 +380,13 @@ describe('opponentNotes', () => {
     expect(martinGroup?.notes).toHaveLength(1)
     expect(formatNoteScopeInGroup(pairNote, 'Scott Carter', { context: 'notes-list' })).toEqual({
       kind: 'pair',
-      primary: 'About a pair - not this player alone',
+      primary: 'About the pair',
+      secondary: 'with Martin Crossley',
+    })
+    expect(formatNoteScopeInGroup(pairNote, 'Martin Crossley', { context: 'notes-list' })).toEqual({
+      kind: 'pair',
+      primary: 'About the pair',
+      secondary: 'with Scott Carter',
     })
     expect(formatNoteScopeInGroup(scottOnly, 'Scott Carter')).toEqual({
       kind: 'opponent',
