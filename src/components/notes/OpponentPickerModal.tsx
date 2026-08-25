@@ -1,34 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Modal } from '../ui/Modal'
-import {
-  searchNotePlayers,
-  type NotePlayerResult,
-  type PlayerGrade,
-} from '../../lib/notePlayerSearch'
+import { searchNotePlayers, type NotePlayerResult } from '../../lib/notePlayerSearch'
+import { OpponentRatingChips } from './OpponentRatingChips'
 
 type Props = {
   open: boolean
   onClose: () => void
   opponents: string[]
   onSelect: (opponentName: string) => void
+  /** When true, wipe the search box (flow closed). Leave false while composing so Back can restore it. */
+  clearSearch?: boolean
 }
 
 const INITIAL_RECENT_COUNT = 8
-
-function GradeBoxes({ grades }: { grades: [PlayerGrade, PlayerGrade, PlayerGrade] }) {
-  return (
-    <span className="inline-flex gap-0.5" aria-label={`Grades ${grades.join(', ')}`}>
-      {grades.map((grade, index) => (
-        <span
-          key={`${grade}-${index}`}
-          className="inline-flex h-[1.125rem] w-[1.125rem] items-center justify-center border border-ink-800 bg-white text-[11px] font-medium leading-none text-ink-900"
-        >
-          {grade}
-        </span>
-      ))}
-    </span>
-  )
-}
 
 function PlayerResultButton({
   player,
@@ -45,7 +29,7 @@ function PlayerResultButton({
     >
       <span className="text-sm font-medium text-brand-700">{player.name}</span>
       <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-ink-600">
-        <GradeBoxes grades={player.grades} />
+        <OpponentRatingChips opponentName={player.name} size="compact" />
         <span aria-hidden className="text-ink-300">
           ·
         </span>
@@ -59,16 +43,21 @@ function PlayerResultButton({
   )
 }
 
-export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Props) {
+export function OpponentPickerModal({
+  open,
+  onClose,
+  opponents,
+  onSelect,
+  clearSearch = true,
+}: Props) {
   const [query, setQuery] = useState('')
   const [showAllRecent, setShowAllRecent] = useState(false)
 
   useEffect(() => {
-    if (!open) {
-      setQuery('')
-      setShowAllRecent(false)
-    }
-  }, [open])
+    if (!clearSearch) return
+    setQuery('')
+    setShowAllRecent(false)
+  }, [clearSearch])
 
   const { fromHistory, fromRegister } = useMemo(
     () => searchNotePlayers(query, opponents),
@@ -93,12 +82,6 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
     setQuery('')
     setShowAllRecent(false)
     onClose()
-  }
-
-  function handleSelect(name: string) {
-    setQuery('')
-    setShowAllRecent(false)
-    onSelect(name)
   }
 
   return (
@@ -150,7 +133,7 @@ export function OpponentPickerModal({ open, onClose, opponents, onSelect }: Prop
           <ul className="max-h-56 overflow-y-auto rounded-lg border border-ink-100">
             {players.map((player) => (
               <li key={player.id} className="border-b border-ink-100">
-                <PlayerResultButton player={player} onSelect={handleSelect} />
+                <PlayerResultButton player={player} onSelect={onSelect} />
               </li>
             ))}
             {canShowMore && (

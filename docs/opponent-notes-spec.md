@@ -191,7 +191,7 @@ getMatchJournalNotes(allNotes)  // all notes with target.kind === 'match'
 ### Capture entry points
 
 1. **Events tab** — `DisciplineMatchRow` shows `OpponentNoteButton` on every match row (pen icon when notes exist, plus icon when empty). Opens modal with match context.
-2. **Notes tab** — **Add new note** → opponent picker → modal with `buildDirectNoteContext()` (opponent-notes only; no **My game** tab).
+2. **Notes tab** — **Add new note** → opponent picker → compose modal with `buildDirectNoteContext()` (opponent-notes only; no **My game** tab). **← Back** returns to the picker with the same search.
 3. **Notes tab** — expanded opponent accordion → **Add another note** → same compose modal with that opponent already selected (skips picker).
 
 ### Modal (`OpponentNoteModal`)

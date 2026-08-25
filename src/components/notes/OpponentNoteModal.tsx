@@ -47,6 +47,8 @@ type Props = {
   onClose: () => void
   context: OpponentNoteMatchContext
   initialTarget?: OpponentNoteTarget
+  /** Return to the previous step (e.g. Notes-tab player picker) without saving. */
+  onBack?: () => void
   /** Notes-tab ticket build gating. Omitted callers (e.g. Events) get full features. */
   buildFeatures?: NotesBuildFeatures
 }
@@ -229,10 +231,11 @@ type FormProps = {
   context: OpponentNoteMatchContext
   initialTarget?: OpponentNoteTarget
   onClose: () => void
+  onBack?: () => void
   buildFeatures: NotesBuildFeatures
 }
 
-function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: FormProps) {
+function OpponentNoteForm({ context, initialTarget, onClose, onBack, buildFeatures }: FormProps) {
   const { playerName, getNotesForMatch, getNoteForMatchTarget, upsertNote, deleteNote } =
     useOpponentNotesContext()
 
@@ -410,6 +413,14 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
     if (MATCH_JOURNAL_UI_ENABLED) setMode('scout')
   }
 
+  function handleFooterBack() {
+    if (usesTargetWizard) {
+      handleBackToChooser()
+      return
+    }
+    onBack?.()
+  }
+
   function handleSave() {
     if (awaitingTarget) return
     persistScoutingDraft()
@@ -462,6 +473,8 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
     MATCH_JOURNAL_UI_ENABLED && mode === 'game' && gameTabHasNote
   const showModeTabs = MATCH_JOURNAL_UI_ENABLED && !isDirectNote && !awaitingTarget
   const showScoutPanel = !MATCH_JOURNAL_UI_ENABLED || mode === 'scout'
+  const showBack =
+    (usesTargetWizard && !awaitingTarget) || (!usesTargetWizard && onBack != null)
 
   return (
     <Modal
@@ -470,13 +483,17 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
       title={title}
       footer={
         <>
-          {(usesTargetWizard && !awaitingTarget) || showDeleteScouting || showDeleteGame ? (
+          {showBack || showDeleteScouting || showDeleteGame ? (
             <div className="mr-auto flex flex-wrap items-center gap-2">
-              {usesTargetWizard && !awaitingTarget && (
+              {showBack && (
                 <button
                   type="button"
-                  onClick={handleBackToChooser}
-                  aria-label="Back to who this note is about"
+                  onClick={handleFooterBack}
+                  aria-label={
+                    usesTargetWizard
+                      ? 'Back to who this note is about'
+                      : 'Back to player search'
+                  }
                   className="rounded-lg border border-ink-100 px-3 py-1.5 text-sm text-ink-700 hover:bg-ink-50"
                 >
                   ← Back
@@ -604,6 +621,7 @@ export function OpponentNoteModal({
   onClose,
   context,
   initialTarget,
+  onBack,
   buildFeatures = fullNotesBuildFeatures(),
 }: Props) {
   if (!open) return null
@@ -614,6 +632,7 @@ export function OpponentNoteModal({
       context={context}
       initialTarget={initialTarget}
       onClose={onClose}
+      onBack={onBack}
       buildFeatures={buildFeatures}
     />
   )
