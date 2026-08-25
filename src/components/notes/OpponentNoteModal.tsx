@@ -133,7 +133,7 @@ function doublesTargetOptions(
       value: { kind: 'opponent' as const, name },
       label: name,
     })),
-    { value: { kind: 'pair' as const }, label: 'The pair' },
+    { value: { kind: 'pair' as const }, label: 'The Pair' },
   ]
 }
 
@@ -154,7 +154,7 @@ function NoteTargetChooser({
         <p className="text-sm font-medium text-ink-900">Who is this note about?</p>
         <p className="text-sm text-ink-600">
           If you&apos;re not sure which player is which, or who the note is about, choose{' '}
-          <span className="font-medium text-ink-800">The pair</span>.
+          <span className="font-medium text-ink-800">The Pair</span>.
         </p>
       </div>
       <div className="flex flex-col gap-2" role="group" aria-label="Who is this note about?">
@@ -539,7 +539,7 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
               <div className="space-y-3" role={showModeTabs ? 'tabpanel' : undefined}>
                 {buildFeatures.showPairScope && target.kind === 'pair' && (
                   <p className="text-xs text-ink-600">
-                    About the pair - not either player alone
+                    About &ldquo;The Pair&rdquo; - not either player alone
                   </p>
                 )}
                 {target.kind === 'pair' ? (

@@ -518,7 +518,7 @@ export function serializeNotes(notes: OpponentNote[]): string {
 }
 
 export function formatNoteTargetLabel(target: OpponentNoteTarget): string {
-  if (target.kind === 'pair') return 'The pair'
+  if (target.kind === 'pair') return 'The Pair'
   if (target.kind === 'match') return 'About this game'
   return target.name
 }
