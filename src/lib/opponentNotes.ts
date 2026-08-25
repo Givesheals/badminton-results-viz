@@ -170,6 +170,20 @@ export function defaultNoteTarget(opponentNames: string[]): OpponentNoteTarget {
   return { kind: 'opponent', name: first }
 }
 
+/**
+ * Recap doubles/mixed: always pick player 1, player 2, or the pair first.
+ * Skip when the caller already chose a target (Notes tab edit), or for
+ * singles / direct notes (one opponent only).
+ */
+export function shouldPromptForDoublesNoteTarget(
+  context: OpponentNoteMatchContext,
+  initialTarget?: OpponentNoteTarget,
+): boolean {
+  if (initialTarget != null) return false
+  if (isDirectNoteContext(context)) return false
+  return context.opponentNames.length >= 2
+}
+
 export function noteTargetKey(target: OpponentNoteTarget): string {
   if (target.kind === 'pair') return 'pair'
   if (target.kind === 'match') return 'match'
@@ -509,6 +523,20 @@ export function formatNoteTargetLabel(target: OpponentNoteTarget): string {
   return target.name
 }
 
+/** Modal heading: keep Add/Edit, and name the player once we know who the note is about. */
+export function formatOpponentNoteModalTitle(
+  hasEdits: boolean,
+  target: OpponentNoteTarget | null,
+  opponentsDisplay: string,
+): string {
+  const action = hasEdits ? 'Edit note' : 'Add note'
+  if (target == null || isMatchNoteTarget(target)) return action
+  const subject = target.kind === 'opponent' ? target.name : opponentsDisplay
+  const trimmed = subject.trim()
+  if (trimmed === '') return action
+  return `${action} - ${trimmed}`
+}
+
 export function getMatchJournalNotes(notes: OpponentNote[]): OpponentNote[] {
   return sortNotesNewestFirst(notes.filter((note) => isMatchNoteTarget(note.target)))
 }
@@ -560,9 +588,21 @@ export function isPairNoteWithDifferentDrawnPartner(
   )
 }
 
+function otherOpponentNames(note: OpponentNote, viewedOpponentName: string): string[] {
+  const viewed = viewedOpponentName.trim().toLowerCase()
+  return note.context.opponentNames.filter((name) => name.trim().toLowerCase() !== viewed)
+}
+
+function formatWithOthers(names: string[]): string {
+  if (names.length === 1) return `with ${names[0]}`
+  if (names.length === 2) return `with ${names[0]} and ${names[1]}`
+  const last = names[names.length - 1]
+  return `with ${names.slice(0, -1).join(', ')}, and ${last}`
+}
+
 export function formatNoteScopeInGroup(
   note: OpponentNote,
-  _viewedOpponentName: string,
+  viewedOpponentName: string,
   options?: { drawnCoOpponent?: string | null; context?: 'notes-list' | 'draw-scout' },
 ): NoteScopeDisplay {
   if (note.target.kind === 'opponent') {
@@ -591,9 +631,18 @@ export function formatNoteScopeInGroup(
     }
   }
 
+  const others = otherOpponentNames(note, viewedOpponentName)
+  if (others.length > 0) {
+    return {
+      kind: 'pair',
+      primary: 'About the pair',
+      secondary: formatWithOthers(others),
+    }
+  }
+
   return {
     kind: 'pair',
-    primary: 'About a pair - not this player alone',
+    primary: 'About the pair — not this player alone',
   }
 }
 

@@ -13,6 +13,7 @@ import {
 } from '../../lib/noteTags'
 import {
   defaultNoteTarget,
+  formatOpponentNoteModalTitle,
   getMatchJournalFields,
   isDirectNoteContext,
   isMatchNoteTarget,
@@ -22,7 +23,7 @@ import {
   isScoutingNote,
   noteHasStoredContent,
   noteTargetKey,
-  noteTargetsEqual,
+  shouldPromptForDoublesNoteTarget,
   type MatchJournalFields,
   type OpponentNote,
   type OpponentNoteMatchContext,
@@ -136,76 +137,14 @@ function doublesTargetOptions(
   ]
 }
 
-function shouldPromptForNoteTarget(
-  context: OpponentNoteMatchContext,
-  initialTarget: OpponentNoteTarget | undefined,
-  getNotesForMatch: (matchKey: string) => OpponentNote[],
-): boolean {
-  if (isDirectNoteContext(context)) return false
-  if (context.opponentNames.length < 2) return false
-  if (initialTarget != null && !isMatchNoteTarget(initialTarget)) return false
-  return !getNotesForMatch(context.matchKey).some(
-    (note) => isScoutingNote(note) && noteHasStoredContent(note),
-  )
-}
-
-function OpponentSegmentedControl({
+function NoteTargetChooser({
   opponentNames,
-  target,
   onChange,
   targetsWithNotes,
 }: {
   opponentNames: string[]
-  target: OpponentNoteTarget
   onChange: (target: OpponentNoteTarget) => void
   targetsWithNotes: ReadonlySet<string>
-}) {
-  if (opponentNames.length < 2) return null
-
-  const options = doublesTargetOptions(opponentNames)
-
-  return (
-    <div
-      className="flex w-full gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1"
-      role="tablist"
-      aria-label="Who is this note about?"
-    >
-      {options.map((option) => {
-        const selected = noteTargetsEqual(option.value, target)
-        const hasNote = targetsWithNotes.has(noteTargetKey(option.value))
-        return (
-          <button
-            key={option.label}
-            type="button"
-            role="tab"
-            aria-selected={selected}
-            aria-label={hasNote ? `${option.label}, has a note` : option.label}
-            onClick={() => onChange(option.value)}
-            className={`min-w-0 flex-1 rounded-md px-1.5 py-1.5 text-center text-xs font-medium leading-snug transition ${
-              selected
-                ? 'bg-white text-ink-900 shadow-sm'
-                : 'text-ink-600 hover:text-ink-800'
-            }`}
-          >
-            <span className="inline-flex max-w-full items-center justify-center gap-1">
-              <span className="min-w-0 truncate">{option.label}</span>
-              {hasNote ? (
-                <NoteStickyIcon className="h-3 w-3 shrink-0 text-notes-amber-ink" />
-              ) : null}
-            </span>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-function NoteTargetChooser({
-  opponentNames,
-  onChange,
-}: {
-  opponentNames: string[]
-  onChange: (target: OpponentNoteTarget) => void
 }) {
   const options = doublesTargetOptions(opponentNames)
 
@@ -214,22 +153,30 @@ function NoteTargetChooser({
       <div className="space-y-1">
         <p className="text-sm font-medium text-ink-900">Who is this note about?</p>
         <p className="text-sm text-ink-600">
-          Pick a player or the pair to start. You can add notes for the others next. If
-          you&apos;re not sure which player is which, or who the note is about, choose{' '}
+          If you&apos;re not sure which player is which, or who the note is about, choose{' '}
           <span className="font-medium text-ink-800">The pair</span>.
         </p>
       </div>
       <div className="flex flex-col gap-2" role="group" aria-label="Who is this note about?">
-        {options.map((option) => (
-          <button
-            key={option.label}
-            type="button"
-            onClick={() => onChange(option.value)}
-            className="rounded-lg border border-ink-200 bg-white px-3 py-2.5 text-left text-sm font-medium text-ink-800 transition hover:border-brand-300 hover:bg-brand-50 hover:text-ink-900"
-          >
-            {option.label}
-          </button>
-        ))}
+        {options.map((option) => {
+          const hasNote = targetsWithNotes.has(noteTargetKey(option.value))
+          return (
+            <button
+              key={option.label}
+              type="button"
+              onClick={() => onChange(option.value)}
+              aria-label={hasNote ? `${option.label}, has a note` : option.label}
+              className="rounded-lg border border-ink-200 bg-white px-3 py-2.5 text-left text-sm font-medium text-ink-800 transition hover:border-brand-300 hover:bg-brand-50 hover:text-ink-900"
+            >
+              <span className="inline-flex max-w-full items-center gap-1.5">
+                <span className="min-w-0 truncate">{option.label}</span>
+                {hasNote ? (
+                  <NoteStickyIcon className="h-4 w-4 shrink-0 text-notes-amber-ink" />
+                ) : null}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
@@ -290,11 +237,7 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
     useOpponentNotesContext()
 
   const isDirectNote = isDirectNoteContext(context)
-  const promptForTarget = shouldPromptForNoteTarget(
-    context,
-    initialTarget,
-    getNotesForMatch,
-  )
+  const usesTargetWizard = shouldPromptForDoublesNoteTarget(context, initialTarget)
   const resolvedInitialTarget =
     initialTarget != null && !isMatchNoteTarget(initialTarget)
       ? initialTarget
@@ -307,7 +250,7 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
     return 'scout'
   })
   const [target, setTarget] = useState<OpponentNoteTarget | null>(() =>
-    promptForTarget ? null : resolvedInitialTarget,
+    usesTargetWizard ? null : resolvedInitialTarget,
   )
   const [draftsByTarget, setDraftsByTarget] = useState<Record<string, string>>(() =>
     buildDraftsFromStored(getNotesForMatch, context.matchKey),
@@ -337,33 +280,24 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
     target != null ? scoutingTagsForTargetState(target, scoutingTags) : undefined
   const scoutingHasContent = noteHasContent(body, scoutingTagsToSave)
   const targetsWithNotes = new Set(
-    doublesTargetOptions(context.opponentNames)
-      .filter((option) => {
-        const key = noteTargetKey(option.value)
-        const draftBody = draftsByTarget[key] ?? ''
-        const optionTags = scoutingTagsForTargetState(option.value, tagsByTarget[key])
-        return noteHasContent(draftBody, optionTags)
-      })
-      .map((option) => noteTargetKey(option.value)),
+    getNotesForMatch(context.matchKey)
+      .filter((note) => isScoutingNote(note) && noteHasStoredContent(note))
+      .map((note) => noteTargetKey(note.target)),
   )
   const gameHasContent = matchNoteHasDraft(matchJournalDraft, journalTags)
-  const hasAnyStoredNote = getNotesForMatch(context.matchKey).some(
-    (note) =>
-      noteHasStoredContent(note) &&
-      (MATCH_JOURNAL_UI_ENABLED || isScoutingNote(note)),
-  )
+  const hasStoredScoutingForMatch = targetsWithNotes.size > 0
+  const selectedTargetHasStoredNote =
+    target != null && targetsWithNotes.has(noteTargetKey(target))
   const gameTabHasNote =
     existingMatchNote != null && noteHasStoredContent(existingMatchNote)
-  const hasEdits =
-    scoutingHasContent ||
-    (MATCH_JOURNAL_UI_ENABLED && gameHasContent) ||
-    hasAnyStoredNote
-  const title = hasEdits ? 'Edit personal notes' : 'Add personal notes'
+  const title = formatOpponentNoteModalTitle(
+    awaitingTarget ? hasStoredScoutingForMatch : selectedTargetHasStoredNote,
+    target,
+    context.opponentsDisplay,
+  )
   const canSave =
     !awaitingTarget &&
-    (scoutingHasContent ||
-      (MATCH_JOURNAL_UI_ENABLED && gameHasContent) ||
-      hasAnyStoredNote)
+    (scoutingHasContent || (MATCH_JOURNAL_UI_ENABLED && gameHasContent))
 
   function setBody(text: string) {
     setDraftsByTarget((prev) => ({ ...prev, [targetKey]: text }))
@@ -459,39 +393,21 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
   }
 
   function persistScoutingDraft() {
-    if (target == null) return
-    if (scoutingHasContent) {
-      upsertNote(context, body, target, [], scoutingTagsToSave)
-    } else {
-      upsertNote(context, '', target, [])
-    }
+    if (target == null || !scoutingHasContent) return
+    upsertNote(context, body, target, [], scoutingTagsToSave)
   }
 
   function handleModeChange(newMode: ModalMode) {
-    if (mode === 'scout' && newMode === 'game') {
-      persistScoutingDraft()
-    }
     setMode(newMode)
   }
 
-  function handleTargetChange(newTarget: OpponentNoteTarget) {
-    if (target != null && noteTargetsEqual(target, newTarget)) return
-    if (target != null) {
-      persistScoutingDraft()
-      setDraftsByTarget((prev) => {
-        const next = { ...prev, [targetKey]: body }
-        if (!noteHasContent(body, scoutingTagsToSave)) delete next[targetKey]
-        return next
-      })
-      setTagsByTarget((prev) => {
-        const next = { ...prev }
-        const normalized = scoutingTagsForTargetState(target, scoutingTags)
-        if (normalized != null) next[targetKey] = normalized
-        else delete next[targetKey]
-        return next
-      })
-    }
+  function handlePickTarget(newTarget: OpponentNoteTarget) {
     setTarget(newTarget)
+  }
+
+  function handleBackToChooser() {
+    setTarget(null)
+    if (MATCH_JOURNAL_UI_ENABLED) setMode('scout')
   }
 
   function handleSave() {
@@ -596,30 +512,31 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
         {awaitingTarget ? (
           <NoteTargetChooser
             opponentNames={context.opponentNames}
-            onChange={handleTargetChange}
+            onChange={handlePickTarget}
+            targetsWithNotes={targetsWithNotes}
           />
         ) : (
           <>
+            {usesTargetWizard && (
+              <button
+                type="button"
+                onClick={handleBackToChooser}
+                aria-label="Back to who this note is about"
+                className="-ml-1 inline-flex items-center rounded-lg px-1 py-1 text-sm font-medium text-ink-700 transition hover:bg-ink-50 hover:text-ink-900"
+              >
+                ← Back
+              </button>
+            )}
             {showModeTabs && (
               <ModalModeTabs mode={mode} onChange={handleModeChange} showGameTab />
             )}
 
             {showScoutPanel ? (
               <div className="space-y-3" role={showModeTabs ? 'tabpanel' : undefined}>
-                {!isDirectNote && context.opponentNames.length >= 2 && (
-                  <>
-                    <OpponentSegmentedControl
-                      opponentNames={context.opponentNames}
-                      target={target}
-                      onChange={handleTargetChange}
-                      targetsWithNotes={targetsWithNotes}
-                    />
-                    {buildFeatures.showPairScope && target.kind === 'pair' && (
-                      <p className="text-xs text-ink-600">
-                        About the pair — not either player alone
-                      </p>
-                    )}
-                  </>
+                {buildFeatures.showPairScope && target.kind === 'pair' && (
+                  <p className="text-xs text-ink-600">
+                    About the pair — not either player alone
+                  </p>
                 )}
                 {target.kind === 'pair' ? (
                   <PairStyleNoteSection

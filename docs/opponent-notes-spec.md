@@ -47,7 +47,7 @@ Singles matches auto-assign notes to the sole opponent.
 
 Use `MATCH_NOTE_TARGET` constant for the match journal slot.
 
-**Default doubles target:** when adding a note from a match with no existing opponent notes, the modal asks who the note is about first (opponent names + **The pair**) and does not pre-select anyone. After the first choice, the usual segmented control appears. Editing an existing note, singles, and notes opened with an explicit `initialTarget` still land on a selected target (first opponent name when falling back).
+**Doubles/mixed recap wizard:** the modal always asks **Who is this note about?** first (opponent names + **The pair**) with no default. You pick one, write that note, and Save — only that choice is stored. Edit reopens the same three choices, with a sticky-note icon next to any player or pair that already has a note for this match. **← Back** returns to the picker without saving. Singles and notes opened with an explicit `initialTarget` skip the picker.
 
 ### `OpponentNoteMatchContext`
 
@@ -191,7 +191,8 @@ getMatchJournalNotes(allNotes)  // all notes with target.kind === 'match'
 ### Capture entry points
 
 1. **Events tab** — `DisciplineMatchRow` shows `OpponentNoteButton` on every match row (pen icon when notes exist, plus icon when empty). Opens modal with match context.
-2. **Notes tab** — **Add note** → opponent picker → modal with `buildDirectNoteContext()` (opponent-notes only; no **My game** tab).
+2. **Notes tab** — **Add new note** → opponent picker → modal with `buildDirectNoteContext()` (opponent-notes only; no **My game** tab).
+3. **Notes tab** — expanded opponent accordion → **Add another note** → same compose modal with that opponent already selected (skips picker).
 
 ### Modal (`OpponentNoteModal`)
 
@@ -201,8 +202,8 @@ Top-level mode tabs: **About them** | **My game** (game tab hidden for direct no
 
 #### About them tab
 
-- **New doubles notes from a match:** first screen asks **Who is this note about?** (opponent names + **The pair**) with no default selection; choosing one reveals the form
-- Segmented opponent control (doubles): opponent names first, **The pair** last — used after the first choice (or when editing)
+- **Doubles/mixed notes from a recap match:** first screen asks **Who is this note about?** (opponent names + **The pair**) with no default; choosing one reveals the form for that target only
+- Edit from the same match reopens the chooser; a sticky-note icon marks choices that already have a note. **← Back** returns to the chooser without saving. No in-form switcher between players.
 - **Combo note box** — textarea with selected tags inside the bordered area (tap tag to remove from this note)
 - **Quick-add row** below the box: `+ {tag}` for tags in the player's library that are not already on the note
 - **Add a tag** — text field under the quick-add row; new labels join the library **and** this note (no rename / remove here)
