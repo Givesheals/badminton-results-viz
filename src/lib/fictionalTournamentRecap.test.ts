@@ -40,6 +40,16 @@ describe('buildFictionalTournamentRecap', () => {
     expect(celebrations.winners[0]!.subtitle).toBe('Your first Gold title')
     expect(celebrations.runnerUps[0]!.subtitle).toBe('Your first Gold runner-up finish')
     expect(celebrations.jointThirds[0]!.subtitle).toBe('Your first Gold third place finish')
+    expect(
+      [
+        celebrations.winners[0]!.competitionAgeLabel,
+        celebrations.runnerUps[0]!.competitionAgeLabel,
+        celebrations.jointThirds[0]!.competitionAgeLabel,
+      ].sort(),
+    ).toEqual(['Junior', 'Masters', 'Senior'])
+    expect(
+      celebrations.milestones.map((milestone) => milestone.competitionAgeLabel).sort(),
+    ).toEqual(['Junior', 'Masters', 'Senior'])
     expect(celebrations.milestones.map((milestone) => milestone.variant).sort()).toEqual([
       'debut',
       'matched_best',

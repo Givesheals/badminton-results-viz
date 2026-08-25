@@ -41,6 +41,60 @@ export function countNotesWithCustomTag(
     .length
 }
 
+const TAG_USAGE_NAMED_SUBJECT_LIMIT = 2
+
+function noteSubjectLabel(note: OpponentNote): string {
+  if (note.target.kind === 'opponent') {
+    const name = note.target.name.trim()
+    if (name !== '') return name
+  }
+
+  const display = note.context.opponentsDisplay.trim()
+  if (display !== '') return display
+
+  return note.context.opponentNames
+    .map((name) => name.trim())
+    .filter((name) => name !== '')
+    .join(' & ')
+}
+
+/** Unique people/pairs the tag is filed under, A–Z. Pair notes count as one subject. */
+export function uniqueSubjectsForCustomTag(
+  notes: OpponentNote[],
+  group: CustomTagGroup,
+  label: string,
+): string[] {
+  const seen = new Map<string, string>()
+  for (const note of notes) {
+    if (!getCustomTags(note, group).some((tag) => tagsMatch(tag, label))) continue
+    const subject = noteSubjectLabel(note)
+    if (subject === '') continue
+    const key = subject.toLowerCase()
+    if (!seen.has(key)) seen.set(key, subject)
+  }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }))
+}
+
+export function formatCustomTagUsageSentence(
+  noteCount: number,
+  subjects: string[],
+): string {
+  const noteWord = noteCount === 1 ? 'note' : 'notes'
+  const base = `This tag is on ${noteCount} saved ${noteWord}`
+  if (subjects.length === 0) return `${base}.`
+
+  let listed: string
+  if (subjects.length === 1) {
+    listed = subjects[0]!
+  } else if (subjects.length === 2) {
+    listed = `${subjects[0]} and ${subjects[1]}`
+  } else {
+    const extra = subjects.length - TAG_USAGE_NAMED_SUBJECT_LIMIT
+    listed = `${subjects[0]}, ${subjects[1]}, and ${extra} more`
+  }
+  return `${base} (${listed}).`
+}
+
 function updateNoteCustomField(
   note: OpponentNote,
   field: keyof NoteTags,

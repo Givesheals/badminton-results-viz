@@ -1,6 +1,10 @@
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { useOpponentNotesContext } from '../../context/OpponentNotesContext'
-import { countNotesWithCustomTag } from '../../lib/customTagNoteUpdates'
+import {
+  countNotesWithCustomTag,
+  formatCustomTagUsageSentence,
+  uniqueSubjectsForCustomTag,
+} from '../../lib/customTagNoteUpdates'
 import {
   CUSTOM_TAG_MAX_LENGTH,
   CUSTOM_TAG_MAX_PER_GROUP,
@@ -13,6 +17,7 @@ import {
   type CustomTagGroup,
 } from '../../lib/customNoteTags'
 import { MATCH_JOURNAL_UI_ENABLED } from '../../lib/opponentNotes'
+import { Modal } from '../ui/Modal'
 
 type TagLibraryGroup = {
   group: CustomTagGroup
@@ -38,6 +43,54 @@ function loadLibrary(
     return ensureScoutingChipLibrary(playerName)[group]
   }
   return loadRememberedCustomTags(playerName)[group]
+}
+
+function TagChipList({
+  labels,
+  onRemove,
+}: {
+  labels: string[]
+  onRemove: (label: string) => void
+}) {
+  return (
+    <ul className="flex flex-wrap gap-1.5">
+      {labels.map((label) => (
+        <li key={label}>
+          <span className="inline-flex items-center gap-1 rounded-md border border-notes-amber/35 bg-notes-amber-soft py-0.5 pl-2 pr-1 text-xs font-medium text-notes-amber-ink">
+            {label}
+            <button
+              type="button"
+              onClick={() => onRemove(label)}
+              className="rounded px-1 text-notes-amber-ink transition hover:bg-notes-amber/15 hover:text-notes-amber"
+              aria-label={`Remove ${label} from your note tags`}
+              title="Remove from your note tags"
+            >
+              ×
+            </button>
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function TagUsageBlock({
+  heading,
+  labels,
+  onRemove,
+}: {
+  heading: string
+  labels: string[]
+  onRemove: (label: string) => void
+}) {
+  if (labels.length === 0) return null
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium text-ink-600">{heading}</p>
+      <TagChipList labels={labels} onRemove={onRemove} />
+    </div>
+  )
 }
 
 function TagLibraryBlock({
@@ -89,109 +142,108 @@ function TagLibraryBlock({
     setMessage(null)
   }
 
+  function removeFromList(label: string) {
+    const updated = removeRememberedCustomTag(playerName, group, label)
+    if (updated != null) setTags(updated)
+  }
+
+  function handleRemoveClick(label: string) {
+    setMessage(null)
+    if (countNotesWithCustomTag(allNotes, group, label) === 0) {
+      removeFromList(label)
+      return
+    }
+    setPendingRemove(label)
+  }
+
   function confirmRemoveFromList() {
     if (pendingRemove == null) return
-    const updated = removeRememberedCustomTag(playerName, group, pendingRemove)
-    if (updated != null) setTags(updated)
+    removeFromList(pendingRemove)
     setPendingRemove(null)
   }
 
   function confirmRemoveFromListAndNotes() {
     if (pendingRemove == null) return
     const label = pendingRemove
-    const updated = removeRememberedCustomTag(playerName, group, label)
-    if (updated != null) setTags(updated)
+    removeFromList(label)
     removeCustomTagEverywhere(group, label)
     setPendingRemove(null)
   }
 
   const pendingUsageCount =
     pendingRemove == null ? 0 : countNotesWithCustomTag(allNotes, group, pendingRemove)
+  const pendingUsageSentence =
+    pendingRemove == null
+      ? ''
+      : formatCustomTagUsageSentence(
+          pendingUsageCount,
+          uniqueSubjectsForCustomTag(allNotes, group, pendingRemove),
+        )
+
+  const inUseTags = tags.filter(
+    (label) => countNotesWithCustomTag(allNotes, group, label) > 0,
+  )
+  const unusedTags = tags.filter(
+    (label) => countNotesWithCustomTag(allNotes, group, label) === 0,
+  )
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {title != null && <p className="text-xs font-medium text-ink-600">{title}</p>}
 
       {tags.length === 0 ? (
         <p className="text-xs text-ink-500">No tags yet. Add one below.</p>
       ) : (
-        <ul className="flex flex-wrap gap-1.5">
-          {tags.map((label) => (
-            <li key={label}>
-              <span className="inline-flex items-center gap-1 rounded-md border border-notes-amber/35 bg-notes-amber-soft py-0.5 pl-2 pr-1 text-xs font-medium text-notes-amber-ink">
-                {label}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPendingRemove(label)
-                    setMessage(null)
-                  }}
-                  className="rounded px-1 text-notes-amber-ink transition hover:bg-notes-amber/15 hover:text-notes-amber"
-                  aria-label={`Remove ${label} from your note tags`}
-                  title="Remove from your note tags"
-                >
-                  ×
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-3">
+          <TagUsageBlock heading="In use" labels={inUseTags} onRemove={handleRemoveClick} />
+          <TagUsageBlock
+            heading="Not in use"
+            labels={unusedTags}
+            onRemove={handleRemoveClick}
+          />
+        </div>
       )}
 
-      {pendingRemove != null && (
-        <div className="rounded-lg border border-ink-200 bg-white px-3 py-2.5">
-          <p className="text-xs text-ink-700">
-            Remove &ldquo;{pendingRemove}&rdquo; from your note tags?
-          </p>
-          <p className="mt-1 text-[11px] leading-relaxed text-ink-500">
-            {pendingUsageCount > 0
-              ? `This only removes it from your quick-add list. It is on ${pendingUsageCount} saved note${pendingUsageCount === 1 ? '' : 's'} — choose below if you also want it cleared from those.`
-              : 'It is not used on any saved notes.'}
-          </p>
-          {pendingUsageCount > 0 ? (
-            <div className="mt-2 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={confirmRemoveFromList}
-                className="w-full rounded-lg bg-brand-600 px-2.5 py-1.5 text-center text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700"
-              >
-                Remove from list
-              </button>
+      <Modal
+        open={pendingRemove != null}
+        onClose={() => setPendingRemove(null)}
+        title={
+          pendingRemove != null ? `Remove \u201c${pendingRemove}\u201d?` : 'Remove tag'
+        }
+        footer={
+          <div className="flex w-full flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPendingRemove(null)}
+              className="rounded-lg border border-ink-100 px-2.5 py-1.5 text-xs text-ink-700 hover:bg-ink-50"
+            >
+              Cancel
+            </button>
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={confirmRemoveFromListAndNotes}
-                className="w-full rounded-lg border border-loss-200 px-2.5 py-1.5 text-center text-xs font-medium text-loss-700 transition hover:bg-loss-50"
+                className="rounded-lg border border-loss-200 px-2.5 py-1.5 text-xs font-medium text-loss-700 hover:bg-loss-50"
               >
-                Remove from list and notes
+                Remove from list & notes
               </button>
-              <button
-                type="button"
-                onClick={() => setPendingRemove(null)}
-                className="self-start px-1 py-0.5 text-xs text-ink-500 transition hover:text-ink-700"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={confirmRemoveFromList}
-                className="rounded-lg bg-brand-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700"
+                className="rounded-lg bg-brand-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-700"
               >
-                Remove
-              </button>
-              <button
-                type="button"
-                onClick={() => setPendingRemove(null)}
-                className="px-2 py-1 text-xs text-ink-500 transition hover:text-ink-700"
-              >
-                Cancel
+                Remove from list
               </button>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        }
+      >
+        <p className="text-sm text-ink-700">{pendingUsageSentence}</p>
+        <p className="mt-2 text-sm text-ink-600">
+          &ldquo;Remove from list&rdquo; keeps it on those notes.
+          &ldquo;Remove from list &amp; notes&rdquo; strips it from them too.
+        </p>
+      </Modal>
 
       <form onSubmit={handleAdd} className="flex items-center gap-1.5">
         <label htmlFor={addInputId} className="sr-only">

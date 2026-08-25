@@ -68,8 +68,15 @@ export function OpponentNoteMatchFooter({ context, match }: Props) {
           >
             {context.competitionName}
           </p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">{metaChips}</div>
-          <p className="mt-0.5 text-xs text-ink-500">{formatMatchDateShort(context.date)}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            {metaChips}
+            <span className="text-ink-300" aria-hidden>
+              ·
+            </span>
+            <span className="text-xs leading-tight text-ink-500">
+              {formatMatchDateShort(context.date)}
+            </span>
+          </div>
           <p className="mt-1 text-xs text-ink-600">
             vs {context.opponentsDisplay}
             {context.partnerName ? ` · with ${context.partnerName}` : ''}

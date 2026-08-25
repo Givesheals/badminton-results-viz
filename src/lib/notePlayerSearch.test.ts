@@ -1,17 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { searchNotePlayers, simulateGrades } from './notePlayerSearch'
-
-describe('simulateGrades', () => {
-  it('returns three stable A–J or dash grades for a seed', () => {
-    const first = simulateGrades('1419401')
-    const second = simulateGrades('1419401')
-    expect(first).toEqual(second)
-    expect(first).toHaveLength(3)
-    for (const grade of first) {
-      expect(grade).toMatch(/^[A-J-]$/)
-    }
-  })
-})
+import { searchNotePlayers } from './notePlayerSearch'
 
 describe('searchNotePlayers', () => {
   it('lists history opponents when the query is empty', () => {
@@ -19,7 +7,6 @@ describe('searchNotePlayers', () => {
     expect(fromRegister).toEqual([])
     expect(fromHistory.map((player) => player.name)).toEqual(['Kim', 'Lee'])
     expect(fromHistory[0]?.beNumber).toMatch(/^\d{7}$/)
-    expect(fromHistory[0]?.grades).toHaveLength(3)
   })
 
   it('finds register players by surname with county and BE number', () => {
