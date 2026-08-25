@@ -488,7 +488,7 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
                   onClick={handleDeleteScouting}
                   className="rounded-lg border border-loss-200 px-3 py-1.5 text-sm text-loss-700 hover:bg-loss-50"
                 >
-                  Delete opponent note
+                  Delete note
                 </button>
               )}
               {showDeleteGame && (

@@ -238,7 +238,7 @@ Always-visible block at the **bottom** of the Notes tab for the quick-add librar
 - **Add** new tag (subject to per-group limit)
 - **Remove** from quick-add — primary action keeps the tag on saved notes; optional secondary strips it from notes that use it
 
-Save persists both modal modes. Delete is mode-specific: **Delete opponent note** / **Delete game note**.
+Save persists both modal modes. Delete is mode-specific: **Delete note** / **Delete game note**.
 
 ### Notes tab (`OpponentNotesSection`)
 
