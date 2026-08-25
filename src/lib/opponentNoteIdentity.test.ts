@@ -25,15 +25,10 @@ function makeMatch(
     disciplineLabel: "Men's singles",
     playerName: 'Alex',
     partnerName: null,
-    opponents,
     outcome: 'win',
     nonCompetitiveReason: null,
     scoreSummary: '21-15, 21-12',
     playerRating: 600,
-    raw: {
-      'Opponent 1 Name': opponent1,
-      'Opponent 2 Name': opponent2,
-    },
     ...rest,
     opponents: rest.opponents ?? opponents,
     raw: rest.raw ?? {
