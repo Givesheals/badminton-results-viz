@@ -470,24 +470,38 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
       title={title}
       footer={
         <>
-          {showDeleteScouting && (
-            <button
-              type="button"
-              onClick={handleDeleteScouting}
-              className="mr-auto rounded-lg border border-loss-200 px-3 py-1.5 text-sm text-loss-700 hover:bg-loss-50"
-            >
-              Delete opponent note
-            </button>
-          )}
-          {showDeleteGame && (
-            <button
-              type="button"
-              onClick={handleDeleteMatchNote}
-              className="mr-auto rounded-lg border border-loss-200 px-3 py-1.5 text-sm text-loss-700 hover:bg-loss-50"
-            >
-              Delete game note
-            </button>
-          )}
+          {(usesTargetWizard && !awaitingTarget) || showDeleteScouting || showDeleteGame ? (
+            <div className="mr-auto flex flex-wrap items-center gap-2">
+              {usesTargetWizard && !awaitingTarget && (
+                <button
+                  type="button"
+                  onClick={handleBackToChooser}
+                  aria-label="Back to who this note is about"
+                  className="rounded-lg border border-ink-100 px-3 py-1.5 text-sm text-ink-700 hover:bg-ink-50"
+                >
+                  ← Back
+                </button>
+              )}
+              {showDeleteScouting && (
+                <button
+                  type="button"
+                  onClick={handleDeleteScouting}
+                  className="rounded-lg border border-loss-200 px-3 py-1.5 text-sm text-loss-700 hover:bg-loss-50"
+                >
+                  Delete opponent note
+                </button>
+              )}
+              {showDeleteGame && (
+                <button
+                  type="button"
+                  onClick={handleDeleteMatchNote}
+                  className="rounded-lg border border-loss-200 px-3 py-1.5 text-sm text-loss-700 hover:bg-loss-50"
+                >
+                  Delete game note
+                </button>
+              )}
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={onClose}
@@ -517,16 +531,6 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
           />
         ) : (
           <>
-            {usesTargetWizard && (
-              <button
-                type="button"
-                onClick={handleBackToChooser}
-                aria-label="Back to who this note is about"
-                className="-ml-1 inline-flex items-center rounded-lg px-1 py-1 text-sm font-medium text-ink-700 transition hover:bg-ink-50 hover:text-ink-900"
-              >
-                ← Back
-              </button>
-            )}
             {showModeTabs && (
               <ModalModeTabs mode={mode} onChange={handleModeChange} showGameTab />
             )}
