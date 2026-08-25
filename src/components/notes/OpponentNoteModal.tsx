@@ -539,7 +539,7 @@ function OpponentNoteForm({ context, initialTarget, onClose, buildFeatures }: Fo
               <div className="space-y-3" role={showModeTabs ? 'tabpanel' : undefined}>
                 {buildFeatures.showPairScope && target.kind === 'pair' && (
                   <p className="text-xs text-ink-600">
-                    About the pair — not either player alone
+                    About the pair - not either player alone
                   </p>
                 )}
                 {target.kind === 'pair' ? (
