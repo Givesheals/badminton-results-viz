@@ -6,7 +6,7 @@ import {
   fictionalCelebrationPresentation,
   insertFictionalTournamentRecap,
 } from '../../lib/fictionalTournamentRecap'
-import { computeTournamentRecaps } from '../../lib/tournamentRecap'
+import { computeTournamentRecaps, disciplineRecapKey } from '../../lib/tournamentRecap'
 import {
   fullTournamentRecapBuildFeatures,
   getTournamentRecapBuildFeatures,
@@ -241,7 +241,7 @@ export function TournamentRecapSection({
                 <div className="space-y-3">
                   {recap.disciplines.map((d) => (
                     <DisciplineRecapBlock
-                      key={d.discipline}
+                      key={disciplineRecapKey(d)}
                       recap={d}
                       showDisciplineCallouts={features.showDisciplineCallouts}
                       showMatchHighlights={features.showMatchHighlights}

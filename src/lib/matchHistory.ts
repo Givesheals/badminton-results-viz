@@ -97,6 +97,7 @@ export function normalizeMatchRow(row: SpreadsheetRow): NormalizedMatch {
     date: cellString(row.Date, '—'),
     discipline,
     disciplineLabel: disciplineLabel(row.Discipline),
+    eventName: cellString(row['Event Name']) || null,
     playerName: cellString(row['Player Name'], 'Unknown player'),
     partnerName: partner || null,
     opponents: formatOpponents(row),

@@ -93,6 +93,12 @@ export function DisciplineRecapBlock({
     <article
       className={`rounded-xl card-frame border-l-4 ${style.borderClass} ${style.rowBgClass} px-3 py-3`}
     >
+      {recap.showEventName && recap.eventName ? (
+        <h5 className="mb-2 text-base font-semibold leading-tight text-ink-900">
+          {recap.eventName}
+        </h5>
+      ) : null}
+
       <DisciplineRecapHeader recap={recap} />
 
       {callouts.length > 0 && (

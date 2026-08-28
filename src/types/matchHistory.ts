@@ -38,6 +38,8 @@ export type NormalizedMatch = {
   date: string
   discipline: string
   disciplineLabel: string
+  /** Draw / event title when the tournament runs more than one event per discipline. */
+  eventName?: string | null
   playerName: string
   partnerName: string | null
   opponents: string

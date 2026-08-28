@@ -76,6 +76,73 @@ describe('computeTournamentRecaps', () => {
     expect(recaps[0]!.disciplines).toHaveLength(2)
   })
 
+  it('splits the same discipline into one card per event name', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Junior Open',
+        date: '2026-03-01',
+        discipline: 'OS',
+        disciplineLabel: 'Open singles',
+        eventName: 'OpenS U10',
+        opponents: 'Maanav Paliwal',
+      }),
+      makeMatch({
+        competitionName: 'Junior Open',
+        date: '2026-03-01',
+        discipline: 'OS',
+        disciplineLabel: 'Open singles',
+        eventName: 'OpenS U10',
+        opponents: 'Rafe Roberts',
+      }),
+      makeMatch({
+        competitionName: 'Junior Open',
+        date: '2026-03-01',
+        discipline: 'OS',
+        disciplineLabel: 'Open singles',
+        eventName: 'OpenS U12',
+        opponents: 'Reyansh Prakasham',
+        outcome: 'loss',
+      }),
+      makeMatch({
+        competitionName: 'Junior Open',
+        date: '2026-03-01',
+        discipline: 'MD',
+        disciplineLabel: "Men's doubles",
+        eventName: 'OpenD U12',
+        partnerName: 'Sam',
+        opponents: 'Chris & Drew',
+      }),
+    ]
+
+    const { recaps } = computeTournamentRecaps(matches)
+    expect(recaps).toHaveLength(1)
+    const disciplines = recaps[0]!.disciplines
+    expect(disciplines.map((d) => `${d.discipline}:${d.eventName ?? ''}`)).toEqual([
+      'MD:OpenD U12',
+      'OS:OpenS U10',
+      'OS:OpenS U12',
+    ])
+    expect(disciplines.map((d) => d.showEventName)).toEqual([false, true, true])
+    expect(disciplines.find((d) => d.eventName === 'OpenS U10')!.matches).toHaveLength(2)
+    expect(disciplines.find((d) => d.eventName === 'OpenS U12')!.matches).toHaveLength(1)
+  })
+
+  it('keeps a single named event per discipline untitled', () => {
+    const { recaps } = computeTournamentRecaps([
+      makeMatch({
+        competitionName: 'Club Open',
+        date: '2026-04-01',
+        discipline: 'OS',
+        disciplineLabel: 'Open singles',
+        eventName: 'OpenS U12',
+      }),
+    ])
+
+    expect(recaps[0]!.disciplines).toHaveLength(1)
+    expect(recaps[0]!.disciplines[0]!.eventName).toBe('OpenS U12')
+    expect(recaps[0]!.disciplines[0]!.showEventName).toBe(false)
+  })
+
   it('splits non-consecutive days in the same competition into separate recaps', () => {
     const matches = [
       makeMatch({

@@ -71,13 +71,15 @@ describe('buildFictionalTournamentRecap', () => {
     ])
   })
 
-  it('gives all three disciplines wins, losses, scores, and both callouts', () => {
-    expect(recap.disciplines.map((d) => d.discipline)).toEqual(['MD', 'WD', 'XD'])
-    for (const discipline of recap.disciplines) {
+  it('gives doubles and mixed wins, losses, scores, and both callouts', () => {
+    const pairDisciplines = recap.disciplines.filter((d) => d.discipline !== 'OS')
+    expect(pairDisciplines.map((d) => d.discipline)).toEqual(['MD', 'WD', 'XD'])
+    for (const discipline of pairDisciplines) {
       expect(discipline.matchWins).toBeGreaterThan(0)
       expect(discipline.matchLosses).toBeGreaterThan(0)
       expect(discipline.matches.every((match) => match.scoreSummary.length > 0)).toBe(true)
       expect(discipline.matches.every((match) => match.showPartnerName)).toBe(false)
+      expect(discipline.showEventName).toBe(false)
       expect(discipline.eventCallouts.map((card) => card.label)).toEqual([
         'Great run',
         `Your chemistry with ${discipline.partnerName} increased`,
@@ -89,6 +91,18 @@ describe('buildFictionalTournamentRecap', () => {
         true,
       )
     }
+  })
+
+  it('shows two open singles events stacked with titles', () => {
+    const singles = recap.disciplines.filter((d) => d.discipline === 'OS')
+    expect(singles.map((d) => d.eventName)).toEqual(['OpenS U10', 'OpenS U12'])
+    expect(singles.every((d) => d.showEventName)).toBe(true)
+    expect(singles[0]!.bestStageLabel).toBe('Winner')
+    expect(singles[0]!.matchWins).toBe(3)
+    expect(singles[0]!.matchLosses).toBe(0)
+    expect(singles[1]!.bestStageLabel).toBe('Quarter-final')
+    expect(singles[1]!.matchWins).toBe(0)
+    expect(singles[1]!.matchLosses).toBe(1)
   })
 
   it('shows every curiosity card kind', () => {
