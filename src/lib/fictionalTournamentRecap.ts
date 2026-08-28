@@ -93,22 +93,13 @@ function greatRunCallout(disciplineLabel: string, stageLabel: string): RecapSumm
   }
 }
 
-function strongestBeaten(disciplineLabel: string): DisciplineMatchHighlight {
-  return {
-    id: 'your-strongest-beaten',
-    label: 'Your strongest beaten',
-    chipIcon: '💪',
-    popoverText: `Your highest-rated opponent beaten in ${disciplineLabel} at this event. Their team was rated 1840. Among all your rated wins, that's your 2nd strongest beaten victory.`,
-  }
-}
-
 function bigUpset(matchKey: string): DisciplineMatchHighlight {
   return {
     id: `big-upset-${matchKey}`,
     label: 'Big upset!',
     chipIcon: '😮',
     popoverText:
-      'You won this match even though your opponent was rated 85 points higher on average beforehand — about a 22% chance of winning going in.',
+      'You won this match even though your opponent was rated 85 points higher on average beforehand, with about a 22% chance of winning going in.',
   }
 }
 
@@ -319,7 +310,6 @@ export function buildFictionalTournamentRecap(
     outcome: 'win',
     scoreSummary: '21-19, 19-21, 21-19',
     roundLabel: 'Group',
-    highlights: [strongestBeaten(DISCIPLINE_LABELS.MD)],
   })
   const mdQuarter = row({
     discipline: 'MD',
@@ -355,7 +345,6 @@ export function buildFictionalTournamentRecap(
     outcome: 'win',
     scoreSummary: '21-18, 19-21, 21-16',
     roundLabel: 'Group',
-    highlights: [strongestBeaten(DISCIPLINE_LABELS.WD)],
   })
   const wdSemi = row({
     discipline: 'WD',
@@ -391,7 +380,6 @@ export function buildFictionalTournamentRecap(
     outcome: 'win',
     scoreSummary: '21-17, 18-21, 21-19',
     roundLabel: 'Group',
-    highlights: [strongestBeaten(DISCIPLINE_LABELS.XD)],
   })
   const xdQuarter = row({
     discipline: 'XD',

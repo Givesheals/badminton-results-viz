@@ -1,10 +1,7 @@
 import type { MatchOutcome, NormalizedMatch } from '../types/matchHistory'
 import {
-  computeBestWins,
-  countEligibleRatedWinsInMatches,
   findBestWinInMatches,
   findBigUpsetWinsInMatches,
-  rankBestWinRow,
   type BestWinRow,
 } from './bestWins'
 import {
@@ -979,48 +976,11 @@ export function partnerChemistryDetailShort(
   return `${atEvent} at this event · overall ${overall}`
 }
 
-function formatOrdinal(rank: number): string {
-  const mod100 = rank % 100
-  if (mod100 >= 11 && mod100 <= 13) return `${rank}th`
-  switch (rank % 10) {
-    case 1:
-      return `${rank}st`
-    case 2:
-      return `${rank}nd`
-    case 3:
-      return `${rank}rd`
-    default:
-      return `${rank}th`
-  }
-}
-
-function allTimeStrengthRank(
-  row: BestWinRow,
-  weekendMatches: NormalizedMatch[],
-  priorMatches: NormalizedMatch[],
-): number | null {
-  const { byOpponentStrength } = computeBestWins([...priorMatches, ...weekendMatches])
-  return rankBestWinRow(row, byOpponentStrength)
-}
-
-function strongestBeatenPopoverText(
-  row: BestWinRow,
-  disciplineLabel: string,
-  allTimeRank: number | null,
-): string {
-  const context = `Your highest-rated opponent beaten in ${disciplineLabel} at this event.`
-  const rating = `Their team was rated ${row.opponentTeamRating}.`
-  if (allTimeRank != null) {
-    return `${context} ${rating} Among all your rated wins, that's your ${formatOrdinal(allTimeRank)} strongest beaten victory.`
-  }
-  return `${context} ${rating}`
-}
-
 function bigUpsetExplanation(row: BestWinRow): string {
   const chance = formatUpsetWinChanceDisplay(
     clampDisplayWinChance(row.preMatchWinChancePercent),
   )
-  return `You won this match even though your opponent was rated ${row.ratingGap} points higher on average beforehand — about a ${chance} chance of winning going in.`
+  return `You won this match even though your opponent was rated ${row.ratingGap} points higher on average beforehand, with about a ${chance} chance of winning going in.`
 }
 
 type DisciplineTimeline = {
@@ -1038,7 +998,6 @@ function buildDisciplineTimeline(
   showMatchDates: boolean,
 ): DisciplineTimeline {
   const eventCallouts: RecapSummaryCard[] = []
-  const bestWin = findBestWinInMatches(disciplineMatches)
 
   if (d.progressionVsTypical === 'above' && d.bestStageLabel) {
     const categoryLabel = categoryLabelForDiscipline(weekendMatches, d.discipline)
@@ -1071,20 +1030,6 @@ function buildDisciplineTimeline(
     const list = highlightsByKey.get(key) ?? []
     list.push(highlight)
     highlightsByKey.set(key, list)
-  }
-
-  if (bestWin != null && countEligibleRatedWinsInMatches(disciplineMatches) > 1) {
-    const allTimeRank = allTimeStrengthRank(bestWin, weekendMatches, priorMatches)
-    addHighlight(recapMatchKey(bestWin.match), {
-      id: 'your-strongest-beaten',
-      label: 'Your strongest beaten',
-      chipIcon: '💪',
-      popoverText: strongestBeatenPopoverText(
-        bestWin,
-        d.disciplineLabel,
-        allTimeRank,
-      ),
-    })
   }
 
   for (const upset of findBigUpsetWinsInMatches(disciplineMatches)) {

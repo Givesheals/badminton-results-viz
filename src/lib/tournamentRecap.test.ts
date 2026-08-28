@@ -2358,7 +2358,7 @@ describe('computeTournamentRecaps', () => {
     expect(ws.eventCallouts.some((c) => c.id === 'event-strongest-scalp')).toBe(false)
   })
 
-  it('surfaces per-match highlight pills for strongest beaten and big upsets', () => {
+  it('surfaces per-match highlight pills for big upsets', () => {
     const underdogWin = makeMatch({
       competitionName: 'Upset Cup',
       date: '2026-04-01',
@@ -2390,6 +2390,10 @@ describe('computeTournamentRecaps', () => {
     expect(match.highlights.find((h) => h.label === 'Big upset!')?.popoverText).toMatch(
       /110 points higher/,
     )
+    expect(match.highlights[0]!.popoverText).toContain(
+      'with about a',
+    )
+    expect(match.highlights[0]!.popoverText).not.toContain('—')
   })
 
   it('omits big upset pills when the rating gap is below 30', () => {
@@ -2442,12 +2446,9 @@ describe('computeTournamentRecaps', () => {
     expect(
       ws.matches.some((m) => m.highlights.some((h) => h.label === 'Big upset!')),
     ).toBe(false)
-    expect(
-      ws.matches.some((m) => m.highlights.some((h) => h.id === 'your-strongest-beaten')),
-    ).toBe(false)
   })
 
-  it('surfaces strongest-beaten highlight when there are multiple wins at the event', () => {
+  it('never attaches strongest-beaten match highlights, even with multiple wins', () => {
     const weakerWin = makeMatch({
       competitionName: 'Multi Win Cup',
       date: '2026-04-01',
@@ -2486,101 +2487,14 @@ describe('computeTournamentRecaps', () => {
     })
 
     const ws = computeTournamentRecaps([weakerWin, strongerWin]).recaps[0]!.disciplines[0]!
-    const highlighted = ws.matches.find((m) =>
-      m.highlights.some((h) => h.id === 'your-strongest-beaten'),
-    )
-    expect(highlighted?.opponents).toBe('Stronger')
-    const strength = highlighted?.highlights.find((h) => h.id === 'your-strongest-beaten')
-    expect(strength?.chipIcon).toBe('💪')
-    expect(strength?.label).toBe('Your strongest beaten')
-  })
-
-  it('computes strongest-beaten highlights separately for each discipline', () => {
-    const wsWeakerWin = makeMatch({
-      competitionName: 'Multi Cup',
-      date: '2026-04-01',
-      discipline: 'WS',
-      opponents: 'WS Easy',
-      outcome: 'win',
-      playerRating: 550,
-      raw: {
-        'Opponent 1 Rating': 580,
-        'Opponent 2 Rating': null,
-        'Player Game 1 Score': 21,
-        'Opponent Game 1 Score': 15,
-        'Player Game 2 Score': 21,
-        'Opponent Game 2 Score': 12,
-        'Player Game 3 Score': null,
-        'Opponent Game 3 Score': null,
-      },
-    })
-    const wsWin = makeMatch({
-      competitionName: 'Multi Cup',
-      date: '2026-04-02',
-      discipline: 'WS',
-      opponents: 'WS Foe',
-      outcome: 'win',
-      playerRating: 550,
-      raw: {
-        'Opponent 1 Rating': 620,
-        'Opponent 2 Rating': null,
-        'Player Game 1 Score': 21,
-        'Opponent Game 1 Score': 15,
-        'Player Game 2 Score': 21,
-        'Opponent Game 2 Score': 12,
-        'Player Game 3 Score': null,
-        'Opponent Game 3 Score': null,
-      },
-    })
-    const wdWeakerWin = makeMatch({
-      competitionName: 'Multi Cup',
-      date: '2026-04-02',
-      discipline: 'WD',
-      partnerName: 'Sam',
-      opponents: 'WD Easy',
-      outcome: 'win',
-      playerRating: 560,
-      raw: {
-        'Opponent 1 Rating': 600,
-        'Opponent 2 Rating': 590,
-        'Player Game 1 Score': 21,
-        'Opponent Game 1 Score': 15,
-        'Player Game 2 Score': 21,
-        'Opponent Game 2 Score': 12,
-        'Player Game 3 Score': null,
-        'Opponent Game 3 Score': null,
-      },
-    })
-    const wdWin = makeMatch({
-      competitionName: 'Multi Cup',
-      date: '2026-04-03',
-      discipline: 'WD',
-      partnerName: 'Sam',
-      opponents: 'WD Foe',
-      outcome: 'win',
-      playerRating: 560,
-      raw: {
-        'Opponent 1 Rating': 640,
-        'Opponent 2 Rating': 630,
-        'Player Game 1 Score': 21,
-        'Opponent Game 1 Score': 15,
-        'Player Game 2 Score': 21,
-        'Opponent Game 2 Score': 12,
-        'Player Game 3 Score': null,
-        'Opponent Game 3 Score': null,
-      },
-    })
-
-    const recap = computeTournamentRecaps([wsWeakerWin, wsWin, wdWeakerWin, wdWin]).recaps[0]!
-    const wsHighlight = recap.disciplines
-      .find((d) => d.discipline === 'WS')!
-      .matches.find((m) => m.highlights.some((h) => h.id === 'your-strongest-beaten'))
-    const wdHighlight = recap.disciplines
-      .find((d) => d.discipline === 'WD')!
-      .matches.find((m) => m.highlights.some((h) => h.id === 'your-strongest-beaten'))
-
-    expect(wsHighlight?.opponents).toBe('WS Foe')
-    expect(wdHighlight?.opponents).toBe('WD Foe')
+    expect(
+      ws.matches.some((m) => m.highlights.some((h) => h.id === 'your-strongest-beaten')),
+    ).toBe(false)
+    expect(
+      ws.matches.some((m) => m.highlights.some((h) => h.chipIcon === '💪')),
+    ).toBe(false)
+    const stronger = ws.matches.find((m) => m.opponents === 'Stronger')
+    expect(stronger?.highlights.some((h) => h.label === 'Big upset!')).toBe(true)
   })
 
   it('computes same-day rating delta from chronological order, not upload order', () => {

@@ -19,7 +19,7 @@ export type TournamentRecapBuildFeatures = {
   showEventSummaries: boolean
   /** Stage ≥ 6 — per-discipline callouts (Great run, chemistry) */
   showDisciplineCallouts: boolean
-  /** Stage ≥ 7 — match highlight chips (Strongest beaten, Big upset) */
+  /** Stage ≥ 7 — match highlight chips (Big upset) */
   showMatchHighlights: boolean
   /** Stage ≥ 8 — all-time record milestone cards */
   showRecordMilestones: boolean
@@ -60,7 +60,7 @@ export const TOURNAMENT_RECAP_BUILD_STAGE_META: Record<
   },
   7: {
     shortLabel: 'Match emojis',
-    summary: 'Strongest beaten / Big upset chips on match rows',
+    summary: 'Big upset chips on match rows',
   },
   8: {
     shortLabel: 'Records',

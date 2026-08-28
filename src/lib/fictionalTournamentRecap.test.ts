@@ -84,10 +84,10 @@ describe('buildFictionalTournamentRecap', () => {
         'Great run',
         `Your chemistry with ${discipline.partnerName} increased`,
       ])
-      expect(discipline.matches.some((match) => match.highlights.some((h) => h.id === 'your-strongest-beaten'))).toBe(
+      expect(discipline.matches.some((match) => match.highlights.some((h) => h.label === 'Big upset!'))).toBe(
         true,
       )
-      expect(discipline.matches.some((match) => match.highlights.some((h) => h.label === 'Big upset!'))).toBe(
+      expect(discipline.matches.every((match) => match.highlights.every((h) => h.id !== 'your-strongest-beaten'))).toBe(
         true,
       )
     }
