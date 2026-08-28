@@ -115,7 +115,7 @@ export const categoryMilestonesInfo = (
 export const tournamentProgressionInfo = (
   <div className={infoBlockClass}>
     <p>
-      Typical depth is the median finish across events in the current filter (one entry per
+      Average depth is the mean finish across events in the current filter (one entry per
       competition and discipline). Early knockout rounds are grouped with quarter-finals on the
       charts.
     </p>

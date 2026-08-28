@@ -107,7 +107,7 @@ export function TournamentProgressionAverage({
       <h4 className="text-sm font-medium text-ink-900">Typical run</h4>
 
       <p className="text-center text-sm text-ink-700">
-        <span className="font-medium text-ink-900">Median depth:</span> {typicalLabel}
+        <span className="font-medium text-ink-900">Average depth:</span> {typicalLabel}
         <span className="block text-xs text-ink-500">
           In a typical draw, 66% of players do not get past the group stages.
         </span>

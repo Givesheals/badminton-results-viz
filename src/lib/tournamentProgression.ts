@@ -231,7 +231,7 @@ export type TournamentProgressionStats = {
   /** Full UI ladder for the depth bar (knockout merged into quarter-final). */
   depthBarSegments: ProgressionDistributionRow[]
   distribution: ProgressionDistributionRow[]
-  /** Median depth rank — better reflects a typical finish when many events end early. */
+  /** Mean depth rank across events in this selection. */
   typicalRank: number | null
   typicalLabel: string | null
   /** Deepest stage reached in any tournament in this selection. */
@@ -321,11 +321,22 @@ export function progressionDistributionBar(
 }
 
 /**
- * Map a data median rank onto the progression UI bar (knockout → quarter-final segment).
+ * Map a data depth rank onto the progression UI bar (knockout → quarter-final segment).
+ * Averages between group-wins and knockout interpolate; knockout through quarter-final
+ * sit on the quarter-final segment.
  */
 export function progressionBarMarkerRankForUI(typicalRank: number): number {
   if (typicalRank <= STAGE_RANK['group-wins']) return typicalRank
-  if (typicalRank <= STAGE_RANK['knockout']) return STAGE_RANK['quarter-final']
+  if (typicalRank <= STAGE_RANK['knockout']) {
+    const t = typicalRank - STAGE_RANK['group-wins']
+    return (
+      STAGE_RANK['group-wins'] +
+      t * (STAGE_RANK['quarter-final'] - STAGE_RANK['group-wins'])
+    )
+  }
+  if (typicalRank < STAGE_RANK['quarter-final']) {
+    return STAGE_RANK['quarter-final']
+  }
   return typicalRank
 }
 
@@ -416,7 +427,7 @@ export function progressionBarDisplayWidths(
 }
 
 /**
- * Where the median marker sits inside a stage slice (0 = left edge, 1 = right edge).
+ * Where the typical-depth marker sits inside a stage slice (0 = left edge, 1 = right edge).
  * Group exit is left; knockout through runner-up are centred; winner is right.
  */
 export function progressionStageMarkerT(rank: number): number {
@@ -469,7 +480,7 @@ function anchorPositionForRank(
   return beforePos + (afterPos - beforePos) * t
 }
 
-/** Place the median marker from typical depth rank on the display bar. */
+/** Place the typical-depth marker from typical depth rank on the display bar. */
 export function progressionBarMarkerPercentFromTypicalRank(
   typicalRank: number,
   segments: ProgressionDistributionRow[],
@@ -1089,7 +1100,7 @@ function progressionSliceFromEntries(entries: TournamentEntry[]): EntryProgressi
   }
 
   const ranks = entries.map((entry) => entry.bestStageRank)
-  const typicalRank = medianRank(ranks)
+  const typicalRank = averageRank(ranks)
 
   return {
     depthBarSegments: progressionDepthBarSegments(counts, tournamentCount),
@@ -1361,8 +1372,24 @@ export function medianRank(values: number[]): number | null {
   return sorted[mid]!
 }
 
+export function averageRank(values: number[]): number | null {
+  if (values.length === 0) return null
+  const sum = values.reduce((total, value) => total + value, 0)
+  return sum / values.length
+}
+
+/** Nearest UI stage label for a depth rank (knockout merges into quarter-final). */
 export function describeTypicalRank(rank: number): string {
-  const rounded = Math.round(rank)
-  const index = Math.min(PROGRESSION_STAGE_ORDER.length - 1, Math.max(0, rounded - 1))
-  return PROGRESSION_STAGE_LABELS[PROGRESSION_STAGE_ORDER[index]]
+  let nearest: ProgressionStage = PROGRESSION_UI_STAGE_ORDER[0]!
+  let bestDist = Number.POSITIVE_INFINITY
+
+  for (const stage of PROGRESSION_UI_STAGE_ORDER) {
+    const dist = Math.abs(STAGE_RANK[stage] - rank)
+    if (dist < bestDist || (dist === bestDist && STAGE_RANK[stage] > STAGE_RANK[nearest])) {
+      bestDist = dist
+      nearest = stage
+    }
+  }
+
+  return PROGRESSION_STAGE_LABELS[nearest]
 }

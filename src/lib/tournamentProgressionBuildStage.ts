@@ -6,7 +6,7 @@ export type TournamentProgressionBuildStage =
 export type TournamentProgressionBuildFeatures = {
   /** Stage ≥ 2 — Showing X of Y matches (full dataset before filters) */
   showMatchCount: boolean
-  /** Stage ≥ 3 — Typical run (median, bar, flavor text) */
+  /** Stage ≥ 3 — Typical run (average, bar, flavor text) */
   showTypicalRun: boolean
   /** Stage ≥ 4 — Finish distribution chart */
   showFinishDistribution: boolean
@@ -30,7 +30,7 @@ export const TOURNAMENT_PROGRESSION_BUILD_STAGE_META: Record<
   },
   3: {
     shortLabel: 'Typical run',
-    summary: 'Typical run — median depth, bar, and flavor text',
+    summary: 'Typical run — average depth, bar, and flavor text',
   },
   4: {
     shortLabel: 'Distribution',
