@@ -116,8 +116,7 @@ export const tournamentProgressionInfo = (
   <div className={infoBlockClass}>
     <p>
       Average depth is the mean finish across events in the current filter (one entry per
-      competition and discipline). Early knockout rounds are grouped with quarter-finals on the
-      charts.
+      event). Early knockout rounds are grouped with quarter-finals on the charts.
     </p>
     <p>
       County events and other league results are excluded. Only competitive matches count.
