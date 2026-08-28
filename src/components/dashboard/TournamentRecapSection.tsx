@@ -99,9 +99,7 @@ export function TournamentRecapSection({
   const recap = recaps[index]!
   const celebrationPresentation = fictionalCelebrationPresentation(recap.key)
   const isFictionalFeatureRecap = celebrationPresentation != null
-  const features = isFictionalFeatureRecap
-    ? fullTournamentRecapBuildFeatures()
-    : featuresForStage
+  const features = featuresForStage
   const positionLabel = `${index + 1} of ${recaps.length}`
   const canGoOlder = index < recaps.length - 1
   const canGoNewer = index > 0
