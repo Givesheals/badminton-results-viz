@@ -120,8 +120,8 @@ export const tournamentProgressionInfo = (
       charts.
     </p>
     <p>
-      County events and tournaments without clear group or knockout rounds are excluded. Only
-      competitive matches count — walkovers and no-match rows are left out.
+      County events and other league results are excluded. Only competitive matches count.
+      Walkovers and no-match rows are left out.
     </p>
   </div>
 )

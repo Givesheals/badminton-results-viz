@@ -438,19 +438,19 @@ describe('progressionBarMobileLabel', () => {
 })
 
 describe('progressionStageMarkerT', () => {
-  it('anchors group exit left, middle stages centre, and winner right', () => {
-    expect(progressionStageMarkerT(1)).toBe(0)
+  it('centres every stage, including group exit and winner', () => {
+    expect(progressionStageMarkerT(1)).toBe(0.5)
     expect(progressionStageMarkerT(2)).toBe(0.5)
     expect(progressionStageMarkerT(6)).toBe(0.5)
-    expect(progressionStageMarkerT(7)).toBe(1)
+    expect(progressionStageMarkerT(7)).toBe(0.5)
   })
 })
 
 describe('progressionBarMarkerPercentFromTypicalRank', () => {
-  it('places the marker on the left of the group segment when depth is always group exit', () => {
+  it('places the marker in the centre of the group segment when depth is always group exit', () => {
     const segments = [row('group-stages', 100)]
     const widths = progressionBarDisplayWidths(segments)
-    expect(progressionBarMarkerPercentFromTypicalRank(1, segments, widths)).toBe(0)
+    expect(progressionBarMarkerPercentFromTypicalRank(1, segments, widths)).toBe(50)
   })
 
   it('places the marker in the centre of the match-wins segment', () => {
@@ -459,10 +459,10 @@ describe('progressionBarMarkerPercentFromTypicalRank', () => {
     expect(progressionBarMarkerPercentFromTypicalRank(2, segments, widths)).toBe(50)
   })
 
-  it('places the marker on the right edge when depth is always winner', () => {
+  it('places the marker in the centre of the winner segment when depth is always winner', () => {
     const segments = [row('winner', 100)]
     const widths = progressionBarDisplayWidths(segments)
-    expect(progressionBarMarkerPercentFromTypicalRank(7, segments, widths)).toBe(100)
+    expect(progressionBarMarkerPercentFromTypicalRank(7, segments, widths)).toBe(50)
   })
 
   it('centres the marker in the quarter-final segment on a six-step ladder', () => {

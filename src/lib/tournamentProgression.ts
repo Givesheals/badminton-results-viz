@@ -428,11 +428,9 @@ export function progressionBarDisplayWidths(
 
 /**
  * Where the typical-depth marker sits inside a stage slice (0 = left edge, 1 = right edge).
- * Group exit is left; knockout through runner-up are centred; winner is right.
+ * Every stage uses the centre of its slice, including group exit and winner.
  */
-export function progressionStageMarkerT(rank: number): number {
-  if (rank <= 1) return 0
-  if (rank >= 7) return 1
+export function progressionStageMarkerT(_rank: number): number {
   return 0.5
 }
 
