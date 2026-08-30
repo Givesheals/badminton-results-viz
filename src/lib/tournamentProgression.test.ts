@@ -5,6 +5,7 @@ import {
   buildCategoryCompletionMilestones,
   categoryCompletionAgeKey,
   computeTournamentProgression,
+  describeTypicalRank,
   formatCategoryAgeLabel,
   groupCategoryCompletionsByAge,
   pickDefaultVisibleAgeLabels,
@@ -14,6 +15,7 @@ import {
   isBronzeFinalRound,
   lostInSemiFinal,
   wonBronzeFinal,
+  averageRank,
   medianRank,
   mergeKnockoutCountsForProgressionUI,
   matchFiltersForPrimaryCombo,
@@ -355,13 +357,21 @@ describe('progressionDistributionBar', () => {
 })
 
 describe('progressionBarMarkerRankForUI', () => {
-  it('maps knockout median onto the quarter-final segment', () => {
+  it('maps knockout depth onto the quarter-final segment', () => {
     expect(progressionBarMarkerRankForUI(STAGE_RANK['knockout'])).toBe(
       STAGE_RANK['quarter-final'],
     )
     expect(progressionBarMarkerRankForUI(STAGE_RANK['group-wins'])).toBe(
       STAGE_RANK['group-wins'],
     )
+  })
+
+  it('interpolates averages between group-wins and knockout', () => {
+    expect(progressionBarMarkerRankForUI(2.5)).toBe(3)
+  })
+
+  it('keeps averages between knockout and quarter-final on the QF segment', () => {
+    expect(progressionBarMarkerRankForUI(3.5)).toBe(STAGE_RANK['quarter-final'])
   })
 })
 
@@ -428,19 +438,19 @@ describe('progressionBarMobileLabel', () => {
 })
 
 describe('progressionStageMarkerT', () => {
-  it('anchors group exit left, middle stages centre, and winner right', () => {
-    expect(progressionStageMarkerT(1)).toBe(0)
+  it('centres every stage, including group exit and winner', () => {
+    expect(progressionStageMarkerT(1)).toBe(0.5)
     expect(progressionStageMarkerT(2)).toBe(0.5)
     expect(progressionStageMarkerT(6)).toBe(0.5)
-    expect(progressionStageMarkerT(7)).toBe(1)
+    expect(progressionStageMarkerT(7)).toBe(0.5)
   })
 })
 
 describe('progressionBarMarkerPercentFromTypicalRank', () => {
-  it('places the marker on the left of the group segment when depth is always group exit', () => {
+  it('places the marker in the centre of the group segment when depth is always group exit', () => {
     const segments = [row('group-stages', 100)]
     const widths = progressionBarDisplayWidths(segments)
-    expect(progressionBarMarkerPercentFromTypicalRank(1, segments, widths)).toBe(0)
+    expect(progressionBarMarkerPercentFromTypicalRank(1, segments, widths)).toBe(50)
   })
 
   it('places the marker in the centre of the match-wins segment', () => {
@@ -449,10 +459,10 @@ describe('progressionBarMarkerPercentFromTypicalRank', () => {
     expect(progressionBarMarkerPercentFromTypicalRank(2, segments, widths)).toBe(50)
   })
 
-  it('places the marker on the right edge when depth is always winner', () => {
+  it('places the marker in the centre of the winner segment when depth is always winner', () => {
     const segments = [row('winner', 100)]
     const widths = progressionBarDisplayWidths(segments)
-    expect(progressionBarMarkerPercentFromTypicalRank(7, segments, widths)).toBe(100)
+    expect(progressionBarMarkerPercentFromTypicalRank(7, segments, widths)).toBe(50)
   })
 
   it('centres the marker in the quarter-final segment on a six-step ladder', () => {
@@ -482,6 +492,33 @@ describe('medianRank', () => {
 
   it('averages the two central values for even-length lists', () => {
     expect(medianRank([1, 2, 3, 4])).toBe(2.5)
+  })
+})
+
+describe('averageRank', () => {
+  it('returns the mean of the ranks', () => {
+    expect(averageRank([1, 3, 7])).toBeCloseTo(11 / 3)
+  })
+
+  it('returns null for an empty list', () => {
+    expect(averageRank([])).toBeNull()
+  })
+})
+
+describe('describeTypicalRank', () => {
+  it('labels the nearest UI stage', () => {
+    expect(describeTypicalRank(1)).toBe('Group stages')
+    expect(describeTypicalRank(2)).toBe('Group match wins')
+    expect(describeTypicalRank(4)).toBe('Quarter-final')
+    expect(describeTypicalRank(7)).toBe('Winner')
+  })
+
+  it('treats knockout as quarter-final and ties toward the deeper stage', () => {
+    expect(describeTypicalRank(3)).toBe('Quarter-final')
+  })
+
+  it('labels a mid group-wins / knockout average as group match wins', () => {
+    expect(describeTypicalRank(2.5)).toBe('Group match wins')
   })
 })
 
@@ -563,7 +600,7 @@ describe('buildCategoryCompletionMilestones', () => {
 })
 
 describe('computeTournamentProgression category combos', () => {
-  it('scopes primary combo median to the most-played level and age', () => {
+  it('scopes primary combo average to the most-played level and age', () => {
     const matches = [
       makeProgressionMatch({
         competitionName: 'Bronze A',
@@ -607,6 +644,40 @@ describe('computeTournamentProgression category combos', () => {
       time: 'all',
       competitionAge: 'U15',
     })
+    // Global mean of group-wins, group-wins, group-stages, winner (2+2+1+7)/4 = 3
+    expect(stats.typicalRank).toBeCloseTo(3)
+    expect(stats.typicalLabel).toBe('Quarter-final')
+  })
+
+  it('uses mean depth rather than median across events', () => {
+    const matches = [
+      makeProgressionMatch({
+        competitionName: 'Exit A',
+        round: 'Group A',
+        outcome: 'loss',
+      }),
+      makeProgressionMatch({
+        competitionName: 'Exit B',
+        round: 'Group A',
+        outcome: 'loss',
+      }),
+      makeProgressionMatch({
+        competitionName: 'Exit C',
+        round: 'Group A',
+        outcome: 'loss',
+      }),
+      makeProgressionMatch({
+        competitionName: 'Title Event',
+        round: 'Final',
+        outcome: 'win',
+        raw: { Round: 'Final', 'Tournament Category': 'bronze' },
+      }),
+    ]
+
+    const stats = computeTournamentProgression(matches)
+
+    // ranks 1, 1, 1, 7 → mean 2.5 (median would be 1 / group stages)
+    expect(stats.typicalRank).toBeCloseTo(2.5)
     expect(stats.typicalLabel).toBe('Group match wins')
   })
 

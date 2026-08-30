@@ -115,13 +115,12 @@ export const categoryMilestonesInfo = (
 export const tournamentProgressionInfo = (
   <div className={infoBlockClass}>
     <p>
-      Typical depth is the median finish across events in the current filter (one entry per
-      competition and discipline). Early knockout rounds are grouped with quarter-finals on the
-      charts.
+      Average depth is the mean finish across events in the current filter (one entry per
+      event). Early knockout rounds are grouped with quarter-finals on the charts.
     </p>
     <p>
-      County events and tournaments without clear group or knockout rounds are excluded. Only
-      competitive matches count — walkovers and no-match rows are left out.
+      County events and other league results are excluded. Only competitive matches count.
+      Walkovers and no-match rows are left out.
     </p>
   </div>
 )
