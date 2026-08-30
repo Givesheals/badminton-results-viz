@@ -22,7 +22,8 @@ Tournament recap card
 ├── Celebration hero (senior county debut, podium, stage reaches)
 ├── Event summary callouts
 ├── By discipline
-│   └── Discipline block (per discipline)
+│   └── Discipline block (per event)
+│       ├── Event title (only when this discipline appears more than once)
 │       ├── Discipline header (chip, label, W-L, stage, rating, shared partner)
 │       ├── Discipline callouts
 │       └── Match rows
@@ -69,6 +70,19 @@ A partner is hoisted only when **every** competitive match in the discipline has
 
 ---
 
+## Multiple events of the same discipline
+
+Some tournaments run more than one draw of the same discipline (for example OpenS U10 and OpenS U12, or two singles levels). Recaps still sit under **By discipline**, but each event gets its own card.
+
+| Level | When shown | Format |
+|-------|------------|--------|
+| Discipline card | This discipline appears more than once in the recap **and** the event has a name | Event title as a heading at the top of the card |
+| Discipline card (one event of this discipline) | Hidden | Card looks as it does today |
+
+Matches are grouped by discipline plus event name. Stats, stage, rating, and match rows are per event, so a U10 title is not mixed with a U12 quarter-final exit.
+
+---
+
 ## Out of scope for display hierarchy
 
 The lean-card rules apply to **discipline match rows** only. These sections keep their own self-contained layout:
@@ -86,7 +100,7 @@ The lean-card rules apply to **discipline match rows** only. These sections keep
 Defined in `src/lib/tournamentRecap.ts`:
 
 - `TournamentRecap` — one weekend bucket (`dateFrom`, `dateTo`, `disciplines`, etc.)
-- `DisciplineRecap` — one discipline within a recap (`partnerName` when uniform, `matches`, stats)
+- `DisciplineRecap` — one event within a recap (`eventName` when known, `showEventName` when a discipline appears twice, `partnerName` when uniform, `matches`, stats)
 - `DisciplineMatchRecap` — one match row (`showDate`, `showPartnerName`, opponents, score, highlights)
 - `SeniorCountyDebutCelebration` — first-ever senior county appearance at this event (`celebrations.seniorCountyDebut`)
 

@@ -93,36 +93,31 @@ function greatRunCallout(disciplineLabel: string, stageLabel: string): RecapSumm
   }
 }
 
-function strongestBeaten(disciplineLabel: string): DisciplineMatchHighlight {
-  return {
-    id: 'your-strongest-beaten',
-    label: 'Your strongest beaten',
-    chipIcon: '💪',
-    popoverText: `Your highest-rated opponent beaten in ${disciplineLabel} at this event. Their team was rated 1840. Among all your rated wins, that's your 2nd strongest beaten victory.`,
-  }
-}
-
 function bigUpset(matchKey: string): DisciplineMatchHighlight {
   return {
     id: `big-upset-${matchKey}`,
     label: 'Big upset!',
     chipIcon: '😮',
     popoverText:
-      'You won this match even though your opponent was rated 85 points higher on average beforehand — about a 22% chance of winning going in.',
+      'You won this match even though your opponent was rated 85 points higher on average beforehand, with about a 22% chance of winning going in.',
   }
 }
 
 function matchRow(args: {
   competitionName: string
-  discipline: (typeof DISCIPLINES)[number]
+  discipline: string
   date: string
   opponents: TeamMember[]
   outcome: 'win' | 'loss'
   scoreSummary: string
   roundLabel: string
   highlights?: DisciplineMatchHighlight[]
+  partnerName?: string | null
 }): DisciplineMatchRecap {
-  const partnerName = PARTNERS[args.discipline]
+  const partnerName =
+    args.partnerName !== undefined
+      ? args.partnerName
+      : PARTNERS[args.discipline as (typeof DISCIPLINES)[number]] ?? null
   const disciplineLabel = DISCIPLINE_LABELS[args.discipline] ?? args.discipline
   const opponents = opponentsLine(args.opponents)
   const matchKey = `${args.competitionName}\0${args.date}\0${args.discipline}\0${opponents}`
@@ -223,6 +218,8 @@ function disciplineRecap(
   return {
     discipline,
     disciplineLabel,
+    eventName: null,
+    showEventName: false,
     partnerName,
     ratingStart: rating.start,
     ratingEnd: rating.end,
@@ -235,6 +232,40 @@ function disciplineRecap(
     matchLosses: losses,
     eventCallouts: [greatRunCallout(disciplineLabel, STAGE_LABELS[discipline]), chemistryCallout(partnerName)],
     matches,
+  }
+}
+
+export const FICTIONAL_SINGLES_EVENT_U10 = 'OpenS U10'
+export const FICTIONAL_SINGLES_EVENT_U12 = 'OpenS U12'
+
+function singlesEventRecap(args: {
+  eventName: string
+  rating: { start: number; end: number }
+  bestStage: ProgressionStage
+  bestStageLabel: string
+  matches: DisciplineMatchRecap[]
+  callouts?: RecapSummaryCard[]
+}): DisciplineRecap {
+  const wins = args.matches.filter((match) => match.outcome === 'win').length
+  const losses = args.matches.filter((match) => match.outcome === 'loss').length
+
+  return {
+    discipline: 'OS',
+    disciplineLabel: DISCIPLINE_LABELS.OS,
+    eventName: args.eventName,
+    showEventName: true,
+    partnerName: null,
+    ratingStart: args.rating.start,
+    ratingEnd: args.rating.end,
+    ratingDelta: args.rating.end - args.rating.start,
+    ratingVsTypical: args.rating.end >= args.rating.start ? 'above' : null,
+    bestStage: args.bestStage,
+    bestStageLabel: args.bestStageLabel,
+    progressionVsTypical: args.bestStage === 'winner' ? 'above' : null,
+    matchWins: wins,
+    matchLosses: losses,
+    eventCallouts: args.callouts ?? [],
+    matches: args.matches,
   }
 }
 
@@ -279,7 +310,6 @@ export function buildFictionalTournamentRecap(
     outcome: 'win',
     scoreSummary: '21-19, 19-21, 21-19',
     roundLabel: 'Group',
-    highlights: [strongestBeaten(DISCIPLINE_LABELS.MD)],
   })
   const mdQuarter = row({
     discipline: 'MD',
@@ -315,7 +345,6 @@ export function buildFictionalTournamentRecap(
     outcome: 'win',
     scoreSummary: '21-18, 19-21, 21-16',
     roundLabel: 'Group',
-    highlights: [strongestBeaten(DISCIPLINE_LABELS.WD)],
   })
   const wdSemi = row({
     discipline: 'WD',
@@ -351,7 +380,6 @@ export function buildFictionalTournamentRecap(
     outcome: 'win',
     scoreSummary: '21-17, 18-21, 21-19',
     roundLabel: 'Group',
-    highlights: [strongestBeaten(DISCIPLINE_LABELS.XD)],
   })
   const xdQuarter = row({
     discipline: 'XD',
@@ -377,7 +405,59 @@ export function buildFictionalTournamentRecap(
     roundLabel: 'Semi-final',
   })
 
+  const osU10Quarter = row({
+    discipline: 'OS',
+    date: DATE_SAT,
+    partnerName: null,
+    opponents: [{ name: 'Maanav Paliwal', rating: 420 }],
+    outcome: 'win',
+    scoreSummary: '21-4',
+    roundLabel: 'Quarter-final',
+  })
+  const osU10Semi = row({
+    discipline: 'OS',
+    date: DATE_SAT,
+    partnerName: null,
+    opponents: [{ name: 'Nalan Kumar', rating: 445 }],
+    outcome: 'win',
+    scoreSummary: '21-11',
+    roundLabel: 'Semi-final',
+  })
+  const osU10Final = row({
+    discipline: 'OS',
+    date: DATE_SUN,
+    partnerName: null,
+    opponents: [{ name: 'Rafe Roberts', rating: 460 }],
+    outcome: 'win',
+    scoreSummary: '21-14',
+    roundLabel: 'Final',
+  })
+  const osU12Quarter = row({
+    discipline: 'OS',
+    date: DATE_SAT,
+    partnerName: null,
+    opponents: [{ name: 'Reyansh Prakasham', rating: 510 }],
+    outcome: 'loss',
+    scoreSummary: '18-21',
+    roundLabel: 'Quarter-final',
+  })
+
   const disciplines = [
+    singlesEventRecap({
+      eventName: FICTIONAL_SINGLES_EVENT_U10,
+      rating: { start: 448, end: 462 },
+      bestStage: 'winner',
+      bestStageLabel: 'Winner',
+      matches: [osU10Quarter, osU10Semi, osU10Final],
+      callouts: [greatRunCallout(DISCIPLINE_LABELS.OS, 'Winner')],
+    }),
+    singlesEventRecap({
+      eventName: FICTIONAL_SINGLES_EVENT_U12,
+      rating: { start: 462, end: 458 },
+      bestStage: 'quarter-final',
+      bestStageLabel: 'Quarter-final',
+      matches: [osU12Quarter],
+    }),
     disciplineRecap('MD', { start: 612, end: 628 }, [mdGroup, mdQuarter, mdFinal]),
     disciplineRecap('WD', { start: 598, end: 610 }, [wdGroup, wdSemi, wdFinal]),
     disciplineRecap('XD', { start: 604, end: 615 }, [xdGroup, xdQuarter, xdSemi]),
@@ -395,7 +475,7 @@ export function buildFictionalTournamentRecap(
         id: 'great-form',
         icon: '💪',
         label: 'Great form',
-        detail: '67% match wins at this event vs 48% overall',
+        detail: '69% match wins at this event vs 48% overall',
       },
       {
         id: 'tough-luck',
@@ -408,7 +488,7 @@ export function buildFictionalTournamentRecap(
         id: 'busy-weekend',
         icon: '🥵',
         label: "You've been busy!",
-        detail: '9 competitive matches at this event. That\'s a lot!',
+        detail: '13 competitive matches at this event. That\'s a lot!',
       },
     ],
     celebrations: {
@@ -533,8 +613,8 @@ export function buildFictionalTournamentRecap(
     ],
     bestWin: null,
     partnerChemistryHighlights: DISCIPLINES.map(chemistryHighlight),
-    totalMatches: 9,
-    weekendWinPercent: 66.7,
+    totalMatches: 13,
+    weekendWinPercent: 69.2,
   }
 }
 

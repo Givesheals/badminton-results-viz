@@ -6,7 +6,7 @@ import {
   fictionalCelebrationPresentation,
   insertFictionalTournamentRecap,
 } from '../../lib/fictionalTournamentRecap'
-import { computeTournamentRecaps } from '../../lib/tournamentRecap'
+import { computeTournamentRecaps, disciplineRecapKey } from '../../lib/tournamentRecap'
 import {
   fullTournamentRecapBuildFeatures,
   getTournamentRecapBuildFeatures,
@@ -99,9 +99,7 @@ export function TournamentRecapSection({
   const recap = recaps[index]!
   const celebrationPresentation = fictionalCelebrationPresentation(recap.key)
   const isFictionalFeatureRecap = celebrationPresentation != null
-  const features = isFictionalFeatureRecap
-    ? fullTournamentRecapBuildFeatures()
-    : featuresForStage
+  const features = featuresForStage
   const positionLabel = `${index + 1} of ${recaps.length}`
   const canGoOlder = index < recaps.length - 1
   const canGoNewer = index > 0
@@ -241,7 +239,7 @@ export function TournamentRecapSection({
                 <div className="space-y-3">
                   {recap.disciplines.map((d) => (
                     <DisciplineRecapBlock
-                      key={d.discipline}
+                      key={disciplineRecapKey(d)}
                       recap={d}
                       showDisciplineCallouts={features.showDisciplineCallouts}
                       showMatchHighlights={features.showMatchHighlights}

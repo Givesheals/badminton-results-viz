@@ -1,10 +1,7 @@
 import type { MatchOutcome, NormalizedMatch } from '../types/matchHistory'
 import {
-  computeBestWins,
-  countEligibleRatedWinsInMatches,
   findBestWinInMatches,
   findBigUpsetWinsInMatches,
-  rankBestWinRow,
   type BestWinRow,
 } from './bestWins'
 import {
@@ -88,6 +85,10 @@ export type DisciplineMatchRecap = {
 export type DisciplineRecap = {
   discipline: string
   disciplineLabel: string
+  /** Event / draw title from match data (e.g. OpenS U10). */
+  eventName: string | null
+  /** True when this discipline appears more than once in the recap and `eventName` is set. */
+  showEventName: boolean
   partnerName: string | null
   ratingStart: number | null
   ratingEnd: number | null
@@ -105,6 +106,17 @@ export type DisciplineRecap = {
 /** Stable identity for a recap match row (aligned with bestWinRowKey). */
 export function recapMatchKey(match: NormalizedMatch): string {
   return `${match.competitionName}\0${match.date}\0${match.discipline}\0${match.opponents}`
+}
+
+export function recapEventName(match: Pick<NormalizedMatch, 'eventName'>): string | null {
+  const name = match.eventName?.trim()
+  return name ? name : null
+}
+
+export function disciplineRecapKey(
+  recap: Pick<DisciplineRecap, 'discipline' | 'eventName'>,
+): string {
+  return recap.eventName ? `${recap.discipline}:${recap.eventName}` : recap.discipline
 }
 
 export type PartnerChemistryHighlight = {
@@ -964,48 +976,11 @@ export function partnerChemistryDetailShort(
   return `${atEvent} at this event · overall ${overall}`
 }
 
-function formatOrdinal(rank: number): string {
-  const mod100 = rank % 100
-  if (mod100 >= 11 && mod100 <= 13) return `${rank}th`
-  switch (rank % 10) {
-    case 1:
-      return `${rank}st`
-    case 2:
-      return `${rank}nd`
-    case 3:
-      return `${rank}rd`
-    default:
-      return `${rank}th`
-  }
-}
-
-function allTimeStrengthRank(
-  row: BestWinRow,
-  weekendMatches: NormalizedMatch[],
-  priorMatches: NormalizedMatch[],
-): number | null {
-  const { byOpponentStrength } = computeBestWins([...priorMatches, ...weekendMatches])
-  return rankBestWinRow(row, byOpponentStrength)
-}
-
-function strongestBeatenPopoverText(
-  row: BestWinRow,
-  disciplineLabel: string,
-  allTimeRank: number | null,
-): string {
-  const context = `Your highest-rated opponent beaten in ${disciplineLabel} at this event.`
-  const rating = `Their team was rated ${row.opponentTeamRating}.`
-  if (allTimeRank != null) {
-    return `${context} ${rating} Among all your rated wins, that's your ${formatOrdinal(allTimeRank)} strongest beaten victory.`
-  }
-  return `${context} ${rating}`
-}
-
 function bigUpsetExplanation(row: BestWinRow): string {
   const chance = formatUpsetWinChanceDisplay(
     clampDisplayWinChance(row.preMatchWinChancePercent),
   )
-  return `You won this match even though your opponent was rated ${row.ratingGap} points higher on average beforehand — about a ${chance} chance of winning going in.`
+  return `You won this match even though your opponent was rated ${row.ratingGap} points higher on average beforehand, with about a ${chance} chance of winning going in.`
 }
 
 type DisciplineTimeline = {
@@ -1023,7 +998,6 @@ function buildDisciplineTimeline(
   showMatchDates: boolean,
 ): DisciplineTimeline {
   const eventCallouts: RecapSummaryCard[] = []
-  const bestWin = findBestWinInMatches(disciplineMatches)
 
   if (d.progressionVsTypical === 'above' && d.bestStageLabel) {
     const categoryLabel = categoryLabelForDiscipline(weekendMatches, d.discipline)
@@ -1056,20 +1030,6 @@ function buildDisciplineTimeline(
     const list = highlightsByKey.get(key) ?? []
     list.push(highlight)
     highlightsByKey.set(key, list)
-  }
-
-  if (bestWin != null && countEligibleRatedWinsInMatches(disciplineMatches) > 1) {
-    const allTimeRank = allTimeStrengthRank(bestWin, weekendMatches, priorMatches)
-    addHighlight(recapMatchKey(bestWin.match), {
-      id: 'your-strongest-beaten',
-      label: 'Your strongest beaten',
-      chipIcon: '💪',
-      popoverText: strongestBeatenPopoverText(
-        bestWin,
-        d.disciplineLabel,
-        allTimeRank,
-      ),
-    })
   }
 
   for (const upset of findBigUpsetWinsInMatches(disciplineMatches)) {
@@ -1417,6 +1377,21 @@ function uniformPartnerName(matches: NormalizedMatch[]): string | null {
   return unique.size === 1 ? partners[0]! : null
 }
 
+function disciplineEventBucketKey(match: NormalizedMatch): string {
+  return `${match.discipline}\0${recapEventName(match) ?? ''}`
+}
+
+function applyEventTitleVisibility(recaps: DisciplineRecap[]): DisciplineRecap[] {
+  const counts = new Map<string, number>()
+  for (const recap of recaps) {
+    counts.set(recap.discipline, (counts.get(recap.discipline) ?? 0) + 1)
+  }
+  return recaps.map((recap) => ({
+    ...recap,
+    showEventName: (counts.get(recap.discipline) ?? 0) > 1 && recap.eventName != null,
+  }))
+}
+
 function buildDisciplineRecaps(
   weekendMatches: NormalizedMatch[],
   allWeekends: WeekendBucket[],
@@ -1425,18 +1400,19 @@ function buildDisciplineRecaps(
   partnerChemistryHighlights: PartnerChemistryHighlight[],
   showMatchDates: boolean,
 ): DisciplineRecap[] {
-  const disciplines = new Map<string, NormalizedMatch[]>()
+  const buckets = new Map<string, NormalizedMatch[]>()
   for (const match of weekendMatches.filter(isCompetitiveMatch)) {
-    const bucket = disciplines.get(match.discipline) ?? []
+    const key = disciplineEventBucketKey(match)
+    const bucket = buckets.get(key) ?? []
     bucket.push(match)
-    disciplines.set(match.discipline, bucket)
+    buckets.set(key, bucket)
   }
 
   const otherWeekends = allWeekends.filter((w) => w.key !== currentKey)
 
-  return [...disciplines.entries()]
-    .map(([discipline, disciplineMatches]) => {
+  const recaps = [...buckets.values()].map((disciplineMatches) => {
       const sample = disciplineMatches[0]!
+      const discipline = sample.discipline
       const { ratingStart, ratingEnd, ratingDelta } =
         ratingDeltaForDiscipline(disciplineMatches)
 
@@ -1496,6 +1472,8 @@ function buildDisciplineRecaps(
       const recap: DisciplineRecap = {
         discipline,
         disciplineLabel: sample.disciplineLabel,
+        eventName: recapEventName(sample),
+        showEventName: false,
         partnerName: sharedPartner,
         ratingStart,
         ratingEnd,
@@ -1526,7 +1504,12 @@ function buildDisciplineRecaps(
         matches: timeline.matches,
       }
     })
-    .sort((a, b) => a.discipline.localeCompare(b.discipline))
+
+  return applyEventTitleVisibility(recaps).sort((a, b) => {
+    const byDiscipline = a.discipline.localeCompare(b.discipline)
+    if (byDiscipline !== 0) return byDiscipline
+    return (a.eventName ?? '').localeCompare(b.eventName ?? '')
+  })
 }
 
 function buildPartnerChemistryHighlights(

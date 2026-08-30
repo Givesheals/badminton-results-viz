@@ -22,21 +22,70 @@ type Props = {
 }
 
 type SettingsTab = 'general' | 'favourites' | 'notifications' | 'premium'
-type DemoView = 'subscribed' | 'unsubscribed'
+
+type DemoView =
+  | 'unsubscribed'
+  | 'signup_incomplete'
+  | 'active'
+  | 'processing'
+  | 'payment_failed'
+  | 'renewal_failed'
+  | 'cancelled'
+  | 'cancelled_ended'
+
+type BillingStatus = Exclude<DemoView, 'unsubscribed'>
+type StatusTone = 'active' | 'idle' | 'wait' | 'danger' | 'cancelled'
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'general', label: 'General' },
-  { id: 'favourites', label: 'Favourites' },
+  { id: 'favourites', label: 'Faves' },
   { id: 'notifications', label: 'Notifications' },
   { id: 'premium', label: 'Premium' },
 ]
+
+const DEMO_VIEWS: { id: DemoView; label: string }[] = [
+  { id: 'unsubscribed', label: 'Inactive' },
+  { id: 'signup_incomplete', label: 'Finish signup' },
+  { id: 'active', label: 'Active' },
+  { id: 'processing', label: 'Processing' },
+  { id: 'payment_failed', label: 'Payment failed' },
+  { id: 'renewal_failed', label: 'Renewal failed' },
+  { id: 'cancelled', label: 'Cancelled' },
+  { id: 'cancelled_ended', label: 'Ended' },
+]
+
+const PILL_TONE: Record<
+  StatusTone,
+  { wrap: string; dot: string }
+> = {
+  active: {
+    wrap: 'bg-court-50 text-court-700 ring-1 ring-court-200',
+    dot: 'bg-court-600',
+  },
+  idle: {
+    wrap: 'bg-ink-100 text-ink-600 ring-1 ring-ink-200',
+    dot: 'bg-ink-400',
+  },
+  wait: {
+    wrap: 'bg-[#fbf6e4] text-[#7a6a12] ring-1 ring-shuttle-400',
+    dot: 'bg-shuttle-500',
+  },
+  danger: {
+    wrap: 'bg-loss-50 text-loss-700 ring-1 ring-loss-100',
+    dot: 'bg-loss-600',
+  },
+  cancelled: {
+    wrap: 'bg-ink-100 text-ink-700 ring-1 ring-ink-200',
+    dot: 'bg-ink-500',
+  },
+}
 
 /** Value-led pitch lines: what you get, not just what the feature is. */
 const PREMIUM_PITCH_BENEFITS: { title: string; value: string }[] = [
   {
     title: 'Personal notes',
     value:
-      'Capture what worked — and we surface those notes again the next time you draw that player or pair. Get a tactical head start next time.',
+      'Capture what worked - and we surface those notes again the next time you draw that player or pair. Get a tactical head start next time.',
   },
   {
     title: 'Analytics',
@@ -51,9 +100,8 @@ const PREMIUM_PITCH_BENEFITS: { title: string; value: string }[] = [
   {
     title: 'Tournament recaps',
     value:
-      'Relive the weekend — the results, the run, the story worth keeping. See how your performance tracks against your personal best.',
+      'Relive the weekend - the results, the run, the story worth keeping. See how your performance tracks against your personal best.',
   },
-
 ]
 
 function ExternalLinkIcon({ className }: { className?: string }) {
@@ -82,6 +130,12 @@ function formatDisplayDate(iso: string): string {
   })
 }
 
+function addDaysIso(days: number, from = new Date()): string {
+  const next = new Date(from)
+  next.setDate(next.getDate() + days)
+  return next.toISOString()
+}
+
 function nextRenewalIso(subscribedAt: string, plan: PremiumPlan): string {
   const start = new Date(subscribedAt)
   if (Number.isNaN(start.getTime())) return new Date().toISOString()
@@ -94,13 +148,27 @@ function nextRenewalIso(subscribedAt: string, plan: PremiumPlan): string {
   return next.toISOString()
 }
 
-function buildDemoPremium(playerName: string): StoredPremiumState {
+function buildDemoPremium(playerName: string, status: BillingStatus): StoredPremiumState {
+  const justNow = new Date().toISOString()
+  const monthly: PremiumPlan = 'monthly'
+  const yearly: PremiumPlan = 'yearly'
+  const planByStatus: Record<BillingStatus, PremiumPlan> = {
+    signup_incomplete: yearly,
+    active: yearly,
+    processing: monthly,
+    payment_failed: monthly,
+    renewal_failed: monthly,
+    cancelled: yearly,
+    cancelled_ended: monthly,
+  }
+  const startedNow =
+    status === 'signup_incomplete' || status === 'processing' || status === 'payment_failed'
   return {
     playerName,
     beNumber: '1206628',
     receiptEmail: 'demo@badminfo.example',
-    plan: 'yearly',
-    subscribedAt: '2025-03-03T12:00:00.000Z',
+    plan: planByStatus[status],
+    subscribedAt: startedNow ? justNow : '2025-03-03T12:00:00.000Z',
   }
 }
 
@@ -113,22 +181,115 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
   )
 }
 
-function StatusPill({ active }: { active: boolean }) {
+function StatusPill({ label, tone }: { label: string; tone: StatusTone }) {
+  const style = PILL_TONE[tone]
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-        active
-          ? 'bg-court-50 text-court-700 ring-1 ring-court-200'
-          : 'bg-ink-100 text-ink-600 ring-1 ring-ink-200'
-      }`}
-    >
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-court-600' : 'bg-ink-400'}`}
-        aria-hidden
-      />
-      {active ? 'Active' : 'Inactive'}
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${style.wrap}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} aria-hidden />
+      {label}
     </span>
   )
+}
+
+function statusPresentation(
+  status: BillingStatus,
+  plan: PremiumPlan,
+  retryUntilIso: string,
+  periodEndIso: string,
+): {
+  pillLabel: string
+  tone: StatusTone
+  message: string | null
+  box: 'none' | 'wait' | 'danger' | 'neutral'
+  action: 'none' | 'payment' | 'renew' | 'keep' | 'manage' | 'complete'
+  actionLabel: string
+  dateRow: { label: string; value: string } | null
+} {
+  const planWord = plan === 'yearly' ? 'yearly' : 'monthly'
+  const retryUntil = formatDisplayDate(retryUntilIso)
+  const periodEnd = formatDisplayDate(periodEndIso)
+
+  switch (status) {
+    case 'active':
+      return {
+        pillLabel: 'Active',
+        tone: 'active',
+        message: null,
+        box: 'none',
+        action: 'manage',
+        actionLabel: 'Manage subscription',
+        dateRow: { label: 'Next renews', value: '' },
+      }
+    case 'signup_incomplete':
+      return {
+        pillLabel: 'Incomplete',
+        tone: 'wait',
+        message:
+          'You’ve set up Premium on BadmInfo, but payment isn’t finished yet. Complete signup in Stripe to start Premium.',
+        box: 'wait',
+        action: 'complete',
+        actionLabel: 'Complete signup',
+        dateRow: null,
+      }
+    case 'processing':
+      return {
+        pillLabel: 'Processing',
+        tone: 'wait',
+        message:
+          'We’re confirming your payment. You don’t need to do anything. This usually takes a few moments. Premium starts as soon as it goes through.',
+        box: 'wait',
+        action: 'none',
+        actionLabel: '',
+        dateRow: null,
+      }
+    case 'payment_failed':
+      return {
+        pillLabel: 'Payment failed',
+        tone: 'danger',
+        message:
+          'Your payment didn’t go through, so Premium hasn’t started. You can retry or change how you pay.',
+        box: 'danger',
+        action: 'payment',
+        actionLabel: 'Manage payment',
+        dateRow: null,
+      }
+    case 'renewal_failed':
+      return {
+        pillLabel: 'Payment failed',
+        tone: 'danger',
+        message: `Your ${planWord} renewal didn’t go through. Premium still works for now. If this isn’t sorted by ${retryUntil}, you’ll lose access on that date.`,
+        box: 'danger',
+        action: 'payment',
+        actionLabel: 'Manage payment',
+        dateRow: { label: 'Access until', value: retryUntil },
+      }
+    case 'cancelled':
+      return {
+        pillLabel: 'Cancelled',
+        tone: 'cancelled',
+        message: `Your subscription is cancelled. You still have Premium until ${periodEnd}. After that, access will stop.`,
+        box: 'neutral',
+        action: 'keep',
+        actionLabel: 'Keep Premium',
+        dateRow: { label: 'Access until', value: periodEnd },
+      }
+    case 'cancelled_ended':
+      return {
+        pillLabel: 'Cancelled',
+        tone: 'cancelled',
+        message: 'Your subscription is cancelled. Renew anytime to get Premium back.',
+        box: 'neutral',
+        action: 'renew',
+        actionLabel: 'Renew',
+        dateRow: { label: 'Ended', value: '' },
+      }
+  }
+}
+
+const STATUS_BOX: Record<'wait' | 'danger' | 'neutral', string> = {
+  wait: 'border-[#ead98a] bg-[#fbf6e4]',
+  danger: 'border-loss-100 bg-loss-50',
+  neutral: 'border-ink-200 bg-ink-50',
 }
 
 export function UserSettingsPage({
@@ -147,7 +308,7 @@ export function UserSettingsPage({
   useEffect(() => {
     if (!open) return
     setActiveTab('premium')
-    setDemoView(isSubscribed ? 'subscribed' : 'unsubscribed')
+    setDemoView(isSubscribed ? 'active' : 'unsubscribed')
   }, [open, isSubscribed])
 
   useEffect(() => {
@@ -165,8 +326,14 @@ export function UserSettingsPage({
 
   if (!open) return null
 
-  const showSubscribed = demoView === 'subscribed'
-  const displayPremium = premium ?? (showSubscribed ? buildDemoPremium(playerName) : null)
+  const showAccount = demoView !== 'unsubscribed'
+  const billingStatus: BillingStatus = showAccount ? demoView : 'active'
+  const displayPremium =
+    premium && demoView === 'active'
+      ? premium
+      : showAccount
+        ? buildDemoPremium(playerName, billingStatus)
+        : null
   const coveredPlayers = displayPremium
     ? [{ name: displayPremium.playerName, beNumber: displayPremium.beNumber }]
     : []
@@ -200,29 +367,24 @@ export function UserSettingsPage({
           </button>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-ink-500">Demo view:</span>
+        <div className="mt-3">
+          <span className="text-xs font-medium text-ink-500">Demo status:</span>
           <div
             role="group"
             aria-label="Premium subscription demo state"
-            className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-0.5"
+            className="mt-1.5 flex flex-wrap gap-1"
           >
-            {(
-              [
-                { id: 'subscribed', label: 'Subscribed' },
-                { id: 'unsubscribed', label: 'Not subscribed' },
-              ] as const
-            ).map((option) => {
+            {DEMO_VIEWS.map((option) => {
               const selected = demoView === option.id
               return (
                 <button
                   key={option.id}
                   type="button"
                   onClick={() => setDemoView(option.id)}
-                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 transition ${
                     selected
-                      ? 'bg-white text-brand-700 shadow-sm'
-                      : 'text-ink-500 hover:text-ink-700'
+                      ? 'bg-brand-600 text-white ring-brand-600'
+                      : 'bg-white text-ink-600 ring-ink-200 hover:text-ink-900'
                   }`}
                 >
                   {option.label}
@@ -264,11 +426,13 @@ export function UserSettingsPage({
 
           <div className="px-5 py-4 sm:px-6 sm:py-4">
             {activeTab === 'premium' ? (
-              showSubscribed && displayPremium ? (
+              showAccount && displayPremium ? (
                 <SubscribedPremiumTab
                   premium={displayPremium}
+                  billingStatus={billingStatus}
                   coveredPlayers={coveredPlayers}
                   onManageSubscription={onManageSubscription}
+                  onRenew={() => onSignUpPremium(displayPremium.plan)}
                 />
               ) : (
                 <UnsubscribedPremiumTab onSignUpPremium={onSignUpPremium} />
@@ -288,32 +452,85 @@ export function UserSettingsPage({
 
 function SubscribedPremiumTab({
   premium,
+  billingStatus,
   coveredPlayers,
   onManageSubscription,
+  onRenew,
 }: {
   premium: StoredPremiumState
+  billingStatus: BillingStatus
   coveredPlayers: { name: string; beNumber: string }[]
   onManageSubscription: () => void
+  onRenew: () => void
 }) {
   const nextRenews = nextRenewalIso(premium.subscribedAt, premium.plan)
+  const retryUntilIso = addDaysIso(10)
+  const view = statusPresentation(billingStatus, premium.plan, retryUntilIso, nextRenews)
+
+  let dateValue = view.dateRow?.value ?? ''
+  if (billingStatus === 'active') dateValue = formatDisplayDate(nextRenews)
+  if (billingStatus === 'cancelled_ended') dateValue = formatDisplayDate(addDaysIso(-5))
+
+  function handleAction() {
+    if (view.action === 'renew' || view.action === 'complete') onRenew()
+    else onManageSubscription()
+  }
+
+  const boxHasButton =
+    view.action === 'payment' ||
+    view.action === 'renew' ||
+    view.action === 'keep' ||
+    view.action === 'complete'
+
+  const showStartedLabel =
+    billingStatus === 'signup_incomplete' ||
+    billingStatus === 'processing' ||
+    billingStatus === 'payment_failed'
 
   return (
     <div>
       <h3 className="text-base font-bold text-ink-900">Premium</h3>
-      <p className="mt-0.5 text-sm text-ink-500">Your Badminfo Premium account</p>
+      <p className="mt-0.5 text-sm text-ink-500">Your BadmInfo Premium account</p>
 
       <dl className="mt-2.5 divide-y divide-ink-100 border-t border-ink-100">
-        <DetailRow label="Status">
-          <StatusPill active />
-        </DetailRow>
+        <div>
+          <DetailRow label="Status">
+            <StatusPill label={view.pillLabel} tone={view.tone} />
+          </DetailRow>
+          {view.message && view.box !== 'none' ? (
+            <div className={`mb-2.5 rounded-lg border px-3 py-2.5 ${STATUS_BOX[view.box]}`}>
+              <p className="text-sm text-ink-800">{view.message}</p>
+              {boxHasButton ? (
+                <button
+                  type="button"
+                  onClick={handleAction}
+                  className={`mt-2.5 inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-sm font-semibold text-white ${
+                    view.action === 'payment'
+                      ? 'bg-loss-600 hover:bg-loss-700'
+                      : 'bg-brand-600 hover:bg-brand-700'
+                  }`}
+                >
+                  {view.actionLabel}
+                  <ExternalLinkIcon />
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
         <DetailRow label="Plan">
           {planLabel(premium.plan)}
           <span className="ml-1.5 font-normal text-ink-500">
             · {planBillingDescription(premium.plan)}
           </span>
         </DetailRow>
-        <DetailRow label="Next renews">{formatDisplayDate(nextRenews)}</DetailRow>
-        <DetailRow label="Subscribed since">{formatDisplayDate(premium.subscribedAt)}</DetailRow>
+        {view.dateRow ? (
+          <DetailRow label={view.dateRow.label}>{dateValue || view.dateRow.value}</DetailRow>
+        ) : null}
+        {showStartedLabel ? (
+          <DetailRow label="Started">{formatDisplayDate(premium.subscribedAt)}</DetailRow>
+        ) : (
+          <DetailRow label="Subscribed since">{formatDisplayDate(premium.subscribedAt)}</DetailRow>
+        )}
       </dl>
 
       <div className="mt-3 border-t border-ink-100 pt-3">
@@ -341,19 +558,21 @@ function SubscribedPremiumTab({
         </div>
       </div>
 
-      <div className="mt-3 border-t border-ink-100 pt-3">
-        <button
-          type="button"
-          onClick={onManageSubscription}
-          className="inline-flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-        >
-          Manage subscription
-          <ExternalLinkIcon />
-        </button>
-        <p className="mt-1 text-xs text-ink-500">
-          Opens the Stripe Customer Portal (cancel, change plan, payment details).
-        </p>
-      </div>
+      {view.action === 'manage' ? (
+        <div className="mt-3 border-t border-ink-100 pt-3">
+          <button
+            type="button"
+            onClick={onManageSubscription}
+            className="inline-flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+          >
+            Manage subscription
+            <ExternalLinkIcon />
+          </button>
+          <p className="mt-1 text-xs text-ink-500">
+            Opens the Stripe Customer Portal (cancel, change plan, payment details).
+          </p>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -371,11 +590,11 @@ function UnsubscribedPremiumTab({
         <h3 className="text-base font-bold text-ink-900">Premium</h3>
         <BetaBadge />
       </div>
-      <p className="text-sm text-ink-500">Get more from Badminfo</p>
+      <p className="text-sm text-ink-500">Get more from BadmInfo</p>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-ink-100 py-3">
         <span className="text-sm font-semibold text-ink-900">Status</span>
-        <StatusPill active={false} />
+        <StatusPill label="Inactive" tone="idle" />
       </div>
 
       {/* CTA above the fold — primary action before benefits or scrolling */}

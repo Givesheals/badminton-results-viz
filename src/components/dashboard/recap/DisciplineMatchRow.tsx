@@ -5,7 +5,7 @@ import { MatchHighlightChip } from './MatchHighlightChip'
 
 type Props = {
   match: DisciplineMatchRecap
-  /** When false, hide Strongest beaten / Big upset chips (build stage < 7). */
+  /** When false, hide Big upset chips (build stage < 7). */
   showMatchHighlights?: boolean
   /** When false, hide opponent notes icon (build stage < 10). */
   showNotes?: boolean
@@ -86,16 +86,15 @@ export function DisciplineMatchRow({
             {match.scoreSummary || '—'}
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1 self-start pt-0.5">
-          {showMatchHighlights && match.highlights.length > 0 && (
-            <div className="flex items-center justify-end gap-1">
-              {match.highlights.map((highlight) => (
+        {(showNotes || (showMatchHighlights && match.highlights.length > 0)) && (
+          <div className="flex shrink-0 items-center justify-end gap-1 self-start pt-0.5">
+            {showMatchHighlights &&
+              match.highlights.map((highlight) => (
                 <MatchHighlightChip key={highlight.id} highlight={highlight} />
               ))}
-            </div>
-          )}
-          {showNotes && <OpponentNoteButton context={match.noteContext} />}
-        </div>
+            {showNotes && <OpponentNoteButton context={match.noteContext} />}
+          </div>
+        )}
       </div>
     </li>
   )
