@@ -992,7 +992,6 @@ function buildDisciplineTimeline(
   d: DisciplineRecap,
   disciplineMatches: NormalizedMatch[],
   weekendMatches: NormalizedMatch[],
-  priorMatches: NormalizedMatch[],
   partnerChemistryHighlights: PartnerChemistryHighlight[],
   sharedPartner: string | null,
   showMatchDates: boolean,
@@ -1396,7 +1395,6 @@ function buildDisciplineRecaps(
   weekendMatches: NormalizedMatch[],
   allWeekends: WeekendBucket[],
   currentKey: string,
-  priorMatches: NormalizedMatch[],
   partnerChemistryHighlights: PartnerChemistryHighlight[],
   showMatchDates: boolean,
 ): DisciplineRecap[] {
@@ -1492,7 +1490,6 @@ function buildDisciplineRecaps(
         recap,
         disciplineMatches,
         weekendMatches,
-        priorMatches,
         partnerChemistryHighlights,
         sharedPartner,
         showMatchDates,
@@ -1661,7 +1658,6 @@ function buildWeekendRecap(
     bucket.matches,
     allWeekends,
     bucket.key,
-    priorMatches,
     partnerChemistryHighlights,
     showMatchDates,
   )
