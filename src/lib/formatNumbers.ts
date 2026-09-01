@@ -16,6 +16,11 @@ export function formatWinLossRecord(wins: number, losses: number): string {
   return `${winPart}, ${lossPart}`
 }
 
+/** Start-to-end rating at a competition, matching recap header style. */
+export function formatRatingSpan(start: number, end: number): string {
+  return `${start} → ${end}`
+}
+
 /** Opponent minus player rating before the match; positive = they were higher rated. */
 export function formatRatingGap(gap: number): string {
   if (gap > 0) return `+${Math.round(gap)}`

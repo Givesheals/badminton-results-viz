@@ -1,6 +1,6 @@
 import type { DisciplineRecap } from '../../../lib/tournamentRecap'
 import { getDisciplineStyle } from '../../../lib/disciplineStyle'
-import { formatWinLossRecord } from '../../../lib/formatNumbers'
+import { formatRatingSpan, formatWinLossRecord } from '../../../lib/formatNumbers'
 import {
   PROGRESSION_STAGE_COLORS,
   type ProgressionStage,
@@ -37,7 +37,15 @@ function DisciplineRecapHeader({ recap }: Props) {
             <span className="text-sm text-ink-700">{recap.disciplineLabel}</span>
           </div>
           {recap.partnerName && (
-            <p className="mt-0.5 text-xs text-ink-600">with {recap.partnerName}</p>
+            <p className="mt-0.5 text-xs text-ink-600">
+              with {recap.partnerName}
+              {recap.partnerRatingStart != null && recap.partnerRatingEnd != null && (
+                <span className="tabular-nums text-ink-500">
+                  {' '}
+                  ({formatRatingSpan(recap.partnerRatingStart, recap.partnerRatingEnd)})
+                </span>
+              )}
+            </p>
           )}
         </div>
         {recap.ratingDelta != null && (
@@ -56,7 +64,7 @@ function DisciplineRecapHeader({ recap }: Props) {
             </p>
             {recap.ratingStart != null && recap.ratingEnd != null && (
               <p className="text-xs tabular-nums text-ink-500">
-                {recap.ratingStart} → {recap.ratingEnd}
+                {formatRatingSpan(recap.ratingStart, recap.ratingEnd)}
               </p>
             )}
           </div>

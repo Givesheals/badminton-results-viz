@@ -68,6 +68,12 @@ export function DisciplineMatchRow({
           {match.showPartnerName && match.partnerName && (
             <p className="break-words text-xs leading-snug text-ink-600">
               with {match.partnerName}
+              {match.partnerRating != null && (
+                <span className="tabular-nums text-ink-500">
+                  {' '}
+                  ({match.partnerRating})
+                </span>
+              )}
             </p>
           )}
           <p className="text-xs text-ink-500">

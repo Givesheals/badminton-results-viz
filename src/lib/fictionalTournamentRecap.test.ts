@@ -79,6 +79,8 @@ describe('buildFictionalTournamentRecap', () => {
       expect(discipline.matchLosses).toBeGreaterThan(0)
       expect(discipline.matches.every((match) => match.scoreSummary.length > 0)).toBe(true)
       expect(discipline.matches.every((match) => match.showPartnerName)).toBe(false)
+      expect(discipline.partnerRatingStart).not.toBeNull()
+      expect(discipline.partnerRatingEnd).not.toBeNull()
       expect(discipline.showEventName).toBe(false)
       expect(discipline.eventCallouts.map((card) => card.label)).toEqual([
         'Great run',

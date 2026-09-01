@@ -244,6 +244,54 @@ describe('computeTournamentRecaps', () => {
     expect(ws.ratingDelta).toBe(15)
   })
 
+  it('computes partner rating span from first to last match per discipline', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Test Event',
+        date: '2026-01-01',
+        discipline: 'WD',
+        partnerName: 'Sam',
+        raw: { 'Partner Rating': 560 },
+      }),
+      makeMatch({
+        competitionName: 'Test Event',
+        date: '2026-01-02',
+        discipline: 'WD',
+        partnerName: 'Sam',
+        outcome: 'loss',
+        raw: { 'Partner Rating': 575 },
+      }),
+    ]
+
+    const wd = computeTournamentRecaps(matches).recaps[0]!.disciplines[0]!
+    expect(wd.partnerName).toBe('Sam')
+    expect(wd.partnerRatingStart).toBe(560)
+    expect(wd.partnerRatingEnd).toBe(575)
+  })
+
+  it('leaves partner rating span empty for singles', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Singles Cup',
+        date: '2026-01-01',
+        discipline: 'WS',
+        playerRating: 560,
+      }),
+      makeMatch({
+        competitionName: 'Singles Cup',
+        date: '2026-01-02',
+        discipline: 'WS',
+        playerRating: 575,
+        outcome: 'loss',
+      }),
+    ]
+
+    const ws = computeTournamentRecaps(matches).recaps[0]!.disciplines[0]!
+    expect(ws.partnerName).toBeNull()
+    expect(ws.partnerRatingStart).toBeNull()
+    expect(ws.partnerRatingEnd).toBeNull()
+  })
+
   it('detects nailbiter freak flag', () => {
     const matches = [
       makeMatch({
@@ -2716,6 +2764,7 @@ describe('tournament recap display hierarchy', () => {
         discipline: 'WD',
         partnerName: 'Sam',
         opponents: 'Team A',
+        raw: { 'Partner Rating': 560 },
       }),
       makeMatch({
         competitionName: 'Mixed Partners',
@@ -2723,14 +2772,52 @@ describe('tournament recap display hierarchy', () => {
         discipline: 'WD',
         partnerName: 'Pat',
         opponents: 'Team B',
+        raw: { 'Partner Rating': 590 },
       }),
     ]
 
     const wd = computeTournamentRecaps(matches).recaps[0]!.disciplines[0]!
     expect(wd.partnerName).toBeNull()
+    expect(wd.partnerRatingStart).toBeNull()
+    expect(wd.partnerRatingEnd).toBeNull()
     expect(wd.matches.map((m) => m.showPartnerName)).toEqual([true, true])
     expect(wd.matches.map((m) => m.partnerName)).toEqual(['Sam', 'Pat'])
+    expect(wd.matches.map((m) => m.partnerRating)).toEqual([560, 590])
     expect(wd.matches.every((m) => m.showDate === false)).toBe(true)
+  })
+
+  it('shows each match-row partner rating from that match, not the event span', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'Mixed Partners',
+        date: '2026-06-14',
+        discipline: 'WD',
+        partnerName: 'Sam',
+        opponents: 'Team A',
+        raw: { 'Partner Rating': 572 },
+      }),
+      makeMatch({
+        competitionName: 'Mixed Partners',
+        date: '2026-06-14',
+        discipline: 'WD',
+        partnerName: 'Sam',
+        opponents: 'Team B',
+        raw: { 'Partner Rating': 580 },
+      }),
+      makeMatch({
+        competitionName: 'Mixed Partners',
+        date: '2026-06-14',
+        discipline: 'WD',
+        partnerName: 'Pat',
+        opponents: 'Team C',
+        raw: { 'Partner Rating': 540 },
+      }),
+    ]
+
+    const wd = computeTournamentRecaps(matches).recaps[0]!.disciplines[0]!
+    expect(wd.partnerName).toBeNull()
+    expect(wd.matches.map((m) => m.partnerName)).toEqual(['Sam', 'Sam', 'Pat'])
+    expect(wd.matches.map((m) => m.partnerRating)).toEqual([572, 580, 540])
   })
 
   it('does not hoist partner for singles disciplines', () => {

@@ -58,6 +58,12 @@ const PARTNERS: Record<(typeof DISCIPLINES)[number], string> = {
   XD: 'Avery Shah',
 }
 
+const PARTNER_RATINGS: Record<(typeof DISCIPLINES)[number], { start: number; end: number }> = {
+  MD: { start: 620, end: 631 },
+  WD: { start: 605, end: 612 },
+  XD: { start: 590, end: 598 },
+}
+
 const STAGES: Record<(typeof DISCIPLINES)[number], ProgressionStage> = {
   MD: 'winner',
   WD: 'runner-up',
@@ -128,6 +134,7 @@ function matchRow(args: {
     opponents,
     opponentMembers: args.opponents,
     partnerName,
+    partnerRating: null,
     showPartnerName: false,
     showDate: true,
     outcome: args.outcome,
@@ -221,6 +228,8 @@ function disciplineRecap(
     eventName: null,
     showEventName: false,
     partnerName,
+    partnerRatingStart: PARTNER_RATINGS[discipline].start,
+    partnerRatingEnd: PARTNER_RATINGS[discipline].end,
     ratingStart: rating.start,
     ratingEnd: rating.end,
     ratingDelta: rating.end - rating.start,
@@ -255,6 +264,8 @@ function singlesEventRecap(args: {
     eventName: args.eventName,
     showEventName: true,
     partnerName: null,
+    partnerRatingStart: null,
+    partnerRatingEnd: null,
     ratingStart: args.rating.start,
     ratingEnd: args.rating.end,
     ratingDelta: args.rating.end - args.rating.start,

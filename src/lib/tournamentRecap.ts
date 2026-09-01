@@ -20,7 +20,7 @@ import {
 import { isCompetitiveMatch } from './matchExclusions'
 import { getMatchGames, getMatchVolume } from './matchScores'
 import { getOpponentTeamMembers, type TeamMember } from './matchTeams'
-import { getMatchExpectedWinProbability, getPlayerRating } from './ratings'
+import { getMatchExpectedWinProbability, getPartnerRating, getPlayerRating } from './ratings'
 import {
   bestStageFromMatches,
   competitionAgeLabelFromMatch,
@@ -73,6 +73,8 @@ export type DisciplineMatchRecap = {
   /** Opponent names with per-player ratings for soft rating display. */
   opponentMembers: TeamMember[]
   partnerName: string | null
+  /** Partner rating going into this match, when the partner line is shown on the row. */
+  partnerRating: number | null
   showPartnerName: boolean
   showDate: boolean
   outcome: MatchOutcome
@@ -90,6 +92,10 @@ export type DisciplineRecap = {
   /** True when this discipline appears more than once in the recap and `eventName` is set. */
   showEventName: boolean
   partnerName: string | null
+  /** Partner rating at the first competitive match in this discipline. */
+  partnerRatingStart: number | null
+  /** Partner rating at the last competitive match in this discipline. */
+  partnerRatingEnd: number | null
   ratingStart: number | null
   ratingEnd: number | null
   ratingDelta: number | null
@@ -1049,6 +1055,7 @@ function buildDisciplineTimeline(
         opponents: match.opponents,
         opponentMembers: getOpponentTeamMembers(match),
         partnerName: match.partnerName,
+        partnerRating: getPartnerRating(match),
         showPartnerName: match.partnerName != null && sharedPartner == null,
         showDate: showMatchDates,
         outcome: match.outcome,
@@ -1143,7 +1150,10 @@ function dominantCategoryLabel(matches: NormalizedMatch[]): string {
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Other'
 }
 
-function ratingDeltaForDiscipline(matches: NormalizedMatch[]): {
+function ratingSpanForMatches(
+  matches: NormalizedMatch[],
+  getRating: (match: NormalizedMatch) => number | null,
+): {
   ratingStart: number | null
   ratingEnd: number | null
   ratingDelta: number | null
@@ -1153,7 +1163,7 @@ function ratingDeltaForDiscipline(matches: NormalizedMatch[]): {
   let ratingEnd: number | null = null
 
   for (const match of sorted) {
-    const rating = getPlayerRating(match)
+    const rating = getRating(match)
     if (rating == null) continue
     if (ratingStart == null) ratingStart = rating
     ratingEnd = rating
@@ -1165,6 +1175,14 @@ function ratingDeltaForDiscipline(matches: NormalizedMatch[]): {
       : null
 
   return { ratingStart, ratingEnd, ratingDelta }
+}
+
+function ratingDeltaForDiscipline(matches: NormalizedMatch[]): {
+  ratingStart: number | null
+  ratingEnd: number | null
+  ratingDelta: number | null
+} {
+  return ratingSpanForMatches(matches, getPlayerRating)
 }
 
 function computeOverperformance(matches: NormalizedMatch[]): number | null {
@@ -1466,6 +1484,9 @@ function buildDisciplineRecaps(
       const matchLosses = disciplineMatches.filter((m) => m.outcome === 'loss').length
 
       const sharedPartner = uniformPartnerName(disciplineMatches)
+      const partnerRatingSpan = sharedPartner
+        ? ratingSpanForMatches(disciplineMatches, getPartnerRating)
+        : { ratingStart: null, ratingEnd: null }
 
       const recap: DisciplineRecap = {
         discipline,
@@ -1473,6 +1494,8 @@ function buildDisciplineRecaps(
         eventName: recapEventName(sample),
         showEventName: false,
         partnerName: sharedPartner,
+        partnerRatingStart: partnerRatingSpan.ratingStart,
+        partnerRatingEnd: partnerRatingSpan.ratingEnd,
         ratingStart,
         ratingEnd,
         ratingDelta,
