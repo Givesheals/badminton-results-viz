@@ -20,8 +20,8 @@ const INNER_COLOR: Record<RatingChipBand, string> = {
 type ChipSize = 'default' | 'compact'
 
 const CHIP_SIZE_CLASS: Record<ChipSize, string> = {
-  default: 'rounded px-1.5 py-1 text-xs font-semibold',
-  compact: 'rounded px-1 py-0.5 text-[11px] font-semibold',
+  default: 'w-[2.25rem] rounded px-1.5 py-1 text-xs font-semibold',
+  compact: 'w-[1.75rem] rounded px-1 py-0.5 text-[11px] font-semibold',
 }
 
 type RatingChipProps = {
@@ -59,7 +59,7 @@ export function RatingChip({
 
   return (
     <span
-      className={`inline-flex w-fit items-center justify-center border bg-white tabular-nums leading-none text-ink-900 shadow-[0_0_0_1px_var(--color-rating-chip-ring)] ${CHIP_SIZE_CLASS[size]}`}
+      className={`inline-flex items-center justify-center border bg-white text-center tabular-nums leading-none text-ink-900 shadow-[0_0_0_1px_var(--color-rating-chip-ring)] ${CHIP_SIZE_CLASS[size]}`}
       style={{ borderColor: INNER_COLOR[resolvedBand] }}
       title={accessible}
       aria-label={accessible}
