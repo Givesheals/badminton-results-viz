@@ -17,10 +17,8 @@ export function TournamentBoxCallout({ variant, playerName, className = '' }: Pr
 
   return (
     <span
-      className={`inline-block px-3 py-1.5 text-center text-xs font-bold leading-none text-white ${
-        isYou
-          ? 'min-w-[7.5rem] bg-box-callout-you shadow-sm'
-          : 'min-w-[11rem] bg-box-callout-favourite'
+      className={`inline-flex w-fit items-center whitespace-nowrap px-2.5 py-1.5 text-xs font-bold leading-none text-white ${
+        isYou ? 'bg-box-callout-you shadow-sm' : 'bg-box-callout-favourite'
       } ${className}`}
     >
       {label}
