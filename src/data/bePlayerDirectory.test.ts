@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { searchBePlayers } from './bePlayerDirectory'
+import { findBePlayersByName, searchBePlayers } from './bePlayerDirectory'
 
 describe('searchBePlayers', () => {
   it('returns multiple matches for duplicate names', () => {
@@ -15,5 +15,10 @@ describe('searchBePlayers', () => {
 
   it('returns empty for short queries', () => {
     expect(searchBePlayers('S')).toEqual([])
+  })
+
+  it('finds an exact name match', () => {
+    expect(findBePlayersByName('Emma Wilson')).toHaveLength(1)
+    expect(findBePlayersByName('Emma Wilson')[0]?.beNumber).toBe('1000001')
   })
 })

@@ -1,6 +1,6 @@
 import type { SpreadsheetRow } from '../types/dataset'
 import type { NormalizedMatch } from '../types/matchHistory'
-import { isSinglesDiscipline } from './disciplineStyle'
+import { getDisciplineFamily, isSinglesDiscipline } from './disciplineStyle'
 
 /** Rating-point gap at which expected win chance is ~90% (logistic model). */
 export const RATING_PROBABILITY_SCALE = 100
@@ -75,4 +75,36 @@ const WIN_PERCENT_PER_RATING_POINT = 0.6
 /** Approximate rating-point equivalent of win-% overperformance near even matchups. */
 export function overperformancePercentToRatingPoints(overperformancePercent: number): number {
   return Math.round(overperformancePercent / WIN_PERCENT_PER_RATING_POINT)
+}
+
+/** Most recent singles / doubles / mixed rating from match history. */
+export function latestRatingsByDisciplineFamily(matches: NormalizedMatch[]): {
+  singles: number | null
+  doubles: number | null
+  mixed: number | null
+} {
+  const latest: Partial<
+    Record<'singles' | 'doubles' | 'mixed', { date: string; rating: number; index: number }>
+  > = {}
+
+  matches.forEach((match, index) => {
+    const family = getDisciplineFamily(match.discipline)
+    if (family === 'unknown') return
+    const rating = getPlayerRating(match)
+    if (rating == null) return
+    const prev = latest[family]
+    if (
+      !prev ||
+      match.date > prev.date ||
+      (match.date === prev.date && index > prev.index)
+    ) {
+      latest[family] = { date: match.date, rating, index }
+    }
+  })
+
+  return {
+    singles: latest.singles?.rating ?? null,
+    doubles: latest.doubles?.rating ?? null,
+    mixed: latest.mixed?.rating ?? null,
+  }
 }

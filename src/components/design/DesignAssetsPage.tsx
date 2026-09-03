@@ -7,6 +7,7 @@ import {
   FilePenIcon,
   OPPONENT_NOTE_ICON_BUTTON_CLASS,
 } from '../notes/OpponentNoteIcons'
+import { RatingChip } from '../notes/OpponentRatingChips'
 import { CompetitionAgeChip } from '../tournament/CompetitionAgeChip'
 import { CountyAffiliationChip } from '../tournament/CountyAffiliationChip'
 import { EntryStatusBadge } from '../tournament/EntryStatusBadge'
@@ -129,6 +130,15 @@ export function DesignAssetsPage({ open, onClose }: Props) {
             <TournamentCategoryChip label="Other" />
             <TournamentCategoryChip label="County" />
             <CountyAffiliationChip shortName="Cambs" program="shires" />
+          </AssetGroup>
+
+          <AssetGroup title="Rating Chips">
+            <RatingChip value={null} />
+            <RatingChip value={542} band="copper" />
+            <RatingChip value={559} band="copper" />
+            <RatingChip value={580} band="bronze" />
+            <RatingChip value={623} band="silver" />
+            <RatingChip value={681} band="gold" />
           </AssetGroup>
 
           <AssetGroup title="In tournament — square callouts">

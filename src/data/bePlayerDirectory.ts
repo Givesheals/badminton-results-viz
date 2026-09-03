@@ -121,3 +121,9 @@ export function searchBePlayers(query: string): BePlayerRecord[] {
 export function findBePlayerByNumber(beNumber: string): BePlayerRecord | undefined {
   return BE_PLAYER_DIRECTORY.find((player) => player.beNumber === beNumber.trim())
 }
+
+export function findBePlayersByName(name: string): BePlayerRecord[] {
+  const key = name.trim().toLowerCase()
+  if (!key) return []
+  return BE_PLAYER_DIRECTORY.filter((player) => player.name.trim().toLowerCase() === key)
+}

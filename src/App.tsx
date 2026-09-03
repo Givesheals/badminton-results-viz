@@ -72,10 +72,7 @@ function AppContent() {
     <AppShell headerRight={headerRight} minimal={showcaseMode}>
       <div className="space-y-8" data-showcase-ready={showcaseMode && dataset ? 'true' : undefined}>
         {dataset ? (
-          <Dashboard
-            showcaseMode={showcaseMode}
-            onOpenAddNewData={() => setAddNewDataOpen(true)}
-          />
+          <Dashboard showcaseMode={showcaseMode} />
         ) : showcaseMode ? null : showDefaultLoading ? (
           <section className="rounded-2xl border border-brand-200/70 bg-white px-6 py-12 text-center shadow-sm">
             <p className="text-lg font-medium text-ink-900">Loading your results…</p>

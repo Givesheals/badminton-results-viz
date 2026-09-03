@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import { DashboardNavigationProvider } from '../../context/DashboardNavigationContext'
 import { useDataset } from '../../context/DatasetContext'
 import { computeStatsFromMatches } from '../../lib/computeStats'
-import { formatDisplayDate } from '../../lib/formatDate'
 import { buildFilterOptions } from '../../lib/filterMatches'
 import { normalizeDataset } from '../../lib/matchHistory'
 import { BestWinsSection } from '../charts/BestWinsSection'
@@ -20,13 +19,13 @@ import { SummarySection } from './SummarySection'
 import { SeasonJourneySection } from './SeasonJourneySection'
 import { TournamentRecapSection } from './TournamentRecapSection'
 import { OpponentNotesProvider } from '../../context/OpponentNotesContext'
+import { PremiumHubHeader } from './PremiumHubHeader'
 
 type Props = {
   showcaseMode?: boolean
-  onOpenAddNewData?: () => void
 }
 
-export function Dashboard({ showcaseMode = false, onOpenAddNewData }: Props) {
+export function Dashboard({ showcaseMode = false }: Props) {
   const { dataset } = useDataset()
 
   const allMatches = useMemo(
@@ -43,14 +42,6 @@ export function Dashboard({ showcaseMode = false, onOpenAddNewData }: Props) {
 
   if (!dataset) return null
 
-  const title = headerStats.playerName
-    ? `${headerStats.playerName}'s results`
-    : 'Your results'
-  const dateRange =
-    headerStats.dateFrom && headerStats.dateTo
-      ? `${formatDisplayDate(headerStats.dateFrom)} → ${formatDisplayDate(headerStats.dateTo)}`
-      : null
-
   const sectionProps = {
     allMatches,
     filterOptions,
@@ -58,27 +49,10 @@ export function Dashboard({ showcaseMode = false, onOpenAddNewData }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      <section
-        id="dashboard-results-header"
-        className="scroll-mt-4 flex flex-wrap items-center justify-between gap-3"
-      >
-        <div>
-          <h2 className="text-xl font-semibold text-ink-900">{title}</h2>
-          {dateRange && (
-            <p className="text-sm text-ink-700">{dateRange}</p>
-          )}
-        </div>
-        {!showcaseMode && onOpenAddNewData && (
-          <button
-            type="button"
-            onClick={onOpenAddNewData}
-            className="rounded-lg border border-ink-100 bg-white px-3 py-1.5 text-sm text-ink-700 hover:bg-ink-50"
-          >
-            Add new data
-          </button>
-        )}
-      </section>
+    <div className="space-y-3">
+      {!showcaseMode && (
+        <PremiumHubHeader playerName={headerStats.playerName ?? ''} allMatches={allMatches} />
+      )}
 
       <DashboardNavigationProvider>
         <OpponentNotesProvider playerName={headerStats.playerName}>

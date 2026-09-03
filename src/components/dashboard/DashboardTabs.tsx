@@ -22,32 +22,12 @@ const TAB_STORAGE_KEY = 'dashboard-active-tab'
 /** Hidden for MVP; set to true to restore the This season tab. */
 const THIS_SEASON_TAB_ENABLED = false
 
-const ALL_TABS: { id: DashboardTabId; label: string; subtitle: string }[] = [
-  {
-    id: 'latest-event',
-    label: 'Events',
-    subtitle: 'How did my last tournament go?',
-  },
-  {
-    id: 'this-season',
-    label: 'This season',
-    subtitle: "How's my season going so far?",
-  },
-  {
-    id: 'all-time',
-    label: 'Player summary',
-    subtitle: 'My career in numbers — and how I play',
-  },
-  {
-    id: 'people',
-    label: 'People',
-    subtitle: 'Who do I play with and against?',
-  },
-  {
-    id: 'notes',
-    label: 'Notes',
-    subtitle: '',
-  },
+const ALL_TABS: { id: DashboardTabId; label: string }[] = [
+  { id: 'latest-event', label: 'Events' },
+  { id: 'notes', label: 'Notes' },
+  { id: 'people', label: 'People' },
+  { id: 'all-time', label: 'Stats' },
+  { id: 'this-season', label: 'This season' },
 ]
 
 const TABS = THIS_SEASON_TAB_ENABLED
@@ -133,8 +113,6 @@ export function DashboardTabs({ importedAt, panels }: Props) {
     })
   }, [activeTab, clearScrollTarget, scrollTarget, selectTab])
 
-  const activeMeta = TABS.find((tab) => tab.id === activeTab) ?? TABS[0]
-
   const focusTab = useCallback((id: DashboardTabId) => {
     tabRefs.current[id]?.focus()
   }, [])
@@ -174,12 +152,12 @@ export function DashboardTabs({ importedAt, panels }: Props) {
   )
 
   return (
-    <div className="space-y-4">
-      <div className="sticky top-0 z-30 -mx-1 space-y-2 bg-white/95 px-1 pb-2 pt-1 backdrop-blur-sm">
+    <div>
+      <div className="sticky top-0 z-30 -mx-1 bg-white px-1">
         <div
           role="tablist"
           aria-label="Dashboard sections"
-          className="flex w-full gap-1 rounded-xl border border-ink-100 bg-white p-1 shadow-sm"
+          className="flex gap-1 overflow-x-auto border-b border-ink-200"
         >
           {TABS.map((tab) => {
             const selected = activeTab === tab.id
@@ -197,10 +175,10 @@ export function DashboardTabs({ importedAt, panels }: Props) {
                 tabIndex={selected ? 0 : -1}
                 onClick={() => selectTab(tab.id)}
                 onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
-                className={`min-w-0 flex-1 rounded-lg px-1.5 py-2 text-center text-xs leading-snug transition-colors sm:px-3 sm:text-sm ${
+                className={`-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
                   selected
-                    ? 'bg-court-50 font-medium text-court-800 shadow-sm ring-1 ring-court-200/80'
-                    : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900'
+                    ? 'border-ink-900 text-ink-900'
+                    : 'border-transparent text-brand-700 hover:text-brand-600'
                 }`}
               >
                 {tab.label}
@@ -208,26 +186,25 @@ export function DashboardTabs({ importedAt, panels }: Props) {
             )
           })}
         </div>
-        {activeMeta.subtitle ? (
-          <p className="text-sm text-ink-600">{activeMeta.subtitle}</p>
-        ) : null}
       </div>
 
-      {TABS.map((tab) => {
-        const selected = activeTab === tab.id
-        return (
-          <div
-            key={tab.id}
-            role="tabpanel"
-            id={`${baseId}-panel-${tab.id}`}
-            aria-labelledby={`${baseId}-tab-${tab.id}`}
-            hidden={!selected}
-            className="space-y-6"
-          >
-            {selected ? panels[tab.id] : null}
-          </div>
-        )
-      })}
+      <div className="mt-4">
+        {TABS.map((tab) => {
+          const selected = activeTab === tab.id
+          return (
+            <div
+              key={tab.id}
+              role="tabpanel"
+              id={`${baseId}-panel-${tab.id}`}
+              aria-labelledby={`${baseId}-tab-${tab.id}`}
+              hidden={!selected}
+              className="space-y-6"
+            >
+              {selected ? panels[tab.id] : null}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
