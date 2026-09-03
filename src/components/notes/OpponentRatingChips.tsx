@@ -1,13 +1,14 @@
 import {
   prototypeDisciplineRatings,
+  ratingChipBandForRating,
   U19_RATING_DISCIPLINES,
   u19CircuitBandForRating,
   u19CircuitBandLabel,
   u19RatingDisciplineLabel,
-  type U19CircuitBand,
+  type SeniorRatingChipBand,
 } from '../../lib/opponentNoteIdentity'
 
-export type RatingChipBand = U19CircuitBand | 'copper' | 'unrated'
+export type RatingChipBand = SeniorRatingChipBand | 'gold' | 'unrated'
 
 const INNER_COLOR: Record<RatingChipBand, string> = {
   unrated: 'var(--color-rating-chip-ring)',
@@ -41,6 +42,9 @@ function chipLabel(value: number | null | undefined): string {
   return value == null ? '-' : String(value)
 }
 
+const RATING_CHIP_FRAME =
+  'border bg-white shadow-[0_0_0_1px_var(--color-rating-chip-ring)]'
+
 export function RatingChip({
   value = null,
   band,
@@ -59,12 +63,46 @@ export function RatingChip({
 
   return (
     <span
-      className={`inline-flex items-center justify-center border bg-white text-center tabular-nums leading-none text-ink-900 shadow-[0_0_0_1px_var(--color-rating-chip-ring)] ${CHIP_SIZE_CLASS[size]}`}
+      className={`inline-flex items-center justify-center text-center tabular-nums leading-none text-ink-900 ${RATING_CHIP_FRAME} ${CHIP_SIZE_CLASS[size]}`}
       style={{ borderColor: INNER_COLOR[resolvedBand] }}
       title={accessible}
       aria-label={accessible}
     >
       {display}
+    </span>
+  )
+}
+
+export function LabeledRatingChip({
+  value = null,
+  label,
+  band,
+}: {
+  value?: number | null
+  label: string
+  band?: RatingChipBand
+}) {
+  const resolvedBand =
+    band ?? (value == null ? 'unrated' : ratingChipBandForRating(value))
+  const display = chipLabel(value)
+  const accessible =
+    value == null || resolvedBand === 'unrated'
+      ? `${label}, no rating`
+      : `${label} rating ${display}, ${resolvedBand}`
+
+  return (
+    <span
+      className={`inline-flex w-[4.25rem] flex-col items-center justify-center rounded px-1.5 py-1.5 text-center ${RATING_CHIP_FRAME}`}
+      style={{ borderColor: INNER_COLOR[resolvedBand] }}
+      title={accessible}
+      aria-label={accessible}
+    >
+      <span className="text-base font-semibold tabular-nums leading-none text-ink-900">
+        {display}
+      </span>
+      <span className="mt-1 w-full text-center text-[11px] font-medium leading-none text-ink-500">
+        {label}
+      </span>
     </span>
   )
 }

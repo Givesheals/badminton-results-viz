@@ -3,6 +3,7 @@ import { findBePlayersByName } from '../../data/bePlayerDirectory'
 import { usePremium } from '../../context/PremiumContext'
 import { DRAW_PLAYER_PROFILE_LINK_CLASS } from '../notes/DrawPairNames'
 import { BetaBadge } from '../ui/BetaBadge'
+import { LabeledRatingChip } from '../notes/OpponentRatingChips'
 import { latestRatingsByDisciplineFamily } from '../../lib/ratings'
 import type { NormalizedMatch } from '../../types/matchHistory'
 
@@ -46,14 +47,13 @@ export function PremiumHubHeader({ playerName, allMatches }: Props) {
       <div className="mt-1 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <h1 className="text-xl font-bold text-ink-900 sm:text-2xl">{title}</h1>
         {ratingItems.length > 0 ? (
-          <div className="flex gap-4 sm:gap-5">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {ratingItems.map((item) => (
-              <div key={item.key} className="min-w-[3.5rem] text-right">
-                <p className="text-lg font-semibold tabular-nums leading-none text-ink-900">
-                  {item.value}
-                </p>
-                <p className="mt-0.5 text-[11px] font-medium text-ink-500">{item.label}</p>
-              </div>
+              <LabeledRatingChip
+                key={item.key}
+                value={item.value}
+                label={item.label}
+              />
             ))}
           </div>
         ) : null}
