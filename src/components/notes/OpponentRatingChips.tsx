@@ -7,38 +7,64 @@ import {
   type U19CircuitBand,
 } from '../../lib/opponentNoteIdentity'
 
-const BAND_INSET_CLASS: Record<U19CircuitBand, string> = {
-  bronze: 'shadow-[inset_0_0_0_1px_var(--color-level-bronze)]',
-  silver: 'shadow-[inset_0_0_0_1px_var(--color-level-silver)]',
-  gold: 'shadow-[inset_0_0_0_1px_var(--color-level-gold)]',
+export type RatingChipBand = U19CircuitBand | 'copper' | 'unrated'
+
+const INNER_COLOR: Record<RatingChipBand, string> = {
+  unrated: 'var(--color-rating-chip-ring)',
+  copper: 'var(--color-level-copper)',
+  bronze: 'var(--color-level-bronze)',
+  silver: 'var(--color-level-silver)',
+  gold: 'var(--color-level-gold)',
 }
 
 type ChipSize = 'default' | 'compact'
 
 const CHIP_SIZE_CLASS: Record<ChipSize, string> = {
-  default: 'min-w-[2.25rem] rounded-md px-1.5 py-0.5 text-xs font-semibold',
-  compact: 'min-w-[1.625rem] rounded px-1 py-px text-[11px] font-semibold',
+  default: 'rounded px-1.5 py-1 text-xs font-semibold',
+  compact: 'rounded px-1 py-0.5 text-[11px] font-semibold',
 }
 
-function RatingChip({
-  value,
+type RatingChipProps = {
+  value?: number | null
+  band?: RatingChipBand
+  discipline?: (typeof U19_RATING_DISCIPLINES)[number]
+  size?: ChipSize
+}
+
+function bandForValue(value: number | null | undefined, band?: RatingChipBand): RatingChipBand {
+  if (band != null) return band
+  if (value == null) return 'unrated'
+  return u19CircuitBandForRating(value)
+}
+
+function chipLabel(value: number | null | undefined): string {
+  return value == null ? '-' : String(value)
+}
+
+export function RatingChip({
+  value = null,
+  band,
   discipline,
-  size,
-}: {
-  value: number
-  discipline: (typeof U19_RATING_DISCIPLINES)[number]
-  size: ChipSize
-}) {
-  const band = u19CircuitBandForRating(value)
-  const label = `${u19RatingDisciplineLabel(discipline)} rating ${value}, U19 ${u19CircuitBandLabel(band)}`
+  size = 'default',
+}: RatingChipProps) {
+  const resolvedBand = bandForValue(value, band)
+  const display = chipLabel(value)
+  const accessible =
+    value == null || resolvedBand === 'unrated'
+      ? 'No rating'
+      : discipline != null &&
+          (resolvedBand === 'bronze' || resolvedBand === 'silver' || resolvedBand === 'gold')
+        ? `${u19RatingDisciplineLabel(discipline)} rating ${value}, U19 ${u19CircuitBandLabel(resolvedBand)}`
+        : `${resolvedBand} rating ${display}`
 
   return (
     <span
-      className={`inline-flex items-center justify-center border border-ink-400 bg-white tabular-nums leading-none text-ink-900 ${CHIP_SIZE_CLASS[size]} ${BAND_INSET_CLASS[band]}`}
-      title={label}
-      aria-label={label}
+      className={`inline-flex w-fit items-center justify-center border bg-white tabular-nums leading-none text-ink-900 shadow-[0_0_0_1px_var(--color-rating-chip-ring)] ${CHIP_SIZE_CLASS[size]}`}
+      style={{ borderColor: INNER_COLOR[resolvedBand] }}
+      title={accessible}
+      aria-label={accessible}
     >
-      {value}
+      {display}
     </span>
   )
 }

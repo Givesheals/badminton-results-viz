@@ -53,6 +53,8 @@
   --color-level-bronze: #eda687;
   --color-level-silver: #b0b0b0;
   --color-level-gold: #fff500;
+  /* Outer ring on rating chips; inner ring uses the level colour */
+  --color-rating-chip-ring: #8b8b8b;
   --color-level-county: #159eda;
   --color-level-shires: #4ca765;
   --color-level-medal-text: #41016f;
