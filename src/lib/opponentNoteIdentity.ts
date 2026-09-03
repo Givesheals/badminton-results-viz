@@ -5,10 +5,11 @@ import { recapMatchKey } from './tournamentRecap'
 /** Lowest U19 circuit a player can enter. Seniors would not show gold later. */
 export type U19CircuitBand = 'bronze' | 'silver' | 'gold'
 
-/** Chip border colours used on player ratings, including senior copper. */
-export type RatingLevelBand = 'copper' | 'bronze' | 'silver' | 'gold'
+/** Senior hub chip borders. There is no gold band for seniors yet. */
+export type SeniorRatingChipBand = 'copper' | 'bronze' | 'silver'
 
-export const RATING_CHIP_COPPER_CUTOFF = 560
+export const SENIOR_RATING_COPPER_MAX = 600
+export const SENIOR_RATING_BRONZE_MAX = 670
 export const U19_BRONZE_CUTOFF = 600
 export const U19_SILVER_CUTOFF = 650
 
@@ -34,12 +35,11 @@ export function u19CircuitBandForRating(rating: number): U19CircuitBand {
   return 'gold'
 }
 
-/** Inner border colour for rating chips, including copper on senior ratings. */
-export function ratingChipBandForRating(rating: number): RatingLevelBand {
-  if (rating <= RATING_CHIP_COPPER_CUTOFF) return 'copper'
-  if (rating <= U19_BRONZE_CUTOFF) return 'bronze'
-  if (rating <= U19_SILVER_CUTOFF) return 'silver'
-  return 'gold'
+/** Inner border colour for senior labeled rating chips. */
+export function ratingChipBandForRating(rating: number): SeniorRatingChipBand {
+  if (rating <= SENIOR_RATING_COPPER_MAX) return 'copper'
+  if (rating <= SENIOR_RATING_BRONZE_MAX) return 'bronze'
+  return 'silver'
 }
 
 export function u19CircuitBandLabel(band: U19CircuitBand): string {

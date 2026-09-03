@@ -146,8 +146,8 @@ export function DesignAssetsPage({ open, onClose }: Props) {
 
           <AssetGroup title="Labeled rating chips">
             <LabeledRatingChip value={528} label="Singles" />
-            <LabeledRatingChip value={612} label="Doubles" />
-            <LabeledRatingChip value={630} label="Mixed" />
+            <LabeledRatingChip value={630} label="Doubles" />
+            <LabeledRatingChip value={680} label="Mixed" />
           </AssetGroup>
 
           <AssetGroup title="In tournament — square callouts">

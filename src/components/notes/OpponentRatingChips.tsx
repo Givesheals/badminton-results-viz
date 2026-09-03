@@ -5,10 +5,10 @@ import {
   u19CircuitBandForRating,
   u19CircuitBandLabel,
   u19RatingDisciplineLabel,
-  type RatingLevelBand,
+  type SeniorRatingChipBand,
 } from '../../lib/opponentNoteIdentity'
 
-export type RatingChipBand = RatingLevelBand | 'unrated'
+export type RatingChipBand = SeniorRatingChipBand | 'gold' | 'unrated'
 
 const INNER_COLOR: Record<RatingChipBand, string> = {
   unrated: 'var(--color-rating-chip-ring)',

@@ -51,13 +51,13 @@ describe('u19CircuitBandForRating', () => {
 })
 
 describe('ratingChipBandForRating', () => {
-  it('maps copper through gold from the Design Assets samples', () => {
+  it('maps senior copper / bronze / silver cut-offs, with no gold', () => {
     expect(ratingChipBandForRating(528)).toBe('copper')
-    expect(ratingChipBandForRating(559)).toBe('copper')
-    expect(ratingChipBandForRating(580)).toBe('bronze')
-    expect(ratingChipBandForRating(612)).toBe('silver')
-    expect(ratingChipBandForRating(630)).toBe('silver')
-    expect(ratingChipBandForRating(681)).toBe('gold')
+    expect(ratingChipBandForRating(600)).toBe('copper')
+    expect(ratingChipBandForRating(601)).toBe('bronze')
+    expect(ratingChipBandForRating(670)).toBe('bronze')
+    expect(ratingChipBandForRating(671)).toBe('silver')
+    expect(ratingChipBandForRating(800)).toBe('silver')
   })
 })
 
