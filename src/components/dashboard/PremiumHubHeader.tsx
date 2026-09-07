@@ -44,10 +44,36 @@ export function PremiumHubHeader({ playerName, allMatches }: Props) {
         Premium
         <BetaBadge />
       </p>
-      <div className="mt-1 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <h1 className="text-xl font-bold text-ink-900 sm:text-2xl">{title}</h1>
+      <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-2">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="text-xl font-bold leading-tight text-ink-900 sm:text-2xl">
+            {title}
+          </h1>
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-none text-ink-600">
+            {beNumber ? <span>BE {beNumber}</span> : null}
+            {beNumber && club ? (
+              <span className="text-ink-300" aria-hidden>
+                ·
+              </span>
+            ) : null}
+            {club ? <span>{club}</span> : null}
+            {beNumber || club ? (
+              <span className="text-ink-300" aria-hidden>
+                ·
+              </span>
+            ) : null}
+            <a
+              href={profileHref}
+              className={DRAW_PLAYER_PROFILE_LINK_CLASS}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Profile & Results
+            </a>
+          </p>
+        </div>
         {ratingItems.length > 0 ? (
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {ratingItems.map((item) => (
               <LabeledRatingChip
                 key={item.key}
@@ -58,28 +84,6 @@ export function PremiumHubHeader({ playerName, allMatches }: Props) {
           </div>
         ) : null}
       </div>
-      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-600">
-        {beNumber ? <span>BE {beNumber}</span> : null}
-        {beNumber && club ? (
-          <span className="text-ink-300" aria-hidden>
-            ·
-          </span>
-        ) : null}
-        {club ? <span>{club}</span> : null}
-        {beNumber || club ? (
-          <span className="text-ink-300" aria-hidden>
-            ·
-          </span>
-        ) : null}
-        <a
-          href={profileHref}
-          className={DRAW_PLAYER_PROFILE_LINK_CLASS}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Profile & Results
-        </a>
-      </p>
     </section>
   )
 }
