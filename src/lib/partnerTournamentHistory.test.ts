@@ -71,6 +71,33 @@ describe('buildPartnerTournamentHistory', () => {
     expect(countPartnerTournamentEvents(groups)).toBe(2)
   })
 
+  it('sorts matches within a tournament in chronological order', () => {
+    const matches = [
+      makeMatch({
+        competitionName: 'One Event',
+        date: '2026-01-02',
+        discipline: 'WD',
+        partnerName: 'Lucy',
+        opponents: 'Later pair',
+        raw: { Round: 'Semi Final' },
+      }),
+      makeMatch({
+        competitionName: 'One Event',
+        date: '2026-01-01',
+        discipline: 'WD',
+        partnerName: 'Lucy',
+        opponents: 'Earlier pair',
+        raw: { Round: 'Group A' },
+      }),
+    ]
+
+    const groups = buildPartnerTournamentHistory(matches, 'Lucy', 'doubles')
+    expect(groups[0]!.tournaments[0]!.matches.map((row) => row.match.opponents)).toEqual([
+      'Earlier pair',
+      'Later pair',
+    ])
+  })
+
   it('sorts tournaments within a stage by most recent date first', () => {
     const matches = [
       makeMatch({

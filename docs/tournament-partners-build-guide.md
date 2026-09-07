@@ -250,7 +250,7 @@ Apply once when the history panel opens (not on manual re-toggle of inner levels
 
 - Stage groups: **deepest stage first**
 - Tournaments within a stage: **newest date first**
-- Matches within a tournament: deepest round first, then newest date
+- Matches within a tournament: chronological (date, then earlier rounds first)
 
 ---
 

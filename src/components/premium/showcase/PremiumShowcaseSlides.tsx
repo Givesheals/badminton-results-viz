@@ -107,7 +107,7 @@ export function PeopleShowcaseSlide({ active }: SlideProps) {
       <div className="space-y-5">
         <div className="space-y-4">
           <TabSubgroupHeading>Who I play with</TabSubgroupHeading>
-          <PartnerHighlightsSection {...sectionProps} />
+          <PartnerHighlightsSection {...sectionProps} showBuildStagePicker={false} />
           <PartnerChemistrySection
             {...sectionProps}
             maxPartners={10}

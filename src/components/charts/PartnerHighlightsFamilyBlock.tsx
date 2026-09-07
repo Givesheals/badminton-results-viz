@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useShareCapture } from '../../hooks/useShareCapture'
 import type { DisciplineFamily } from '../../lib/disciplineStyle'
 import { getDisciplineStyle } from '../../lib/disciplineStyle'
+import type { PartnerHighlightsBuildFeatures } from '../../lib/partnerHighlightsBuildStage'
 import { SHARE_PARTNER_LIMIT } from '../../lib/shareLimits'
 import type { PartnerAchievementsFamily } from '../../lib/partnerAchievements'
 import type { FilterOption } from '../../types/filters'
@@ -34,6 +35,8 @@ type Props = {
   competitionAgeOptions: FilterOption[]
   partnerInPeriod: boolean
   partnerHasDataAllTime: boolean
+  features: PartnerHighlightsBuildFeatures
+  showShare?: boolean
 }
 
 export function PartnerHighlightsFamilyBlock({
@@ -56,6 +59,8 @@ export function PartnerHighlightsFamilyBlock({
   competitionAgeOptions,
   partnerInPeriod,
   partnerHasDataAllTime,
+  features,
+  showShare = true,
 }: Props) {
   const resetKey = `${initialVisibleCount}:${time}:${competition}:${competitionAge}:${selectedPartner}:${data.partners.length}`
 
@@ -81,6 +86,8 @@ export function PartnerHighlightsFamilyBlock({
       competitionAgeOptions={competitionAgeOptions}
       partnerInPeriod={partnerInPeriod}
       partnerHasDataAllTime={partnerHasDataAllTime}
+      features={features}
+      showShare={showShare}
     />
   )
 }
@@ -105,6 +112,8 @@ function PartnerHighlightsFamilyBlockBody({
   competitionAgeOptions,
   partnerInPeriod,
   partnerHasDataAllTime,
+  features,
+  showShare = true,
 }: Props) {
   const [visibleCount, setVisibleCount] = useState(initialVisibleCount)
   const disciplineCode = family === 'doubles' ? 'WD' : 'XD'
@@ -143,80 +152,94 @@ function PartnerHighlightsFamilyBlockBody({
     (selectedPartner ? 1 : 0) +
     (competitionAge ? 1 : 0)
 
+  const titleChip = (
+    <h4
+      className={`inline-block rounded-md px-2 py-0.5 text-sm font-medium ${style.chipClass}`}
+    >
+      {title}
+    </h4>
+  )
+
+  const shareAction =
+    showShare ? (
+      <ShareButton
+        onClick={() => void shareSection()}
+        status={shareStatus}
+        disabled={!hasPartners && !isPartnerFiltered}
+      />
+    ) : null
+
+  const filters = features.showFilters ? (
+    <CollapsibleFilters
+      storageKey={`filters:partner-highlights-${family}`}
+      activeCount={activeFilterCount}
+      contentClassName="grid grid-cols-2 gap-3"
+      onReset={() => {
+        onTimeChange('all')
+        onCompetitionChange('')
+        onSelectedPartnerChange('')
+        onCompetitionAgeChange('')
+      }}
+    >
+      <FilterSelect
+        id={`highlights-${family}-time`}
+        label="Time"
+        labelVisibility="visible"
+        value={time === 'all' ? '' : time}
+        allLabel="All time"
+        options={timeOptions}
+        onChange={(value) => onTimeChange(value || 'all')}
+        className="min-w-0"
+      />
+      <FilterSelect
+        id={`highlights-${family}-competition`}
+        label="Competition"
+        labelVisibility="visible"
+        value={competition}
+        allLabel="All competitions"
+        options={competitionOptions}
+        onChange={onCompetitionChange}
+        className="min-w-0"
+      />
+      <FilterSelect
+        id={`highlights-${family}-partner`}
+        label="Partner"
+        labelVisibility="visible"
+        value={selectedPartner}
+        allLabel="All partners"
+        options={partnerOptions}
+        onChange={onSelectedPartnerChange}
+        className="min-w-0"
+      />
+      <FilterSelect
+        id={`highlights-${family}-competition-age`}
+        label="Competition age"
+        labelVisibility="visible"
+        value={competitionAge}
+        allLabel="All ages"
+        options={competitionAgeOptions}
+        onChange={onCompetitionAgeChange}
+        className="min-w-0"
+      />
+    </CollapsibleFilters>
+  ) : null
+
   return (
     <div className="space-y-3">
-      <SectionHeaderWithFilters
-        title={
-          <h4
-            className={`inline-block rounded-md px-2 py-0.5 text-sm font-medium ${style.chipClass}`}
-          >
-            {title}
-          </h4>
-        }
-        titleActions={
-          <ShareButton
-            onClick={() => void shareSection()}
-            status={shareStatus}
-            disabled={!hasPartners && !isPartnerFiltered}
-          />
-        }
-        filters={
-          <CollapsibleFilters
-            storageKey={`filters:partner-highlights-${family}`}
-            activeCount={activeFilterCount}
-            contentClassName="grid grid-cols-2 gap-3"
-            onReset={() => {
-              onTimeChange('all')
-              onCompetitionChange('')
-              onSelectedPartnerChange('')
-              onCompetitionAgeChange('')
-            }}
-          >
-            <FilterSelect
-              id={`highlights-${family}-time`}
-              label="Time"
-              labelVisibility="visible"
-              value={time === 'all' ? '' : time}
-              allLabel="All time"
-              options={timeOptions}
-              onChange={(value) => onTimeChange(value || 'all')}
-              className="min-w-0"
-            />
-            <FilterSelect
-              id={`highlights-${family}-competition`}
-              label="Competition"
-              labelVisibility="visible"
-              value={competition}
-              allLabel="All competitions"
-              options={competitionOptions}
-              onChange={onCompetitionChange}
-              className="min-w-0"
-            />
-            <FilterSelect
-              id={`highlights-${family}-partner`}
-              label="Partner"
-              labelVisibility="visible"
-              value={selectedPartner}
-              allLabel="All partners"
-              options={partnerOptions}
-              onChange={onSelectedPartnerChange}
-              className="min-w-0"
-            />
-            <FilterSelect
-              id={`highlights-${family}-competition-age`}
-              label="Competition age"
-              labelVisibility="visible"
-              value={competitionAge}
-              allLabel="All ages"
-              options={competitionAgeOptions}
-              onChange={onCompetitionAgeChange}
-              className="min-w-0"
-            />
-          </CollapsibleFilters>
-        }
-      />
+      {features.showFilters ? (
+        <SectionHeaderWithFilters
+          title={titleChip}
+          titleActions={shareAction}
+          filters={filters}
+        />
+      ) : (
+        <div className="flex items-start justify-between gap-3">
+          {titleChip}
+          {shareAction}
+        </div>
+      )}
 
-      {isPartnerFiltered && !partnerInPeriod ? (
+      {!features.showPartnerCards ? null : isPartnerFiltered && !partnerInPeriod ? (
         <PartnerPeriodEmptyState
           partnerName={selectedPartner}
           familyLabel={title.toLowerCase()}
@@ -237,6 +260,9 @@ function PartnerHighlightsFamilyBlockBody({
                 familyMatches={familyMatches}
                 disciplineCode={disciplineCode}
                 shareMode={isSharing}
+                showStageChips={features.showStageChips}
+                showHistoryAccordion={features.showHistoryAccordion}
+                showMatches={features.showMatches}
               />
             ))}
           </ul>

@@ -11,6 +11,9 @@ type Props = {
   familyMatches: NormalizedMatch[]
   disciplineCode: string
   shareMode?: boolean
+  showStageChips?: boolean
+  showHistoryAccordion?: boolean
+  showMatches?: boolean
 }
 
 export function PartnerHighlightAccordionItem({
@@ -19,18 +22,24 @@ export function PartnerHighlightAccordionItem({
   familyMatches,
   disciplineCode,
   shareMode = false,
+  showStageChips = true,
+  showHistoryAccordion = true,
+  showMatches = true,
 }: Props) {
   const [expanded, setExpanded] = useState(false)
   const panelId = useId()
-  const isOpen = shareMode ? false : expanded
+  const expandable = showHistoryAccordion && !shareMode
+  const isOpen = expandable && expanded
 
   return (
     <li className="overflow-hidden rounded-xl card-frame bg-white shadow-sm">
       <PartnerHighlightCard
         row={row}
         expanded={isOpen}
-        onToggle={() => setExpanded((value) => !value)}
+        onToggle={expandable ? () => setExpanded((value) => !value) : undefined}
         panelId={panelId}
+        showStageChips={showStageChips}
+        expandable={expandable}
       />
       {isOpen ? (
         <div id={panelId} className="border-t border-ink-100" data-share-exclude>
@@ -39,6 +48,7 @@ export function PartnerHighlightAccordionItem({
             partnerName={row.partnerName}
             family={family}
             disciplineCode={disciplineCode}
+            showMatches={showMatches}
           />
         </div>
       ) : null}
