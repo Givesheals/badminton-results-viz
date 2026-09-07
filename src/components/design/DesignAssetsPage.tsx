@@ -15,8 +15,6 @@ import { FavouritePlayerName } from '../tournament/FavouritePlayerName'
 import { TournamentBoxCallout } from '../tournament/TournamentBoxCallout'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
 import { ProductionSideMenuOverlayPreview } from './ProductionSideMenuOverlayPreview'
-import { ProductionSideMenuPreview } from './ProductionSideMenuPreview'
-import { ProductionSideMenuScreenshotPreview } from './ProductionSideMenuScreenshotPreview'
 import {
   isLightGroupProgressionStage,
   PROGRESSION_PARTNER_CHIP_COLORS,
@@ -213,10 +211,8 @@ export function DesignAssetsPage({ open, onClose }: Props) {
 
           <AssetGroup
             title="Production side menu"
-            contentClassName="flex flex-col items-start gap-4"
+            contentClassName="flex justify-center"
           >
-            <ProductionSideMenuScreenshotPreview />
-            <ProductionSideMenuPreview />
             <ProductionSideMenuOverlayPreview />
           </AssetGroup>
         </div>
