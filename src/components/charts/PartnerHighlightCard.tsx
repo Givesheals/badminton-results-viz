@@ -14,11 +14,20 @@ import { AccordionChevron } from '../ui/AccordionChevron'
 type Props = {
   row: PartnerAchievementRow
   expanded: boolean
-  onToggle: () => void
+  onToggle?: () => void
   panelId?: string
+  showStageChips?: boolean
+  expandable?: boolean
 }
 
-export function PartnerHighlightCard({ row, expanded, onToggle, panelId }: Props) {
+export function PartnerHighlightCard({
+  row,
+  expanded,
+  onToggle,
+  panelId,
+  showStageChips = true,
+  expandable = true,
+}: Props) {
   const chips = PROGRESSION_STAGE_CHIP_ORDER.filter(
     (stage) => (row.stageCounts[stage] ?? 0) > 0,
   )
@@ -27,6 +36,35 @@ export function PartnerHighlightCard({ row, expanded, onToggle, panelId }: Props
   const toggleLabel = expanded
     ? `Hide tournament history for ${row.partnerName}`
     : `Show tournament history for ${row.partnerName}`
+
+  const body = (
+    <>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <h4 className="min-w-0 font-medium text-ink-900">{row.partnerName}</h4>
+          <p className="shrink-0 text-right text-xs text-ink-500">{eventCountLabel}</p>
+        </div>
+
+        {showStageChips ? (
+          chips.length > 0 ? (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {chips.map((stage) => (
+                <StageChip key={stage} stage={stage} count={row.stageCounts[stage]!} />
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-sm text-ink-600">No classified finishes in this selection.</p>
+          )
+        ) : null}
+      </div>
+
+      {expandable ? <AccordionChevron open={expanded} className="h-5 w-5" /> : null}
+    </>
+  )
+
+  if (!expandable || onToggle == null) {
+    return <div className="flex w-full items-center gap-3 p-4 text-left">{body}</div>
+  }
 
   return (
     <button
@@ -37,24 +75,7 @@ export function PartnerHighlightCard({ row, expanded, onToggle, panelId }: Props
       aria-controls={panelId}
       aria-label={toggleLabel}
     >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-3">
-          <h4 className="min-w-0 font-medium text-ink-900">{row.partnerName}</h4>
-          <p className="shrink-0 text-right text-xs text-ink-500">{eventCountLabel}</p>
-        </div>
-
-        {chips.length > 0 ? (
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {chips.map((stage) => (
-              <StageChip key={stage} stage={stage} count={row.stageCounts[stage]!} />
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-3 text-sm text-ink-600">No classified finishes in this selection.</p>
-        )}
-      </div>
-
-      <AccordionChevron open={expanded} className="h-5 w-5" />
+      {body}
     </button>
   )
 }

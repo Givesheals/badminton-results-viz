@@ -157,7 +157,7 @@ export function DashboardTabs({ importedAt, panels }: Props) {
         <div
           role="tablist"
           aria-label="Dashboard sections"
-          className="flex gap-1 overflow-x-auto border-b border-ink-200"
+          className="flex gap-1 overflow-x-auto"
         >
           {TABS.map((tab) => {
             const selected = activeTab === tab.id
@@ -175,7 +175,7 @@ export function DashboardTabs({ importedAt, panels }: Props) {
                 tabIndex={selected ? 0 : -1}
                 onClick={() => selectTab(tab.id)}
                 onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
-                className={`-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
+                className={`shrink-0 border-b-2 px-3 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
                   selected
                     ? 'border-ink-900 text-ink-900'
                     : 'border-transparent text-brand-700 hover:text-brand-600'

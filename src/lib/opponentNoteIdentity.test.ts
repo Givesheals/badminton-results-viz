@@ -4,6 +4,7 @@ import {
   countMeetingsByOpponentName,
   formatOpponentGroupMeta,
   prototypeDisciplineRatings,
+  ratingChipBandForRating,
   u19CircuitBandForRating,
 } from './opponentNoteIdentity'
 
@@ -46,6 +47,17 @@ describe('u19CircuitBandForRating', () => {
     expect(u19CircuitBandForRating(650)).toBe('silver')
     expect(u19CircuitBandForRating(651)).toBe('gold')
     expect(u19CircuitBandForRating(800)).toBe('gold')
+  })
+})
+
+describe('ratingChipBandForRating', () => {
+  it('maps senior copper / bronze / silver cut-offs, with no gold', () => {
+    expect(ratingChipBandForRating(528)).toBe('copper')
+    expect(ratingChipBandForRating(600)).toBe('copper')
+    expect(ratingChipBandForRating(601)).toBe('bronze')
+    expect(ratingChipBandForRating(670)).toBe('bronze')
+    expect(ratingChipBandForRating(671)).toBe('silver')
+    expect(ratingChipBandForRating(800)).toBe('silver')
   })
 })
 

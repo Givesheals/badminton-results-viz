@@ -38,7 +38,7 @@ Two blocks, **always stacked vertically** (never side-by-side, even on wide scre
 1. **Doubles** — men’s, women’s, and open doubles (discipline codes MD, WD, OD)
 2. **Mixed** — mixed doubles (XD)
 
-Singles are excluded entirely.
+Singles are excluded entirely. **Both blocks always appear**, even if the player has never played that discipline or has no qualifying partners.
 
 Each block is an independently filtered sub-section with its own partner list.
 
@@ -250,7 +250,7 @@ Apply once when the history panel opens (not on manual re-toggle of inner levels
 
 - Stage groups: **deepest stage first**
 - Tournaments within a stage: **newest date first**
-- Matches within a tournament: deepest round first, then newest date
+- Matches within a tournament: chronological (date, then earlier rounds first)
 
 ---
 
@@ -279,8 +279,7 @@ Keep soft **family background shading** on each match row.
 
 | Condition | Copy |
 |-----------|------|
-| No partners in either family (and no partner filter active) | “No doubles or mixed matches with a partner in the current selection.” |
-| Family block has no progression partners | “No progression tournaments with a partner in this category yet.” |
+| Family block has no partners (never played, or none that qualify) | “No {doubles\|mixed} tournament partners in your results yet.” |
 | Partner filter, no data in period (but all-time exists) | See §6 |
 | Partner filter, no data ever | See §6 |
 | Expanded partner, no progression events in selection | “No tournament progression events with {name} in this selection.” |

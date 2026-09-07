@@ -13,6 +13,7 @@ type Props = {
   onOpenUserSettings: () => void
   onOpenNotifications: () => void
   onOpenTournamentPreview: () => void
+  onOpenLiveFeed: () => void
   onOpenDesignAssets: () => void
   onOpenAddNewData: () => void
 }
@@ -38,6 +39,7 @@ export function UserMenuDrawer({
   onOpenUserSettings,
   onOpenNotifications,
   onOpenTournamentPreview,
+  onOpenLiveFeed,
   onOpenDesignAssets,
   onOpenAddNewData,
 }: Props) {
@@ -193,6 +195,18 @@ export function UserMenuDrawer({
                   }}
                 >
                   Tournament page preview
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="text-left text-base font-medium text-brand-700 hover:text-brand-600"
+                  onClick={() => {
+                    onClose()
+                    onOpenLiveFeed()
+                  }}
+                >
+                  Live Feed
                 </button>
               </li>
               <li>

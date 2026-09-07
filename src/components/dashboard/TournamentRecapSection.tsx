@@ -111,6 +111,8 @@ export function TournamentRecapSection({
     canGoNewer,
     onOlder: goOlder,
     onNewer: goNewer,
+    // Mock: two newest recaps unviewed, so the mark shows on the latest card.
+    hasUnviewedOlder: index === 0,
   }
 
   const activeStage = buildStage ?? 10

@@ -32,6 +32,11 @@ export type PartnerAchievementsFamily = {
   totalPartnerCount: number
 }
 
+export const EMPTY_PARTNER_ACHIEVEMENTS_FAMILY: PartnerAchievementsFamily = {
+  partners: [],
+  totalPartnerCount: 0,
+}
+
 export type PartnerAchievementsResult = {
   doubles: PartnerAchievementsFamily
   mixed: PartnerAchievementsFamily

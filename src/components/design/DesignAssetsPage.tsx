@@ -7,7 +7,7 @@ import {
   FilePenIcon,
   OPPONENT_NOTE_ICON_BUTTON_CLASS,
 } from '../notes/OpponentNoteIcons'
-import { RatingChip } from '../notes/OpponentRatingChips'
+import { LabeledRatingChip, RatingChip } from '../notes/OpponentRatingChips'
 import { CompetitionAgeChip } from '../tournament/CompetitionAgeChip'
 import { CountyAffiliationChip } from '../tournament/CountyAffiliationChip'
 import { EntryStatusBadge } from '../tournament/EntryStatusBadge'
@@ -15,8 +15,6 @@ import { FavouritePlayerName } from '../tournament/FavouritePlayerName'
 import { TournamentBoxCallout } from '../tournament/TournamentBoxCallout'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
 import { ProductionSideMenuOverlayPreview } from './ProductionSideMenuOverlayPreview'
-import { ProductionSideMenuPreview } from './ProductionSideMenuPreview'
-import { ProductionSideMenuScreenshotPreview } from './ProductionSideMenuScreenshotPreview'
 import {
   isLightGroupProgressionStage,
   PROGRESSION_PARTNER_CHIP_COLORS,
@@ -144,6 +142,12 @@ export function DesignAssetsPage({ open, onClose }: Props) {
             <RatingChip value={681} band="gold" />
           </AssetGroup>
 
+          <AssetGroup title="Labeled rating chips">
+            <LabeledRatingChip value={528} label="Singles" />
+            <LabeledRatingChip value={630} label="Doubles" />
+            <LabeledRatingChip value={680} label="Mixed" />
+          </AssetGroup>
+
           <AssetGroup title="In tournament — square callouts">
             <TournamentBoxCallout variant="favourite" playerName="Daniel Bates" />
             <TournamentBoxCallout variant="you" />
@@ -207,10 +211,8 @@ export function DesignAssetsPage({ open, onClose }: Props) {
 
           <AssetGroup
             title="Production side menu"
-            contentClassName="flex flex-col items-start gap-4"
+            contentClassName="flex justify-center"
           >
-            <ProductionSideMenuScreenshotPreview />
-            <ProductionSideMenuPreview />
             <ProductionSideMenuOverlayPreview />
           </AssetGroup>
         </div>

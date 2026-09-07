@@ -1,5 +1,6 @@
 import type { DisciplineFamily } from './disciplineStyle'
 import { getDisciplineFamily } from './disciplineStyle'
+import { compareMatchesChronologically } from './matchChronology'
 import type { NormalizedMatch } from '../types/matchHistory'
 import {
   bestStageFromMatchesForAchievements,
@@ -55,8 +56,7 @@ function matchStageRank(match: NormalizedMatch): number {
 }
 
 function compareMatchRows(a: PartnerTournamentMatchRow, b: PartnerTournamentMatchRow): number {
-  if (b.stageRank !== a.stageRank) return b.stageRank - a.stageRank
-  return b.match.date.localeCompare(a.match.date)
+  return compareMatchesChronologically(a.match, b.match)
 }
 
 function compareTournamentEvents(a: PartnerTournamentEvent, b: PartnerTournamentEvent): number {
