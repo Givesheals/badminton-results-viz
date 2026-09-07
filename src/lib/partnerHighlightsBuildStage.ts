@@ -1,12 +1,14 @@
 /** Ticket build-out stages for screenshotting Tournament partners (1 = shell … 7 = full). */
-export const PARTNER_HIGHLIGHTS_BUILD_STAGES = [1, 2, 3, 4, 5, 6, 7] as const
+export const PARTNER_HIGHLIGHTS_BUILD_STAGES = [1, 2, 3, 3.5, 4, 5, 6, 7] as const
 export type PartnerHighlightsBuildStage = (typeof PARTNER_HIGHLIGHTS_BUILD_STAGES)[number]
 
 export type PartnerHighlightsBuildFeatures = {
-  /** Stage ≥ 2 — Doubles / Mixed family sections (only if that discipline was ever played) */
+  /** Stage ≥ 2 — Doubles and Mixed family sections (always both, even if empty) */
   showDisciplines: boolean
   /** Stage ≥ 3 — Partner cards (name + event count, top 2, Show more) */
   showPartnerCards: boolean
+  /** Stage 3.5 — Force both families empty so screenshots show the no-partners look */
+  forceEmptyFamilies: boolean
   /** Stage ≥ 4 — Finish-count chips on partner cards */
   showStageChips: boolean
   /** Stage ≥ 4 — Partner cards become accordions of stage groups and tournaments */
@@ -29,11 +31,15 @@ export const PARTNER_HIGHLIGHTS_BUILD_STAGE_META: Record<
   },
   2: {
     shortLabel: 'Disciplines',
-    summary: 'Doubles and Mixed sections, only for disciplines you have played',
+    summary: 'Doubles and Mixed sections, even if a discipline has no partners',
   },
   3: {
     shortLabel: 'Partners',
     summary: 'Partner cards with event counts — top 2, plus Show more',
+  },
+  3.5: {
+    shortLabel: 'Empty',
+    summary: 'Doubles and Mixed with no partners to show',
   },
   4: {
     shortLabel: 'History',
@@ -64,6 +70,7 @@ export function getPartnerHighlightsBuildFeatures(
   return {
     showDisciplines: stage >= 2,
     showPartnerCards: stage >= 3,
+    forceEmptyFamilies: stage === 3.5,
     showStageChips: stage >= 4,
     showHistoryAccordion: stage >= 4,
     showMatches: stage >= 5,

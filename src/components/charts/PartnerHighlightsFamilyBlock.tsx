@@ -247,7 +247,7 @@ function PartnerHighlightsFamilyBlockBody({
         />
       ) : !hasPartners ? (
         <p className="text-sm text-ink-600">
-          No progression tournaments with a partner in this category yet.
+          No {title.toLowerCase()} tournament partners in your results yet.
         </p>
       ) : (
         <div ref={shareRef} data-share-root>

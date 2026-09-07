@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { filterMatches } from '../../lib/filterMatches'
 import {
   computePartnerAchievements,
+  EMPTY_PARTNER_ACHIEVEMENTS_FAMILY,
   partnerCompetitionFilterOptions,
   partnerFilterOptions,
 } from '../../lib/partnerAchievements'
@@ -263,26 +264,18 @@ export function PartnerHighlightsSection({
     }
   }, [highlightMixedCompetition, mixedCompetitionOptions])
 
-  const hasPlayedDoubles = useMemo(
-    () => matchesForDisciplineFamily(allMatches, 'doubles').length > 0,
-    [allMatches],
-  )
-  const hasPlayedMixed = useMemo(
-    () => matchesForDisciplineFamily(allMatches, 'mixed').length > 0,
-    [allMatches],
-  )
-
-  const showDoublesSection = features.showDisciplines && hasPlayedDoubles
-  const showMixedSection = features.showDisciplines && hasPlayedMixed
-
-  const isBrowsingOnePartner =
-    highlightDoublesPartner.length > 0 || highlightMixedPartner.length > 0
-
-  const showEmptyMessage =
-    features.showDisciplines &&
-    !showDoublesSection &&
-    !showMixedSection &&
-    !isBrowsingOnePartner
+  const forceEmptyFamilies = features.forceEmptyFamilies
+  const showDisciplineSections = features.showDisciplines
+  const doublesFamilyData = forceEmptyFamilies
+    ? EMPTY_PARTNER_ACHIEVEMENTS_FAMILY
+    : achievements.doubles
+  const mixedFamilyData = forceEmptyFamilies
+    ? EMPTY_PARTNER_ACHIEVEMENTS_FAMILY
+    : achievements.mixed
+  const doublesFamilyMatches = forceEmptyFamilies ? [] : doublesMatches
+  const mixedFamilyMatches = forceEmptyFamilies ? [] : mixedMatches
+  const doublesDisplayedPartnerOptions = forceEmptyFamilies ? [] : doublesPartnerOptions
+  const mixedDisplayedPartnerOptions = forceEmptyFamilies ? [] : mixedPartnerOptions
 
   const activeStage = buildStage ?? 7
   const showShare = !showBuildStagePicker
@@ -335,85 +328,98 @@ export function PartnerHighlightsSection({
           <h3 className="font-medium text-ink-900">Tournament partners</h3>
         </SectionHeading>
 
-        {showEmptyMessage ? (
-          <p className="mt-4 flex min-h-32 items-center justify-center text-sm text-ink-700">
-            No doubles or mixed matches with a partner in the current selection.
-          </p>
-        ) : showDoublesSection || showMixedSection ? (
+        {showDisciplineSections ? (
           <div className="mt-4 grid gap-6">
-            {showDoublesSection ? (
-              <section
-                className={`rounded-xl border-l-4 p-4 ${getDisciplineStyle('WD').rowBgClass} ${getDisciplineStyle('WD').borderClass}`}
-              >
-                <PartnerHighlightsFamilyBlock
-                  family="doubles"
-                  title="Doubles"
-                  data={achievements.doubles}
-                  familyMatches={doublesMatches}
-                  initialVisibleCount={DEFAULT_SHOW_DOUBLES}
-                  partnerOptions={doublesPartnerOptions}
-                  selectedPartner={highlightDoublesPartner}
-                  onSelectedPartnerChange={setHighlightDoublesPartner}
-                  time={highlightDoublesTime}
-                  onTimeChange={setHighlightDoublesTime}
-                  timeOptions={timeRangeOptions}
-                  competition={highlightDoublesCompetition}
-                  onCompetitionChange={setHighlightDoublesCompetition}
-                  competitionOptions={doublesCompetitionOptions}
-                  competitionAge={highlightDoublesCompetitionAge}
-                  onCompetitionAgeChange={setHighlightDoublesCompetitionAge}
-                  competitionAgeOptions={filterOptions.competitionAges}
-                  partnerInPeriod={partnerInFamily(
-                    achievements.doubles,
-                    highlightDoublesPartner,
-                  )}
-                  partnerHasDataAllTime={partnerInFamily(
-                    allTimeAchievements.doubles,
-                    highlightDoublesPartner,
-                  )}
-                  features={features}
-                  showShare={showShare}
-                />
-              </section>
-            ) : null}
-            {showMixedSection ? (
-              <section
-                className={`rounded-xl border-l-4 p-4 ${getDisciplineStyle('XD').rowBgClass} ${getDisciplineStyle('XD').borderClass}`}
-              >
-                <PartnerHighlightsFamilyBlock
-                  family="mixed"
-                  title="Mixed"
-                  data={achievements.mixed}
-                  familyMatches={mixedMatches}
-                  initialVisibleCount={DEFAULT_SHOW_MIXED}
-                  partnerOptions={mixedPartnerOptions}
-                  selectedPartner={highlightMixedPartner}
-                  onSelectedPartnerChange={setHighlightMixedPartner}
-                  time={highlightMixedTime}
-                  onTimeChange={setHighlightMixedTime}
-                  timeOptions={timeRangeOptions}
-                  competition={highlightMixedCompetition}
-                  onCompetitionChange={setHighlightMixedCompetition}
-                  competitionOptions={mixedCompetitionOptions}
-                  competitionAge={highlightMixedCompetitionAge}
-                  onCompetitionAgeChange={setHighlightMixedCompetitionAge}
-                  competitionAgeOptions={filterOptions.competitionAges}
-                  partnerInPeriod={partnerInFamily(
-                    achievements.mixed,
-                    highlightMixedPartner,
-                  )}
-                  partnerHasDataAllTime={partnerInFamily(
-                    allTimeAchievements.mixed,
-                    highlightMixedPartner,
-                  )}
-                  features={features}
-                  showShare={showShare}
-                />
-              </section>
-            ) : null}
+            <PartnerFamilySection familyCode="WD">
+              <PartnerHighlightsFamilyBlock
+                family="doubles"
+                title="Doubles"
+                data={doublesFamilyData}
+                familyMatches={doublesFamilyMatches}
+                initialVisibleCount={DEFAULT_SHOW_DOUBLES}
+                partnerOptions={doublesDisplayedPartnerOptions}
+                selectedPartner={highlightDoublesPartner}
+                onSelectedPartnerChange={setHighlightDoublesPartner}
+                time={highlightDoublesTime}
+                onTimeChange={setHighlightDoublesTime}
+                timeOptions={timeRangeOptions}
+                competition={highlightDoublesCompetition}
+                onCompetitionChange={setHighlightDoublesCompetition}
+                competitionOptions={doublesCompetitionOptions}
+                competitionAge={highlightDoublesCompetitionAge}
+                onCompetitionAgeChange={setHighlightDoublesCompetitionAge}
+                competitionAgeOptions={filterOptions.competitionAges}
+                partnerInPeriod={partnerInFamily(
+                  doublesFamilyData,
+                  highlightDoublesPartner,
+                )}
+                partnerHasDataAllTime={
+                  forceEmptyFamilies
+                    ? false
+                    : partnerInFamily(
+                        allTimeAchievements.doubles,
+                        highlightDoublesPartner,
+                      )
+                }
+                features={features}
+                showShare={showShare}
+              />
+            </PartnerFamilySection>
+            <PartnerFamilySection familyCode="XD">
+              <PartnerHighlightsFamilyBlock
+                family="mixed"
+                title="Mixed"
+                data={mixedFamilyData}
+                familyMatches={mixedFamilyMatches}
+                initialVisibleCount={DEFAULT_SHOW_MIXED}
+                partnerOptions={mixedDisplayedPartnerOptions}
+                selectedPartner={highlightMixedPartner}
+                onSelectedPartnerChange={setHighlightMixedPartner}
+                time={highlightMixedTime}
+                onTimeChange={setHighlightMixedTime}
+                timeOptions={timeRangeOptions}
+                competition={highlightMixedCompetition}
+                onCompetitionChange={setHighlightMixedCompetition}
+                competitionOptions={mixedCompetitionOptions}
+                competitionAge={highlightMixedCompetitionAge}
+                onCompetitionAgeChange={setHighlightMixedCompetitionAge}
+                competitionAgeOptions={filterOptions.competitionAges}
+                partnerInPeriod={partnerInFamily(
+                  mixedFamilyData,
+                  highlightMixedPartner,
+                )}
+                partnerHasDataAllTime={
+                  forceEmptyFamilies
+                    ? false
+                    : partnerInFamily(allTimeAchievements.mixed, highlightMixedPartner)
+                }
+                features={features}
+                showShare={showShare}
+              />
+            </PartnerFamilySection>
           </div>
         ) : null}
       </article>
     </div>
+  )
+}
+
+/** Rounded outer left edge, straight inner edge - matches production Badminfo. */
+function PartnerFamilySection({
+  familyCode,
+  children,
+}: {
+  familyCode: 'WD' | 'XD'
+  children: ReactNode
+}) {
+  const style = getDisciplineStyle(familyCode)
+  return (
+    <section className={`relative overflow-hidden rounded-xl p-4 pl-5 ${style.rowBgClass}`}>
+      <span
+        aria-hidden
+        className={`pointer-events-none absolute inset-y-0 left-0 w-1 ${style.accentClass}`}
+      />
+      {children}
+    </section>
   )
 }
