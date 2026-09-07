@@ -35,13 +35,13 @@ export function PremiumHubHeader({ playerName, allMatches }: Props) {
 
   const beNumber = premium?.beNumber || directoryMatch?.beNumber || null
   const club = directoryMatch?.club ?? null
-  const title = playerName.trim() || 'Premium'
+  const title = playerName.trim() || 'Player Lab'
   const profileHref = `https://www.badminfo.com/player?name=${encodeURIComponent(playerName)}`
 
   return (
     <section id="dashboard-results-header" className="scroll-mt-4">
       <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
-        Premium
+        Player Lab
         <BetaBadge />
       </p>
       <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-2">
