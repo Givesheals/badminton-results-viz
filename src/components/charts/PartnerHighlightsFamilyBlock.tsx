@@ -13,7 +13,10 @@ import { SectionHeaderWithFilters } from '../filters/SectionHeaderWithFilters'
 import { ShareButton } from '../ui/ShareButton'
 import { PartnerHighlightAccordionItem } from './PartnerHighlightAccordionItem'
 
-const SHOW_MORE_STEP = 3
+const SHOW_MORE_STEP = 4
+
+const SHOW_MORE_LESS_BUTTON_CLASS =
+  'rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
 type Props = {
   family: DisciplineFamily
@@ -145,6 +148,8 @@ function PartnerHighlightsFamilyBlockBody({
   const remainingPartners = isPartnerFiltered
     ? 0
     : Math.max(0, filteredPartners.length - visible.length)
+  const canShowMore = remainingPartners > 0
+  const canShowLess = !isPartnerFiltered && visibleCount > initialVisibleCount
 
   const activeFilterCount =
     (time !== 'all' ? 1 : 0) +
@@ -269,18 +274,35 @@ function PartnerHighlightsFamilyBlockBody({
 
           {!isPartnerFiltered ? (
             <div className="space-y-2 pt-1" data-share-exclude>
-              {remainingPartners > 0 ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setVisibleCount((count) =>
-                      Math.min(filteredPartners.length, count + SHOW_MORE_STEP),
-                    )
-                  }
-                  className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-                >
-                  Show more
-                </button>
+              {canShowLess || canShowMore ? (
+                <div className="flex items-center">
+                  {canShowLess ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisibleCount((count) =>
+                          Math.max(initialVisibleCount, count - SHOW_MORE_STEP),
+                        )
+                      }
+                      className={SHOW_MORE_LESS_BUTTON_CLASS}
+                    >
+                      Show less
+                    </button>
+                  ) : null}
+                  {canShowMore ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisibleCount((count) =>
+                          Math.min(filteredPartners.length, count + SHOW_MORE_STEP),
+                        )
+                      }
+                      className={`ml-auto ${SHOW_MORE_LESS_BUTTON_CLASS}`}
+                    >
+                      Show more
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
               <PartnerHighlightsFooter
                 total={filteredPartners.length}
