@@ -202,17 +202,39 @@ export function partnerFilterOptions(family: PartnerAchievementsFamily): FilterO
 }
 
 /** Competition categories present in the given matches (for per-family filters). */
+const PARTNER_COMPETITION_FILTER_ORDER = [
+  'copper',
+  'bronze',
+  'silver',
+  'gold',
+  'other',
+  'para',
+] as const
+
+function partnerCompetitionFilterRank(label: string): number {
+  const index = PARTNER_COMPETITION_FILTER_ORDER.indexOf(
+    label.trim().toLowerCase() as (typeof PARTNER_COMPETITION_FILTER_ORDER)[number],
+  )
+  return index === -1 ? PARTNER_COMPETITION_FILTER_ORDER.length : index
+}
+
 export function partnerCompetitionFilterOptions(
   matches: NormalizedMatch[],
 ): FilterOption[] {
   const competitionMap = new Map<string, string>()
   for (const match of matches) {
     const { value, label } = formatTournamentCategory(match.raw['Tournament Category'])
+    if (label.trim().toLowerCase() === 'county') continue
     competitionMap.set(value, label)
   }
   return [...competitionMap.entries()]
     .map(([value, label]) => ({ value, label }))
-    .sort((a, b) => a.label.localeCompare(b.label))
+    .sort((a, b) => {
+      const rank =
+        partnerCompetitionFilterRank(a.label) - partnerCompetitionFilterRank(b.label)
+      if (rank !== 0) return rank
+      return a.label.localeCompare(b.label)
+    })
 }
 
 export function formatStageChip(

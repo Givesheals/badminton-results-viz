@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import type { NormalizedMatch } from '../types/matchHistory'
 import {
   computePartnerHighlightScore,
   formatStageChip,
+  partnerCompetitionFilterOptions,
   type PartnerAchievementRow,
 } from './partnerAchievements'
 
@@ -79,5 +81,48 @@ describe('formatStageChip', () => {
     expect(formatStageChip('quarter-final', 4, true)).toBe('4× QF')
     expect(formatStageChip('group-wins', 15, true)).toBe('15× Grp MW')
     expect(formatStageChip('runner-up', 2, true)).toBe('2× 2nd')
+  })
+})
+
+function categoryMatch(category: string): NormalizedMatch {
+  return {
+    competitionName: `${category} event`,
+    tournamentCategory: category,
+    tournamentCategoryLabel: category,
+    date: '2026-01-01',
+    discipline: 'MD',
+    disciplineLabel: 'MD',
+    playerName: 'Alex',
+    partnerName: 'Sam',
+    opponents: 'Opponents',
+    outcome: 'win',
+    nonCompetitiveReason: null,
+    scoreSummary: '21-15',
+    playerRating: 570,
+    raw: { 'Tournament Category': category },
+  }
+}
+
+describe('partnerCompetitionFilterOptions', () => {
+  it('orders copper through para and omits county', () => {
+    const options = partnerCompetitionFilterOptions([
+      categoryMatch('gold'),
+      categoryMatch('para'),
+      categoryMatch('N/A'),
+      categoryMatch('bronze'),
+      categoryMatch('other'),
+      categoryMatch('copper'),
+      categoryMatch('silver'),
+      categoryMatch('county'),
+    ])
+
+    expect(options.map((option) => option.label)).toEqual([
+      'Copper',
+      'Bronze',
+      'Silver',
+      'Gold',
+      'Other',
+      'Para',
+    ])
   })
 })
