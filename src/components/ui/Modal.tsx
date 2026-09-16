@@ -10,6 +10,9 @@ type Props = {
   footer?: ReactNode
   /** Wider panel for dense tables (e.g. player search). */
   size?: 'md' | 'lg'
+  /** X control in the header, used by information modals. */
+  showHeaderClose?: boolean
+  id?: string
 }
 
 const BACKDROP_CLASS = 'fixed inset-0 z-40 bg-ink-900/40'
@@ -20,7 +23,16 @@ const PANEL_WIDTH: Record<'md' | 'lg', string> = {
   lg: 'w-[min(100vw-2rem,40rem)]',
 }
 
-export function Modal({ open, onClose, title, children, footer, size = 'md' }: Props) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  size = 'md',
+  showHeaderClose = false,
+  id,
+}: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
 
@@ -48,6 +60,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: P
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        id={id}
         aria-labelledby={titleId}
         tabIndex={-1}
         className={`${PANEL_BASE_CLASS} ${PANEL_WIDTH[size]}`}
@@ -58,10 +71,30 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: P
           }
         }}
       >
-        <div className="border-b border-ink-100 px-4 py-3 sm:px-5">
+        <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3 sm:px-5">
           <h2 id={titleId} className="text-base font-semibold text-ink-900">
             {title}
           </h2>
+          {showHeaderClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg p-1 text-ink-400 transition hover:bg-ink-50 hover:text-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+              aria-label="Close"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                className="h-5 w-5"
+                aria-hidden
+              >
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          ) : null}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
         {footer != null && (

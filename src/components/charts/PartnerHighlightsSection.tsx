@@ -330,7 +330,7 @@ export function PartnerHighlightsSection({
       <article className="rounded-2xl card-frame bg-white p-4 shadow-sm">
         <SectionHeading
           info={features.showInfo ? partnerHighlightsInfo : undefined}
-          infoLabel="About Tournament partners"
+          infoTitle="Tournament partners"
         >
           <h3 className="font-medium text-ink-900">Tournament partners</h3>
         </SectionHeading>

@@ -124,7 +124,7 @@ export function TournamentProgressionSection({
   const titleBlock = (
     <SectionHeading
       info={features.showInfo ? tournamentProgressionInfo : undefined}
-      infoLabel="About Tournament progression"
+      infoTitle="Tournament progression"
     >
       <h3 className="font-medium text-ink-900">Tournament progression</h3>
     </SectionHeading>

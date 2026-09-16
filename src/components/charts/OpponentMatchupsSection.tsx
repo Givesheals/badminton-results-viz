@@ -216,7 +216,6 @@ export function OpponentMatchupsSection({
             <MatchupPanel
               title="Nemeses"
               info={nemesesInfo}
-              infoLabel="About Nemeses"
               rows={nemesisRows}
               kind="nemesis"
               matches={matches}
@@ -231,7 +230,6 @@ export function OpponentMatchupsSection({
             <MatchupPanel
               title="Favourite opponents"
               info={favouriteOpponentsInfo}
-              infoLabel="About Favourite opponents"
               rows={scalpRows}
               kind="scalp"
               matches={matches}
@@ -253,7 +251,6 @@ export function OpponentMatchupsSection({
 type PanelProps = {
   title: string
   info: ReactNode
-  infoLabel: string
   rows: OpponentH2HRow[]
   kind: MatchupKind
   matches: NormalizedMatch[]
@@ -272,7 +269,6 @@ function shareFilenameForPanel(title: string): string {
 function MatchupPanel({
   title,
   info,
-  infoLabel,
   rows,
   kind,
   matches,
@@ -308,7 +304,7 @@ function MatchupPanel({
         <SectionHeading
           size="panel"
           info={info}
-          infoLabel={infoLabel}
+          infoTitle={title}
           actions={
             <ShareButton
               onClick={() => void sharePanel()}

@@ -61,7 +61,7 @@ export function SeasonJourneySection({ allMatches }: Props) {
   return (
     <div className="space-y-6">
       <header>
-        <SectionHeading info={seasonJourneyInfo} infoLabel="About season journey">
+        <SectionHeading info={seasonJourneyInfo} infoTitle={journey.title}>
           <h3 className="text-lg font-semibold text-ink-900">{journey.title}</h3>
         </SectionHeading>
         <p className="mt-1 text-sm text-ink-600">{journey.rangeSubtitle}</p>

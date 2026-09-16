@@ -167,14 +167,12 @@ export function BestWinsSection({ allMatches }: Props) {
             rows={strengthRows}
             metricKind="strength"
             info={strongestBeatenInfo}
-            infoLabel="About Strongest beaten"
           />
           <BestWinsPanel
             title="Biggest upset wins"
             rows={upsetRows}
             metricKind="upset"
             info={biggestUpsetsInfo(limit, excludeStrengthDuplicates)}
-            infoLabel="About Biggest upset wins"
           />
         </div>
       )}
@@ -187,7 +185,6 @@ type PanelProps = {
   rows: BestWinRow[]
   metricKind: 'strength' | 'upset'
   info: ReactNode
-  infoLabel: string
 }
 
 function shareFilenameForPanel(title: string): string {
@@ -195,7 +192,7 @@ function shareFilenameForPanel(title: string): string {
   return `badminton-${slug}.png`
 }
 
-function BestWinsPanel({ title, rows, metricKind, info, infoLabel }: PanelProps) {
+function BestWinsPanel({ title, rows, metricKind, info }: PanelProps) {
   const {
     shareRef,
     share: sharePanel,
@@ -213,7 +210,7 @@ function BestWinsPanel({ title, rows, metricKind, info, infoLabel }: PanelProps)
       <SectionHeading
         size="panel"
         info={info}
-        infoLabel={infoLabel}
+        infoTitle={title}
         actions={
           <ShareButton
             onClick={() => void sharePanel()}

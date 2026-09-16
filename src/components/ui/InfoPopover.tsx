@@ -1,23 +1,26 @@
-import { createPortal } from 'react-dom'
-import type { ReactNode } from 'react'
-import { usePopoverPosition } from '../../hooks/usePopoverPosition'
+import { useId, useRef, useState, type ReactNode } from 'react'
 import { InfoButton, type InfoButtonSize } from './InfoButton'
-import { useDismissiblePopover } from '../../hooks/useDismissiblePopover'
+import { Modal } from './Modal'
 
 type Props = {
+  title: string
   label: string
   children: ReactNode
   size?: InfoButtonSize
 }
 
-const BACKDROP_CLASS = 'fixed inset-0 z-40 bg-ink-900/30'
+const CLOSE_BUTTON_CLASS =
+  'rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
-const PANEL_CLASS =
-  'card-frame fixed z-50 rounded-2xl bg-brand-50 p-4 text-sm leading-relaxed text-ink-800 shadow-xl ring-2 ring-brand-200 outline-none'
+export function InfoPopover({ title, label, children, size = 'md' }: Props) {
+  const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const panelId = useId()
 
-export function InfoPopover({ label, children, size = 'md' }: Props) {
-  const { open, toggle, close, triggerRef, panelRef, panelId } = useDismissiblePopover()
-  const position = usePopoverPosition(open, triggerRef)
+  function close() {
+    setOpen(false)
+    requestAnimationFrame(() => triggerRef.current?.focus())
+  }
 
   return (
     <>
@@ -27,37 +30,22 @@ export function InfoPopover({ label, children, size = 'md' }: Props) {
         expanded={open}
         controlsId={panelId}
         aria-label={label}
-        onClick={toggle}
+        onClick={() => setOpen((prev) => !prev)}
       />
-      {open
-        ? createPortal(
-            <>
-              <div className={BACKDROP_CLASS} aria-hidden />
-              <div
-                ref={panelRef}
-                id={panelId}
-                role="dialog"
-                aria-label={label}
-                tabIndex={-1}
-                className={PANEL_CLASS}
-                style={{
-                  top: position.top,
-                  left: position.left,
-                  right: position.right,
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') {
-                    event.stopPropagation()
-                    close()
-                  }
-                }}
-              >
-                {children}
-              </div>
-            </>,
-            document.body,
-          )
-        : null}
+      <Modal
+        id={panelId}
+        open={open}
+        onClose={close}
+        title={title}
+        showHeaderClose
+        footer={
+          <button type="button" className={CLOSE_BUTTON_CLASS} onClick={close}>
+            Close
+          </button>
+        }
+      >
+        <div className="text-sm leading-relaxed text-ink-700">{children}</div>
+      </Modal>
     </>
   )
 }

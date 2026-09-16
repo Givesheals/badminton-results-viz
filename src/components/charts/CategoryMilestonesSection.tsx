@@ -196,7 +196,7 @@ export function CategoryMilestonesSection({
         title={
           <SectionHeading
             info={categoryMilestonesInfo}
-            infoLabel="About Category milestones"
+            infoTitle="Category milestones"
           >
             <h3 className="font-medium text-ink-900">Category milestones</h3>
           </SectionHeading>

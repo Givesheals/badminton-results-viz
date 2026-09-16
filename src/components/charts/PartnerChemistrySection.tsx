@@ -86,7 +86,7 @@ export function PartnerChemistrySection({
         title={
           <SectionHeading
             info={partnerChemistryInfo}
-            infoLabel="About Partner chemistry"
+            infoTitle="Partner chemistry"
           >
             <h3 className="font-medium text-ink-900">Partner chemistry</h3>
           </SectionHeading>
