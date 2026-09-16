@@ -111,10 +111,13 @@ function TagLibraryBlock({
   const [addDraft, setAddDraft] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [pendingRemove, setPendingRemove] = useState<string | null>(null)
+  const [alsoRemoveFromNotes, setAlsoRemoveFromNotes] = useState(false)
+  const alsoRemoveId = useId()
 
   useEffect(() => {
     setTags(loadLibrary(playerName, group, isScouting))
     setPendingRemove(null)
+    setAlsoRemoveFromNotes(false)
     setMessage(null)
   }, [playerName, group, isScouting, revision])
 
@@ -147,27 +150,29 @@ function TagLibraryBlock({
     if (updated != null) setTags(updated)
   }
 
+  function closeRemoveModal() {
+    setPendingRemove(null)
+    setAlsoRemoveFromNotes(false)
+  }
+
   function handleRemoveClick(label: string) {
     setMessage(null)
     if (countNotesWithCustomTag(allNotes, group, label) === 0) {
       removeFromList(label)
       return
     }
+    setAlsoRemoveFromNotes(false)
     setPendingRemove(label)
   }
 
-  function confirmRemoveFromList() {
-    if (pendingRemove == null) return
-    removeFromList(pendingRemove)
-    setPendingRemove(null)
-  }
-
-  function confirmRemoveFromListAndNotes() {
+  function confirmDeleteTag() {
     if (pendingRemove == null) return
     const label = pendingRemove
     removeFromList(label)
-    removeCustomTagEverywhere(group, label)
-    setPendingRemove(null)
+    if (alsoRemoveFromNotes) {
+      removeCustomTagEverywhere(group, label)
+    }
+    closeRemoveModal()
   }
 
   const pendingUsageCount =
@@ -206,43 +211,44 @@ function TagLibraryBlock({
 
       <Modal
         open={pendingRemove != null}
-        onClose={() => setPendingRemove(null)}
+        onClose={closeRemoveModal}
         title={
-          pendingRemove != null ? `Remove \u201c${pendingRemove}\u201d?` : 'Remove tag'
+          pendingRemove != null ? `Delete tag \u201c${pendingRemove}\u201d?` : 'Delete tag'
         }
         footer={
-          <div className="flex w-full flex-wrap items-center gap-2">
+          <div className="flex w-full items-center justify-between gap-2">
             <button
               type="button"
-              onClick={() => setPendingRemove(null)}
+              onClick={closeRemoveModal}
               className="rounded-lg border border-ink-100 px-2.5 py-1.5 text-xs text-ink-700 hover:bg-ink-50"
             >
               Cancel
             </button>
-            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={confirmRemoveFromListAndNotes}
-                className="rounded-lg border border-loss-200 px-2.5 py-1.5 text-xs font-medium text-loss-700 hover:bg-loss-50"
-              >
-                Remove from list & notes
-              </button>
-              <button
-                type="button"
-                onClick={confirmRemoveFromList}
-                className="rounded-lg bg-brand-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-700"
-              >
-                Remove from list
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={confirmDeleteTag}
+              className={
+                alsoRemoveFromNotes
+                  ? 'rounded-lg bg-loss-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-loss-700'
+                  : 'rounded-lg bg-brand-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-700'
+              }
+            >
+              Delete tag
+            </button>
           </div>
         }
       >
         <p className="text-sm text-ink-700">{pendingUsageSentence}</p>
-        <p className="mt-2 text-sm text-ink-600">
-          &ldquo;Remove from list&rdquo; keeps it on those notes.
-          &ldquo;Remove from list &amp; notes&rdquo; strips it from them too.
-        </p>
+        <label htmlFor={alsoRemoveId} className="mt-4 flex cursor-pointer items-start gap-2.5">
+          <input
+            id={alsoRemoveId}
+            type="checkbox"
+            checked={alsoRemoveFromNotes}
+            onChange={(event) => setAlsoRemoveFromNotes(event.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-ink-300 text-brand-600 focus:ring-brand-200"
+          />
+          <span className="text-sm text-ink-700">Also remove it from those notes</span>
+        </label>
       </Modal>
 
       <form onSubmit={handleAdd} className="flex items-center gap-1.5">
