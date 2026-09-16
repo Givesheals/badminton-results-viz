@@ -255,7 +255,7 @@ function PartnerHighlightsFamilyBlockBody({
       ) : !hasPartners ? (
         <p className="text-sm text-ink-600">
           {hasRestrictiveFilters
-            ? `No ${title.toLowerCase()} tournament partners in this selection.`
+            ? `No ${title.toLowerCase()} tournament partners match these filters. Try resetting them, or pick another time, competition, or age.`
             : `No ${title.toLowerCase()} tournament partners in your results yet.`}
         </p>
       ) : (
