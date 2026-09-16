@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { DisciplineFamily } from '../../lib/disciplineStyle'
 import { getDisciplineStyle } from '../../lib/disciplineStyle'
+import { getOpponentTeamMembers } from '../../lib/matchTeams'
 import {
   buildPartnerTournamentHistory,
   countPartnerTournamentEvents,
@@ -18,6 +19,7 @@ import {
 } from '../../lib/tournamentProgression'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { AccordionChevron } from '../ui/AccordionChevron'
+import { DRAW_PLAYER_PROFILE_LINK_CLASS } from '../notes/DrawPairNames'
 
 type Props = {
   matches: NormalizedMatch[]
@@ -217,7 +219,7 @@ function PartnerHistoryMatchRow({
         <p className="text-[10px] italic text-ink-500">{row.stageLabel}</p>
       ) : null}
       <p className="text-sm font-medium leading-snug text-ink-900">
-        vs {row.match.opponents}
+        vs <OpponentProfileNames match={row.match} />
       </p>
       <p className="text-xs text-ink-500">
         {outcomeLabel != null && (
@@ -235,6 +237,30 @@ function PartnerHistoryMatchRow({
         {row.match.scoreSummary || '—'}
       </p>
     </li>
+  )
+}
+
+function OpponentProfileNames({ match }: { match: NormalizedMatch }) {
+  const members = getOpponentTeamMembers(match)
+  const names = members.length > 0 ? members.map((member) => member.name) : [match.opponents]
+
+  return (
+    <>
+      {names.map((name, index) => (
+        <span key={`${name}-${index}`}>
+          {index > 0 ? <span className="font-medium text-ink-400"> & </span> : null}
+          <a
+            href="#"
+            className={DRAW_PLAYER_PROFILE_LINK_CLASS}
+            onClick={(event) => {
+              event.preventDefault()
+            }}
+          >
+            {name}
+          </a>
+        </span>
+      ))}
+    </>
   )
 }
 
