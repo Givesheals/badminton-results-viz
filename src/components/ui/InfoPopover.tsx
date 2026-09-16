@@ -10,7 +10,7 @@ type Props = {
 }
 
 const CLOSE_BUTTON_CLASS =
-  'rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
+  'rounded-sm bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
 export function InfoPopover({ title, label, children, size = 'md' }: Props) {
   const [open, setOpen] = useState(false)
@@ -38,6 +38,7 @@ export function InfoPopover({ title, label, children, size = 'md' }: Props) {
         onClose={close}
         title={title}
         showHeaderClose
+        frame="plain"
         footer={
           <button type="button" className={CLOSE_BUTTON_CLASS} onClick={close}>
             Close

@@ -12,12 +12,18 @@ type Props = {
   size?: 'md' | 'lg'
   /** X control in the header, used by information modals. */
   showHeaderClose?: boolean
+  /** Square, uncoloured frame matching the information-modal reference. */
+  frame?: 'brand' | 'plain'
   id?: string
 }
 
 const BACKDROP_CLASS = 'fixed inset-0 z-40 bg-ink-900/40'
 const PANEL_BASE_CLASS =
-  'card-frame fixed left-1/2 top-1/2 z-50 flex max-h-[min(90vh,640px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-2 ring-brand-200 outline-none'
+  'fixed left-1/2 top-1/2 z-50 flex max-h-[min(90vh,640px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden bg-white shadow-xl outline-none'
+const PANEL_FRAME: Record<'brand' | 'plain', string> = {
+  brand: 'card-frame rounded-2xl ring-2 ring-brand-200',
+  plain: 'rounded-none',
+}
 const PANEL_WIDTH: Record<'md' | 'lg', string> = {
   md: 'w-[min(100vw-2rem,28rem)]',
   lg: 'w-[min(100vw-2rem,40rem)]',
@@ -31,6 +37,7 @@ export function Modal({
   footer,
   size = 'md',
   showHeaderClose = false,
+  frame = 'brand',
   id,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -63,7 +70,7 @@ export function Modal({
         id={id}
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`${PANEL_BASE_CLASS} ${PANEL_WIDTH[size]}`}
+        className={`${PANEL_BASE_CLASS} ${PANEL_FRAME[frame]} ${PANEL_WIDTH[size]}`}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             event.stopPropagation()
