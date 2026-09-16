@@ -236,7 +236,7 @@ Rename / mass-edit of tag labels across notes is out of scope for now.
 Always-visible block at the **bottom** of the Notes tab for the quick-add libraries (Opponent / The pair; plus journal groups when My game UI is enabled):
 
 - **Add** new tag (subject to per-group limit)
-- **Delete tag** from quick-add — unused tags drop immediately. Tags still on saved notes get a confirmation: default keeps them on those notes; optional checkbox also strips them.
+- **Delete tag** from quick-add — unused tags drop immediately, then a toast names the tag and offers Undo. Tags still on saved notes get a confirmation: default keeps them on those notes; optional checkbox also strips them. After confirm, the same toast appears; if notes were stripped it says so, and Undo puts the tag back on those notes too.
 
 Save persists both modal modes. Delete is mode-specific: **Delete note** / **Delete game note**.
 

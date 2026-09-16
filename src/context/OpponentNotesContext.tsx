@@ -34,6 +34,7 @@ type OpponentNotesContextValue = {
   deleteNote: (id: string) => void
   renameCustomTagEverywhere: (group: CustomTagGroup, oldLabel: string, newLabel: string) => void
   removeCustomTagEverywhere: (group: CustomTagGroup, label: string) => void
+  replaceNotes: (notes: OpponentNote[]) => void
 }
 
 const OpponentNotesContext = createContext<OpponentNotesContextValue | null>(null)

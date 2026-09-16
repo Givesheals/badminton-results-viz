@@ -95,6 +95,11 @@ export function formatCustomTagUsageSentence(
   return `${base} (${listed}).`
 }
 
+export function formatDeletedTagNotesLine(noteCount: number): string {
+  const noteWord = noteCount === 1 ? 'note' : 'notes'
+  return `Also removed from ${noteCount} saved ${noteWord}.`
+}
+
 function updateNoteCustomField(
   note: OpponentNote,
   field: keyof NoteTags,

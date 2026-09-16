@@ -195,6 +195,23 @@ function saveRememberedCustomTags(
   )
 }
 
+/** Replace a group's quick-add list (used to undo a delete). */
+export function replaceRememberedCustomTagGroup(
+  playerName: string | null,
+  group: CustomTagGroup,
+  labels: string[],
+): string[] | null {
+  if (playerName == null || typeof window === 'undefined') return null
+
+  const current = loadRememberedCustomTags(playerName)
+  const nextGroup = normalizeCustomTagList(labels)
+  const next = isScoutingTagGroup(group)
+    ? withUnifiedScoutingLibrary(current, nextGroup)
+    : { ...current, [group]: nextGroup }
+  saveRememberedCustomTags(playerName, next)
+  return nextGroup
+}
+
 /** Remove a custom tag from the quick-add list. */
 export function removeRememberedCustomTag(
   playerName: string | null,

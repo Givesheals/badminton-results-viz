@@ -108,6 +108,10 @@ export function useOpponentNotes(playerName: string | null) {
     setNotes((prev) => removeCustomTagFromAllNotes(prev, group, label))
   }, [])
 
+  const replaceNotes = useCallback((next: OpponentNote[]) => {
+    setNotes(next)
+  }, [])
+
   return {
     allNotes,
     getNotesForMatch: getNotesForMatchKey,
@@ -118,5 +122,6 @@ export function useOpponentNotes(playerName: string | null) {
     deleteNote,
     renameCustomTagEverywhere,
     removeCustomTagEverywhere,
+    replaceNotes,
   }
 }

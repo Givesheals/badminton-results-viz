@@ -9,6 +9,7 @@ import {
   removeRememberedCustomTag,
   renameRememberedCustomTag,
   rememberCustomTag,
+  replaceRememberedCustomTagGroup,
   SCOUTING_STARTER_CHIPS,
   scoutingChipsSeededStorageKey,
 } from './customNoteTags'
@@ -102,5 +103,15 @@ describe('customNoteTags', () => {
     const tags = ensureScoutingChipLibrary(null)
     expect(tags.opponentStyles).toEqual([...SCOUTING_STARTER_CHIPS])
     expect(tags.pairStyles).toEqual([...SCOUTING_STARTER_CHIPS])
+  })
+
+  it('restores a remembered tag group in the original order', () => {
+    rememberCustomTag('Alex', 'selfFeel', 'On form')
+    rememberCustomTag('Alex', 'selfFeel', 'Tired')
+    const before = loadRememberedCustomTags('Alex').selfFeel
+    removeRememberedCustomTag('Alex', 'selfFeel', 'On form')
+    expect(loadRememberedCustomTags('Alex').selfFeel).toEqual(['Tired'])
+    expect(replaceRememberedCustomTagGroup('Alex', 'selfFeel', before)).toEqual(before)
+    expect(loadRememberedCustomTags('Alex').selfFeel).toEqual(before)
   })
 })

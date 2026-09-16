@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   countNotesWithCustomTag,
   formatCustomTagUsageSentence,
+  formatDeletedTagNotesLine,
   removeCustomTagFromAllNotes,
   renameCustomTagOnAllNotes,
   uniqueSubjectsForCustomTag,
@@ -142,5 +143,10 @@ describe('customTagNoteUpdates', () => {
         'Pat',
       ]),
     ).toBe('This tag is on 5 saved notes (Jack Smith, Kacper Banas, and 3 more).')
+  })
+
+  it('formats the deleted-tag notes line', () => {
+    expect(formatDeletedTagNotesLine(1)).toBe('Also removed from 1 saved note.')
+    expect(formatDeletedTagNotesLine(3)).toBe('Also removed from 3 saved notes.')
   })
 })

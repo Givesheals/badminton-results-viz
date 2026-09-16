@@ -3,6 +3,7 @@ import { useOpponentNotesContext } from '../../context/OpponentNotesContext'
 import {
   countNotesWithCustomTag,
   formatCustomTagUsageSentence,
+  formatDeletedTagNotesLine,
   uniqueSubjectsForCustomTag,
 } from '../../lib/customTagNoteUpdates'
 import {
@@ -13,11 +14,20 @@ import {
   normalizeCustomTagLabel,
   rememberCustomTag,
   removeRememberedCustomTag,
+  replaceRememberedCustomTagGroup,
   SCOUTING_TAG_LIBRARY_GROUP,
   type CustomTagGroup,
 } from '../../lib/customNoteTags'
-import { MATCH_JOURNAL_UI_ENABLED } from '../../lib/opponentNotes'
+import { MATCH_JOURNAL_UI_ENABLED, type OpponentNote } from '../../lib/opponentNotes'
 import { Modal } from '../ui/Modal'
+import { Toast } from '../ui/Toast'
+
+type DeletedTagToast = {
+  label: string
+  previousTags: string[]
+  previousNotes: OpponentNote[] | null
+  notesRemovedCount: number
+}
 
 type TagLibraryGroup = {
   group: CustomTagGroup
@@ -104,7 +114,7 @@ function TagLibraryBlock({
   playerName: string | null
   revision: number
 }) {
-  const { allNotes, removeCustomTagEverywhere } = useOpponentNotesContext()
+  const { allNotes, removeCustomTagEverywhere, replaceNotes } = useOpponentNotesContext()
   const addInputId = useId()
   const isScouting = group === 'opponentStyles' || group === 'pairStyles'
   const [tags, setTags] = useState(() => loadLibrary(playerName, group, isScouting))
@@ -112,12 +122,14 @@ function TagLibraryBlock({
   const [message, setMessage] = useState<string | null>(null)
   const [pendingRemove, setPendingRemove] = useState<string | null>(null)
   const [alsoRemoveFromNotes, setAlsoRemoveFromNotes] = useState(false)
+  const [deletedToast, setDeletedToast] = useState<DeletedTagToast | null>(null)
   const alsoRemoveId = useId()
 
   useEffect(() => {
     setTags(loadLibrary(playerName, group, isScouting))
     setPendingRemove(null)
     setAlsoRemoveFromNotes(false)
+    setDeletedToast(null)
     setMessage(null)
   }, [playerName, group, isScouting, revision])
 
@@ -155,10 +167,27 @@ function TagLibraryBlock({
     setAlsoRemoveFromNotes(false)
   }
 
+  function commitDelete(label: string, stripFromNotes: boolean) {
+    const previousTags = tags
+    const notesRemovedCount = stripFromNotes
+      ? countNotesWithCustomTag(allNotes, group, label)
+      : 0
+    setDeletedToast({
+      label,
+      previousTags,
+      previousNotes: stripFromNotes ? allNotes : null,
+      notesRemovedCount,
+    })
+    removeFromList(label)
+    if (stripFromNotes) {
+      removeCustomTagEverywhere(group, label)
+    }
+  }
+
   function handleRemoveClick(label: string) {
     setMessage(null)
     if (countNotesWithCustomTag(allNotes, group, label) === 0) {
-      removeFromList(label)
+      commitDelete(label, false)
       return
     }
     setAlsoRemoveFromNotes(false)
@@ -168,11 +197,23 @@ function TagLibraryBlock({
   function confirmDeleteTag() {
     if (pendingRemove == null) return
     const label = pendingRemove
-    removeFromList(label)
-    if (alsoRemoveFromNotes) {
-      removeCustomTagEverywhere(group, label)
-    }
+    const stripFromNotes = alsoRemoveFromNotes
     closeRemoveModal()
+    commitDelete(label, stripFromNotes)
+  }
+
+  function undoDelete() {
+    if (deletedToast == null) return
+    const restored = replaceRememberedCustomTagGroup(
+      playerName,
+      group,
+      deletedToast.previousTags,
+    )
+    if (restored != null) setTags(restored)
+    if (deletedToast.previousNotes != null) {
+      replaceNotes(deletedToast.previousNotes)
+    }
+    setDeletedToast(null)
   }
 
   const pendingUsageCount =
@@ -277,6 +318,24 @@ function TagLibraryBlock({
         </button>
       </form>
       {message != null && <p className="text-xs text-ink-500">{message}</p>}
+
+      <Toast
+        key={deletedToast?.label ?? 'idle'}
+        open={deletedToast != null}
+        title="Deleted tag"
+        actionLabel="Undo"
+        onAction={undoDelete}
+        onClose={() => setDeletedToast(null)}
+      >
+        {deletedToast != null ? (
+          <>
+            <p>&ldquo;{deletedToast.label}&rdquo;</p>
+            {deletedToast.notesRemovedCount > 0 && (
+              <p>{formatDeletedTagNotesLine(deletedToast.notesRemovedCount)}</p>
+            )}
+          </>
+        ) : null}
+      </Toast>
     </div>
   )
 }
