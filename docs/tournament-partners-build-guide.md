@@ -25,9 +25,9 @@ It is **not** about win rate vs rating expectation (that is a separate Partner c
 - Title: **Tournament partners** (`font-medium`, ink-900)
 - **Information button** (popover) beside the title. Accessible label: **About Tournament partners**. Body copy:
 
-  > How far you go together with each partner in tournaments, ranked by event volume and how deep you usually run.
+  > How far you go together with each partner in tournaments. Partners with the deepest average run are shown first.
   >
-  > County events and events without knockout or group rounds in the data are not included. Walkovers can count toward how far you went if you were awarded the win.
+  > County events and league events are not included, and neither is any tournament where you conceded every game. A walkover still counts toward how far you went if you were awarded the win.
 
 - Outer card: white background, rounded corners, light border (`#d0d2dc`), subtle shadow, padding.
 
