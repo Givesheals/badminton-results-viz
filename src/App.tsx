@@ -12,6 +12,7 @@ import {
   useDataset,
 } from './context/DatasetContext'
 import { PremiumProvider } from './context/PremiumContext'
+import { TicketBuildVisibilityProvider } from './context/TicketBuildVisibilityContext'
 import { computeStatsFromMatches } from './lib/computeStats'
 import { normalizeDataset } from './lib/matchHistory'
 import { getShowcaseRecordSlideId, isShowcaseMode } from './lib/showcaseMode'
@@ -99,7 +100,9 @@ export default function App() {
   return (
     <DatasetProvider>
       <PremiumProvider>
-        <AppContent />
+        <TicketBuildVisibilityProvider>
+          <AppContent />
+        </TicketBuildVisibilityProvider>
       </PremiumProvider>
     </DatasetProvider>
   )

@@ -22,6 +22,7 @@ import { FreakFlagCards } from './recap/FreakFlagCards'
 import { RecapEmojiInsightSection } from './recap/RecapEmojiInsightSection'
 import { RecapRecordMilestoneCards } from './recap/RecapRecordMilestoneCards'
 import { RecapTournamentNav } from './recap/RecapTournamentNav'
+import { useTicketBuildPicker } from '../../hooks/useTicketBuildPicker'
 
 type Props = {
   allMatches: NormalizedMatch[]
@@ -63,7 +64,14 @@ export function TournamentRecapSection({
   const [index, setIndex] = useState(() =>
     Math.min(Math.max(0, initialIndex), Math.max(0, recaps.length - 1)),
   )
-  const [localBuildStage, setLocalBuildStage] = useState<TournamentRecapBuildStage>(10)
+  const {
+    stage: localBuildStage,
+    setStage: setLocalBuildStage,
+    pickerVisible,
+  } = useTicketBuildPicker<TournamentRecapBuildStage>(
+    TOURNAMENT_RECAP_BUILD_STAGES[TOURNAMENT_RECAP_BUILD_STAGES.length - 1],
+  )
+  const showPickerChips = showBuildStagePicker && pickerVisible
 
   const buildStage =
     buildStageProp != null
@@ -130,7 +138,7 @@ export function TournamentRecapSection({
 
   return (
     <div className="space-y-3">
-      {showBuildStagePicker && (
+      {showPickerChips && (
         <div className="rounded-lg border border-dashed border-brand-200 bg-brand-50/40 px-3 py-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-brand-800">Ticket build:</span>

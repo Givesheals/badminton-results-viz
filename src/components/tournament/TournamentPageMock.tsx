@@ -17,6 +17,7 @@ import {
   DrawCompanionStageBar,
   type TournamentPageStage,
 } from './DrawCompanionStageBar'
+import { useTicketBuildPicker } from '../../hooks/useTicketBuildPicker'
 
 type Props = {
   visibility: TournamentPageVisibility
@@ -141,7 +142,14 @@ export function TournamentPageMock({
 }: Props) {
   const t = cambridgeTournamentPage
   const [stage, setStage] = useState<TournamentPageStage>('Companion')
-  const [buildStage, setBuildStage] = useState<DrawCompanionBuildStage>(2)
+  const {
+    stage: buildStage,
+    setStage: setBuildStage,
+    pickerVisible,
+  } = useTicketBuildPicker<DrawCompanionBuildStage>(
+    DRAW_COMPANION_BUILD_STAGES[DRAW_COMPANION_BUILD_STAGES.length - 1],
+    2,
+  )
 
   useEffect(() => {
     if (visibility === 'hidden' && stage === 'Companion') {
@@ -151,15 +159,16 @@ export function TournamentPageMock({
 
   const contentStage: TournamentPageStage =
     visibility === 'hidden' ? 'Finals' : stage
-  const showBuildStagePicker = visibility !== 'hidden'
+  const showBuildStagePicker = visibility !== 'hidden' && pickerVisible
 
   return (
     <div className="mx-auto max-w-4xl space-y-5 pb-10">
       <p className="rounded-lg border border-ink-200 bg-white px-3 py-2 text-xs text-ink-600">
         Simulated tournament page. Draw companion appears as a stage chip for Premium
         and gift visitors — selecting it swaps the page content below (not a modal).
-        Use the ticket build control above the discipline tabs to screenshot each
-        engineering ticket.
+        {showBuildStagePicker
+          ? ' Use the ticket build control above the discipline tabs to screenshot each engineering ticket.'
+          : null}
       </p>
 
       {/* Tournament info card */}

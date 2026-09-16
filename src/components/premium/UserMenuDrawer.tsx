@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { BetaBadge } from '../ui/BetaBadge'
 import { getPlayerInitials } from '../../lib/getPlayerInitials'
 import { usePremium } from '../../context/PremiumContext'
+import { useTicketBuildVisibility } from '../../context/TicketBuildVisibilityContext'
 
 type Props = {
   open: boolean
@@ -46,6 +47,7 @@ export function UserMenuDrawer({
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const { premium, isSubscribed, isPremiumActive } = usePremium()
+  const { ticketBuildVisible, toggleTicketBuildVisible } = useTicketBuildVisibility()
   const initials = getPlayerInitials(playerName)
 
   useEffect(() => {
@@ -219,6 +221,15 @@ export function UserMenuDrawer({
                   }}
                 >
                   Design Assets
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="text-left text-base font-medium text-brand-700 hover:text-brand-600"
+                  onClick={toggleTicketBuildVisible}
+                >
+                  {ticketBuildVisible ? 'Hide ticket build' : 'Show ticket build'}
                 </button>
               </li>
               <li>

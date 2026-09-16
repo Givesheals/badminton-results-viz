@@ -21,6 +21,7 @@ import { getDisciplineStyle } from '../../lib/disciplineStyle'
 import { partnerHighlightsInfo } from '../../content/sectionInfo'
 import { SectionHeading } from '../ui/SectionHeading'
 import { PartnerHighlightsFamilyBlock } from './PartnerHighlightsFamilyBlock'
+import { useTicketBuildPicker } from '../../hooks/useTicketBuildPicker'
 
 const DEFAULT_SHOW_DOUBLES = 2
 const DEFAULT_SHOW_MIXED = 2
@@ -71,8 +72,14 @@ export function PartnerHighlightsSection({
   buildStage: buildStageProp = null,
   showBuildStagePicker = true,
 }: Props) {
-  const [localBuildStage, setLocalBuildStage] =
-    useState<PartnerHighlightsBuildStage>(7)
+  const {
+    stage: localBuildStage,
+    setStage: setLocalBuildStage,
+    pickerVisible,
+  } = useTicketBuildPicker<PartnerHighlightsBuildStage>(
+    PARTNER_HIGHLIGHTS_BUILD_STAGES[PARTNER_HIGHLIGHTS_BUILD_STAGES.length - 1],
+  )
+  const showPickerChips = showBuildStagePicker && pickerVisible
 
   const buildStage =
     buildStageProp != null
@@ -282,7 +289,7 @@ export function PartnerHighlightsSection({
 
   return (
     <div className="space-y-3">
-      {showBuildStagePicker && (
+      {showPickerChips && (
         <div className="rounded-lg border border-dashed border-brand-200 bg-brand-50/40 px-3 py-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-brand-800">Ticket build:</span>

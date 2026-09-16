@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useOpponentNotesContext } from '../../context/OpponentNotesContext'
+import { useTicketBuildPicker } from '../../hooks/useTicketBuildPicker'
 import {
   formatGameEventTagsForDisplay,
   formatScoutingTagsForDisplay,
@@ -378,7 +379,13 @@ function ChevronIcon({ open, className = 'h-4 w-4 text-ink-500' }: { open: boole
 
 export function OpponentNotesSection({ allMatches }: Props) {
   const { allNotes } = useOpponentNotesContext()
-  const [buildStage, setBuildStage] = useState<NotesBuildStage>(11)
+  const {
+    stage: buildStage,
+    setStage: setBuildStage,
+    pickerVisible,
+  } = useTicketBuildPicker<NotesBuildStage>(
+    NOTES_BUILD_STAGES[NOTES_BUILD_STAGES.length - 1],
+  )
   const [search, setSearch] = useState('')
   const [activeNote, setActiveNote] = useState<OpponentNote | null>(null)
   const [addNoteState, setAddNoteState] = useState<AddNoteState>({ step: 'closed' })
@@ -432,39 +439,41 @@ export function OpponentNotesSection({ allMatches }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-dashed border-brand-200 bg-brand-50/40 px-3 py-2.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-brand-800">Ticket build:</span>
-          <div
-            role="group"
-            aria-label="Notes ticket build stage"
-            className="flex flex-wrap gap-1"
-          >
-            {NOTES_BUILD_STAGES.map((ticketStage) => {
-              const selected = buildStage === ticketStage
-              const meta = NOTES_BUILD_STAGE_META[ticketStage]
-              return (
-                <button
-                  key={ticketStage}
-                  type="button"
-                  title={meta.summary}
-                  onClick={() => setBuildStage(ticketStage)}
-                  className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
-                    selected
-                      ? 'bg-brand-600 text-white shadow-sm'
-                      : 'bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50'
-                  }`}
-                >
-                  {ticketStage}. {meta.shortLabel}
-                </button>
-              )
-            })}
+      {pickerVisible && (
+        <div className="rounded-lg border border-dashed border-brand-200 bg-brand-50/40 px-3 py-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-brand-800">Ticket build:</span>
+            <div
+              role="group"
+              aria-label="Notes ticket build stage"
+              className="flex flex-wrap gap-1"
+            >
+              {NOTES_BUILD_STAGES.map((ticketStage) => {
+                const selected = buildStage === ticketStage
+                const meta = NOTES_BUILD_STAGE_META[ticketStage]
+                return (
+                  <button
+                    key={ticketStage}
+                    type="button"
+                    title={meta.summary}
+                    onClick={() => setBuildStage(ticketStage)}
+                    className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
+                      selected
+                        ? 'bg-brand-600 text-white shadow-sm'
+                        : 'bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50'
+                    }`}
+                  >
+                    {ticketStage}. {meta.shortLabel}
+                  </button>
+                )
+              })}
+            </div>
           </div>
+          <p className="mt-1.5 text-[11px] text-ink-500">
+            {NOTES_BUILD_STAGE_META[buildStage].summary}
+          </p>
         </div>
-        <p className="mt-1.5 text-[11px] text-ink-500">
-          {NOTES_BUILD_STAGE_META[buildStage].summary}
-        </p>
-      </div>
+      )}
 
       <section className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
         <div className="border-b border-ink-100 px-4 py-4 sm:px-5">

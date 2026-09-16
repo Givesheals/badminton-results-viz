@@ -27,6 +27,7 @@ import { tournamentProgressionInfo } from '../../content/sectionInfo'
 import { SectionHeading } from '../ui/SectionHeading'
 import { ShareButton } from '../ui/ShareButton'
 import { TournamentProgressionChart } from './TournamentProgressionChart'
+import { useTicketBuildPicker } from '../../hooks/useTicketBuildPicker'
 
 type Props = {
   allMatches: NormalizedMatch[]
@@ -69,8 +70,14 @@ export function TournamentProgressionSection({
     [filterOptions],
   )
 
-  const [localBuildStage, setLocalBuildStage] =
-    useState<TournamentProgressionBuildStage>(6)
+  const {
+    stage: localBuildStage,
+    setStage: setLocalBuildStage,
+    pickerVisible,
+  } = useTicketBuildPicker<TournamentProgressionBuildStage>(
+    TOURNAMENT_PROGRESSION_BUILD_STAGES[TOURNAMENT_PROGRESSION_BUILD_STAGES.length - 1],
+  )
+  const showPickerChips = showBuildStagePicker && pickerVisible
 
   const buildStage =
     buildStageProp != null
@@ -142,7 +149,7 @@ export function TournamentProgressionSection({
 
   return (
     <div className="space-y-3">
-      {showBuildStagePicker && (
+      {showPickerChips && (
         <div className="rounded-lg border border-dashed border-brand-200 bg-brand-50/40 px-3 py-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-brand-800">Ticket build:</span>
