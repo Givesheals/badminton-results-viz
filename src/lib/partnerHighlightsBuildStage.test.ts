@@ -7,7 +7,7 @@ import {
 
 describe('partnerHighlightsBuildStage', () => {
   it('lists all ticket stages including empty 3.5', () => {
-    expect(PARTNER_HIGHLIGHTS_BUILD_STAGES).toEqual([1, 2, 3, 3.5, 4, 5, 6, 7])
+    expect(PARTNER_HIGHLIGHTS_BUILD_STAGES).toEqual([1, 2, 3, 3.5, 4, 5, 6, 7, 8])
   })
 
   it('gates features by ticket number', () => {
@@ -42,22 +42,28 @@ describe('partnerHighlightsBuildStage', () => {
     expect(empty.showFilters).toBe(false)
     expect(empty.showInfo).toBe(false)
 
-    const history = getPartnerHighlightsBuildFeatures(4)
+    const badges = getPartnerHighlightsBuildFeatures(4)
+    expect(badges.showStageChips).toBe(true)
+    expect(badges.showHistoryAccordion).toBe(false)
+    expect(badges.showMatches).toBe(false)
+    expect(badges.showFilters).toBe(false)
+
+    const history = getPartnerHighlightsBuildFeatures(5)
     expect(history.showStageChips).toBe(true)
     expect(history.showHistoryAccordion).toBe(true)
     expect(history.showMatches).toBe(false)
     expect(history.showFilters).toBe(false)
 
-    const matches = getPartnerHighlightsBuildFeatures(5)
+    const matches = getPartnerHighlightsBuildFeatures(6)
     expect(matches.showMatches).toBe(true)
     expect(matches.showFilters).toBe(false)
     expect(matches.showInfo).toBe(false)
 
-    const filters = getPartnerHighlightsBuildFeatures(6)
+    const filters = getPartnerHighlightsBuildFeatures(7)
     expect(filters.showFilters).toBe(true)
     expect(filters.showInfo).toBe(false)
 
-    const info = getPartnerHighlightsBuildFeatures(7)
+    const info = getPartnerHighlightsBuildFeatures(8)
     expect(info.showDisciplines).toBe(true)
     expect(info.showPartnerCards).toBe(true)
     expect(info.forceEmptyFamilies).toBe(false)
@@ -76,9 +82,9 @@ describe('partnerHighlightsBuildStage', () => {
     }
   })
 
-  it('full features match stage 7', () => {
+  it('full features match stage 8', () => {
     expect(fullPartnerHighlightsBuildFeatures()).toEqual(
-      getPartnerHighlightsBuildFeatures(7),
+      getPartnerHighlightsBuildFeatures(8),
     )
   })
 })

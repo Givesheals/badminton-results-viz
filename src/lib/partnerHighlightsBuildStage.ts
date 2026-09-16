@@ -1,5 +1,5 @@
-/** Ticket build-out stages for screenshotting Tournament partners (1 = shell … 7 = full). */
-export const PARTNER_HIGHLIGHTS_BUILD_STAGES = [1, 2, 3, 3.5, 4, 5, 6, 7] as const
+/** Ticket build-out stages for screenshotting Tournament partners (1 = shell … 8 = full). */
+export const PARTNER_HIGHLIGHTS_BUILD_STAGES = [1, 2, 3, 3.5, 4, 5, 6, 7, 8] as const
 export type PartnerHighlightsBuildStage = (typeof PARTNER_HIGHLIGHTS_BUILD_STAGES)[number]
 
 export type PartnerHighlightsBuildFeatures = {
@@ -9,15 +9,15 @@ export type PartnerHighlightsBuildFeatures = {
   showPartnerCards: boolean
   /** Stage 3.5 — Force both families empty so screenshots show the no-partners look */
   forceEmptyFamilies: boolean
-  /** Stage ≥ 4 — Finish-count chips on partner cards */
+  /** Stage ≥ 4 — Finish-count badges on partner cards */
   showStageChips: boolean
-  /** Stage ≥ 4 — Partner cards become accordions of stage groups and tournaments */
+  /** Stage ≥ 5 — Partner cards become accordions of stage groups and tournaments */
   showHistoryAccordion: boolean
-  /** Stage ≥ 5 — Expand a tournament to see matches in chronological order */
+  /** Stage ≥ 6 — Expand a tournament to see matches in chronological order */
   showMatches: boolean
-  /** Stage ≥ 6 — Per-family filters bar */
+  /** Stage ≥ 7 — Per-family filters bar */
   showFilters: boolean
-  /** Stage ≥ 7 — Information button on the section title */
+  /** Stage ≥ 8 — Information button on the section title */
   showInfo: boolean
 }
 
@@ -42,26 +42,30 @@ export const PARTNER_HIGHLIGHTS_BUILD_STAGE_META: Record<
     summary: 'Doubles and Mixed with no partners to show',
   },
   4: {
-    shortLabel: 'History',
-    summary: 'Finish chips, then accordion of tournaments grouped by stage reached',
+    shortLabel: 'Badges',
+    summary: 'Finish badges for how far the partnership has gone',
   },
   5: {
+    shortLabel: 'History',
+    summary: 'Partner name becomes an accordion of events grouped by stage reached',
+  },
+  6: {
     shortLabel: 'Matches',
     summary: 'Expand a tournament to see each match in chronological order',
   },
-  6: {
+  7: {
     shortLabel: 'Filters',
     summary: 'Filters bar on each discipline section',
   },
-  7: {
+  8: {
     shortLabel: 'Info',
     summary: 'Information button on the Tournament partners title',
   },
 }
 
-/** Full feature set (stage 7 / no progressive gating). */
+/** Full feature set (stage 8 / no progressive gating). */
 export function fullPartnerHighlightsBuildFeatures(): PartnerHighlightsBuildFeatures {
-  return getPartnerHighlightsBuildFeatures(7)
+  return getPartnerHighlightsBuildFeatures(8)
 }
 
 export function getPartnerHighlightsBuildFeatures(
@@ -72,9 +76,9 @@ export function getPartnerHighlightsBuildFeatures(
     showPartnerCards: stage >= 3,
     forceEmptyFamilies: stage === 3.5,
     showStageChips: stage >= 4,
-    showHistoryAccordion: stage >= 4,
-    showMatches: stage >= 5,
-    showFilters: stage >= 6,
-    showInfo: stage >= 7,
+    showHistoryAccordion: stage >= 5,
+    showMatches: stage >= 6,
+    showFilters: stage >= 7,
+    showInfo: stage >= 8,
   }
 }

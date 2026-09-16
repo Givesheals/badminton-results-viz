@@ -32,7 +32,7 @@ type Props = {
   importedAt: string | undefined
   /**
    * Progressive build stage for ticket screenshots.
-   * When null/omitted with picker enabled, local state defaults to 7 (full).
+   * When null/omitted with picker enabled, local state defaults to 8 (full).
    * When picker is hidden and stage is omitted, full features are always shown.
    */
   buildStage?: PartnerHighlightsBuildStage | null
@@ -284,7 +284,7 @@ export function PartnerHighlightsSection({
   const doublesDisplayedPartnerOptions = forceEmptyFamilies ? [] : doublesPartnerOptions
   const mixedDisplayedPartnerOptions = forceEmptyFamilies ? [] : mixedPartnerOptions
 
-  const activeStage = buildStage ?? 7
+  const activeStage = buildStage ?? 8
   const showShare = !showBuildStagePicker
 
   return (
