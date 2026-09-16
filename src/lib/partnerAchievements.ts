@@ -195,10 +195,12 @@ export function computePartnerAchievements(
 
 /** Partners with at least one non-county progression event (same pool as highlight cards). */
 export function partnerFilterOptions(family: PartnerAchievementsFamily): FilterOption[] {
-  return family.partners.map((row) => ({
-    value: row.partnerName,
-    label: row.partnerName,
-  }))
+  return [...family.partners]
+    .sort((a, b) => a.partnerName.localeCompare(b.partnerName, 'en', { sensitivity: 'base' }))
+    .map((row) => ({
+      value: row.partnerName,
+      label: row.partnerName,
+    }))
 }
 
 /** Competition categories present in the given matches (for per-family filters). */

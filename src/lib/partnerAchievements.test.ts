@@ -4,6 +4,7 @@ import {
   computePartnerHighlightScore,
   formatStageChip,
   partnerCompetitionFilterOptions,
+  partnerFilterOptions,
   type PartnerAchievementRow,
 } from './partnerAchievements'
 
@@ -123,6 +124,25 @@ describe('partnerCompetitionFilterOptions', () => {
       'Gold',
       'Other',
       'Para',
+    ])
+  })
+})
+
+describe('partnerFilterOptions', () => {
+  it('lists partners alphabetically by first name, not highlight rank', () => {
+    const options = partnerFilterOptions({
+      totalPartnerCount: 3,
+      partners: [
+        row({ partnerName: 'Neil Place', eventCount: 36 }),
+        row({ partnerName: 'Chris Vale', eventCount: 12 }),
+        row({ partnerName: 'Alisha Johnson', eventCount: 4 }),
+      ],
+    })
+
+    expect(options.map((option) => option.label)).toEqual([
+      'Alisha Johnson',
+      'Chris Vale',
+      'Neil Place',
     ])
   })
 })
