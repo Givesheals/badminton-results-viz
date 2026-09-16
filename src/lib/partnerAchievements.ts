@@ -11,6 +11,7 @@ import {
   medianRank,
   PROGRESSION_STAGE_CHIP_ORDER,
   PROGRESSION_STAGE_LABELS,
+  PROGRESSION_STAGE_SHORT_LABELS,
   STAGE_RANK,
   tournamentKey,
   type ProgressionStage,
@@ -214,8 +215,14 @@ export function partnerCompetitionFilterOptions(
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 
-export function formatStageChip(stage: ProgressionStage, count: number): string {
-  const label = PROGRESSION_STAGE_LABELS[stage]
+export function formatStageChip(
+  stage: ProgressionStage,
+  count: number,
+  compact = false,
+): string {
+  const label = compact
+    ? PROGRESSION_STAGE_SHORT_LABELS[stage]
+    : PROGRESSION_STAGE_LABELS[stage]
   return `${count}× ${label}`
 }
 

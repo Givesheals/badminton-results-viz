@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   computePartnerHighlightScore,
+  formatStageChip,
   type PartnerAchievementRow,
 } from './partnerAchievements'
 
@@ -65,5 +66,18 @@ describe('partner highlight ordering (score fields)', () => {
     const sorted = [...rows].sort((a, b) => b.highlightScore - a.highlightScore)
 
     expect(sorted.map((r) => r.partnerName)).toEqual(['A', 'B', 'C'])
+  })
+})
+
+describe('formatStageChip', () => {
+  it('uses full stage titles by default', () => {
+    expect(formatStageChip('quarter-final', 4)).toBe('4× Quarter-final')
+    expect(formatStageChip('group-wins', 15)).toBe('15× Group match wins')
+  })
+
+  it('uses tournament progression short titles when compact', () => {
+    expect(formatStageChip('quarter-final', 4, true)).toBe('4× QF')
+    expect(formatStageChip('group-wins', 15, true)).toBe('15× Grp MW')
+    expect(formatStageChip('runner-up', 2, true)).toBe('2× 2nd')
   })
 })

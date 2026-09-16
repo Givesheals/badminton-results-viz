@@ -14,6 +14,7 @@ import {
   isLightGroupProgressionStage,
   PROGRESSION_PARTNER_CHIP_COLORS,
   PROGRESSION_STAGE_COLORS,
+  PROGRESSION_STAGE_SHORT_LABELS,
 } from '../../lib/tournamentProgression'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { AccordionChevron } from '../ui/AccordionChevron'
@@ -100,12 +101,14 @@ function StageGroupSection({
       >
         <span className="flex min-w-0 items-center gap-2">
           <span
-            className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs ${
+            className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs ${
               lightGroup ? 'font-medium text-black' : 'font-semibold text-white'
             }`}
             style={{ backgroundColor: stageColor }}
+            title={group.label}
           >
-            {group.label}
+            <span className="md:hidden">{PROGRESSION_STAGE_SHORT_LABELS[group.stage]}</span>
+            <span className="hidden md:inline">{group.label}</span>
           </span>
           <span className="truncate text-sm font-medium text-ink-900">
             {group.tournaments.length} event{group.tournaments.length === 1 ? '' : 's'}

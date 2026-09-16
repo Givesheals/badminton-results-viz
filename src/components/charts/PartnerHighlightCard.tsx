@@ -82,10 +82,12 @@ export function PartnerHighlightCard({
 
 function StageChip({ stage, count }: { stage: ProgressionStage; count: number }) {
   const lightGroup = isLightGroupProgressionStage(stage)
+  const fullLabel = formatStageChip(stage, count)
+  const compactLabel = formatStageChip(stage, count, true)
 
   return (
     <li
-      className={`rounded-full px-2.5 py-1 text-xs ${
+      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs ${
         lightGroup
           ? 'font-medium text-black'
           : 'font-semibold text-white shadow-sm'
@@ -94,8 +96,10 @@ function StageChip({ stage, count }: { stage: ProgressionStage; count: number })
         backgroundColor:
           PROGRESSION_PARTNER_CHIP_COLORS[stage] ?? PROGRESSION_STAGE_COLORS[stage],
       }}
+      title={fullLabel}
     >
-      {formatStageChip(stage, count)}
+      <span className="md:hidden">{compactLabel}</span>
+      <span className="hidden md:inline">{fullLabel}</span>
     </li>
   )
 }
