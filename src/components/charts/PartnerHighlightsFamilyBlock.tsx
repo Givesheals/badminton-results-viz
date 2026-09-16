@@ -145,6 +145,8 @@ function PartnerHighlightsFamilyBlockBody({
   }, [filteredPartners, isPartnerFiltered, isSharing, visibleCount])
 
   const hasPartners = data.totalPartnerCount > 0
+  const hasRestrictiveFilters =
+    time !== 'all' || competition.length > 0 || competitionAge.length > 0
   const remainingPartners = isPartnerFiltered
     ? 0
     : Math.max(0, filteredPartners.length - visible.length)
@@ -252,7 +254,9 @@ function PartnerHighlightsFamilyBlockBody({
         />
       ) : !hasPartners ? (
         <p className="text-sm text-ink-600">
-          No {title.toLowerCase()} tournament partners in your results yet.
+          {hasRestrictiveFilters
+            ? `No ${title.toLowerCase()} tournament partners in this selection.`
+            : `No ${title.toLowerCase()} tournament partners in your results yet.`}
         </p>
       ) : (
         <div ref={shareRef} data-share-root>
