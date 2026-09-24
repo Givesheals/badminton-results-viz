@@ -37,19 +37,31 @@ describe('buildFictionalTournamentRecap', () => {
     expect(celebrations.winners).toHaveLength(1)
     expect(celebrations.runnerUps).toHaveLength(1)
     expect(celebrations.jointThirds).toHaveLength(1)
-    expect(celebrations.winners[0]!.subtitle).toBe('Your first Gold title')
-    expect(celebrations.runnerUps[0]!.subtitle).toBe('Your first Gold runner-up finish')
-    expect(celebrations.jointThirds[0]!.subtitle).toBe('Your first Gold third place finish')
+    expect(celebrations.winners[0]!.subtitle).toBe('Your first Senior Gold title')
+    expect(celebrations.runnerUps[0]!.subtitle).toBe('Your first U19 Gold runner-up finish')
+    expect(celebrations.jointThirds[0]!.subtitle).toBe('Your first O45 Gold third place finish')
     expect(
       [
         celebrations.winners[0]!.competitionAgeLabel,
         celebrations.runnerUps[0]!.competitionAgeLabel,
         celebrations.jointThirds[0]!.competitionAgeLabel,
       ].sort(),
-    ).toEqual(['Junior', 'Masters', 'Senior'])
+    ).toEqual(['O45', 'Senior', 'U19'])
     expect(
       celebrations.milestones.map((milestone) => milestone.competitionAgeLabel).sort(),
-    ).toEqual(['Junior', 'Masters', 'Senior'])
+    ).toEqual(['O45', 'Senior', 'U19'])
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'personal_best')!.detail,
+    ).toBe("Your deepest Senior Gold Men's doubles run - Winner")
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'matched_best')!.detail,
+    ).toBe("As deep as you've gone at U19 Gold Women's doubles before - Runner-up")
+    expect(celebrations.milestones.find((m) => m.variant === 'debut')!.title).toBe(
+      'First O45 Gold tournament',
+    )
+    expect(celebrations.milestones.find((m) => m.variant === 'debut')!.detail).toBe(
+      'Your first O45 Gold tournament in mixed doubles',
+    )
     expect(celebrations.milestones.map((milestone) => milestone.variant).sort()).toEqual([
       'debut',
       'matched_best',

@@ -12,6 +12,7 @@ import { UserMenuDrawer } from './UserMenuDrawer'
 import { UserSettingsPage } from './UserSettingsPage'
 import { NotificationsPreview } from '../notifications/NotificationsPreview'
 import { TournamentPagePreview } from '../tournament/TournamentPagePreview'
+import { TournamentListingsPage } from '../tournament/TournamentListingsPage'
 import { DesignAssetsPage } from '../design/DesignAssetsPage'
 import { LiveFeedPage } from '../live-feed/LiveFeedPage'
 import { getPlayerInitials } from '../../lib/getPlayerInitials'
@@ -30,6 +31,7 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [tournamentPreviewOpen, setTournamentPreviewOpen] = useState(false)
+  const [tournamentListingsOpen, setTournamentListingsOpen] = useState(false)
   const [liveFeedOpen, setLiveFeedOpen] = useState(false)
   const [designAssetsOpen, setDesignAssetsOpen] = useState(false)
 
@@ -60,6 +62,7 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
         onOpenUserSettings={() => setSettingsOpen(true)}
         onOpenNotifications={() => setNotificationsOpen(true)}
         onOpenTournamentPreview={() => setTournamentPreviewOpen(true)}
+        onOpenTournamentListings={() => setTournamentListingsOpen(true)}
         onOpenLiveFeed={() => setLiveFeedOpen(true)}
         onOpenDesignAssets={() => setDesignAssetsOpen(true)}
         onOpenAddNewData={onOpenAddNewData}
@@ -83,6 +86,12 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
         onClose={() => setTournamentPreviewOpen(false)}
         playerName={playerName}
         onSignUpPremium={() => openSignup('yearly')}
+      />
+
+      <TournamentListingsPage
+        open={tournamentListingsOpen}
+        onClose={() => setTournamentListingsOpen(false)}
+        playerName={playerName}
       />
 
       <LiveFeedPage open={liveFeedOpen} onClose={() => setLiveFeedOpen(false)} />

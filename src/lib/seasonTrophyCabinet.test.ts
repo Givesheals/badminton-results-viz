@@ -374,6 +374,58 @@ describe('computeSeasonTrophyCabinet', () => {
     expect(cabinet.second[0]!.contextNote).toBe('Your first Masters Silver runner-up finish')
   })
 
+  it('scopes runner-up flavour to masters sub-age', () => {
+    const o40RunnerUp = makeMatch({
+      competitionName: 'O40 Silver',
+      date: '2025-11-01',
+      discipline: 'OD',
+      partnerName: 'Sam',
+      outcome: 'loss',
+      tournamentCategoryLabel: 'Silver',
+      competitionAgeGroup: 'Masters',
+      competitionSubAgeGroup: 'O40',
+      raw: {
+        Round: 'Final',
+        'Tournament Category': 'Silver',
+        'Player Game 1 Score': 18,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 17,
+        'Opponent Game 2 Score': 21,
+      },
+    })
+    const o45RunnerUp = makeMatch({
+      competitionName: 'O45 Silver',
+      date: '2025-11-15',
+      discipline: 'OD',
+      partnerName: 'Sam',
+      outcome: 'loss',
+      tournamentCategoryLabel: 'Silver',
+      competitionAgeGroup: 'Masters',
+      competitionSubAgeGroup: 'O45',
+      raw: {
+        Round: 'Final',
+        'Tournament Category': 'Silver',
+        'Player Game 1 Score': 18,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 17,
+        'Opponent Game 2 Score': 21,
+      },
+    })
+
+    const cabinet = computeSeasonTrophyCabinet(
+      [o40RunnerUp, o45RunnerUp],
+      seasonBounds,
+    )
+
+    expect(cabinet.second).toHaveLength(2)
+    expect(
+      cabinet.second.map((item) => item.contextNote).sort(),
+    ).toEqual([
+      'Your first O40 Silver runner-up finish',
+      'Your first O45 Silver runner-up finish',
+    ])
+  })
+
   it('creates separate trophies for multiple disciplines at one weekend', () => {
     const matches = [
       makeMatch({

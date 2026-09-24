@@ -106,6 +106,18 @@ Defined in `src/lib/tournamentRecap.ts`:
 
 ---
 
+## Celebration age chips
+
+Podium and milestone callouts (large hero and compact list rows) show a competition-age chip beside discipline and category:
+
+- Prefer the event **sub-age** when present (`U19`, `O45`, etc.).
+- **Senior** stays `Senior` (no narrower sub-band).
+- If sub-age is missing, fall back to the top-level band (`Junior` / `Masters`, shown as `Master` on the chip).
+- Personal bests, matched bests, debuts, and title / runner-up counts are scoped to that same resolved label — an O40 win does not count toward O45.
+- Flavour copy uses the same scoped label (e.g. “Your first U19 Gold runner-up finish”, “Your deepest Senior Gold Men’s Doubles run”), not category alone.
+
+---
+
 ## Senior county debut card
 
 Shown when the player has **no prior senior county matches** anywhere in their uploaded history and this recap includes at least one competitive match at **County** level with **Senior** age.

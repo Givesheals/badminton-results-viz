@@ -692,7 +692,178 @@ describe('computeTournamentRecaps', () => {
       winFinal('U19 Gold', '2026-05-01', 'Junior', 'U19'),
     ]).recaps.find((r) => r.competitionName === 'U19 Gold')!
 
+    expect(recap.celebrations.winners[0]!.competitionAgeLabel).toBe('U19')
     expect(recap.celebrations.winners[0]!.subtitle).toBe('Your first U19 Gold title')
+  })
+
+  it('does not count titles across masters sub-ages', () => {
+    const winFinal = (
+      comp: string,
+      date: string,
+      subAge: string,
+    ) =>
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'OS',
+        disciplineLabel: 'open singles',
+        tournamentCategoryLabel: 'Gold',
+        competitionAgeGroup: 'Masters',
+        competitionSubAgeGroup: subAge,
+        outcome: 'win',
+        raw: {
+          Round: 'Final',
+          'Tournament Category': 'Gold',
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 15,
+          'Player Game 2 Score': 21,
+          'Opponent Game 2 Score': 10,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      })
+
+    const recap = computeTournamentRecaps([
+      winFinal('O40 Gold', '2025-01-01', 'O40'),
+      winFinal('O45 Gold', '2026-05-01', 'O45'),
+    ]).recaps.find((r) => r.competitionName === 'O45 Gold')!
+
+    expect(recap.celebrations.winners[0]!.competitionAgeLabel).toBe('O45')
+    expect(recap.celebrations.winners[0]!.subtitle).toBe('Your first O45 Gold title')
+  })
+
+  it('names first runner-up and third-place flavour with the competition sub-age', () => {
+    const loseFinal = makeMatch({
+      competitionName: 'U19 Gold',
+      date: '2026-05-01',
+      discipline: 'WD',
+      disciplineLabel: "Women's Doubles",
+      partnerName: 'Sam',
+      tournamentCategoryLabel: 'Gold',
+      competitionAgeGroup: 'Junior',
+      competitionSubAgeGroup: 'U19',
+      outcome: 'loss',
+      raw: {
+        Round: 'Final',
+        'Tournament Category': 'Gold',
+        'Player Game 1 Score': 19,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 18,
+        'Opponent Game 2 Score': 21,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+    const qfWin = makeMatch({
+      competitionName: 'O45 Gold',
+      date: '2026-06-01',
+      discipline: 'XD',
+      disciplineLabel: 'mixed doubles',
+      partnerName: 'Alex',
+      tournamentCategoryLabel: 'Gold',
+      competitionAgeGroup: 'Masters',
+      competitionSubAgeGroup: 'O45',
+      outcome: 'win',
+      raw: {
+        Round: 'Quarter-final',
+        'Tournament Category': 'Gold',
+        'Player Game 1 Score': 21,
+        'Opponent Game 1 Score': 15,
+        'Player Game 2 Score': 21,
+        'Opponent Game 2 Score': 12,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+    const loseSemi = makeMatch({
+      competitionName: 'O45 Gold',
+      date: '2026-06-01',
+      discipline: 'XD',
+      disciplineLabel: 'mixed doubles',
+      partnerName: 'Alex',
+      tournamentCategoryLabel: 'Gold',
+      competitionAgeGroup: 'Masters',
+      competitionSubAgeGroup: 'O45',
+      outcome: 'loss',
+      raw: {
+        Round: 'Semi-final',
+        'Tournament Category': 'Gold',
+        'Player Game 1 Score': 19,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 18,
+        'Opponent Game 2 Score': 21,
+        'Player Game 3 Score': null,
+        'Opponent Game 3 Score': null,
+      },
+    })
+
+    const recaps = computeTournamentRecaps([loseFinal, qfWin, loseSemi]).recaps
+    const u19 = recaps.find((r) => r.competitionName === 'U19 Gold')!
+    const o45 = recaps.find((r) => r.competitionName === 'O45 Gold')!
+
+    expect(u19.celebrations.runnerUps[0]!.subtitle).toBe(
+      'Your first U19 Gold runner-up finish',
+    )
+    expect(o45.celebrations.jointThirds[0]!.subtitle).toBe(
+      'Your first O45 Gold third place finish',
+    )
+  })
+
+  it('does not treat an O40 personal best as matching an O45 run', () => {
+    const qfWeekend = (comp: string, date: string, subAge: string) => [
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'OS',
+        disciplineLabel: 'open singles',
+        tournamentCategoryLabel: 'Gold',
+        competitionAgeGroup: 'Masters',
+        competitionSubAgeGroup: subAge,
+        outcome: 'win',
+        raw: {
+          Round: 'Group 1',
+          'Tournament Category': 'Gold',
+          'Player Game 1 Score': 21,
+          'Opponent Game 1 Score': 15,
+          'Player Game 2 Score': 21,
+          'Opponent Game 2 Score': 12,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'OS',
+        disciplineLabel: 'open singles',
+        tournamentCategoryLabel: 'Gold',
+        competitionAgeGroup: 'Masters',
+        competitionSubAgeGroup: subAge,
+        outcome: 'loss',
+        raw: {
+          Round: 'QF',
+          'Tournament Category': 'Gold',
+          'Player Game 1 Score': 19,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 18,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+    ]
+
+    const recap = computeTournamentRecaps([
+      ...qfWeekend('O40 Gold', '2025-06-01', 'O40'),
+      ...qfWeekend('O45 Gold', '2026-06-01', 'O45'),
+    ]).recaps.find((r) => r.competitionName === 'O45 Gold')!
+
+    expect(
+      recap.celebrations.milestones.some((m) => m.variant === 'matched_best'),
+    ).toBe(false)
+    const debut = recap.celebrations.milestones.find((m) => m.variant === 'debut')
+    expect(debut?.competitionAgeLabel).toBe('O45')
+    expect(debut?.title).toBe('First O45 Gold tournament')
   })
 
   it('does not show matched your best when still in the box', () => {
