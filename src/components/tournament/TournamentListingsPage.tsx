@@ -36,17 +36,18 @@ type Props = {
 
 const LEVELS: Level[] = ['Gold', 'Silver', 'Bronze', 'Copper', 'Other']
 
+const JUNIOR_OTHER_ID = 'JuniorOther'
+
+/** Even junior bands are not listed on their own. They sit inside Other. */
+const JUNIOR_AGES_INSIDE_OTHER = ['U12', 'U14', 'U16', 'U18']
+
 const JUNIOR_AGES: AgeOption[] = [
   { id: 'U11', label: 'Under 11' },
-  { id: 'U12', label: 'Under 12' },
   { id: 'U13', label: 'Under 13' },
-  { id: 'U14', label: 'Under 14' },
   { id: 'U15', label: 'Under 15' },
-  { id: 'U16', label: 'Under 16' },
   { id: 'U17', label: 'Under 17' },
-  { id: 'U18', label: 'Under 18' },
   { id: 'U19', label: 'Under 19' },
-  { id: 'JuniorOther', label: 'Other', chipLabel: 'Other', family: 'junior' },
+  { id: JUNIOR_OTHER_ID, label: 'Other', chipLabel: 'Other', family: 'junior' },
 ]
 
 const MASTER_AGES: AgeOption[] = [
@@ -225,6 +226,11 @@ function formatDrive(minutes: number): string {
   return `${hours}:${String(mins).padStart(2, '0')}`
 }
 
+function ageIsSelected(selected: string[], ageId: string): boolean {
+  if (selected.includes(ageId)) return true
+  return ageId !== JUNIOR_OTHER_ID && JUNIOR_AGES_INSIDE_OTHER.includes(ageId) && selected.includes(JUNIOR_OTHER_ID)
+}
+
 function selectionLabel(selected: number, total: number, singleName: string | null): string {
   if (selected === 0) return 'None'
   if (selected === total) return 'All'
@@ -394,7 +400,7 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
       if (row.when !== when) return false
       if (needle && !row.name.toLowerCase().includes(needle)) return false
       if (!levels.includes(row.level)) return false
-      if (!ages.includes(row.ageId)) return false
+      if (!ageIsSelected(ages, row.ageId)) return false
       if (maxDrive != null && row.drivingMinutes > maxDrive) return false
       if (row.entryClosed && !showClosed && !row.entered) return false
       return true
