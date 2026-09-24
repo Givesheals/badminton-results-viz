@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { getPlayerInitials } from '../../lib/getPlayerInitials'
+import { CompetitionAgeChip } from './CompetitionAgeChip'
 import { TournamentCategoryChip } from './TournamentCategoryChip'
 
 type Level = 'Gold' | 'Silver' | 'Bronze' | 'Copper' | 'Other'
@@ -552,9 +553,9 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
             </TabButton>
           </div>
 
-          <div className="grid grid-cols-[minmax(0,1fr)_auto_4rem_2.7rem] gap-x-2 px-4 py-3 text-[15px] font-bold text-ink-900">
+          <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_4.25rem_2.8rem] gap-x-2 px-4 py-3 text-[15px] font-bold text-ink-900 sm:grid-cols-[minmax(0,18rem)_5.5rem_4.25rem_2.8rem]">
             <span>Name</span>
-            <span>Type</span>
+            <span className="justify-self-start text-left">Type</span>
             <span>Date</span>
             <span>Driving</span>
           </div>
@@ -562,11 +563,11 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
           <ul className="max-h-[calc(100vh-320px)] min-h-[280px] divide-y divide-[#ece8f3] overflow-y-auto">
             {rows.map((row) => (
               <li key={row.id} className="px-4 py-3">
-                <div className="grid grid-cols-[minmax(0,1fr)_auto_4rem_2.7rem] items-start gap-x-2">
+                <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_4.25rem_2.8rem] items-start gap-x-2 sm:grid-cols-[minmax(0,18rem)_5.5rem_4.25rem_2.8rem]">
                 <p className="min-w-0 text-[15px] font-medium leading-snug text-[#4c2a86] underline decoration-[#4c2a86] underline-offset-2">
                   {row.name}
                 </p>
-                <div className="pt-0.5">
+                <div className="justify-self-start pt-0.5 text-left">
                   <TournamentCategoryChip label={row.level} />
                 </div>
                 <p className="text-[14px] leading-tight text-ink-900">
@@ -647,9 +648,10 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
           onSelectAll={() => setAges(ALL_AGES.map((age) => age.id))}
           onClearAll={() => setAges([])}
         >
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 items-start gap-x-3">
             <AgeFamily
               label="Juniors"
+              chipLabel="Junior"
               checked={juniorsOn === juniorIds.length}
               indeterminate={juniorsOn > 0 && juniorsOn < juniorIds.length}
               onToggle={() => toggleGroup(juniorIds)}
@@ -658,32 +660,37 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
                 <AgeLeaf
                   key={age.id}
                   label={age.label}
+                  chipLabel={age.id}
                   checked={ages.includes(age.id)}
                   onToggle={() => toggleAge(age.id)}
                 />
               ))}
             </AgeFamily>
-            <AgeLeaf
-              label="Seniors"
-              checked={ages.includes(SENIOR_AGE.id)}
-              onToggle={() => toggleAge(SENIOR_AGE.id)}
-              prominent
-            />
-            <AgeFamily
-              label="Masters"
-              checked={mastersOn === masterIds.length}
-              indeterminate={mastersOn > 0 && mastersOn < masterIds.length}
-              onToggle={() => toggleGroup(masterIds)}
-            >
-              {MASTER_AGES.map((age) => (
-                <AgeLeaf
-                  key={age.id}
-                  label={age.label}
-                  checked={ages.includes(age.id)}
-                  onToggle={() => toggleAge(age.id)}
-                />
-              ))}
-            </AgeFamily>
+            <div className="space-y-4">
+              <AgeLeaf
+                label="Seniors"
+                chipLabel="Senior"
+                checked={ages.includes(SENIOR_AGE.id)}
+                onToggle={() => toggleAge(SENIOR_AGE.id)}
+              />
+              <AgeFamily
+                label="Masters"
+                chipLabel="Masters"
+                checked={mastersOn === masterIds.length}
+                indeterminate={mastersOn > 0 && mastersOn < masterIds.length}
+                onToggle={() => toggleGroup(masterIds)}
+              >
+                {MASTER_AGES.map((age) => (
+                  <AgeLeaf
+                    key={age.id}
+                    label={age.label}
+                    chipLabel={age.id}
+                    checked={ages.includes(age.id)}
+                    onToggle={() => toggleAge(age.id)}
+                  />
+                ))}
+              </AgeFamily>
+            </div>
           </div>
         </FilterModal>
       )}
@@ -694,12 +701,14 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
 
 function AgeFamily({
   label,
+  chipLabel,
   checked,
   indeterminate,
   onToggle,
   children,
 }: {
   label: string
+  chipLabel: string
   checked: boolean
   indeterminate: boolean
   onToggle: () => void
@@ -711,38 +720,40 @@ function AgeFamily({
         type="button"
         role="checkbox"
         aria-checked={indeterminate ? 'mixed' : checked}
+        aria-label={label}
         onClick={onToggle}
-        className="flex items-center gap-3"
+        className="flex items-center gap-2"
       >
         <CheckControl checked={checked} indeterminate={indeterminate} label={label} />
-        <span className="text-[15px] font-semibold text-ink-900">{label}</span>
+        <CompetitionAgeChip label={chipLabel} className="text-xs" />
       </button>
-      <div className="mt-2 space-y-2 pl-7">{children}</div>
+      <div className="mt-2 space-y-2 pl-6">{children}</div>
     </div>
   )
 }
 
 function AgeLeaf({
   label,
+  chipLabel,
   checked,
   onToggle,
-  prominent = false,
 }: {
   label: string
+  chipLabel: string
   checked: boolean
   onToggle: () => void
-  prominent?: boolean
 }) {
   return (
     <button
       type="button"
       role="checkbox"
       aria-checked={checked}
+      aria-label={label}
       onClick={onToggle}
-      className="flex items-center gap-3"
+      className="flex items-center gap-2"
     >
       <CheckControl checked={checked} label={label} />
-      <span className={`text-[15px] text-ink-900 ${prominent ? 'font-semibold' : ''}`}>{label}</span>
+      <CompetitionAgeChip label={chipLabel} className="text-xs" />
     </button>
   )
 }
