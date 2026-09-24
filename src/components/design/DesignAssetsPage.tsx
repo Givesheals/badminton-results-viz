@@ -33,6 +33,15 @@ const PARTNER_STAGES: ProgressionStage[] = PROGRESSION_STAGE_CHIP_ORDER.filter(
   (stage) => stage !== 'knockout',
 )
 
+const JUNIOR_SUB_AGES = ['U11', 'U12', 'U13', 'U14', 'U15', 'U16', 'U17', 'U18', 'U19']
+const MASTERS_SUB_AGES = ['O35', 'O40', 'O45', 'O50', 'O55', 'O60', 'O65', 'O70', 'O75']
+
+const AGE_BAND_ROWS: { family: string; labels: string[] }[] = [
+  { family: 'Junior', labels: ['Junior', ...JUNIOR_SUB_AGES] },
+  { family: 'Senior', labels: ['Senior'] },
+  { family: 'Masters', labels: ['Masters', ...MASTERS_SUB_AGES] },
+]
+
 function AssetGroup({
   title,
   children,
@@ -166,10 +175,17 @@ export function DesignAssetsPage({ open, onClose }: Props) {
             <EntryStatusBadge status="closes-soon" />
           </AssetGroup>
 
-          <AssetGroup title="Age bands">
-            <CompetitionAgeChip label="Junior" />
-            <CompetitionAgeChip label="Senior" />
-            <CompetitionAgeChip label="Masters" />
+          <AssetGroup
+            title="Age bands"
+            contentClassName="flex flex-col items-start gap-2"
+          >
+            {AGE_BAND_ROWS.map((row) => (
+              <div key={row.family} className="flex flex-wrap items-center gap-2">
+                {row.labels.map((label) => (
+                  <CompetitionAgeChip key={label} label={label} />
+                ))}
+              </div>
+            ))}
           </AssetGroup>
 
           <AssetGroup title="Disciplines">
