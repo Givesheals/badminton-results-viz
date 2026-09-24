@@ -1,9 +1,13 @@
+type AgeFamily = 'junior' | 'senior' | 'masters'
+
 type Props = {
   label: string | null | undefined
   className?: string
+  /** Use when the label itself does not name the family, such as junior Other. */
+  family?: AgeFamily
+  /** Match the tighter U11 / O35 chips when the label is a word, such as Other. */
+  compact?: boolean
 }
-
-type AgeFamily = 'junior' | 'senior' | 'masters'
 
 const FAMILY_CLASS: Record<AgeFamily, string> = {
   junior: 'bg-age-junior-wash text-age-junior-ink ring-age-junior-ink',
@@ -25,11 +29,11 @@ function competitionAgeChipLabel(label: string): string {
 }
 
 /** Compact age tag for Junior / Senior / Masters or a more specific band (U19, O40). */
-export function CompetitionAgeChip({ label, className = '' }: Props) {
+export function CompetitionAgeChip({ label, className = '', family: familyOverride, compact = false }: Props) {
   if (!label) return null
 
-  const family = competitionAgeFamily(label)
-  const subAge = /^[UO]\d+$/i.test(label.trim())
+  const family = familyOverride ?? competitionAgeFamily(label)
+  const subAge = compact || /^[UO]\d+$/i.test(label.trim())
   const tone = family
     ? `${FAMILY_CLASS[family]} ring-1 ring-inset`
     : 'bg-ink-100 text-ink-800'

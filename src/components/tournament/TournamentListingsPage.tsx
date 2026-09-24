@@ -10,6 +10,8 @@ type When = 'upcoming' | 'past'
 type AgeOption = {
   id: string
   label: string
+  chipLabel?: string
+  family?: 'junior' | 'senior' | 'masters'
 }
 
 type TournamentRow = {
@@ -44,6 +46,7 @@ const JUNIOR_AGES: AgeOption[] = [
   { id: 'U17', label: 'Under 17' },
   { id: 'U18', label: 'Under 18' },
   { id: 'U19', label: 'Under 19' },
+  { id: 'JuniorOther', label: 'Other', chipLabel: 'Other', family: 'junior' },
 ]
 
 const MASTER_AGES: AgeOption[] = [
@@ -165,6 +168,15 @@ const TOURNAMENTS: TournamentRow[] = [
     ageId: 'U11',
     dateLines: ['15 Nov', '2026'],
     drivingMinutes: 185,
+    when: 'upcoming',
+  },
+  {
+    id: 'middlesex-other',
+    name: 'Middlesex Junior Other 2026',
+    level: 'Copper',
+    ageId: 'JuniorOther',
+    dateLines: ['22 Nov', '2026'],
+    drivingMinutes: 55,
     when: 'upcoming',
   },
   {
@@ -660,7 +672,9 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
                 <AgeLeaf
                   key={age.id}
                   label={age.label}
-                  chipLabel={age.id}
+                  chipLabel={age.chipLabel ?? age.id}
+                  family={age.family}
+                  compact={age.chipLabel != null}
                   checked={ages.includes(age.id)}
                   onToggle={() => toggleAge(age.id)}
                 />
@@ -737,11 +751,15 @@ function AgeLeaf({
   chipLabel,
   checked,
   onToggle,
+  family,
+  compact = false,
 }: {
   label: string
   chipLabel: string
   checked: boolean
   onToggle: () => void
+  family?: 'junior' | 'senior' | 'masters'
+  compact?: boolean
 }) {
   return (
     <button
@@ -753,7 +771,7 @@ function AgeLeaf({
       className="flex items-center gap-2"
     >
       <CheckControl checked={checked} label={label} />
-      <CompetitionAgeChip label={chipLabel} className="text-xs" />
+      <CompetitionAgeChip label={chipLabel} family={family} compact={compact} className="text-xs" />
     </button>
   )
 }
