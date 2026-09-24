@@ -3,6 +3,7 @@ import type { TeamMember } from './matchTeams'
 import {
   SENIOR_COUNTY_DEBUT_DETAIL,
   SENIOR_COUNTY_DEBUT_TITLE,
+  formatCategoryAgeLabel,
   type ProgressionStage,
 } from './tournamentProgression'
 import type {
@@ -45,11 +46,11 @@ const DATE_SUN = '2026-08-16'
 
 const DISCIPLINES = ['MD', 'WD', 'XD'] as const
 
-/** Simulation-only mix so Senior / Junior / Masters chips appear together. */
+/** Simulation-only mix: Senior plus junior/masters sub-ages on the callout chips. */
 const AGES: Record<(typeof DISCIPLINES)[number], string> = {
   MD: 'Senior',
-  WD: 'Junior',
-  XD: 'Masters',
+  WD: 'U19',
+  XD: 'O45',
 }
 
 const PARTNERS: Record<(typeof DISCIPLINES)[number], string> = {
@@ -172,14 +173,19 @@ function freakMatch(
   }
 }
 
+function scopedCategory(discipline: (typeof DISCIPLINES)[number]): string {
+  return formatCategoryAgeLabel(CATEGORY, AGES[discipline])
+}
+
 function podium(discipline: (typeof DISCIPLINES)[number], kind: 'winner' | 'runner-up' | 'joint-third') {
   const disciplineLabel = DISCIPLINE_LABELS[discipline] ?? discipline
+  const category = scopedCategory(discipline)
   const subtitle =
     kind === 'winner'
-      ? `Your first ${CATEGORY} title`
+      ? `Your first ${category} title`
       : kind === 'runner-up'
-        ? `Your first ${CATEGORY} runner-up finish`
-        : `Your first ${CATEGORY} third place finish`
+        ? `Your first ${category} runner-up finish`
+        : `Your first ${category} third place finish`
 
   return {
     kind,
@@ -512,21 +518,21 @@ export function buildFictionalTournamentRecap(
           'personal_best',
           'winner',
           'Personal best',
-          `Your deepest ${CATEGORY} ${DISCIPLINE_LABELS.MD} run - Winner`,
+          `Your deepest ${scopedCategory('MD')} ${DISCIPLINE_LABELS.MD} run - Winner`,
         ),
         milestone(
           'WD',
           'matched_best',
           'runner-up',
           'Matched your best',
-          `As deep as you've gone at ${CATEGORY} ${DISCIPLINE_LABELS.WD} before - Runner-up`,
+          `As deep as you've gone at ${scopedCategory('WD')} ${DISCIPLINE_LABELS.WD} before - Runner-up`,
         ),
         milestone(
           'XD',
           'debut',
           'semi-final',
-          `First ${CATEGORY} tournament`,
-          `Your first ${CATEGORY} tournament in mixed doubles`,
+          `First ${scopedCategory('XD')} tournament`,
+          `Your first ${scopedCategory('XD')} tournament in mixed doubles`,
         ),
       ],
       seniorCountyDebut: {
