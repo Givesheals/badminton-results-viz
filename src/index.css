@@ -59,6 +59,14 @@
   --color-level-shires: #4ca765;
   --color-level-medal-text: #41016f;
 
+  /* Age families: near-white wash. Junior echoes Shires green, darker and cooler. */
+  --color-age-junior-wash: #f6faf7;
+  --color-age-junior-ink: #2d6b48;
+  --color-age-senior-wash: #f5f8fc;
+  --color-age-senior-ink: #3e5c8a;
+  --color-age-masters-wash: #fdf8f4;
+  --color-age-masters-ink: #c2410c;
+
   /* Favourite star: deeper gold than medal chips so it reads on light grey */
   --color-favourite-star: #c9a227;
   --color-favourite-star-stroke: #8a7018;
