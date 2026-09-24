@@ -25,10 +25,20 @@ export function competitionAgeFamily(label: string): AgeFamily | null {
 }
 
 function competitionAgeChipLabel(label: string): string {
-  return label.trim().toLowerCase() === 'masters' ? 'Master' : label
+  switch (label.trim().toLowerCase()) {
+    case 'junior':
+      return 'Juniors'
+    case 'senior':
+      return 'Seniors'
+    case 'master':
+    case 'masters':
+      return 'Masters'
+    default:
+      return label
+  }
 }
 
-/** Compact age tag for Junior / Senior / Masters or a more specific band (U19, O40). */
+/** Compact age tag. Family badges read Juniors, Seniors, or Masters. Sub-ages stay U19, O40, and so on. */
 export function CompetitionAgeChip({ label, className = '', family: familyOverride, compact = false }: Props) {
   if (!label) return null
 

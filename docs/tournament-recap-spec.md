@@ -111,8 +111,8 @@ Defined in `src/lib/tournamentRecap.ts`:
 Podium and milestone callouts (large hero and compact list rows) show a competition-age chip beside discipline and category:
 
 - Prefer the event **sub-age** when present (`U19`, `O45`, etc.).
-- **Senior** stays `Senior` (no narrower sub-band).
-- If sub-age is missing, fall back to the top-level band (`Junior` / `Masters`, shown as `Master` on the chip).
+- **Senior** has no narrower sub-band. The chip reads `Seniors`.
+- If sub-age is missing, fall back to the top-level band. The chip reads `Juniors`, `Seniors`, or `Masters`.
 - Personal bests, matched bests, debuts, and title / runner-up counts are scoped to that same resolved label — an O40 win does not count toward O45.
 - Flavour copy uses the same scoped label (e.g. “Your first U19 Gold runner-up finish”, “Your deepest Senior Gold Men’s Doubles run”), not category alone.
 
