@@ -16,12 +16,16 @@ const PANEL_CLASS =
 
 /**
  * Slim outlined chip (16px tall, 12px semibold text): a softened 1px coloured
- * border, no fill or wash, gently rounded corners. The invisible `before` layer
- * gives it a larger tap area so it stays small on 350px screens without being
- * fiddly.
+ * border, no fill or wash, softly rounded corners (7px; 8px would be a full
+ * pill). The invisible `before` layer gives it a larger tap area so it stays
+ * small on 350px screens without being fiddly.
+ *
+ * `top-px` drops the chip's box 1px so the digits, which sit low in their line
+ * box, look centred inside it. The label is lifted 1px to cancel that out, so
+ * the digits stay on the same baseline as the "Win" and score text beside them.
  */
 const RATING_CHANGE_CHIP_CLASS =
-  'relative inline-flex h-4 shrink-0 items-center justify-center rounded-md border bg-transparent px-1 text-xs font-semibold leading-none tabular-nums before:absolute before:-inset-2 before:content-[""] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 active:opacity-70'
+  'relative top-px inline-flex h-4 shrink-0 items-center justify-center rounded-[7px] border bg-transparent px-1 text-xs font-semibold leading-none tabular-nums before:absolute before:-inset-2 before:content-[""] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 active:opacity-70'
 
 /** Gains and no change are green; only losses are red, as on the player profile. */
 function ratingChangeToneClass(points: number): string {
@@ -37,7 +41,7 @@ function ratingChangeToneClass(points: number): string {
 export function MatchRatingIneligibleChip() {
   return (
     <span
-      className="inline-flex h-4 min-w-5 shrink-0 items-center justify-center rounded-md bg-ink-100 px-1 text-xs font-semibold leading-none text-ink-600"
+      className="relative top-px inline-flex h-4 min-w-5 shrink-0 items-center justify-center rounded-[7px] bg-ink-100 px-1 text-xs font-semibold leading-none text-ink-600"
       role="img"
       aria-label="This match does not change your rating"
       title="This match does not change your rating"
@@ -69,9 +73,10 @@ export function MatchRatingChangeBadge({ change }: Props) {
         onClick={toggle}
       >
         {/*
-          Digits sit about 1px low in the line box and the +/- sign about 1.5px
-          low, so lift the label and nudge the sign a little further to look
-          vertically centred in the chip.
+          The chip box is dropped 1px (see `top-px` above), so lifting the label
+          1px keeps the digits on the row's text baseline while they look centred
+          in the chip. The +/- sign sits lower than the digits' centre, so it gets
+          a further half pixel lift.
         */}
         <span className="inline-flex -translate-y-px items-center">
           <span className="-translate-y-[0.5px]">{label.charAt(0)}</span>
