@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, type ReactNode } from 'react'
 import {
   MatchRatingChangeBadge,
   MatchRatingIneligibleChip,
+  type RatingChipVariant,
 } from '../dashboard/recap/MatchRatingChangeBadge'
 import { DisciplineChip } from '../discipline/DisciplineChip'
 import { NoteTagChips } from '../notes/NoteTagPicker'
@@ -60,6 +61,57 @@ function AssetGroup({
       <h2 className="text-sm font-semibold tracking-tight text-ink-900">{title}</h2>
       <div className={`mt-2 ${contentClassName}`}>{children}</div>
     </section>
+  )
+}
+
+/** A match result line as it appears on the events page, for comparing chip weights. */
+function ChipWeightPreview({
+  variant,
+  label,
+}: {
+  variant: RatingChipVariant
+  label: string
+}) {
+  const dotClass = variant === 'light' ? 'text-ink-300' : null
+  const rows = [
+    { outcome: 'Win', score: '21-10, 21-4', tone: 'text-gain-700', points: 5 },
+    { outcome: 'Loss', score: '13-21, 11-21', tone: 'text-loss-700', points: -1 },
+    { outcome: 'Win', score: '21-19, 19-21, 21-19', tone: 'text-gain-700', points: 0 },
+  ]
+
+  return (
+    <div className="rounded-md border border-ink-100 p-2">
+      <p className="mb-1.5 text-[11px] font-medium text-ink-500">{label}</p>
+      <div className="space-y-1.5">
+        {rows.map((row) => (
+          <p
+            key={row.score}
+            className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-ink-500"
+          >
+            <span className={`font-medium ${row.tone}`}>{row.outcome} ·</span>
+            <span>{row.score}</span>
+            <span className="inline-flex items-center gap-1 whitespace-nowrap">
+              <span aria-hidden className={dotClass ?? `font-medium ${row.tone}`}>
+                ·
+              </span>
+              <MatchRatingChangeBadge
+                variant={variant}
+                change={{ points: row.points, explanation: 'Example rating change.' }}
+              />
+            </span>
+          </p>
+        ))}
+        <p className="flex items-center gap-x-1 text-xs text-ink-500">
+          <span>Walkover</span>
+          <span className="inline-flex items-center gap-1">
+            <span aria-hidden className={dotClass ?? 'font-medium'}>
+              ·
+            </span>
+            <MatchRatingIneligibleChip variant={variant} />
+          </span>
+        </p>
+      </div>
+    </div>
   )
 }
 
@@ -237,6 +289,14 @@ export function DesignAssetsPage({ open, onClose }: Props) {
               change={{ points: 0, explanation: 'Your rating did not change from this match.' }}
             />
             <MatchRatingIneligibleChip />
+          </AssetGroup>
+
+          <AssetGroup
+            title="Rating change chip weight (compare)"
+            contentClassName="grid gap-3 sm:grid-cols-2"
+          >
+            <ChipWeightPreview variant="standard" label="Current" />
+            <ChipWeightPreview variant="light" label="Lighter (softer border, semibold, slimmer, grey dot)" />
           </AssetGroup>
 
           <AssetGroup title="Tournament partners">
