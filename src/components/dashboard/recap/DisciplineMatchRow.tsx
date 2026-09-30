@@ -2,7 +2,10 @@ import type { DisciplineMatchRecap } from '../../../lib/tournamentRecap'
 import { formatDisplayDate } from '../../../lib/formatDate'
 import { OpponentNoteButton } from '../../notes/OpponentNoteButton'
 import { MatchHighlightChip } from './MatchHighlightChip'
-import { MatchRatingChangeBadge } from './MatchRatingChangeBadge'
+import {
+  MatchRatingChangeBadge,
+  MatchRatingIneligibleChip,
+} from './MatchRatingChangeBadge'
 
 type Props = {
   match: DisciplineMatchRecap
@@ -42,7 +45,7 @@ export function DisciplineMatchRow({
 }: Props) {
   const outcomeLabel =
     match.outcome === 'win' ? 'Win' : match.outcome === 'loss' ? 'Loss' : null
-  const showRatingChange = match.ratingChange != null
+  const showRatingChange = match.ratingChange != null || !match.ratingEligible
 
   return (
     <li className="border-b border-ink-100/80 py-1.5 last:border-b-0">
@@ -98,9 +101,11 @@ export function DisciplineMatchRow({
           showNotes ||
           (showMatchHighlights && match.highlights.length > 0)) && (
           <div className="flex shrink-0 flex-col items-end gap-1.5 self-start pt-0.5">
-            {match.ratingChange != null && (
+            {match.ratingChange != null ? (
               <MatchRatingChangeBadge change={match.ratingChange} />
-            )}
+            ) : !match.ratingEligible ? (
+              <MatchRatingIneligibleChip />
+            ) : null}
             {(showNotes || (showMatchHighlights && match.highlights.length > 0)) && (
               <div className="flex items-center justify-end gap-1">
                 {showMatchHighlights &&

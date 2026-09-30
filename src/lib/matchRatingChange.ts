@@ -138,7 +138,7 @@ function formatChance(probability: number): string {
 export function formatRatingChangePoints(points: number): string {
   if (points > 0) return `+${points}`
   if (points < 0) return String(points)
-  return '-0'
+  return '+0'
 }
 
 export function buildMatchRatingChange(

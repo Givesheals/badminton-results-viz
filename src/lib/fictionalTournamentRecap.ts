@@ -144,6 +144,7 @@ function matchRow(args: {
     roundLabel: args.roundLabel,
     highlights: args.highlights ?? [],
     ratingChange: null,
+    ratingEligible: true,
     noteContext: {
       matchKey,
       competitionName: args.competitionName,

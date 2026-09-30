@@ -1,6 +1,9 @@
 import { createPortal } from 'react-dom'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
-import { MatchRatingChangeBadge } from '../dashboard/recap/MatchRatingChangeBadge'
+import {
+  MatchRatingChangeBadge,
+  MatchRatingIneligibleChip,
+} from '../dashboard/recap/MatchRatingChangeBadge'
 import { DisciplineChip } from '../discipline/DisciplineChip'
 import { NoteTagChips } from '../notes/NoteTagPicker'
 import {
@@ -233,6 +236,7 @@ export function DesignAssetsPage({ open, onClose }: Props) {
             <MatchRatingChangeBadge
               change={{ points: 0, explanation: 'Your rating did not change from this match.' }}
             />
+            <MatchRatingIneligibleChip />
           </AssetGroup>
 
           <AssetGroup title="Tournament partners">

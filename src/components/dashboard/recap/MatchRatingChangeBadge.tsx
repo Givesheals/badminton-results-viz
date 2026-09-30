@@ -22,11 +22,28 @@ const PANEL_CLASS =
 const RATING_CHANGE_CHIP_BASE_CLASS =
   'relative inline-flex h-5 items-center justify-center rounded-full border bg-transparent px-2 text-[11px] font-bold leading-none tabular-nums before:absolute before:-inset-2 before:content-[""] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
-/** Positive is green; zero and negative are red, as on the player profile. */
+/** Gains and no change are green; only losses are red, as on the player profile. */
 function ratingChangeToneClass(points: number): string {
-  return points > 0
+  return points >= 0
     ? 'border-gain-700 text-gain-700'
     : 'border-loss-700 text-loss-700'
+}
+
+/**
+ * Grey filled pill with a hyphen, shown when a match cannot change a rating
+ * (walkover or no match). Same height as the rating chips so rows stay aligned.
+ */
+export function MatchRatingIneligibleChip() {
+  return (
+    <span
+      className="inline-flex h-5 min-w-7 items-center justify-center rounded-full bg-ink-100 px-2 text-[11px] font-bold leading-none text-ink-500"
+      role="img"
+      aria-label="This match does not change your rating"
+      title="This match does not change your rating"
+    >
+      -
+    </span>
+  )
 }
 
 /** Per-match rating change pill. Tap to see how the change came about. */
@@ -76,7 +93,7 @@ export function MatchRatingChangeBadge({ change }: Props) {
                 {title}{' '}
                 <span
                   className={`tabular-nums ${
-                    change.points > 0 ? 'text-gain-700' : 'text-loss-700'
+                    change.points >= 0 ? 'text-gain-700' : 'text-loss-700'
                   }`}
                 >
                   {label}

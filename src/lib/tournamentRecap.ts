@@ -87,6 +87,11 @@ export type DisciplineMatchRecap = {
    * null when the match is not competitive or the discipline has no rating change.
    */
   ratingChange: MatchRatingChange | null
+  /**
+   * False for walkovers and no-matches, which never move a rating. The row shows
+   * a grey hyphen chip instead of a rating change.
+   */
+  ratingEligible: boolean
   noteContext: OpponentNoteMatchContext
 }
 
@@ -1087,6 +1092,9 @@ function buildDisciplineTimeline(
         roundLabel: formatMatchStageLabel(getMatchRound(match)),
         highlights: highlightsByKey.get(key) ?? [],
         ratingChange: ratingChanges.get(key) ?? null,
+        ratingEligible:
+          isCompetitiveMatch(match) &&
+          (match.outcome === 'win' || match.outcome === 'loss'),
         noteContext: buildNoteContextFromMatch(match),
       }
     })
