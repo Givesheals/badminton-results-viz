@@ -7,7 +7,9 @@ import {
   planPriceGbp,
   type PremiumPlan,
 } from '../../lib/premiumPricing'
+import type { StoredPremiumState } from '../../lib/premiumStorage'
 import { PremiumSignupFlow } from './PremiumSignupFlow'
+import { PremiumWelcomeModal } from './PremiumWelcomeModal'
 import { UserMenuDrawer } from './UserMenuDrawer'
 import { UserSettingsPage } from './UserSettingsPage'
 import { NotificationsPreview } from '../notifications/NotificationsPreview'
@@ -34,12 +36,34 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
   const [tournamentListingsOpen, setTournamentListingsOpen] = useState(false)
   const [liveFeedOpen, setLiveFeedOpen] = useState(false)
   const [designAssetsOpen, setDesignAssetsOpen] = useState(false)
+  const [welcomeSubscription, setWelcomeSubscription] = useState<StoredPremiumState | null>(null)
 
   const initials = getPlayerInitials(playerName)
 
   function openSignup(plan: PremiumPlan = 'yearly') {
     setSignupPlan(plan)
     setSignupOpen(true)
+  }
+
+  function showWelcome(subscription: StoredPremiumState) {
+    setWelcomeSubscription(subscription)
+  }
+
+  function openPlayerLab() {
+    setWelcomeSubscription(null)
+    setMenuOpen(false)
+    setSettingsOpen(false)
+    setNotificationsOpen(false)
+    setTournamentPreviewOpen(false)
+    setTournamentListingsOpen(false)
+    setLiveFeedOpen(false)
+    setDesignAssetsOpen(false)
+    // Wait for the full-screen pages to unmount, then bring the Player Lab header into view.
+    window.setTimeout(() => {
+      const header = document.getElementById('dashboard-results-header')
+      if (header) header.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      else window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, 50)
   }
 
   return (
@@ -92,6 +116,7 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
         playerName={playerName}
         onSignUpPremium={(plan) => openSignup(plan ?? 'yearly')}
         onManageSubscription={() => setManageOpen(true)}
+        onShowWelcome={showWelcome}
       />
 
       <NotificationsPreview
@@ -112,6 +137,8 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
         playerName={playerName}
         onOpenAccountMenu={() => setMenuOpen(true)}
         accountMenuOpen={menuOpen}
+        onOpenTournament={() => setTournamentPreviewOpen(true)}
+        tournamentPageOpen={tournamentPreviewOpen}
       />
 
       <LiveFeedPage open={liveFeedOpen} onClose={() => setLiveFeedOpen(false)} />
@@ -123,7 +150,25 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
         onClose={() => setSignupOpen(false)}
         playerName={playerName}
         initialPlan={signupPlan}
+        onSubscribed={showWelcome}
       />
+
+      {welcomeSubscription ? (
+        <PremiumWelcomeModal
+          open
+          onClose={() => setWelcomeSubscription(null)}
+          playerName={welcomeSubscription.playerName}
+          beNumber={welcomeSubscription.beNumber}
+          plan={welcomeSubscription.plan}
+          subscribedAt={welcomeSubscription.subscribedAt}
+          receiptEmail={welcomeSubscription.receiptEmail}
+          onOpenPlayerLab={openPlayerLab}
+          onManageSubscription={() => {
+            setWelcomeSubscription(null)
+            setManageOpen(true)
+          }}
+        />
+      ) : null}
 
       <Modal
         open={manageOpen}

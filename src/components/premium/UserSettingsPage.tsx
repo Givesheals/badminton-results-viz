@@ -19,6 +19,8 @@ type Props = {
   playerName: string
   onSignUpPremium: (plan?: PremiumPlan) => void
   onManageSubscription: () => void
+  /** Opens the post-subscribe welcome modal (demo trigger). */
+  onShowWelcome: (premium: StoredPremiumState) => void
 }
 
 type SettingsTab = 'general' | 'favourites' | 'notifications' | 'premium'
@@ -298,6 +300,7 @@ export function UserSettingsPage({
   playerName,
   onSignUpPremium,
   onManageSubscription,
+  onShowWelcome,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -391,6 +394,19 @@ export function UserSettingsPage({
                 </button>
               )
             })}
+            <button
+              type="button"
+              onClick={() =>
+                onShowWelcome(
+                  premium
+                    ? { ...premium, subscribedAt: new Date().toISOString() }
+                    : buildDemoPremium(playerName, 'signup_incomplete'),
+                )
+              }
+              className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-ink-600 ring-1 ring-ink-200 transition hover:text-ink-900"
+            >
+              Complete
+            </button>
           </div>
         </div>
       </header>

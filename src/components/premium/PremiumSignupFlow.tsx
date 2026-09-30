@@ -12,6 +12,7 @@ import {
   PREMIUM_YEARLY_SAVINGS_GBP,
   type PremiumPlan,
 } from '../../lib/premiumPricing'
+import type { StoredPremiumState } from '../../lib/premiumStorage'
 import { BePlayerSearch } from './BePlayerSearch'
 import { PremiumShowcaseCarousel } from './PremiumShowcaseCarousel'
 
@@ -23,6 +24,11 @@ type Props = {
   playerName: string
   /** Pre-select plan when opened from settings (or elsewhere). */
   initialPlan?: PremiumPlan
+  /**
+   * Called once payment succeeds. When provided, the flow closes itself and the parent
+   * shows the welcome modal instead of the built-in success step.
+   */
+  onSubscribed?: (subscription: StoredPremiumState) => void
 }
 
 const PREMIUM_BENEFITS = [
@@ -32,7 +38,13 @@ const PREMIUM_BENEFITS = [
   'Personal notes',
 ]
 
-export function PremiumSignupFlow({ open, onClose, playerName, initialPlan = 'yearly' }: Props) {
+export function PremiumSignupFlow({
+  open,
+  onClose,
+  playerName,
+  initialPlan = 'yearly',
+  onSubscribed,
+}: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const { subscribe, checkBeNumber } = usePremium()
@@ -123,6 +135,17 @@ export function PremiumSignupFlow({ open, onClose, playerName, initialPlan = 'ye
       receiptEmail: resolvedReceiptEmail,
       plan,
     })
+    if (onSubscribed) {
+      onSubscribed({
+        playerName: selectedPlayer.name,
+        beNumber: selectedPlayer.beNumber.trim(),
+        receiptEmail: resolvedReceiptEmail.trim(),
+        plan,
+        subscribedAt: new Date().toISOString(),
+      })
+      onClose()
+      return
+    }
     setStep('success')
   }
 
