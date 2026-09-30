@@ -45,6 +45,14 @@ export function DisciplineMatchRow({
 }: Props) {
   const outcomeLabel =
     match.outcome === 'win' ? 'Win' : match.outcome === 'loss' ? 'Loss' : null
+  const outcomeTextClass =
+    match.outcome === 'win'
+      ? 'text-gain-700'
+      : match.outcome === 'loss'
+        ? 'text-loss-700'
+        : 'text-ink-500'
+  const hasRatingChip = match.ratingChange != null || !match.ratingEligible
+
   return (
     <li className="border-b border-ink-100/80 py-1.5 last:border-b-0">
       <div className="grid grid-cols-[1fr_auto] items-start gap-x-2 gap-y-0.5">
@@ -79,6 +87,28 @@ export function DisciplineMatchRow({
               )}
             </p>
           )}
+          <p className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-ink-500">
+            {outcomeLabel != null && (
+              <span className={`font-medium ${outcomeTextClass}`}>
+                {outcomeLabel}
+                {match.scoreSummary ? ' ·' : ''}
+              </span>
+            )}
+            <span>{match.scoreSummary || '—'}</span>
+            {hasRatingChip && (
+              // Kept together so the separator never gets stranded on its own line.
+              <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                <span aria-hidden className={`font-medium ${outcomeTextClass}`}>
+                  ·
+                </span>
+                {match.ratingChange != null ? (
+                  <MatchRatingChangeBadge change={match.ratingChange} />
+                ) : (
+                  <MatchRatingIneligibleChip />
+                )}
+              </span>
+            )}
+          </p>
         </div>
         {(showNotes || (showMatchHighlights && match.highlights.length > 0)) && (
           <div className="flex shrink-0 items-center justify-end gap-1 self-start pt-0.5">
@@ -89,29 +119,6 @@ export function DisciplineMatchRow({
             {showNotes && <OpponentNoteButton context={match.noteContext} />}
           </div>
         )}
-        {/* Result line spans the full row so the rating chip lines up at the right edge. */}
-        <div className="col-span-full flex items-center justify-between gap-2">
-          <p className="min-w-0 text-xs text-ink-500">
-            {outcomeLabel != null && (
-              <span
-                className={
-                  match.outcome === 'win'
-                    ? 'font-medium text-gain-700'
-                    : 'font-medium text-loss-700'
-                }
-              >
-                {outcomeLabel}
-                {match.scoreSummary ? ' · ' : ''}
-              </span>
-            )}
-            {match.scoreSummary || '—'}
-          </p>
-          {match.ratingChange != null ? (
-            <MatchRatingChangeBadge change={match.ratingChange} />
-          ) : !match.ratingEligible ? (
-            <MatchRatingIneligibleChip />
-          ) : null}
-        </div>
       </div>
     </li>
   )
