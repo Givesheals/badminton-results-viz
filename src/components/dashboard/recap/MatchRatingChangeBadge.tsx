@@ -15,12 +15,13 @@ const PANEL_CLASS =
   'card-frame fixed z-50 rounded-2xl bg-white p-4 text-sm leading-relaxed text-ink-800 shadow-xl ring-2 ring-brand-200 outline-none'
 
 /**
- * Slim outlined pill (16px tall, 12px semibold text): a softened 1px coloured
- * border, no fill or wash. The invisible `before` layer gives it a larger tap
- * area so it stays small on 350px screens without being fiddly.
+ * Slim outlined chip (16px tall, 12px semibold text): a softened 1px coloured
+ * border, no fill or wash, gently rounded corners. The invisible `before` layer
+ * gives it a larger tap area so it stays small on 350px screens without being
+ * fiddly.
  */
 const RATING_CHANGE_CHIP_CLASS =
-  'relative inline-flex h-4 shrink-0 items-center justify-center rounded-full border bg-transparent px-1 text-xs font-semibold leading-none tabular-nums before:absolute before:-inset-2 before:content-[""] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 active:opacity-70'
+  'relative inline-flex h-4 shrink-0 items-center justify-center rounded-md border bg-transparent px-1 text-xs font-semibold leading-none tabular-nums before:absolute before:-inset-2 before:content-[""] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 active:opacity-70'
 
 /** Gains and no change are green; only losses are red, as on the player profile. */
 function ratingChangeToneClass(points: number): string {
@@ -36,12 +37,15 @@ function ratingChangeToneClass(points: number): string {
 export function MatchRatingIneligibleChip() {
   return (
     <span
-      className="inline-flex h-4 min-w-5 shrink-0 items-center justify-center rounded-full bg-ink-100 px-1 text-xs font-semibold leading-none text-ink-600"
+      className="inline-flex h-4 min-w-5 shrink-0 items-center justify-center rounded-md bg-ink-100 px-1 text-xs font-semibold leading-none text-ink-600"
       role="img"
       aria-label="This match does not change your rating"
       title="This match does not change your rating"
     >
-      -
+      {/* Text hyphens sit low in the line box, so lift it to the chip's centre. */}
+      <span aria-hidden className="-translate-y-[1.5px]">
+        -
+      </span>
     </span>
   )
 }
@@ -64,7 +68,15 @@ export function MatchRatingChangeBadge({ change }: Props) {
         aria-label={`${title} ${label}: more info`}
         onClick={toggle}
       >
-        {label}
+        {/*
+          Digits sit about 1px low in the line box and the +/- sign about 1.5px
+          low, so lift the label and nudge the sign a little further to look
+          vertically centred in the chip.
+        */}
+        <span className="inline-flex -translate-y-px items-center">
+          <span className="-translate-y-[0.5px]">{label.charAt(0)}</span>
+          {label.slice(1)}
+        </span>
       </button>
       {open &&
         createPortal(
