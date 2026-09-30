@@ -45,8 +45,6 @@ export function DisciplineMatchRow({
 }: Props) {
   const outcomeLabel =
     match.outcome === 'win' ? 'Win' : match.outcome === 'loss' ? 'Loss' : null
-  const showRatingChange = match.ratingChange != null || !match.ratingEligible
-
   return (
     <li className="border-b border-ink-100/80 py-1.5 last:border-b-0">
       <div className="grid grid-cols-[1fr_auto] items-start gap-x-2 gap-y-0.5">
@@ -81,7 +79,19 @@ export function DisciplineMatchRow({
               )}
             </p>
           )}
-          <p className="text-xs text-ink-500">
+        </div>
+        {(showNotes || (showMatchHighlights && match.highlights.length > 0)) && (
+          <div className="flex shrink-0 items-center justify-end gap-1 self-start pt-0.5">
+            {showMatchHighlights &&
+              match.highlights.map((highlight) => (
+                <MatchHighlightChip key={highlight.id} highlight={highlight} />
+              ))}
+            {showNotes && <OpponentNoteButton context={match.noteContext} />}
+          </div>
+        )}
+        {/* Result line spans the full row so the rating chip lines up at the right edge. */}
+        <div className="col-span-full flex items-center justify-between gap-2">
+          <p className="min-w-0 text-xs text-ink-500">
             {outcomeLabel != null && (
               <span
                 className={
@@ -96,27 +106,12 @@ export function DisciplineMatchRow({
             )}
             {match.scoreSummary || '—'}
           </p>
+          {match.ratingChange != null ? (
+            <MatchRatingChangeBadge change={match.ratingChange} />
+          ) : !match.ratingEligible ? (
+            <MatchRatingIneligibleChip />
+          ) : null}
         </div>
-        {(showRatingChange ||
-          showNotes ||
-          (showMatchHighlights && match.highlights.length > 0)) && (
-          <div className="flex shrink-0 flex-col items-end gap-1.5 self-start pt-0.5">
-            {match.ratingChange != null ? (
-              <MatchRatingChangeBadge change={match.ratingChange} />
-            ) : !match.ratingEligible ? (
-              <MatchRatingIneligibleChip />
-            ) : null}
-            {(showNotes || (showMatchHighlights && match.highlights.length > 0)) && (
-              <div className="flex items-center justify-end gap-1">
-                {showMatchHighlights &&
-                  match.highlights.map((highlight) => (
-                    <MatchHighlightChip key={highlight.id} highlight={highlight} />
-                  ))}
-                {showNotes && <OpponentNoteButton context={match.noteContext} />}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </li>
   )

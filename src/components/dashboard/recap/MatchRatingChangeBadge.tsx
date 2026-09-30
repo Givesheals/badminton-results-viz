@@ -20,7 +20,7 @@ const PANEL_CLASS =
  * larger tap area so it stays small on 350px screens without being fiddly.
  */
 const RATING_CHANGE_CHIP_BASE_CLASS =
-  'relative inline-flex h-5 items-center justify-center rounded-full border bg-transparent px-2 text-[11px] font-bold leading-none tabular-nums before:absolute before:-inset-2 before:content-[""] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
+  'relative inline-flex h-[18px] shrink-0 items-center justify-center rounded-full border bg-transparent px-1.5 text-xs font-bold leading-none tabular-nums before:absolute before:-inset-2 before:content-[""] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
 /** Gains and no change are green; only losses are red, as on the player profile. */
 function ratingChangeToneClass(points: number): string {
@@ -36,7 +36,7 @@ function ratingChangeToneClass(points: number): string {
 export function MatchRatingIneligibleChip() {
   return (
     <span
-      className="inline-flex h-5 min-w-7 items-center justify-center rounded-full bg-ink-100 px-2 text-[11px] font-bold leading-none text-ink-500"
+      className="inline-flex h-[18px] min-w-6 shrink-0 items-center justify-center rounded-full bg-ink-100 px-1.5 text-xs font-bold leading-none text-ink-600"
       role="img"
       aria-label="This match does not change your rating"
       title="This match does not change your rating"
