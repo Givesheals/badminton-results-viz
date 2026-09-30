@@ -15,7 +15,7 @@ const PANEL_CLASS =
   'card-frame fixed z-50 rounded-2xl bg-white p-4 text-sm leading-relaxed text-ink-800 shadow-xl ring-2 ring-brand-200 outline-none'
 
 /**
- * Slim outlined chip (16px tall, 12px semibold text): a softened 1px coloured
+ * Slim outlined chip (17px tall, 12px semibold text): a softened 1px coloured
  * border, no fill or wash, softly rounded corners (7px; 8px would be a full
  * pill). The invisible `before` layer gives it a larger tap area so it stays
  * small on 350px screens without being fiddly.
@@ -25,7 +25,7 @@ const PANEL_CLASS =
  * the digits stay on the same baseline as the "Win" and score text beside them.
  */
 const RATING_CHANGE_CHIP_CLASS =
-  'relative top-px inline-flex h-4 shrink-0 items-center justify-center rounded-[7px] border bg-transparent px-1 text-xs font-semibold leading-none tabular-nums before:absolute before:-inset-2 before:content-[""] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 active:opacity-70'
+  'relative top-px inline-flex h-[17px] shrink-0 items-center justify-center rounded-[7px] border bg-transparent px-1 text-xs font-semibold leading-none tabular-nums before:absolute before:-inset-2 before:content-[""] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 active:opacity-70'
 
 /** Gains and no change are green; only losses are red, as on the player profile. */
 function ratingChangeToneClass(points: number): string {
@@ -41,7 +41,7 @@ function ratingChangeToneClass(points: number): string {
 export function MatchRatingIneligibleChip() {
   return (
     <span
-      className="relative top-px inline-flex h-4 min-w-5 shrink-0 items-center justify-center rounded-[7px] bg-ink-100 px-1 text-xs font-semibold leading-none text-ink-600"
+      className="relative top-px inline-flex h-[17px] min-w-5 shrink-0 items-center justify-center rounded-[7px] bg-ink-100 px-1 text-xs font-semibold leading-none text-ink-600"
       role="img"
       aria-label="This match does not change your rating"
       title="This match does not change your rating"

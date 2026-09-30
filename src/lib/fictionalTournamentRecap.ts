@@ -116,11 +116,13 @@ function matchRow(args: {
   discipline: string
   date: string
   opponents: TeamMember[]
-  outcome: 'win' | 'loss'
+  outcome: 'win' | 'loss' | 'unknown'
   scoreSummary: string
   roundLabel: string
   highlights?: DisciplineMatchHighlight[]
   partnerName?: string | null
+  /** False for walkovers and no-matches, which show the grey hyphen rating chip. */
+  ratingEligible?: boolean
 }): DisciplineMatchRecap {
   const partnerName =
     args.partnerName !== undefined
@@ -144,7 +146,7 @@ function matchRow(args: {
     roundLabel: args.roundLabel,
     highlights: args.highlights ?? [],
     ratingChange: null,
-    ratingEligible: true,
+    ratingEligible: args.ratingEligible ?? true,
     noteContext: {
       matchKey,
       competitionName: args.competitionName,
@@ -230,7 +232,9 @@ function withRatingChanges(
   total: number,
 ): DisciplineMatchRecap[] {
   const inputs = matches
-    .filter((match) => match.outcome === 'win' || match.outcome === 'loss')
+    .filter(
+      (match) => match.ratingEligible && (match.outcome === 'win' || match.outcome === 'loss'),
+    )
     .map((match) => ({
       key: match.matchKey,
       outcome: match.outcome as 'win' | 'loss',
@@ -250,8 +254,9 @@ function disciplineRecap(
 ): DisciplineRecap {
   withRatingChanges(matches, rating.end - rating.start)
   const disciplineLabel = DISCIPLINE_LABELS[discipline] ?? discipline
-  const wins = matches.filter((match) => match.outcome === 'win').length
-  const losses = matches.filter((match) => match.outcome === 'loss').length
+  // Walkovers and no-matches are not real results, so they never count towards the record.
+  const wins = matches.filter((match) => match.ratingEligible && match.outcome === 'win').length
+  const losses = matches.filter((match) => match.ratingEligible && match.outcome === 'loss').length
   const partnerName = PARTNERS[discipline]
 
   return {
@@ -288,8 +293,8 @@ function singlesEventRecap(args: {
   callouts?: RecapSummaryCard[]
 }): DisciplineRecap {
   withRatingChanges(args.matches, args.rating.end - args.rating.start)
-  const wins = args.matches.filter((match) => match.outcome === 'win').length
-  const losses = args.matches.filter((match) => match.outcome === 'loss').length
+  const wins = args.matches.filter((match) => match.ratingEligible && match.outcome === 'win').length
+  const losses = args.matches.filter((match) => match.ratingEligible && match.outcome === 'loss').length
 
   return {
     discipline: 'OS',
@@ -390,6 +395,19 @@ export function buildFictionalTournamentRecap(
     scoreSummary: '21-18, 19-21, 21-16',
     roundLabel: 'Group',
   })
+  // Walkover: not a real result, so it shows the grey hyphen rating chip.
+  const wdWalkover = row({
+    discipline: 'WD',
+    date: DATE_SAT,
+    opponents: [
+      { name: 'Ivy Chen', rating: 790 },
+      { name: 'Lena Ross', rating: 786 },
+    ],
+    outcome: 'win',
+    scoreSummary: 'Walkover',
+    roundLabel: 'Quarter-final',
+    ratingEligible: false,
+  })
   const wdSemi = row({
     discipline: 'WD',
     date: DATE_SUN,
@@ -436,6 +454,19 @@ export function buildFictionalTournamentRecap(
     scoreSummary: '21-19, 16-21, 21-18',
     roundLabel: 'Quarter-final',
     highlights: [bigUpset(`${competitionName}\0${DATE_SAT}\0XD\0Alex Rivera & Sasha Bell`)],
+  })
+  // No match: also ineligible, so it shows the grey hyphen rating chip.
+  const xdNoMatch = row({
+    discipline: 'XD',
+    date: DATE_SUN,
+    opponents: [
+      { name: 'Ollie Grant', rating: 850 },
+      { name: 'Priya Shah', rating: 846 },
+    ],
+    outcome: 'unknown',
+    scoreSummary: 'No match',
+    roundLabel: 'Third place',
+    ratingEligible: false,
   })
   const xdSemi = row({
     discipline: 'XD',
@@ -503,8 +534,8 @@ export function buildFictionalTournamentRecap(
       matches: [osU12Quarter],
     }),
     disciplineRecap('MD', { start: 612, end: 628 }, [mdGroup, mdQuarter, mdFinal]),
-    disciplineRecap('WD', { start: 598, end: 610 }, [wdGroup, wdSemi, wdFinal]),
-    disciplineRecap('XD', { start: 604, end: 615 }, [xdGroup, xdQuarter, xdSemi]),
+    disciplineRecap('WD', { start: 598, end: 610 }, [wdGroup, wdWalkover, wdSemi, wdFinal]),
+    disciplineRecap('XD', { start: 604, end: 615 }, [xdGroup, xdQuarter, xdSemi, xdNoMatch]),
   ]
 
   return {
