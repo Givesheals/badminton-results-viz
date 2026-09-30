@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import type { DisciplineFamily } from '../../lib/disciplineStyle'
 import { getDisciplineStyle } from '../../lib/disciplineStyle'
 import { getOpponentTeamMembers } from '../../lib/matchTeams'
@@ -11,11 +11,10 @@ import {
   type PartnerTournamentMatchRow,
   type PartnerTournamentStageGroup,
 } from '../../lib/partnerTournamentHistory'
+import { formatStageChip } from '../../lib/partnerAchievements'
 import {
-  isLightGroupProgressionStage,
   PROGRESSION_PARTNER_CHIP_COLORS,
   PROGRESSION_STAGE_COLORS,
-  PROGRESSION_STAGE_SHORT_LABELS,
 } from '../../lib/tournamentProgression'
 import type { NormalizedMatch } from '../../types/matchHistory'
 import { AccordionChevron } from '../ui/AccordionChevron'
@@ -54,13 +53,12 @@ export function PartnerTournamentHistoryPanel({
   }
 
   return (
-    <div className="space-y-2 bg-ink-50/30 px-3 py-3">
+    <div className="space-y-4 bg-ink-50/30 px-3 py-3">
       {groups.map((group) => (
         <StageGroupSection
           key={group.stage}
           group={group}
           disciplineCode={disciplineCode}
-          defaultExpanded={autoExpand !== 'none'}
           defaultTournamentsExpanded={showMatches && autoExpand === 'full'}
           showMatches={showMatches}
         />
@@ -69,80 +67,71 @@ export function PartnerTournamentHistoryPanel({
   )
 }
 
+/**
+ * One finish-depth group (e.g. "4× Winner"). Always open: a quiet section header
+ * (colour dot, same chip wording as the partner card, hairline rule) above a single
+ * bordered list of tournaments.
+ */
 function StageGroupSection({
   group,
   disciplineCode,
-  defaultExpanded = false,
   defaultTournamentsExpanded = false,
   showMatches = true,
 }: {
   group: PartnerTournamentStageGroup
   disciplineCode: string
-  defaultExpanded?: boolean
   defaultTournamentsExpanded?: boolean
   showMatches?: boolean
 }) {
-  const [expanded, setExpanded] = useState(defaultExpanded)
   const [showAll, setShowAll] = useState(false)
+  const headingId = useId()
 
   const visibleTournaments = showAll
     ? group.tournaments
     : group.tournaments.slice(0, INITIAL_TOURNAMENTS_PER_STAGE)
   const hiddenCount = group.tournaments.length - visibleTournaments.length
-  const lightGroup = isLightGroupProgressionStage(group.stage)
   const stageColor =
     PROGRESSION_PARTNER_CHIP_COLORS[group.stage] ?? PROGRESSION_STAGE_COLORS[group.stage]
 
   return (
-    <section className="rounded-lg card-frame bg-white">
-      <button
-        type="button"
-        onClick={() => setExpanded((value) => !value)}
-        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left"
-        aria-expanded={expanded}
+    <section aria-labelledby={headingId}>
+      <h5
+        id={headingId}
+        className="mb-1.5 flex items-center gap-2 px-0.5 text-xs font-semibold text-ink-700"
       >
-        <span className="flex min-w-0 items-center gap-2">
-          <span
-            className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs ${
-              lightGroup ? 'font-medium text-black' : 'font-semibold text-white'
-            }`}
-            style={{ backgroundColor: stageColor }}
-            title={group.label}
-          >
-            <span className="md:hidden">{PROGRESSION_STAGE_SHORT_LABELS[group.stage]}</span>
-            <span className="hidden md:inline">{group.label}</span>
-          </span>
-          <span className="truncate text-sm font-medium text-ink-900">
-            {group.tournaments.length} event{group.tournaments.length === 1 ? '' : 's'}
-          </span>
+        <span
+          aria-hidden
+          className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-inset ring-black/10"
+          style={{ backgroundColor: stageColor }}
+        />
+        <span className="whitespace-nowrap">
+          {formatStageChip(group.stage, group.tournaments.length)}
         </span>
-        <AccordionChevron open={expanded} />
-      </button>
+        <span aria-hidden className="h-px min-w-4 flex-1 bg-ink-200" />
+      </h5>
 
-      {expanded ? (
-        <ul className="space-y-2 border-t border-ink-50 px-2 pb-2 pt-2">
-          {visibleTournaments.map((event) => (
-            <TournamentEventItem
-              key={event.key}
-              event={event}
-              disciplineCode={disciplineCode}
-              defaultExpanded={defaultTournamentsExpanded}
-              showMatches={showMatches}
-            />
-          ))}
-          {hiddenCount > 0 && !showAll ? (
-            <li>
-              <button
-                type="button"
-                onClick={() => setShowAll(true)}
-                className="text-sm font-medium text-brand-700 underline decoration-brand-200 underline-offset-2 transition hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-              >
-                Show {hiddenCount} more in {group.label.toLowerCase()}
-              </button>
-            </li>
-          ) : null}
-        </ul>
-      ) : null}
+      <ul className="divide-y divide-ink-100 overflow-hidden rounded-lg card-frame bg-white">
+        {visibleTournaments.map((event) => (
+          <TournamentEventItem
+            key={event.key}
+            event={event}
+            disciplineCode={disciplineCode}
+            defaultExpanded={defaultTournamentsExpanded}
+            showMatches={showMatches}
+          />
+        ))}
+        {hiddenCount > 0 && !showAll ? (
+          <li className="px-3 py-2">
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="text-sm font-medium text-brand-700 underline decoration-brand-200 underline-offset-2 transition hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+            >
+              Show {hiddenCount} more in {group.label.toLowerCase()}
+            </button>
+          </li>
+        ) : null}
+      </ul>
     </section>
   )
 }
@@ -174,12 +163,12 @@ function TournamentEventItem({
   )
 
   return (
-    <li className="rounded-lg card-frame">
+    <li>
       {showMatches ? (
         <button
           type="button"
           onClick={() => setMatchesOpen((value) => !value)}
-          className="flex w-full items-center gap-2 px-3 py-2 text-left transition hover:bg-brand-50/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+          className="flex w-full items-center gap-2 px-3 py-2 text-left transition hover:bg-brand-50/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200"
           aria-expanded={matchesOpen}
         >
           {header}
@@ -188,7 +177,7 @@ function TournamentEventItem({
         <div className="flex w-full items-center gap-2 px-3 py-2 text-left">{header}</div>
       )}
       {showMatches && matchesOpen ? (
-        <ul className="space-y-1 border-t border-ink-50 px-1 py-1">
+        <ul className="space-y-1 border-t border-ink-100 bg-ink-50/40 px-1.5 py-1.5">
           {event.matches.map((row, index) => (
             <PartnerHistoryMatchRow
               key={`${row.match.date}-${row.match.opponents}-${index}`}

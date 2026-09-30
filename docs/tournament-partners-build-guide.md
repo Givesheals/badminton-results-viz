@@ -210,34 +210,34 @@ Each family block (Doubles / Mixed) has **independent** filter state. Filters si
 
 ## 8. Accordion hierarchy
 
-Five nested levels:
+Stage groups are **flat section headers, not an accordion layer**, so there are three toggling levels:
 
 ```text
 Family block (Doubles / Mixed)
-  Partner card
-    Stage group (e.g. Semi-final · 2 events)
-      Tournament (competition name · N matches · date)
+  Partner card                                   (accordion)
+    Stage header (e.g. 2× Semi-final)            (always visible, not clickable)
+      Tournament (competition name · N matches · date)   (accordion)
         Match row
 ```
 
-Each level toggles independently — **multiple partners, stages, and tournaments may be open at once.**
+Multiple partners and tournaments may be open at once.
 
 ### Auto-expand when a partner card opens
 
 Apply once when the history panel opens (not on manual re-toggle of inner levels):
 
-| Total events with partner | Stage groups | Auto-open |
-|---------------------------|--------------|-----------|
-| 1 | 1 | Stage **and** tournament (matches visible) |
-| 2+ | 1 | Stage only; tournaments stay collapsed |
-| 2+ | 2+ | Nothing below partner level |
+| Total events with partner | Auto-open |
+|---------------------------|-----------|
+| 1 | Tournament (matches visible) |
+| 2+ | Nothing below partner level |
 
-### Stage group row
+### Stage header and group list
 
-- Pill with stage colour + “`{label}` · `{N} event(s)`”
-- Chevron right
-- When expanded: list of tournament rows
-- If &gt;8 tournaments in one stage: show first 8, then “Show {N} more in {stage}” link
+- Quiet header, not a filled chip: small dot in the stage colour (light grey stages get a faint outline so the dot is visible), the same chip wording used on the partner card (`{count}× {stage label}`, e.g. `4× Winner`), then a hairline rule filling the rest of the row
+- Always visible; no chevron
+- Small gap between the header and its list; larger gap between stage groups
+- The group's tournaments sit in **one bordered, rounded list** with hairline dividers between rows (not separate cards)
+- If &gt;8 tournaments in one stage: show first 8, then a “Show {N} more in {stage}” link as the last row of the list
 
 ### Tournament row
 

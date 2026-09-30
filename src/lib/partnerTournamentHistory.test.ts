@@ -170,7 +170,7 @@ describe('partnerHistoryAutoExpandLevel', () => {
     expect(partnerHistoryAutoExpandLevel(groups)).toBe('full')
   })
 
-  it('returns stages when multiple events share one stage', () => {
+  it('returns none when multiple events share one stage', () => {
     const matches = [
       makeMatch({
         competitionName: 'Older SF',
@@ -188,7 +188,7 @@ describe('partnerHistoryAutoExpandLevel', () => {
       }),
     ]
     const groups = buildPartnerTournamentHistory(matches, 'Sam', 'doubles')
-    expect(partnerHistoryAutoExpandLevel(groups)).toBe('stages')
+    expect(partnerHistoryAutoExpandLevel(groups)).toBe('none')
   })
 
   it('returns none when events span multiple stages', () => {
