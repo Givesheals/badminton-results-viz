@@ -82,9 +82,9 @@ describe('buildRatingChanges', () => {
 })
 
 describe('formatRatingChangePoints', () => {
-  it('signs positives and zero', () => {
+  it('signs positives and shows zero as -0, like the player profile', () => {
     expect(formatRatingChangePoints(8)).toBe('+8')
     expect(formatRatingChangePoints(-3)).toBe('-3')
-    expect(formatRatingChangePoints(0)).toBe('±0')
+    expect(formatRatingChangePoints(0)).toBe('-0')
   })
 })

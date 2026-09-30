@@ -15,16 +15,18 @@ const PANEL_CLASS =
   'card-frame fixed z-50 rounded-2xl bg-white p-4 text-sm leading-relaxed text-ink-800 shadow-xl ring-2 ring-brand-200 outline-none'
 
 /**
- * Compact pill with an invisible, larger tap area (the `before` layer) so it
- * stays small on 350px screens without being fiddly to press.
+ * Outlined pill: 1px coloured border, same-colour bold text, no fill or wash
+ * (matches the player profile chips). The invisible `before` layer gives it a
+ * larger tap area so it stays small on 350px screens without being fiddly.
  */
-const BADGE_BASE_CLASS =
-  'relative inline-flex h-5 items-center rounded-full px-2 text-[11px] font-semibold leading-none tabular-nums transition before:absolute before:-inset-2 before:content-[""] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
+const RATING_CHANGE_CHIP_BASE_CLASS =
+  'relative inline-flex h-5 items-center justify-center rounded-full border bg-transparent px-2 text-[11px] font-bold leading-none tabular-nums before:absolute before:-inset-2 before:content-[""] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
 
-function toneClass(points: number): string {
-  if (points > 0) return 'bg-gain-50 text-gain-700 hover:bg-gain-100'
-  if (points < 0) return 'bg-loss-50 text-loss-700 hover:bg-loss-100'
-  return 'bg-ink-100 text-ink-600 hover:bg-ink-200'
+/** Positive is green; zero and negative are red, as on the player profile. */
+function ratingChangeToneClass(points: number): string {
+  return points > 0
+    ? 'border-gain-700 text-gain-700'
+    : 'border-loss-700 text-loss-700'
 }
 
 /** Per-match rating change pill. Tap to see how the change came about. */
@@ -39,7 +41,7 @@ export function MatchRatingChangeBadge({ change }: Props) {
       <button
         ref={triggerRef}
         type="button"
-        className={`${BADGE_BASE_CLASS} ${toneClass(change.points)}`}
+        className={`${RATING_CHANGE_CHIP_BASE_CLASS} ${ratingChangeToneClass(change.points)} active:opacity-70`}
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={`${title} ${label}: more info`}
@@ -74,11 +76,7 @@ export function MatchRatingChangeBadge({ change }: Props) {
                 {title}{' '}
                 <span
                   className={`tabular-nums ${
-                    change.points > 0
-                      ? 'text-gain-700'
-                      : change.points < 0
-                        ? 'text-loss-700'
-                        : 'text-ink-600'
+                    change.points > 0 ? 'text-gain-700' : 'text-loss-700'
                   }`}
                 >
                   {label}

@@ -220,9 +220,12 @@ export function DesignAssetsPage({ open, onClose }: Props) {
             </span>
           </AssetGroup>
 
-          <AssetGroup title="Match rating change">
+          <AssetGroup title="Rating change chips">
             <MatchRatingChangeBadge
-              change={{ points: 8, explanation: 'You gained 8 rating points for this win.' }}
+              change={{ points: 6, explanation: 'You gained 6 rating points for this win.' }}
+            />
+            <MatchRatingChangeBadge
+              change={{ points: 10, explanation: 'You gained 10 rating points for this win.' }}
             />
             <MatchRatingChangeBadge
               change={{ points: -4, explanation: 'You lost 4 rating points from this loss.' }}
