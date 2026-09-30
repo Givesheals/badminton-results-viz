@@ -69,14 +69,14 @@ export function UserMenuDrawer({
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-40 bg-ink-900/40" aria-hidden onClick={onClose} />
+      <div className="fixed inset-0 z-[70] bg-ink-900/40" aria-hidden onClick={onClose} />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-white shadow-xl outline-none"
+        className="fixed inset-y-0 right-0 z-[80] flex w-full max-w-sm flex-col bg-white shadow-xl outline-none"
       >
         <div className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
           <div className="flex items-center gap-2">

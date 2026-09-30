@@ -135,19 +135,17 @@ export function countPartnerTournamentEvents(groups: PartnerTournamentStageGroup
   return groups.reduce((sum, group) => sum + group.tournaments.length, 0)
 }
 
-/** How far nested accordions open when a partner card is first expanded. */
-export type PartnerHistoryAutoExpand = 'none' | 'stages' | 'full'
+/** Whether tournament rows open automatically when a partner card is first expanded. */
+export type PartnerHistoryAutoExpand = 'none' | 'full'
 
 /**
- * - `full`: one event total — expand stage and tournament (show matches).
- * - `stages`: multiple events, single stage — expand stage only.
- * - `none`: multiple stages — no nested auto-expand.
+ * Stage groups are always visible (section headers, not accordions), so the only
+ * auto-expand decision left is the tournament rows.
+ * - `full`: one event total — open the tournament (show matches).
+ * - `none`: several events — keep tournaments collapsed.
  */
 export function partnerHistoryAutoExpandLevel(
   groups: PartnerTournamentStageGroup[],
 ): PartnerHistoryAutoExpand {
-  const eventCount = countPartnerTournamentEvents(groups)
-  if (eventCount <= 1) return eventCount === 1 ? 'full' : 'none'
-  if (groups.length === 1) return 'stages'
-  return 'none'
+  return countPartnerTournamentEvents(groups) === 1 ? 'full' : 'none'
 }

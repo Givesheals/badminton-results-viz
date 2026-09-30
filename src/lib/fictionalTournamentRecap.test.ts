@@ -24,6 +24,29 @@ function stubRecap(key: string): TournamentRecap {
 describe('buildFictionalTournamentRecap', () => {
   const recap = buildFictionalTournamentRecap()
 
+  it('splits each discipline rating change across its matches so the badges add up', () => {
+    for (const discipline of recap.disciplines) {
+      const badgeTotal = discipline.matches.reduce(
+        (sum, match) => sum + (match.ratingChange?.points ?? 0),
+        0,
+      )
+      const eligible = discipline.matches.filter((match) => match.ratingEligible)
+      expect(eligible.every((match) => match.ratingChange != null)).toBe(true)
+      expect(badgeTotal).toBe(discipline.ratingDelta)
+    }
+  })
+
+  it('includes ineligible matches (walkover, no match) that show the grey hyphen chip', () => {
+    const ineligible = recap.disciplines
+      .flatMap((discipline) => discipline.matches)
+      .filter((match) => !match.ratingEligible)
+    expect(ineligible.map((match) => match.scoreSummary).sort()).toEqual([
+      'No match',
+      'Walkover',
+    ])
+    expect(ineligible.every((match) => match.ratingChange == null)).toBe(true)
+  })
+
   it('is clearly fictional and spans a weekend', () => {
     expect(recap.key).toBe(FICTIONAL_TOURNAMENT_RECAP_KEY)
     expect(recap.competitionName).toBe(FICTIONAL_TOURNAMENT_NAME)
@@ -162,6 +185,14 @@ describe('insertFictionalTournamentRecap', () => {
 })
 
 describe('buildCondensedFictionalTournamentRecap', () => {
+  it('also includes the ineligible matches with the grey hyphen chip', () => {
+    const condensed = buildCondensedFictionalTournamentRecap()
+    const ineligible = condensed.disciplines
+      .flatMap((discipline) => discipline.matches)
+      .filter((match) => !match.ratingEligible)
+    expect(ineligible).toHaveLength(2)
+  })
+
   it('is the same kitchen-sink recap under a condensed-cards name', () => {
     const expanded = buildFictionalTournamentRecap()
     const condensed = buildCondensedFictionalTournamentRecap()

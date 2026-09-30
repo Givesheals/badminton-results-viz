@@ -18,6 +18,7 @@ import {
   type OpponentNoteMatchContext,
 } from './opponentNotes'
 import { isCompetitiveMatch } from './matchExclusions'
+import { buildRatingChanges, type MatchRatingChange } from './matchRatingChange'
 import { getMatchGames, getMatchVolume } from './matchScores'
 import { getOpponentTeamMembers, type TeamMember } from './matchTeams'
 import { getMatchExpectedWinProbability, getPartnerRating, getPlayerRating } from './ratings'
@@ -81,6 +82,16 @@ export type DisciplineMatchRecap = {
   scoreSummary: string
   roundLabel: string | null
   highlights: DisciplineMatchHighlight[]
+  /**
+   * Rating change from this match. PROTOTYPE: split from the discipline total,
+   * null when the match is not competitive or the discipline has no rating change.
+   */
+  ratingChange: MatchRatingChange | null
+  /**
+   * False for walkovers and no-matches, which never move a rating. The row shows
+   * a grey hyphen chip instead of a rating change.
+   */
+  ratingEligible: boolean
   noteContext: OpponentNoteMatchContext
 }
 
@@ -1047,6 +1058,24 @@ function buildDisciplineTimeline(
     })
   }
 
+  const ratingChanges =
+    d.ratingDelta != null
+      ? buildRatingChanges(
+          disciplineMatches
+            .filter(
+              (match) =>
+                isCompetitiveMatch(match) &&
+                (match.outcome === 'win' || match.outcome === 'loss'),
+            )
+            .map((match) => ({
+              key: recapMatchKey(match),
+              outcome: match.outcome as 'win' | 'loss',
+              winProbability: getMatchExpectedWinProbability(match),
+            })),
+          d.ratingDelta,
+        )
+      : new Map<string, MatchRatingChange>()
+
   const matches = sortMatchesChronologically(disciplineMatches).map((match) => {
       const key = recapMatchKey(match)
       return {
@@ -1062,6 +1091,10 @@ function buildDisciplineTimeline(
         scoreSummary: match.scoreSummary,
         roundLabel: formatMatchStageLabel(getMatchRound(match)),
         highlights: highlightsByKey.get(key) ?? [],
+        ratingChange: ratingChanges.get(key) ?? null,
+        ratingEligible:
+          isCompetitiveMatch(match) &&
+          (match.outcome === 'win' || match.outcome === 'loss'),
         noteContext: buildNoteContextFromMatch(match),
       }
     })

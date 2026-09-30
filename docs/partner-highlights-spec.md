@@ -91,23 +91,22 @@ Filters apply **before** aggregation; changing filters recomputes scores and re-
 
 ### Accordion hierarchy
 
-Expanded partner history is nested:
+Expanded partner history has three accordion levels, with stage groups shown as flat section headers rather than an accordion layer:
 
 1. **Section column** — Doubles or Mixed (discipline family)
 2. **Partner card** — partner name, event count, stage chips
-3. **Stage group** — deepest finish reached (e.g. Winner, Group match wins)
-4. **Tournament event** — competition name; `{N} matches · {date}`
+3. **Stage group (section header, not an accordion)** — deepest finish reached. A quiet header: stage colour dot, the same chip wording as the partner card (e.g. `4× Winner`, `1× Group match wins`), then a hairline rule. Always visible.
+4. **Tournament event** — competition name; `{N} matches · {date}`. All events in a stage group sit in **one bordered list** with hairline dividers (not separate cards).
 5. **Match row** — opponents, outcome, score (see §6)
 
-Each level toggles independently (multiple partners, stages, and events may be open at once). Chevron on the centre-right of partner and tournament headers.
+Partner cards and tournament rows toggle independently (multiple may be open at once). Chevron on the centre-right of partner and tournament headers. Spacing is tight between a stage header and its list, and larger between stage groups.
 
-**Auto-expand on partner open** (nested levels only; partner card still toggles manually):
+**Auto-expand on partner open** (partner card still toggles manually):
 
-| Events with partner | Stages | Auto-expanded when partner card opens |
-|---------------------|--------|---------------------------------------|
-| 1 | 1 | Stage group **and** tournament (matches visible) |
-| 2+ | 1 | Stage group only; tournaments stay collapsed |
-| 2+ | 2+ | Nothing below partner level |
+| Events with partner | Auto-expanded when partner card opens |
+|---------------------|---------------------------------------|
+| 1 | Tournament (matches visible) |
+| 2+ | Nothing; tournaments stay collapsed |
 
 Logic: `partnerHistoryAutoExpandLevel()` in `partnerTournamentHistory.ts`. Applies when the history panel mounts (each time the partner card is expanded).
 
@@ -141,7 +140,7 @@ Those sections follow the product-wide **lean-card** principle: show context at 
 
 ```text
 Partner card          ← partner name (fixed for all rows below)
-  Stage group         ← finish depth (fixed for events in group)
+  Stage header        ← finish depth (flat section header, fixed for events in group)
     Tournament        ← competition + date (fixed for matches in event)
       Match row       ← round · vs Opponents · Win/Loss · score
 ```

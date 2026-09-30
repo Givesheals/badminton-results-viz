@@ -1,6 +1,13 @@
 import { createPortal } from 'react-dom'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useTicketBuildPicker } from '../../hooks/useTicketBuildPicker'
 import { getPlayerInitials } from '../../lib/getPlayerInitials'
+import {
+  listingTitleWithAgeChips,
+  TOURNAMENT_LISTINGS_BUILD_STAGE_META,
+  TOURNAMENT_LISTINGS_BUILD_STAGES,
+  type TournamentListingsBuildStage,
+} from '../../lib/tournamentListingsBuildStage'
 import { CompetitionAgeChip } from './CompetitionAgeChip'
 import { TournamentCategoryChip } from './TournamentCategoryChip'
 
@@ -14,24 +21,32 @@ type AgeOption = {
   family?: 'junior' | 'senior' | 'masters'
 }
 
+type ListingFamily = 'junior' | 'senior' | 'masters'
+
 type TournamentRow = {
   id: string
   name: string
   level: Level
-  ageId: string
+  /** Senior, Junior, or Masters, taken from the listings page heading. */
+  family: ListingFamily
+  /** Bands named in the title. Empty when the title only belongs to the family. */
+  ageIds: string[]
   dateLines: string[]
-  drivingMinutes: number
+  drivingMinutes: number | null
   when: When
   entryClosed?: boolean
   closesSoon?: boolean
   entered?: boolean
   favouritesEntered?: number
+  otherEntered?: string
 }
 
 type Props = {
   open: boolean
   onClose: () => void
   playerName: string
+  onOpenAccountMenu: () => void
+  accountMenuOpen: boolean
 }
 
 const LEVELS: Level[] = ['Gold', 'Silver', 'Bronze', 'Copper', 'Other']
@@ -77,29 +92,32 @@ const DRIVE_LIMITS: { minutes: number | null; label: string }[] = [
 
 const TOURNAMENTS: TournamentRow[] = [
   {
-    id: 'cumbria',
+    id: 'cumbria-senior-champs',
     name: 'Cumbria Senior Championships 2026-2027',
-    level: 'Gold',
-    ageId: 'Senior',
+    level: 'Other',
+    family: 'senior',
+    ageIds: [],
     dateLines: ['27 Sept', '2026'],
     drivingMinutes: 4 * 60 + 13,
     when: 'upcoming',
   },
   {
-    id: 'dorset',
-    name: 'Dorset Under 13 Restricted 2026',
-    level: 'Bronze',
-    ageId: 'U13',
+    id: 'dorset-senior-restricted',
+    name: 'Dorset Senior Restricted 2026',
+    level: 'Other',
+    family: 'senior',
+    ageIds: [],
     dateLines: ['27 Sept', '2026'],
     drivingMinutes: 2 * 60 + 54,
     when: 'upcoming',
   },
   {
-    id: 'cambs',
-    name: 'Cambridgeshire Under 17 Restricted 2026',
-    level: 'Silver',
-    ageId: 'U17',
-    dateLines: ['03 & 04', 'Oct', '2026'],
+    id: 'cambs-restricted',
+    name: 'Cambridgeshire Restricted 2026',
+    level: 'Other',
+    family: 'senior',
+    ageIds: [],
+    dateLines: ['03 & 04', 'Oct 2026'],
     drivingMinutes: 22,
     when: 'upcoming',
     entryClosed: true,
@@ -107,120 +125,409 @@ const TOURNAMENTS: TournamentRow[] = [
     favouritesEntered: 16,
   },
   {
-    id: 'suffolk',
-    name: 'Suffolk Over 45 Restricted 2026-27',
-    level: 'Copper',
-    ageId: 'O45',
+    id: 'suffolk-senior-restricted',
+    name: 'Suffolk Senior Restricted 2026-27',
+    level: 'Other',
+    family: 'senior',
+    ageIds: [],
     dateLines: ['03 Oct', '2026'],
     drivingMinutes: 1 * 60 + 14,
     when: 'upcoming',
     closesSoon: true,
   },
   {
-    id: 'surrey-u15',
-    name: 'Surrey Under 15 Gold 2026',
-    level: 'Gold',
-    ageId: 'U15',
-    dateLines: ['11 Oct', '2026'],
-    drivingMinutes: 48,
-    when: 'upcoming',
-  },
-  {
-    id: 'essex-o35',
-    name: 'Essex Over 35 Silver 2026',
+    id: 'northumberland-senior-silver',
+    name: '2026 Northumberland Senior Silver',
     level: 'Silver',
-    ageId: 'O35',
-    dateLines: ['18 Oct', '2026'],
-    drivingMinutes: 100,
+    family: 'senior',
+    ageIds: [],
+    dateLines: ['10 & 11', 'Oct 2026'],
+    drivingMinutes: null,
     when: 'upcoming',
+    closesSoon: true,
   },
   {
-    id: 'kent-u19',
-    name: 'Kent Under 19 Bronze 2026',
-    level: 'Bronze',
-    ageId: 'U19',
-    dateLines: ['25 Oct', '2026'],
-    drivingMinutes: 115,
-    when: 'upcoming',
-  },
-  {
-    id: 'hants',
-    name: 'Hampshire Senior Copper 2026',
-    level: 'Copper',
-    ageId: 'Senior',
-    dateLines: ['01 Nov', '2026'],
-    drivingMinutes: 130,
-    when: 'upcoming',
-  },
-  {
-    id: 'norfolk',
-    name: 'Norfolk Over 60 Restricted 2026',
+    id: 'herts-senior-restricted',
+    name: 'Hertfordshire Senior Restricted 2026',
     level: 'Other',
-    ageId: 'O60',
-    dateLines: ['08 Nov', '2026'],
-    drivingMinutes: 160,
-    when: 'upcoming',
-    entryClosed: true,
-  },
-  {
-    id: 'yorks-u11',
-    name: 'Yorkshire Under 11 Open 2026',
-    level: 'Gold',
-    ageId: 'U11',
-    dateLines: ['15 Nov', '2026'],
-    drivingMinutes: 185,
+    family: 'senior',
+    ageIds: [],
+    dateLines: ['10 & 11', 'Oct 2026'],
+    drivingMinutes: null,
     when: 'upcoming',
   },
   {
-    id: 'middlesex-other',
-    name: 'Middlesex Junior Other 2026',
-    level: 'Copper',
-    ageId: 'JuniorOther',
-    dateLines: ['22 Nov', '2026'],
-    drivingMinutes: 55,
-    when: 'upcoming',
-  },
-  {
-    id: 'devon',
-    name: 'Devon Over 50 Gold 2026',
-    level: 'Gold',
-    ageId: 'O50',
-    dateLines: ['06 Sept', '2026'],
-    drivingMinutes: 280,
-    when: 'past',
-  },
-  {
-    id: 'lancs',
-    name: 'Lancashire Under 12 Silver 2026',
-    level: 'Silver',
-    ageId: 'U12',
-    dateLines: ['30 Aug', '2026'],
-    drivingMinutes: 200,
-    when: 'past',
-  },
-  {
-    id: 'warks',
-    name: 'Warwickshire Senior Bronze 2026',
+    id: 'suffolk-senior-bronze',
+    name: 'Suffolk Senior Bronze',
     level: 'Bronze',
-    ageId: 'Senior',
-    dateLines: ['12 Sept', '2026'],
-    drivingMinutes: 65,
-    when: 'past',
-    entered: true,
+    family: 'senior',
+    ageIds: [],
+    dateLines: ['11 Oct', '2026'],
+    drivingMinutes: 1 * 60 + 14,
+    when: 'upcoming',
+    closesSoon: true,
+    favouritesEntered: 3,
   },
   {
-    id: 'oxon',
-    name: 'Oxfordshire Over 40 Copper 2026',
+    id: 'hants-senior-tier4',
+    name: 'Hampshire Senior Tier 4 (Oct 2 Day) 2026',
     level: 'Copper',
-    ageId: 'O40',
-    dateLines: ['19 Sept', '2026'],
-    drivingMinutes: 88,
-    when: 'past',
-    entryClosed: true,
+    family: 'senior',
+    ageIds: [],
+    dateLines: ['17 & 18', 'Oct 2026'],
+    drivingMinutes: 2 * 60 + 16,
+    when: 'upcoming',
+  },
+  {
+    id: 'middlesex-senior-gold',
+    name: 'Middlesex Senior Gold Tournament 2026',
+    level: 'Gold',
+    family: 'senior',
+    ageIds: [],
+    dateLines: ['17 & 18', 'Oct 2026'],
+    drivingMinutes: 1 * 60 + 29,
+    when: 'upcoming',
+  },
+  {
+    id: 'hertford-csbc-bronze',
+    name: 'Hertford CSBC Senior Bronze October 2026',
+    level: 'Bronze',
+    family: 'senior',
+    ageIds: [],
+    dateLines: ['17 Oct', '2026'],
+    drivingMinutes: 56,
+    when: 'upcoming',
+    otherEntered: 'Zoe Foota',
+  },
+  {
+    id: 'lancs-tier4',
+    name: 'Lancashire Tier 4 Tournament',
+    level: 'Copper',
+    family: 'senior',
+    ageIds: [],
+    dateLines: ['17 Oct', '2026'],
+    drivingMinutes: 3 * 60 + 13,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'somerset-senior-bronze',
+    name: 'Somerset Senior Bronze (October) 2026',
+    level: 'Bronze',
+    family: 'senior',
+    ageIds: [],
+    dateLines: ['24 Oct', '2026'],
+    drivingMinutes: 3 * 60 + 50,
+    when: 'upcoming',
+  },
+  {
+    id: 'dorset-senior-silver',
+    name: 'Dorset Senior Silver 2026',
+    level: 'Silver',
+    family: 'senior',
+    ageIds: [],
+    dateLines: ['24 & 25', 'Oct 2026'],
+    drivingMinutes: 2 * 60 + 54,
+    when: 'upcoming',
+  },
+  {
+    id: 'reading-csbc-tier4',
+    name: 'Reading CSBC Senior Tier 4 October 2026',
+    level: 'Copper',
+    family: 'senior',
+    ageIds: [],
+    dateLines: ['24 Oct', '2026'],
+    drivingMinutes: 1 * 60 + 52,
+    when: 'upcoming',
+  },
+  {
+    id: 'cumbria-junior-champs',
+    name: 'Cumbria Junior Championships 2026/2027',
+    level: 'Other',
+    family: 'junior',
+    ageIds: [],
+    dateLines: ['03 Oct', '2026'],
+    drivingMinutes: 4 * 60 + 13,
+    when: 'upcoming',
+  },
+  {
+    id: 'wilts-u19-silver',
+    name: 'Wiltshire U19 Silver October 2026',
+    level: 'Silver',
+    family: 'junior',
+    ageIds: ['U19'],
+    dateLines: ['04 Oct', '2026'],
+    drivingMinutes: 2 * 60 + 58,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'suffolk-u19-silver',
+    name: 'Suffolk U19 Silver',
+    level: 'Silver',
+    family: 'junior',
+    ageIds: ['U19'],
+    dateLines: ['10 Oct', '2026'],
+    drivingMinutes: 1 * 60 + 14,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'sba-u17-bronze',
+    name: 'SBA u17 Bronze October',
+    level: 'Bronze',
+    family: 'junior',
+    ageIds: ['U17'],
+    dateLines: ['10 Oct', '2026'],
+    drivingMinutes: 1 * 60 + 55,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'all-stars-u13',
+    name: 'All Stars u13 Bronze Oct',
+    level: 'Bronze',
+    family: 'junior',
+    ageIds: ['U13'],
+    dateLines: ['11 Oct', '2026'],
+    drivingMinutes: 3 * 60 + 26,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'essex-u13-bronze',
+    name: 'Essex U13 Bronze 2026',
+    level: 'Bronze',
+    family: 'junior',
+    ageIds: ['U13'],
+    dateLines: ['11 Oct', '2026'],
+    drivingMinutes: 1 * 60 + 2,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'essex-u17-silver',
+    name: 'Essex U17 Silver Oct 2026',
+    level: 'Silver',
+    family: 'junior',
+    ageIds: ['U17'],
+    dateLines: ['11 Oct', '2026'],
+    drivingMinutes: 1 * 60 + 2,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'swindon-u19-bronze',
+    name: 'Swindon Stars U19 Bronze October 2026',
+    level: 'Bronze',
+    family: 'junior',
+    ageIds: ['U19'],
+    dateLines: ['11 Oct', '2026'],
+    drivingMinutes: 2 * 60 + 29,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'herts-u15-silver',
+    name: 'Herts U15 Silver',
+    level: 'Silver',
+    family: 'junior',
+    ageIds: ['U15'],
+    dateLines: ['17 Oct', '2026'],
+    drivingMinutes: 56,
+    when: 'upcoming',
+  },
+  {
+    id: 'yorks-u17-silver',
+    name: 'Yorkshire U17 Silver 2026',
+    level: 'Silver',
+    family: 'junior',
+    ageIds: ['U17'],
+    dateLines: ['17 Oct', '2026'],
+    drivingMinutes: 2 * 60 + 51,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'oxon-u15-bronze',
+    name: 'Oxfordshire U15 Bronze - Oct 2026',
+    level: 'Bronze',
+    family: 'junior',
+    ageIds: ['U15'],
+    dateLines: ['17 Oct', '2026'],
+    drivingMinutes: 1 * 60 + 57,
+    when: 'upcoming',
+  },
+  {
+    id: 'thedkway-u17',
+    name: 'TheDKWay U17 Bronze',
+    level: 'Bronze',
+    family: 'junior',
+    ageIds: ['U17'],
+    dateLines: ['17 Oct', '2026'],
+    drivingMinutes: 1 * 60 + 26,
+    when: 'upcoming',
+  },
+  {
+    id: 'guernsey-junior-restricted',
+    name: 'Guernsey Junior Restricted 2026',
+    level: 'Other',
+    family: 'junior',
+    ageIds: [],
+    dateLines: ['17 & 18', 'Oct 2026'],
+    drivingMinutes: null,
+    when: 'upcoming',
+  },
+  {
+    id: 'essex-futures',
+    name: 'Essex Futures - EBA 2* Oct 2026',
+    level: 'Other',
+    family: 'junior',
+    ageIds: [],
+    dateLines: ['17 Oct', '2026'],
+    drivingMinutes: 58,
+    when: 'upcoming',
+  },
+  {
+    id: 'cumbria-masters-silver',
+    name: '31st Cumbria Masters Silver',
+    level: 'Silver',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['10 & 11', 'Oct 2026'],
+    drivingMinutes: null,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'middlesex-masters-restricted',
+    name: 'Middlesex Masters Restricted 2026',
+    level: 'Other',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['11 Oct', '2026'],
+    drivingMinutes: 1 * 60 + 29,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'oxon-masters-bronze',
+    name: 'Oxfordshire Masters Bronze Open 2026',
+    level: 'Bronze',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['18 Oct', '2026'],
+    drivingMinutes: 1 * 60 + 57,
+    when: 'upcoming',
+    closesSoon: true,
+  },
+  {
+    id: 'kent-masters-gold',
+    name: 'Kent Masters Gold 2026',
+    level: 'Gold',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['23 - 25', 'Oct 2026'],
+    drivingMinutes: 1 * 60 + 26,
+    when: 'upcoming',
+    closesSoon: true,
+    entered: true,
+    otherEntered: 'Alisha Johnson',
+  },
+  {
+    id: 'northumberland-masters-silver',
+    name: '2026 Northumberland Masters Silver',
+    level: 'Silver',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['30 Oct -', '01 Nov 2026'],
+    drivingMinutes: 4 * 60 + 2,
+    when: 'upcoming',
+  },
+  {
+    id: 'woe-masters-silver',
+    name: 'West of England Masters Silver 2026',
+    level: 'Silver',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['14 & 15', 'Nov 2026'],
+    drivingMinutes: 3 * 60 + 8,
+    when: 'upcoming',
+  },
+  {
+    id: 'english-national-masters',
+    name: '31st English National Masters Championship 2026',
+    level: 'Other',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['27 - 29', 'Nov 2026'],
+    drivingMinutes: 56,
+    when: 'upcoming',
+  },
+  {
+    id: 'lancs-masters-silver',
+    name: 'Lancashire Masters Silver 2027',
+    level: 'Silver',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['30 & 31', 'Jan 2027'],
+    drivingMinutes: 3 * 60 + 20,
+    when: 'upcoming',
+  },
+  {
+    id: 'hants-masters-silver',
+    name: 'Hampshire Masters Silver 2027',
+    level: 'Silver',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['13 & 14', 'Feb 2027'],
+    drivingMinutes: 2 * 60 + 16,
+    when: 'upcoming',
+  },
+  {
+    id: 'yorks-masters-gold',
+    name: 'YORKSHIRE MASTERS GOLD 2027',
+    level: 'Gold',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['26 - 28', 'Feb 2027'],
+    drivingMinutes: 2 * 60 + 51,
+    when: 'upcoming',
+  },
+  {
+    id: 'yonex-all-england',
+    name: '109th YONEX All England Seniors (Masters) Championships 2027',
+    level: 'Other',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['16 - 18', 'Apr 2027'],
+    drivingMinutes: 56,
+    when: 'upcoming',
+  },
+  {
+    id: 'somerset-masters-bronze',
+    name: 'Somerset Masters Bronze 2027',
+    level: 'Bronze',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['05 Jun', '2027'],
+    drivingMinutes: 3 * 60 + 50,
+    when: 'upcoming',
+  },
+  {
+    id: 'leicester-masters-silver',
+    name: 'Masters Silver Leicestershire',
+    level: 'Silver',
+    family: 'masters',
+    ageIds: [],
+    dateLines: ['04 & 05', 'Sept 2027'],
+    drivingMinutes: 1 * 60 + 34,
+    when: 'upcoming',
   },
 ]
 
-function formatDrive(minutes: number): string {
+function formatDrive(minutes: number | null): string {
+  if (minutes == null) return ''
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
   return `${hours}:${String(mins).padStart(2, '0')}`
@@ -229,6 +536,18 @@ function formatDrive(minutes: number): string {
 function ageIsSelected(selected: string[], ageId: string): boolean {
   if (selected.includes(ageId)) return true
   return ageId !== JUNIOR_OTHER_ID && JUNIOR_AGES_INSIDE_OTHER.includes(ageId) && selected.includes(JUNIOR_OTHER_ID)
+}
+
+function familyIsOn(selected: string[], family: ListingFamily): boolean {
+  if (family === 'senior') return selected.includes(SENIOR_AGE.id)
+  if (family === 'junior') return JUNIOR_AGES.some((age) => selected.includes(age.id))
+  return MASTER_AGES.some((age) => selected.includes(age.id))
+}
+
+function rowMatchesAges(row: TournamentRow, selected: string[]): boolean {
+  if (!familyIsOn(selected, row.family)) return false
+  if (row.ageIds.length === 0) return true
+  return row.ageIds.some((ageId) => ageIsSelected(selected, ageId))
 }
 
 function selectionLabel(selected: number, total: number, singleName: string | null): string {
@@ -350,10 +669,22 @@ function FilterModal({
   )
 }
 
-export function TournamentListingsPage({ open, onClose, playerName }: Props) {
+export function TournamentListingsPage({
+  open,
+  onClose,
+  playerName,
+  onOpenAccountMenu,
+  accountMenuOpen,
+}: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const initials = getPlayerInitials(playerName)
+  const {
+    stage: buildStage,
+    setStage: setBuildStage,
+    pickerVisible,
+  } = useTicketBuildPicker<TournamentListingsBuildStage>('2a', 1)
+  const ageChipPlace = buildStage === '2a' ? 'title' : buildStage === '2b' ? 'type' : 'none'
   const [query, setQuery] = useState('')
   const [when, setWhen] = useState<When>('upcoming')
   const [showClosed, setShowClosed] = useState(false)
@@ -375,11 +706,12 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
         setAgeModalOpen(false)
         return
       }
+      if (accountMenuOpen) return
       onClose()
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open, onClose, typeModalOpen, ageModalOpen])
+  }, [open, onClose, typeModalOpen, ageModalOpen, accountMenuOpen])
 
   useEffect(() => {
     if (open) panelRef.current?.focus()
@@ -400,8 +732,8 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
       if (row.when !== when) return false
       if (needle && !row.name.toLowerCase().includes(needle)) return false
       if (!levels.includes(row.level)) return false
-      if (!ageIsSelected(ages, row.ageId)) return false
-      if (maxDrive != null && row.drivingMinutes > maxDrive) return false
+      if (!rowMatchesAges(row, ages)) return false
+      if (maxDrive != null && row.drivingMinutes != null && row.drivingMinutes > maxDrive) return false
       if (row.entryClosed && !showClosed && !row.entered) return false
       return true
     })
@@ -473,16 +805,49 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
             aria-label="Search tournaments"
             className="h-10 min-w-0 flex-1 rounded-md border border-transparent bg-white px-3 text-[15px] text-ink-900 outline-none placeholder:text-ink-400 focus:border-[#c4b6d6]"
           />
-          <span
+          <button
+            type="button"
+            onClick={onOpenAccountMenu}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#6d28a0] text-sm font-bold text-white"
-            aria-hidden
+            aria-label={`Open account menu for ${playerName}`}
           >
             {initials}
-          </span>
+          </button>
         </div>
       </header>
 
-      <div className="mx-auto max-w-[720px] px-2.5 py-3">
+      <div className="mx-auto max-w-[720px] space-y-3 px-2.5 py-3">
+        {pickerVisible && (
+          <div className="rounded-lg border border-dashed border-brand-200 bg-brand-50/40 px-3 py-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-brand-800">Ticket build:</span>
+              <div role="group" aria-label="Tournament listings ticket build stage" className="flex flex-wrap gap-1">
+                {TOURNAMENT_LISTINGS_BUILD_STAGES.map((ticketStage) => {
+                  const selected = buildStage === ticketStage
+                  const meta = TOURNAMENT_LISTINGS_BUILD_STAGE_META[ticketStage]
+                  return (
+                    <button
+                      key={ticketStage}
+                      type="button"
+                      title={meta.summary}
+                      onClick={() => setBuildStage(ticketStage)}
+                      className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
+                        selected
+                          ? 'bg-brand-600 text-white shadow-sm'
+                          : 'bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50'
+                      }`}
+                    >
+                      {ticketStage}. {meta.shortLabel}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <p className="mt-1.5 text-[11px] text-ink-500">
+              {TOURNAMENT_LISTINGS_BUILD_STAGE_META[buildStage].summary}
+            </p>
+          </div>
+        )}
         <section className="overflow-hidden rounded-2xl border border-[#e4dff0] bg-[#f7f5fb] shadow-sm">
           <div className="px-4 pb-2 pt-4">
             <h1 id={titleId} className="text-[26px] font-bold leading-tight tracking-tight text-ink-900">
@@ -571,57 +936,15 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
             </TabButton>
           </div>
 
-          <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_4.25rem_2.8rem] gap-x-2 px-4 py-3 text-[15px] font-bold text-ink-900 sm:grid-cols-[minmax(0,18rem)_5.5rem_4.25rem_2.8rem]">
+          <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_4.25rem_2.8rem] gap-x-2 px-4 py-3 text-[15px] font-bold text-ink-900">
             <span>Name</span>
-            <span className="justify-self-start text-left">Type</span>
+            <span className="text-left">Type</span>
             <span>Date</span>
             <span>Driving</span>
           </div>
-
-          <ul className="max-h-[calc(100vh-320px)] min-h-[280px] divide-y divide-[#ece8f3] overflow-y-auto">
+          <ul className="divide-y divide-[#ece8f3]">
             {rows.map((row) => (
-              <li key={row.id} className="px-4 py-3">
-                <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_4.25rem_2.8rem] items-start gap-x-2 sm:grid-cols-[minmax(0,18rem)_5.5rem_4.25rem_2.8rem]">
-                <p className="min-w-0 text-[15px] font-medium leading-snug text-[#4c2a86] underline decoration-[#4c2a86] underline-offset-2">
-                  {row.name}
-                </p>
-                <div className="justify-self-start pt-0.5 text-left">
-                  <TournamentCategoryChip label={row.level} />
-                </div>
-                <p className="text-[14px] leading-tight text-ink-900">
-                  {row.dateLines.map((line) => (
-                    <span key={line} className="block">
-                      {line}
-                    </span>
-                  ))}
-                </p>
-                <p className="text-[15px] font-medium text-[#4c2a86] underline decoration-[#4c2a86] underline-offset-2">
-                  {formatDrive(row.drivingMinutes)}
-                </p>
-                </div>
-                {row.entryClosed && (
-                  <p className="mt-1 text-[#5b2d91]" aria-label="Entry closed">
-                    <LockIcon />
-                  </p>
-                )}
-                {row.closesSoon && (
-                  <p className="mt-1 text-[#5b2d91]" aria-label="Entry closes soon">
-                    <ClockIcon />
-                  </p>
-                )}
-                {row.entered && (
-                  <p className="mt-1 flex items-center gap-1 text-[13px] leading-snug text-[#1d8a32]">
-                    <CheckIcon />
-                    <span>You're entered.</span>
-                  </p>
-                )}
-                {row.favouritesEntered != null && (
-                  <p className="mt-0.5 flex items-center gap-1 text-[13px] leading-snug text-[#1d8a32]">
-                    <CheckIcon />
-                    <span>{row.favouritesEntered} favourites entered.</span>
-                  </p>
-                )}
-              </li>
+              <TournamentListRow key={row.id} row={row} ageChipPlace={ageChipPlace} />
             ))}
           </ul>
           {rows.length === 0 && (
@@ -716,6 +1039,84 @@ export function TournamentListingsPage({ open, onClose, playerName }: Props) {
       )}
     </div>,
     document.body,
+  )
+}
+
+function TournamentListRow({
+  row,
+  ageChipPlace,
+}: {
+  row: TournamentRow
+  ageChipPlace: 'none' | 'title' | 'type'
+}) {
+  const titled = ageChipPlace === 'none' ? null : listingTitleWithAgeChips(row.name, row.family, row.ageIds)
+  const title = titled?.text ?? row.name
+  const chips = titled?.chips ?? []
+  const words = title.trim().split(/\s+/)
+  const lastWord = words.pop() ?? ''
+  const lead = words.join(' ')
+  return (
+    <li className="px-4 py-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_4.25rem_2.8rem] items-start gap-x-2">
+        <div className="min-w-0">
+          <p className="text-[15px] font-medium leading-snug text-[#4c2a86]">
+            {lead ? (
+              <span className="underline decoration-[#4c2a86] underline-offset-2">{lead} </span>
+            ) : null}
+            <span className="whitespace-nowrap">
+              <span className="underline decoration-[#4c2a86] underline-offset-2">{lastWord}</span>
+              {ageChipPlace === 'title' &&
+                chips.map((chip) => (
+                  <CompetitionAgeChip key={chip} label={chip} className="ml-1.5 align-middle" />
+                ))}
+              {row.entryClosed && (
+                <span className="ml-1.5 inline-block align-[-2px] text-[#5b2d91]" aria-label="Entry closed">
+                  <LockIcon />
+                </span>
+              )}
+              {row.closesSoon && (
+                <span className="ml-1.5 inline-block align-[-2px] text-[#5b2d91]" aria-label="Entry closes soon">
+                  <ClockIcon />
+                </span>
+              )}
+            </span>
+          </p>
+          {row.entered && (
+            <p className="mt-1 flex items-center gap-1 text-[13px] leading-snug text-[#1d8a32]">
+              <CheckIcon />
+              <span>You're entered.</span>
+            </p>
+          )}
+          {row.favouritesEntered != null && (
+            <p className="mt-0.5 flex items-center gap-1 text-[13px] leading-snug text-[#1d8a32]">
+              <CheckIcon />
+              <span>{row.favouritesEntered} favourites entered.</span>
+            </p>
+          )}
+          {row.otherEntered && (
+            <p className="mt-0.5 flex items-center gap-1 text-[13px] leading-snug text-[#1d8a32]">
+              <CheckIcon />
+              <span>{row.otherEntered} entered.</span>
+            </p>
+          )}
+        </div>
+        <div className="flex w-fit flex-col items-start gap-1">
+          <TournamentCategoryChip label={row.level} />
+          {ageChipPlace === 'type' &&
+            chips.map((chip) => <CompetitionAgeChip key={chip} label={chip} />)}
+        </div>
+        <p className="text-[14px] leading-tight text-ink-900">
+          {row.dateLines.map((line) => (
+            <span key={line} className="block">
+              {line}
+            </span>
+          ))}
+        </p>
+        <p className="text-[15px] font-medium text-[#4c2a86] underline decoration-[#4c2a86] underline-offset-2">
+          {formatDrive(row.drivingMinutes)}
+        </p>
+      </div>
+    </li>
   )
 }
 
