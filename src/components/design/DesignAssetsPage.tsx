@@ -67,12 +67,15 @@ function AssetGroup({
 /** A match result line as it appears on the events page, for comparing chip weights. */
 function ChipWeightPreview({
   variant,
+  greyDot = false,
   label,
 }: {
   variant: RatingChipVariant
+  /** Light grey separator dot before the chip instead of the win/loss colour. */
+  greyDot?: boolean
   label: string
 }) {
-  const dotClass = variant === 'light' ? 'text-ink-300' : null
+  const dotClass = greyDot ? 'text-ink-300' : null
   const rows = [
     { outcome: 'Win', score: '21-10, 21-4', tone: 'text-gain-700', points: 5 },
     { outcome: 'Loss', score: '13-21, 11-21', tone: 'text-loss-700', points: -1 },
@@ -296,7 +299,21 @@ export function DesignAssetsPage({ open, onClose }: Props) {
             contentClassName="grid gap-3 sm:grid-cols-2"
           >
             <ChipWeightPreview variant="standard" label="Current" />
-            <ChipWeightPreview variant="light" label="Lighter (softer border, semibold, slimmer, grey dot)" />
+            <ChipWeightPreview
+              variant="soft"
+              label="A. Softer outline (semibold, brighter text, softer border)"
+            />
+            <ChipWeightPreview variant="slim" label="B. Slimmer chip (16px tall)" />
+            <ChipWeightPreview variant="standard" greyDot label="C. Quieter dot (grey)" />
+            <ChipWeightPreview
+              variant="light"
+              greyDot
+              label="A + B + C together (recommended)"
+            />
+            <ChipWeightPreview
+              variant="text"
+              label="D. Text only (no outline, dashed underline)"
+            />
           </AssetGroup>
 
           <AssetGroup title="Tournament partners">

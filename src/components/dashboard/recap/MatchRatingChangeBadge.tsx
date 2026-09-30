@@ -7,10 +7,14 @@ import {
 } from '../../../lib/matchRatingChange'
 
 /**
- * `standard`: bold text, full-strength border (matches the player profile chip).
- * `light`: slimmer, semibold, brighter text and a softer border. Text stays 12px.
+ * Chip weight options (text is always 12px):
+ * - `standard`: bold text, full-strength border (matches the player profile chip).
+ * - `soft`: semibold, brighter text and a softer border, same size.
+ * - `slim`: 16px tall with tighter padding, otherwise standard.
+ * - `light`: soft + slim together.
+ * - `text`: no border or outline, coloured semibold text with a dashed underline.
  */
-export type RatingChipVariant = 'standard' | 'light'
+export type RatingChipVariant = 'standard' | 'soft' | 'slim' | 'light' | 'text'
 
 type Props = {
   change: MatchRatingChange
@@ -31,16 +35,24 @@ const RATING_CHANGE_CHIP_BASE_CLASS =
 
 const CHIP_SIZE_CLASS: Record<RatingChipVariant, string> = {
   standard: 'h-[18px] px-1.5 font-bold',
+  soft: 'h-[18px] px-1.5 font-semibold',
+  slim: 'h-4 px-1 font-bold',
   light: 'h-4 px-1 font-semibold',
+  text: 'h-[18px] px-0.5 font-semibold',
 }
 
 /** Gains and no change are green; only losses are red, as on the player profile. */
 function ratingChangeToneClass(points: number, variant: RatingChipVariant): string {
   const positive = points >= 0
-  if (variant === 'light') {
+  if (variant === 'soft' || variant === 'light') {
     return positive
       ? 'border-gain-600/45 text-gain-600'
       : 'border-loss-600/45 text-loss-600'
+  }
+  if (variant === 'text') {
+    return positive
+      ? 'border-transparent text-gain-700 underline decoration-gain-700/50 decoration-dashed underline-offset-2'
+      : 'border-transparent text-loss-700 underline decoration-loss-700/50 decoration-dashed underline-offset-2'
   }
   return positive
     ? 'border-gain-700 text-gain-700'
@@ -59,7 +71,9 @@ export function MatchRatingIneligibleChip({
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs leading-none text-ink-600 ${
-        variant === 'light' ? 'h-4 min-w-5 px-1 font-semibold' : 'h-[18px] min-w-6 px-1.5 font-bold'
+        variant === 'light' || variant === 'slim'
+          ? 'h-4 min-w-5 px-1 font-semibold'
+          : 'h-[18px] min-w-6 px-1.5 font-bold'
       }`}
       role="img"
       aria-label="This match does not change your rating"
