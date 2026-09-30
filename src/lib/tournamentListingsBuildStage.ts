@@ -1,5 +1,5 @@
 /** Ticket build-out stages for the tournament listings page. */
-export const TOURNAMENT_LISTINGS_BUILD_STAGES = [1, '2a', '2b'] as const
+export const TOURNAMENT_LISTINGS_BUILD_STAGES = [1, '2a', '2b', 3] as const
 export type TournamentListingsBuildStage = (typeof TOURNAMENT_LISTINGS_BUILD_STAGES)[number]
 
 export type ListingAgeFamily = 'junior' | 'senior' | 'masters'
@@ -19,6 +19,10 @@ export const TOURNAMENT_LISTINGS_BUILD_STAGE_META: Record<
   '2b': {
     shortLabel: 'Under type',
     summary: 'Age chips sit under the type badge',
+  },
+  3: {
+    shortLabel: 'Cards',
+    summary: 'Level badge on the left, age under the title',
   },
 }
 
