@@ -13,7 +13,7 @@ const LEVEL_STYLES: Record<string, string> = {
   copper: 'bg-level-copper',
 }
 
-const OTHER_CHIP_CLASS = 'bg-white font-semibold text-brand-700 ring-1 ring-inset ring-brand-200'
+const OTHER_CHIP_CLASS = `bg-brand-200 ${LEVEL_CHIP_TEXT}`
 
 const LEVEL_CHART_COLORS: Record<string, string> = {
   gold: 'var(--color-level-gold)',

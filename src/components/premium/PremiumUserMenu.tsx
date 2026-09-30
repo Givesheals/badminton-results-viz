@@ -59,13 +59,31 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
         playerName={playerName}
         onSignUpPremium={() => openSignup('yearly')}
         onManageSubscription={() => setManageOpen(true)}
-        onOpenUserSettings={() => setSettingsOpen(true)}
-        onOpenNotifications={() => setNotificationsOpen(true)}
-        onOpenTournamentPreview={() => setTournamentPreviewOpen(true)}
+        onOpenUserSettings={() => {
+          setTournamentListingsOpen(false)
+          setSettingsOpen(true)
+        }}
+        onOpenNotifications={() => {
+          setTournamentListingsOpen(false)
+          setNotificationsOpen(true)
+        }}
+        onOpenTournamentPreview={() => {
+          setTournamentListingsOpen(false)
+          setTournamentPreviewOpen(true)
+        }}
         onOpenTournamentListings={() => setTournamentListingsOpen(true)}
-        onOpenLiveFeed={() => setLiveFeedOpen(true)}
-        onOpenDesignAssets={() => setDesignAssetsOpen(true)}
-        onOpenAddNewData={onOpenAddNewData}
+        onOpenLiveFeed={() => {
+          setTournamentListingsOpen(false)
+          setLiveFeedOpen(true)
+        }}
+        onOpenDesignAssets={() => {
+          setTournamentListingsOpen(false)
+          setDesignAssetsOpen(true)
+        }}
+        onOpenAddNewData={() => {
+          setTournamentListingsOpen(false)
+          onOpenAddNewData()
+        }}
       />
 
       <UserSettingsPage
@@ -92,6 +110,8 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
         open={tournamentListingsOpen}
         onClose={() => setTournamentListingsOpen(false)}
         playerName={playerName}
+        onOpenAccountMenu={() => setMenuOpen(true)}
+        accountMenuOpen={menuOpen}
       />
 
       <LiveFeedPage open={liveFeedOpen} onClose={() => setLiveFeedOpen(false)} />
