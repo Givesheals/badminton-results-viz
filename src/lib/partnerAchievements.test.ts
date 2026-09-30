@@ -81,7 +81,7 @@ describe('formatStageChip', () => {
   it('uses tournament progression short titles when compact', () => {
     expect(formatStageChip('quarter-final', 4, true)).toBe('4× QF')
     expect(formatStageChip('group-wins', 15, true)).toBe('15× Grp MW')
-    expect(formatStageChip('runner-up', 2, true)).toBe('2× 2nd')
+    expect(formatStageChip('runner-up', 2, true)).toBe('2× Final')
   })
 })
 

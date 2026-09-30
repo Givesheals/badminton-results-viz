@@ -244,9 +244,11 @@ export function formatStageChip(
   count: number,
   compact = false,
 ): string {
-  const label = compact
-    ? PROGRESSION_STAGE_SHORT_LABELS[stage]
-    : PROGRESSION_STAGE_LABELS[stage]
+  // Runner-up stays "Final" even in compact mode so badges match the history section titles.
+  const label =
+    compact && stage !== 'runner-up'
+      ? PROGRESSION_STAGE_SHORT_LABELS[stage]
+      : PROGRESSION_STAGE_LABELS[stage]
   return `${count}× ${label}`
 }
 
