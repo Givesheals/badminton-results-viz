@@ -1,4 +1,4 @@
-type EntryStatus = 'closed' | 'closes-soon'
+type EntryStatus = 'open' | 'not-open' | 'closed' | 'closes-soon'
 
 type Props = {
   status: EntryStatus
@@ -6,6 +6,14 @@ type Props = {
 }
 
 const STATUS_STYLES: Record<EntryStatus, { label: string; chipClass: string }> = {
+  'not-open': {
+    label: 'Entry Not Open',
+    chipClass: 'bg-entry-not-open text-white',
+  },
+  open: {
+    label: 'Entry Open',
+    chipClass: 'bg-entry-open text-white',
+  },
   closed: {
     label: 'Entry Closed',
     chipClass: 'bg-entry-closed text-white',

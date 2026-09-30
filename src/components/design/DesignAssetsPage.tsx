@@ -175,6 +175,8 @@ export function DesignAssetsPage({ open, onClose }: Props) {
           </AssetGroup>
 
           <AssetGroup title="Entry status">
+            <EntryStatusBadge status="not-open" />
+            <EntryStatusBadge status="open" />
             <EntryStatusBadge status="closed" />
             <EntryStatusBadge status="closes-soon" />
           </AssetGroup>
