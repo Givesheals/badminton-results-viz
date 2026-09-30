@@ -1144,10 +1144,21 @@ function TournamentCardRow({ row, onOpen }: { row: TournamentRow; onOpen: () => 
 }
 
 function CarIcon() {
+  const url = `url(${import.meta.env.BASE_URL}drive-car.png)`
   return (
     <span
       aria-hidden
-      className="inline-block h-3.5 w-5 shrink-0 bg-current [mask-image:url(/drive-car.png)] [mask-position:center] [mask-repeat:no-repeat] [mask-size:contain] [-webkit-mask-image:url(/drive-car.png)] [-webkit-mask-position:center] [-webkit-mask-repeat:no-repeat] [-webkit-mask-size:contain]"
+      className="inline-block h-3.5 w-5 shrink-0 bg-current"
+      style={{
+        maskImage: url,
+        WebkitMaskImage: url,
+        maskPosition: 'center',
+        WebkitMaskPosition: 'center',
+        maskRepeat: 'no-repeat',
+        WebkitMaskRepeat: 'no-repeat',
+        maskSize: 'contain',
+        WebkitMaskSize: 'contain',
+      }}
     />
   )
 }
