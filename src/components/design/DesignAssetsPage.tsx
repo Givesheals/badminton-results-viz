@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { MatchRatingChangeBadge } from '../dashboard/recap/MatchRatingChangeBadge'
 import { DisciplineChip } from '../discipline/DisciplineChip'
 import { NoteTagChips } from '../notes/NoteTagPicker'
 import {
@@ -217,6 +218,18 @@ export function DesignAssetsPage({ open, onClose }: Props) {
             <span className="inline-flex items-center rounded-full bg-loss-50 px-2.5 py-0.5 text-xs font-semibold text-loss-700">
               Loss
             </span>
+          </AssetGroup>
+
+          <AssetGroup title="Match rating change">
+            <MatchRatingChangeBadge
+              change={{ points: 8, explanation: 'You gained 8 rating points for this win.' }}
+            />
+            <MatchRatingChangeBadge
+              change={{ points: -4, explanation: 'You lost 4 rating points from this loss.' }}
+            />
+            <MatchRatingChangeBadge
+              change={{ points: 0, explanation: 'Your rating did not change from this match.' }}
+            />
           </AssetGroup>
 
           <AssetGroup title="Tournament partners">

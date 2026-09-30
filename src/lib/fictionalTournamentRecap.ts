@@ -1,5 +1,6 @@
 import { DISCIPLINE_LABELS } from '../types/matchHistory'
 import type { TeamMember } from './matchTeams'
+import { buildRatingChanges } from './matchRatingChange'
 import {
   SENIOR_COUNTY_DEBUT_DETAIL,
   SENIOR_COUNTY_DEBUT_TITLE,
@@ -142,6 +143,7 @@ function matchRow(args: {
     scoreSummary: args.scoreSummary,
     roundLabel: args.roundLabel,
     highlights: args.highlights ?? [],
+    ratingChange: null,
     noteContext: {
       matchKey,
       competitionName: args.competitionName,
@@ -218,11 +220,34 @@ function milestone(
   }
 }
 
+/**
+ * Fills in each match's rating change so the badges add up to the discipline
+ * total shown top-right. Big upsets get a low pre-match win chance.
+ */
+function withRatingChanges(
+  matches: DisciplineMatchRecap[],
+  total: number,
+): DisciplineMatchRecap[] {
+  const inputs = matches
+    .filter((match) => match.outcome === 'win' || match.outcome === 'loss')
+    .map((match) => ({
+      key: match.matchKey,
+      outcome: match.outcome as 'win' | 'loss',
+      winProbability: match.highlights.length > 0 ? 0.22 : 0.5,
+    }))
+  const changes = buildRatingChanges(inputs, total)
+  for (const match of matches) {
+    match.ratingChange = changes.get(match.matchKey) ?? null
+  }
+  return matches
+}
+
 function disciplineRecap(
   discipline: (typeof DISCIPLINES)[number],
   rating: { start: number; end: number },
   matches: DisciplineMatchRecap[],
 ): DisciplineRecap {
+  withRatingChanges(matches, rating.end - rating.start)
   const disciplineLabel = DISCIPLINE_LABELS[discipline] ?? discipline
   const wins = matches.filter((match) => match.outcome === 'win').length
   const losses = matches.filter((match) => match.outcome === 'loss').length
@@ -261,6 +286,7 @@ function singlesEventRecap(args: {
   matches: DisciplineMatchRecap[]
   callouts?: RecapSummaryCard[]
 }): DisciplineRecap {
+  withRatingChanges(args.matches, args.rating.end - args.rating.start)
   const wins = args.matches.filter((match) => match.outcome === 'win').length
   const losses = args.matches.filter((match) => match.outcome === 'loss').length
 

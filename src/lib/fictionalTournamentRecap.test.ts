@@ -24,6 +24,17 @@ function stubRecap(key: string): TournamentRecap {
 describe('buildFictionalTournamentRecap', () => {
   const recap = buildFictionalTournamentRecap()
 
+  it('splits each discipline rating change across its matches so the badges add up', () => {
+    for (const discipline of recap.disciplines) {
+      const badgeTotal = discipline.matches.reduce(
+        (sum, match) => sum + (match.ratingChange?.points ?? 0),
+        0,
+      )
+      expect(discipline.matches.every((match) => match.ratingChange != null)).toBe(true)
+      expect(badgeTotal).toBe(discipline.ratingDelta)
+    }
+  })
+
   it('is clearly fictional and spans a weekend', () => {
     expect(recap.key).toBe(FICTIONAL_TOURNAMENT_RECAP_KEY)
     expect(recap.competitionName).toBe(FICTIONAL_TOURNAMENT_NAME)
