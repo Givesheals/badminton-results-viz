@@ -47,6 +47,8 @@ type Props = {
   playerName: string
   onOpenAccountMenu: () => void
   accountMenuOpen: boolean
+  onOpenTournament: () => void
+  tournamentPageOpen: boolean
 }
 
 const LEVELS: Level[] = ['Gold', 'Silver', 'Bronze', 'Copper', 'Other']
@@ -675,6 +677,8 @@ export function TournamentListingsPage({
   playerName,
   onOpenAccountMenu,
   accountMenuOpen,
+  onOpenTournament,
+  tournamentPageOpen,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -685,6 +689,7 @@ export function TournamentListingsPage({
     pickerVisible,
   } = useTicketBuildPicker<TournamentListingsBuildStage>('2a', 1)
   const ageChipPlace = buildStage === '2a' ? 'title' : buildStage === '2b' ? 'type' : 'none'
+  const showCards = buildStage === 3
   const [query, setQuery] = useState('')
   const [when, setWhen] = useState<When>('upcoming')
   const [showClosed, setShowClosed] = useState(false)
@@ -706,12 +711,12 @@ export function TournamentListingsPage({
         setAgeModalOpen(false)
         return
       }
-      if (accountMenuOpen) return
+      if (accountMenuOpen || tournamentPageOpen) return
       onClose()
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open, onClose, typeModalOpen, ageModalOpen, accountMenuOpen])
+  }, [open, onClose, typeModalOpen, ageModalOpen, accountMenuOpen, tournamentPageOpen])
 
   useEffect(() => {
     if (open) panelRef.current?.focus()
@@ -783,7 +788,7 @@ export function TournamentListingsPage({
       aria-modal="true"
       aria-labelledby={titleId}
       tabIndex={-1}
-      className="fixed inset-0 z-50 overflow-y-auto bg-[#eef1f6] outline-none"
+      className="fixed inset-0 z-50 overflow-y-auto bg-white outline-none"
     >
       <header className="bg-[#efe6f6]">
         <div className="mx-auto flex max-w-[720px] items-center gap-3 px-3 py-3">
@@ -848,13 +853,15 @@ export function TournamentListingsPage({
             </p>
           </div>
         )}
-        <section className="overflow-hidden rounded-2xl border border-[#e4dff0] bg-[#f7f5fb] shadow-sm">
-          <div className="px-4 pb-2 pt-4">
-            <h1 id={titleId} className="text-[26px] font-bold leading-tight tracking-tight text-ink-900">
+        <section className="overflow-hidden rounded-2xl border border-[#e4e2e8] bg-white shadow-sm">
+          <div className="bg-[#f2f0f6] px-4 py-4">
+            <h1 id={titleId} className="text-[26px] font-bold leading-tight tracking-tight text-[#343a40]">
               Tournaments
             </h1>
+          </div>
 
-            <div className="mt-4 grid max-w-[22rem] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7.75rem] gap-x-2">
+          <div className="bg-[#f8f8fc] px-4 py-4">
+            <div className="grid max-w-[22rem] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7.75rem] gap-x-2">
               <div>
                 <p className="text-[15px] font-medium text-[#5c348c]">Types:</p>
                 <button
@@ -927,7 +934,7 @@ export function TournamentListingsPage({
             </div>
           </div>
 
-          <div className="mt-2 flex gap-6 border-b border-[#e6e1ef] px-4">
+          <div className="flex gap-6 border-b border-[#e6e1ef] bg-white px-4 pt-3">
             <TabButton active={when === 'upcoming'} onClick={() => setWhen('upcoming')}>
               Upcoming
             </TabButton>
@@ -936,16 +943,28 @@ export function TournamentListingsPage({
             </TabButton>
           </div>
 
-          <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_4.25rem_2.8rem] gap-x-2 px-4 py-3 text-[15px] font-bold text-ink-900">
-            <span>Name</span>
-            <span className="text-left">Type</span>
-            <span>Date</span>
-            <span>Driving</span>
-          </div>
-          <ul className="divide-y divide-[#ece8f3]">
-            {rows.map((row) => (
-              <TournamentListRow key={row.id} row={row} ageChipPlace={ageChipPlace} />
-            ))}
+          {showCards ? null : (
+            <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_4.25rem_2.8rem] gap-x-2 px-4 py-3 text-[15px] font-bold text-ink-900">
+              <span>Name</span>
+              <span className="text-left">Type</span>
+              <span>Date</span>
+              <span>Driving</span>
+            </div>
+          )}
+          <ul
+            className={
+              showCards
+                ? 'grid grid-cols-[4.75rem_minmax(0,16rem)_auto_minmax(0,1fr)] gap-x-3 divide-y divide-[#ece8f3] bg-white'
+                : 'divide-y divide-[#ece8f3]'
+            }
+          >
+            {rows.map((row) =>
+              showCards ? (
+                <TournamentCardRow key={row.id} row={row} onOpen={onOpenTournament} />
+              ) : (
+                <TournamentListRow key={row.id} row={row} ageChipPlace={ageChipPlace} />
+              ),
+            )}
           </ul>
           {rows.length === 0 && (
             <p className="px-4 py-8 text-sm text-ink-600">No tournaments match these filters.</p>
@@ -1039,6 +1058,108 @@ export function TournamentListingsPage({
       )}
     </div>,
     document.body,
+  )
+}
+
+function TournamentCardRow({ row, onOpen }: { row: TournamentRow; onOpen: () => void }) {
+  const { text, chips } = listingTitleWithAgeChips(row.name, row.family, row.ageIds)
+  const words = text.trim().split(/\s+/)
+  const lastWord = words.pop() ?? ''
+  const lead = words.join(' ')
+  return (
+    <li className="col-span-4 grid grid-cols-subgrid bg-white">
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Open ${text}`}
+        className="col-span-4 grid grid-cols-subgrid items-start px-4 py-3 text-left hover:bg-[#f4f1f8]"
+      >
+        <div className="pt-0.5">
+          <TournamentCategoryChip label={row.level} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[16px] font-semibold leading-snug tracking-tight text-ink-900">
+            {lead ? <span>{lead} </span> : null}
+            <span className="whitespace-nowrap">
+              <span>{lastWord}</span>
+              {row.entryClosed && (
+                <span className="ml-1.5 inline-block align-[-2px] text-[#5b2d91]" aria-label="Entry closed">
+                  <LockIcon />
+                </span>
+              )}
+              {row.closesSoon && (
+                <span className="ml-1.5 inline-block align-[-2px] text-[#5b2d91]" aria-label="Entry closes soon">
+                  <ClockIcon />
+                </span>
+              )}
+            </span>
+          </p>
+          {chips.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+              {chips.map((chip) => (
+                <CompetitionAgeChip key={chip} label={chip} />
+              ))}
+            </div>
+          )}
+          {row.entered && (
+            <p className="mt-1.5 flex items-center gap-1 text-[13px] leading-snug text-[#1d8a32]">
+              <CheckIcon />
+              <span>You're entered.</span>
+            </p>
+          )}
+          {row.favouritesEntered != null && (
+            <p className="mt-0.5 flex items-center gap-1 text-[13px] leading-snug text-[#1d8a32]">
+              <CheckIcon />
+              <span>{row.favouritesEntered} favourites entered.</span>
+            </p>
+          )}
+          {row.otherEntered && (
+            <p className="mt-0.5 flex items-center gap-1 text-[13px] leading-snug text-[#1d8a32]">
+              <CheckIcon />
+              <span>{row.otherEntered} entered.</span>
+            </p>
+          )}
+        </div>
+        <div className="text-left">
+          <p className="text-[14px] leading-tight text-ink-900">
+            {row.dateLines.map((line) => (
+              <span key={line} className="block text-left">
+                {line}
+              </span>
+            ))}
+          </p>
+          {row.drivingMinutes != null && (
+            <p className="mt-1 flex items-center justify-start gap-1 text-[13px] text-[#4c2a86]">
+              <CarIcon />
+              <span>{formatDrive(row.drivingMinutes)}</span>
+            </p>
+          )}
+        </div>
+        <span className="justify-self-end self-center text-[#6b6578]" aria-hidden>
+          <ChevronRight />
+        </span>
+      </button>
+    </li>
+  )
+}
+
+function CarIcon() {
+  const url = `url(${import.meta.env.BASE_URL}drive-car.png)`
+  return (
+    <span
+      aria-hidden
+      className="inline-block h-3.5 w-5 shrink-0 bg-current"
+      style={{
+        maskImage: url,
+        WebkitMaskImage: url,
+        maskPosition: 'center',
+        WebkitMaskPosition: 'center',
+        maskRepeat: 'no-repeat',
+        WebkitMaskRepeat: 'no-repeat',
+        maskSize: 'contain',
+        WebkitMaskSize: 'contain',
+      }}
+    />
   )
 }
 
@@ -1211,6 +1332,21 @@ function Chevron() {
   return (
     <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
       <path d="M2.2 4.2 6 8l3.8-3.8" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ChevronRight() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-5 w-5" aria-hidden>
+      <path
+        d="M5.2 2.8 11 8l-5.8 5.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }

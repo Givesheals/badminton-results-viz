@@ -48,7 +48,7 @@ export function TournamentPagePreview({
       aria-modal="true"
       aria-labelledby={titleId}
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex flex-col bg-ink-50 outline-none"
+      className="fixed inset-0 z-[60] flex flex-col bg-ink-50 outline-none"
     >
       <header className="border-b border-ink-200 bg-white px-5 py-4">
         <div className="flex items-start justify-between gap-3">
