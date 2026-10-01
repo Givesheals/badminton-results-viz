@@ -10,7 +10,7 @@ export type LegalSection = {
 
 export const PREMIUM_TERMS_TITLE = 'BadmInfo Premium Terms'
 
-export const PREMIUM_TERMS_LAST_UPDATED = 'Last updated: [DATE]'
+export const PREMIUM_TERMS_LAST_UPDATED = 'Last updated: 1 October 2026'
 
 export const PREMIUM_TERMS_SECTIONS: LegalSection[] = [
   {
