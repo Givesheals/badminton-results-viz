@@ -163,10 +163,6 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
           subscribedAt={welcomeSubscription.subscribedAt}
           receiptEmail={welcomeSubscription.receiptEmail}
           onOpenPlayerLab={openPlayerLab}
-          onManageSubscription={() => {
-            setWelcomeSubscription(null)
-            setManageOpen(true)
-          }}
         />
       ) : null}
 

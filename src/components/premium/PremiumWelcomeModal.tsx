@@ -19,7 +19,6 @@ type Props = {
   receiptEmail: string
   /** Close everything and show the Player Lab (the main dashboard). */
   onOpenPlayerLab: () => void
-  onManageSubscription?: () => void
 }
 
 const CONFETTI_COLORS = [
@@ -119,7 +118,8 @@ function CrownIcon({ className }: { className?: string }) {
   )
 }
 
-const MOCK_CHIP = 'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium'
+/** Display (inline-flex / hidden) is set per chip so narrow screens can drop the first chips. */
+const MOCK_CHIP = 'shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium'
 
 /**
  * Small drawing of the Stage row on a tournament page, with the Companion chip
@@ -135,27 +135,31 @@ function StageRowGuide() {
         <div className="h-2 w-2/3 rounded-full bg-ink-100" />
         <div className="h-2 w-2/5 rounded-full bg-ink-100" />
       </div>
-      <div className="mt-3 flex items-center gap-1.5">
-        <span className="shrink-0 text-xs font-medium text-brand-700">Stage:</span>
-        <span className={`${MOCK_CHIP} hidden bg-ink-100 text-brand-700 min-[380px]:inline-flex`}>
+      <div className="mt-3 flex items-start gap-1.5 pb-7">
+        <span className="shrink-0 py-1 text-xs font-medium text-brand-700">Stage:</span>
+        <span className={`${MOCK_CHIP} hidden bg-ink-100 text-brand-700 min-[480px]:inline-flex`}>
           Entries
         </span>
-        <span className={`${MOCK_CHIP} bg-ink-100 text-brand-700`}>Groups</span>
-        <span className={`${MOCK_CHIP} border border-ink-900 bg-ink-200 text-ink-900`}>
+        <span className={`${MOCK_CHIP} hidden bg-ink-100 text-brand-700 min-[400px]:inline-flex`}>
+          Groups
+        </span>
+        <span
+          className={`${MOCK_CHIP} inline-flex border border-ink-900 bg-ink-200 text-ink-900`}
+        >
           Finals
         </span>
-        <span className="relative ml-auto inline-flex shrink-0">
+        <span className="relative inline-flex shrink-0">
           <span className="absolute -inset-1 rounded-full ring-2 ring-brand-500 motion-safe:animate-pulse" />
-          <span className={`${MOCK_CHIP} relative bg-ink-100 text-brand-700`}>
+          <span className={`${MOCK_CHIP} relative inline-flex bg-ink-100 text-brand-700`}>
             Companion
             <CrownIcon className="h-3 w-3 shrink-0 text-amber-500" />
           </span>
+          <span className="absolute left-1/2 top-full mt-2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap text-xs font-semibold text-brand-700">
+            <ArrowUpIcon className="h-3 w-3" />
+            Tap Companion
+          </span>
         </span>
       </div>
-      <p className="mt-1.5 flex items-center justify-end gap-1 pr-2 text-xs font-semibold text-brand-700">
-        <ArrowUpIcon className="h-3 w-3" />
-        Tap Companion
-      </p>
     </div>
   )
 }
@@ -169,7 +173,6 @@ export function PremiumWelcomeModal({
   subscribedAt,
   receiptEmail,
   onOpenPlayerLab,
-  onManageSubscription,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -204,7 +207,7 @@ export function PremiumWelcomeModal({
       >
         <div className="min-h-0 flex-1 overflow-y-auto">
           {/* Hero */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 px-5 pb-5 pt-6 text-center text-white">
+          <div className="relative overflow-hidden border-b border-brand-100 bg-gradient-to-br from-brand-50 via-white to-court-50 px-5 pb-3.5 pt-3.5 text-center text-ink-900">
             <div className="pointer-events-none absolute inset-0" aria-hidden>
               {CONFETTI_SLOTS.map((slot, i) => (
                 <span
@@ -220,7 +223,7 @@ export function PremiumWelcomeModal({
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-3 top-3 rounded-lg p-1.5 text-white/70 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              className="absolute right-2.5 top-2.5 rounded-lg p-1.5 text-ink-400 transition hover:bg-ink-100 hover:text-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
               aria-label="Close"
             >
               <svg
@@ -237,15 +240,15 @@ export function PremiumWelcomeModal({
             </button>
 
             <div className="relative z-[1] flex flex-col items-center">
-              <span className="animate-premium-welcome-check-pop flex h-12 w-12 items-center justify-center rounded-full bg-shuttle-400 text-brand-800 shadow-lg ring-4 ring-white/20">
-                <TickIcon className="h-6 w-6" />
+              <span className="animate-premium-welcome-check-pop flex h-9 w-9 items-center justify-center rounded-full bg-court-600 text-white shadow-sm ring-4 ring-court-100">
+                <TickIcon className="h-5 w-5" />
               </span>
-              <h2 id={titleId} className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
+              <h2 id={titleId} className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
                 {name ? `You're in, ${name}.` : "You're in."}
               </h2>
-              <p className="mt-1 text-sm text-brand-100">
+              <p className="mt-0.5 text-sm text-ink-600">
                 Premium is now active for{' '}
-                <span className="font-semibold text-white">{playerName}</span>
+                <span className="font-semibold text-ink-900">{playerName}</span>
                 {beNumber ? ` (BE ${beNumber})` : ''}.
               </p>
             </div>
@@ -256,7 +259,7 @@ export function PremiumWelcomeModal({
             <button
               type="button"
               onClick={onOpenPlayerLab}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-4 text-base font-bold text-white shadow-md transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2"
             >
               Open your Player Lab
               <ArrowRightIcon className="h-4 w-4" />
@@ -271,7 +274,8 @@ export function PremiumWelcomeModal({
                 You&apos;ve also unlocked Draw Companion
               </h3>
               <p className="mt-0.5 text-sm text-ink-600">
-                Find it on any tournament page, in the Stage row.
+                Once a tournament&apos;s draw has been made, you&apos;ll find it in the Stage row on
+                that tournament&apos;s page.
               </p>
               <StageRowGuide />
             </section>
@@ -314,26 +318,6 @@ export function PremiumWelcomeModal({
                 </div>
               </dl>
             </section>
-
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              <a
-                href="https://discord.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-brand-700 hover:text-brand-600 hover:underline"
-              >
-                Join the private Discord
-              </a>
-              {onManageSubscription ? (
-                <button
-                  type="button"
-                  onClick={onManageSubscription}
-                  className="font-semibold text-brand-700 hover:text-brand-600 hover:underline"
-                >
-                  Manage subscription
-                </button>
-              ) : null}
-            </div>
           </div>
         </div>
       </div>
