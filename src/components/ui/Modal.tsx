@@ -14,12 +14,21 @@ type Props = {
   showHeaderClose?: boolean
   /** Square, uncoloured frame matching the information-modal reference. */
   frame?: 'brand' | 'plain'
+  /** Use 'top' when the modal must sit above full-screen flows such as the signup flow. */
+  layer?: 'default' | 'top'
   id?: string
 }
 
-const BACKDROP_CLASS = 'fixed inset-0 z-40 bg-ink-900/40'
+const BACKDROP_CLASS: Record<'default' | 'top', string> = {
+  default: 'fixed inset-0 z-40 bg-ink-900/40',
+  top: 'fixed inset-0 z-[60] bg-ink-900/40',
+}
 const PANEL_BASE_CLASS =
-  'fixed left-1/2 top-1/2 z-50 flex max-h-[min(90vh,640px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden bg-white shadow-xl outline-none'
+  'fixed left-1/2 top-1/2 flex max-h-[min(90vh,640px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden bg-white shadow-xl outline-none'
+const PANEL_LAYER: Record<'default' | 'top', string> = {
+  default: 'z-50',
+  top: 'z-[70]',
+}
 const PANEL_FRAME: Record<'brand' | 'plain', string> = {
   brand: 'card-frame rounded-2xl ring-2 ring-brand-200',
   plain: 'rounded-none',
@@ -38,6 +47,7 @@ export function Modal({
   size = 'md',
   showHeaderClose = false,
   frame = 'brand',
+  layer = 'default',
   id,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -62,7 +72,7 @@ export function Modal({
 
   return createPortal(
     <>
-      <div className={BACKDROP_CLASS} aria-hidden onClick={onClose} />
+      <div className={BACKDROP_CLASS[layer]} aria-hidden onClick={onClose} />
       <div
         ref={panelRef}
         role="dialog"
@@ -70,7 +80,7 @@ export function Modal({
         id={id}
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`${PANEL_BASE_CLASS} ${PANEL_FRAME[frame]} ${PANEL_WIDTH[size]}`}
+        className={`${PANEL_BASE_CLASS} ${PANEL_LAYER[layer]} ${PANEL_FRAME[frame]} ${PANEL_WIDTH[size]}`}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             event.stopPropagation()

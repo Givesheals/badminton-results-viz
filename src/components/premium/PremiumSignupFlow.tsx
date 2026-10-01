@@ -2,11 +2,11 @@ import { createPortal } from 'react-dom'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { BePlayerRecord } from '../../data/bePlayerDirectory'
 import { BetaBadge } from '../ui/BetaBadge'
+import { Modal } from '../ui/Modal'
+import { legalPageHref } from '../../lib/legalPages'
 import { usePremium } from '../../context/PremiumContext'
 import {
   formatPriceGbp,
-  planBillingDescription,
-  planPriceGbp,
   PREMIUM_MONTHLY_PRICE_GBP,
   PREMIUM_YEARLY_PRICE_GBP,
   PREMIUM_YEARLY_SAVINGS_GBP,
@@ -57,11 +57,6 @@ export function PremiumSignupFlow({
   const [emailError, setEmailError] = useState<string | null>(null)
   const [agreedTerms, setAgreedTerms] = useState(false)
   const [agreedImmediateStart, setAgreedImmediateStart] = useState(false)
-  const [agreedRenewal, setAgreedRenewal] = useState(false)
-  const [agreedBeta, setAgreedBeta] = useState(false)
-  const [cardNumber, setCardNumber] = useState('')
-  const [cardExpiry, setCardExpiry] = useState('')
-  const [cardCvc, setCardCvc] = useState('')
 
   useEffect(() => {
     if (!open) return
@@ -73,11 +68,6 @@ export function PremiumSignupFlow({
     setEmailError(null)
     setAgreedTerms(false)
     setAgreedImmediateStart(false)
-    setAgreedRenewal(false)
-    setAgreedBeta(false)
-    setCardNumber('')
-    setCardExpiry('')
-    setCardCvc('')
   }, [open, initialPlan])
 
   useEffect(() => {
@@ -149,24 +139,84 @@ export function PremiumSignupFlow({
     setStep('success')
   }
 
-  const canPay =
-    agreedTerms &&
-    agreedImmediateStart &&
-    agreedRenewal &&
-    agreedBeta &&
-    cardNumber.replace(/\s/g, '').length >= 12 &&
-    cardExpiry.length >= 4 &&
-    cardCvc.length >= 3
+  const canPay = agreedTerms && agreedImmediateStart
 
   const stepTitle: Record<Step, string> = {
     value: 'Premium (Beta)',
     details: 'Your details',
-    payment: 'Payment',
+    payment: 'Legal agreement',
     success: 'Welcome to Premium',
   }
 
   const unlockedName = selectedPlayer?.name ?? ''
   const unlockedBeNumber = selectedPlayer?.beNumber ?? ''
+
+  if (step === 'payment') {
+    return (
+      <Modal
+        open
+        onClose={onClose}
+        title={stepTitle.payment}
+        showHeaderClose
+        frame="plain"
+        layer="top"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setStep('details')}
+              className="rounded-sm border border-ink-200 bg-white px-4 py-2 text-sm font-medium text-ink-900 transition hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              disabled={!canPay}
+              onClick={handleSubscribe}
+              className="rounded-sm bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Agree &amp; Pay
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4 text-sm text-ink-700">
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={agreedTerms}
+              onChange={(event) => setAgreedTerms(event.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              I agree to the{' '}
+              <a
+                href={legalPageHref('premium-terms')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-700 hover:underline"
+              >
+                BadmInfo Premium Terms
+              </a>
+              .
+            </span>
+          </label>
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={agreedImmediateStart}
+              onChange={(event) => setAgreedImmediateStart(event.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              I want Premium access to start immediately and understand that, once it starts, I
+              will lose my 14-day right to cancel.
+            </span>
+          </label>
+        </div>
+      </Modal>
+    )
+  }
 
   return createPortal(
     <>
@@ -323,113 +373,6 @@ export function PremiumSignupFlow({
             </div>
           )}
 
-          {step === 'payment' && selectedPlayer && (
-            <div className="space-y-4">
-              <div className="rounded-xl border border-ink-100 bg-ink-50 px-4 py-3 text-sm">
-                <p className="font-medium text-ink-900">Order summary</p>
-                <dl className="mt-2 space-y-1 text-ink-700">
-                  <div className="flex justify-between">
-                    <dt>Plan</dt>
-                    <dd>{planBillingDescription(plan)}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>Player</dt>
-                    <dd>
-                      {selectedPlayer.name} ({selectedPlayer.beNumber})
-                    </dd>
-                  </div>
-                  <div className="flex justify-between border-t border-ink-200 pt-2 font-semibold text-ink-900">
-                    <dt>Total today</dt>
-                    <dd>{formatPriceGbp(planPriceGbp(plan))}</dd>
-                  </div>
-                </dl>
-                <p className="mt-2 text-xs text-ink-500">Beta pricing — may change</p>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-ink-900">Card details (simulated)</p>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Card number"
-                  value={cardNumber}
-                  onChange={(event) => setCardNumber(event.target.value)}
-                  className="w-full rounded-lg border border-ink-200 px-3 py-2 text-ink-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="MM/YY"
-                    value={cardExpiry}
-                    onChange={(event) => setCardExpiry(event.target.value)}
-                    className="rounded-lg border border-ink-200 px-3 py-2 text-ink-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
-                  />
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="CVC"
-                    value={cardCvc}
-                    onChange={(event) => setCardCvc(event.target.value)}
-                    className="rounded-lg border border-ink-200 px-3 py-2 text-ink-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2 text-sm text-ink-700">
-                <label className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    checked={agreedTerms}
-                    onChange={(event) => setAgreedTerms(event.target.checked)}
-                    className="mt-0.5"
-                  />
-                  <span>
-                    I agree to the{' '}
-                    <a href="#" className="text-brand-700 hover:underline" onClick={(e) => e.preventDefault()}>
-                      BadmInfo Premium Terms
-                    </a>
-                    .
-                  </span>
-                </label>
-                <label className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    checked={agreedImmediateStart}
-                    onChange={(event) => setAgreedImmediateStart(event.target.checked)}
-                    className="mt-0.5"
-                  />
-                  <span>
-                    I want my Premium access to start immediately and understand that by starting it
-                    now I will lose my 14-day right to cancel.
-                  </span>
-                </label>
-                <label className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    checked={agreedRenewal}
-                    onChange={(event) => setAgreedRenewal(event.target.checked)}
-                    className="mt-0.5"
-                  />
-                  <span>
-                    I understand my subscription auto-renews and I can cancel anytime.
-                  </span>
-                </label>
-                <label className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    checked={agreedBeta}
-                    onChange={(event) => setAgreedBeta(event.target.checked)}
-                    className="mt-0.5"
-                  />
-                  <span>
-                    I understand this is a beta — features and pricing may change. Your feedback
-                    helps us improve.
-                  </span>
-                </label>
-              </div>
-            </div>
-          )}
-
           {step === 'success' && (
             <div className="space-y-4 text-sm text-ink-700">
               <p className="font-medium text-court-700">
@@ -485,25 +428,6 @@ export function PremiumSignupFlow({
                 className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
               >
                 Continue
-              </button>
-            </>
-          )}
-          {step === 'payment' && (
-            <>
-              <button
-                type="button"
-                onClick={() => setStep('details')}
-                className="rounded-lg border border-ink-100 bg-white px-3 py-1.5 text-sm text-ink-700 hover:bg-ink-50"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                disabled={!canPay}
-                onClick={handleSubscribe}
-                className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Subscribe — {planBillingDescription(plan)}
               </button>
             </>
           )}
