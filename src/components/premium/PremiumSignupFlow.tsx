@@ -194,7 +194,7 @@ export function PremiumSignupFlow({
                 href={legalPageHref('premium-terms')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-brand-700 hover:underline"
+                className="text-badminfo-link underline underline-offset-2 hover:opacity-80"
               >
                 BadmInfo Premium Terms
               </a>
@@ -219,7 +219,7 @@ export function PremiumSignupFlow({
               href={PRIVACY_POLICY_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand-700 hover:underline"
+              className="text-badminfo-link underline underline-offset-2 hover:opacity-80"
             >
               Privacy Policy
             </a>{' '}

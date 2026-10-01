@@ -16,6 +16,9 @@
   --color-brand-800: #290146;
   --color-brand-900: #1b0130;
 
+  /* Link purple used on badminfo.com (Bootstrap --bs-primary / --bs-link-color). */
+  --color-badminfo-link: #593196;
+
   --color-court-50: #edf8ee;
   --color-court-100: #d7edd9;
   --color-court-200: #b8dcb9;
