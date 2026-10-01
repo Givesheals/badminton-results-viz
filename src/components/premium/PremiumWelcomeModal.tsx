@@ -127,7 +127,7 @@ function StageRowGuide() {
         <div className="h-2 w-2/3 rounded-full bg-ink-100" />
         <div className="h-2 w-2/5 rounded-full bg-ink-100" />
       </div>
-      <div className="mt-3 flex items-start gap-1.5 pb-7">
+      <div className="mt-3 flex items-start gap-1.5 pb-10">
         <span className="shrink-0 py-1 text-xs font-medium text-brand-700">Stage:</span>
         <span className={`${MOCK_CHIP} hidden bg-ink-100 text-brand-700 min-[480px]:inline-flex`}>
           Entries
@@ -145,7 +145,7 @@ function StageRowGuide() {
           <span className={`${MOCK_CHIP} relative inline-flex bg-ink-100 text-brand-700`}>
             Companion
           </span>
-          <span className="absolute left-1/2 top-full mt-2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap text-xs font-semibold text-brand-700">
+          <span className="absolute left-1/2 top-full mt-2 flex -translate-x-1/2 flex-col items-center gap-0.5 whitespace-nowrap text-xs font-semibold text-brand-700">
             <ArrowUpIcon className="h-3 w-3" />
             Tap Companion
           </span>
