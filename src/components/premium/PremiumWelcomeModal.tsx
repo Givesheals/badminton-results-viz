@@ -282,22 +282,23 @@ export function PremiumWelcomeModal({
                 </span>
                 Payment taken - thank you
               </p>
-              <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+              {/* Narrow left column (short values) leaves the most room for the plan and email. */}
+              <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 gap-y-1.5 text-sm">
                 <div>
+                  <dt className="text-xs text-ink-500">Paid today</dt>
+                  <dd className="whitespace-nowrap font-medium text-ink-900">
+                    {formatPriceGbp(planPriceGbp(plan))}
+                  </dd>
+                </div>
+                <div className="min-w-0">
                   <dt className="text-xs text-ink-500">Plan</dt>
                   <dd className="font-medium text-ink-900">
                     {planLabel(plan)} · {planBillingDescription(plan)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-ink-500">Paid today</dt>
-                  <dd className="font-medium text-ink-900">
-                    {formatPriceGbp(planPriceGbp(plan))}
-                  </dd>
-                </div>
-                <div>
                   <dt className="text-xs text-ink-500">Next renewal</dt>
-                  <dd className="font-medium text-ink-900">
+                  <dd className="whitespace-nowrap font-medium text-ink-900">
                     {formatDate(firstRenewalIso(subscribedAt, plan))}
                   </dd>
                 </div>
