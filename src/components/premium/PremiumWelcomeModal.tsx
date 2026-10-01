@@ -140,7 +140,7 @@ function StageRowGuide() {
         >
           Finals
         </span>
-        <span className="relative inline-flex shrink-0">
+        <span className="relative ml-2 inline-flex shrink-0">
           <span className="absolute -inset-1 rounded-full ring-2 ring-brand-500 motion-safe:animate-pulse" />
           <span className={`${MOCK_CHIP} relative inline-flex bg-ink-100 text-brand-700`}>
             Companion
