@@ -17,20 +17,6 @@ type Props = {
 
 const CHIP_GAP_FALLBACK_PX = 8
 
-/** Compact crown mark for the Premium / gift Companion stage chip. */
-function CrownIcon({ className = 'h-3.5 w-3.5 text-amber-500' }: { className?: string }) {
-  return (
-    <svg
-      className={`shrink-0 ${className}`}
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path d="M2.5 14.5h15l-1.2-7.2a.75.75 0 00-1.22-.42L12 9.5 10.42 5.3a.75.75 0 00-1.34 0L7.5 9.5 4.42 6.88a.75.75 0 00-1.22.42L2.5 14.5zM3 16a1 1 0 001 1h12a1 1 0 001-1v-.5H3V16z" />
-    </svg>
-  )
-}
-
 function ChevronDown({ className = 'h-3 w-3' }: { className?: string }) {
   return (
     <svg className={`shrink-0 ${className}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
@@ -52,13 +38,7 @@ function stageChipClass(selected: boolean) {
 }
 
 function StageChipLabel({ stage }: { stage: TournamentPageStage }) {
-  if (stage !== 'Companion') return stage
-  return (
-    <>
-      Companion
-      <CrownIcon />
-    </>
-  )
+  return stage
 }
 
 function OverflowMenu({ stages }: { stages: TournamentPageStage[] }) {

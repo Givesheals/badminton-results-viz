@@ -110,14 +110,6 @@ function ArrowUpIcon({ className }: { className?: string }) {
   )
 }
 
-function CrownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-      <path d="M2.5 14.5h15l-1.2-7.2a.75.75 0 00-1.22-.42L12 9.5 10.42 5.3a.75.75 0 00-1.34 0L7.5 9.5 4.42 6.88a.75.75 0 00-1.22.42L2.5 14.5zM3 16a1 1 0 001 1h12a1 1 0 001-1v-.5H3V16z" />
-    </svg>
-  )
-}
-
 /** Display (inline-flex / hidden) is set per chip so narrow screens can drop the first chips. */
 const MOCK_CHIP = 'shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium'
 
@@ -152,7 +144,6 @@ function StageRowGuide() {
           <span className="absolute -inset-1 rounded-full ring-2 ring-brand-500 motion-safe:animate-pulse" />
           <span className={`${MOCK_CHIP} relative inline-flex bg-ink-100 text-brand-700`}>
             Companion
-            <CrownIcon className="h-3 w-3 shrink-0 text-amber-500" />
           </span>
           <span className="absolute left-1/2 top-full mt-2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap text-xs font-semibold text-brand-700">
             <ArrowUpIcon className="h-3 w-3" />
