@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { BePlayerRecord } from '../../data/bePlayerDirectory'
 import { BetaBadge } from '../ui/BetaBadge'
 import { Modal } from '../ui/Modal'
-import { legalPageHref } from '../../lib/legalPages'
+import { legalPageHref, PRIVACY_POLICY_URL } from '../../lib/legalPages'
 import { usePremium } from '../../context/PremiumContext'
 import {
   formatPriceGbp,
@@ -213,6 +213,18 @@ export function PremiumSignupFlow({
               will lose my 14-day right to cancel.
             </span>
           </label>
+          <p>
+            See our{' '}
+            <a
+              href={PRIVACY_POLICY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-700 hover:underline"
+            >
+              Privacy Policy
+            </a>{' '}
+            for information about how we use your personal data.
+          </p>
         </div>
       </Modal>
     )

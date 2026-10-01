@@ -9,6 +9,9 @@ export function getLegalPageId(): LegalPageId | null {
   return LEGAL_PAGE_IDS.find((id) => id === value) ?? null
 }
 
+/** Live BadmInfo Privacy Policy (hosted outside this prototype). Update here if the address changes. */
+export const PRIVACY_POLICY_URL = 'https://badminfo.com/privacy'
+
 /** Link to a legal page that works on both local dev and the GitHub Pages deployment. */
 export function legalPageHref(id: LegalPageId): string {
   return `${import.meta.env.BASE_URL}?page=${id}`
