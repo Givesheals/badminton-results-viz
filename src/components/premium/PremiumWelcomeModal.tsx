@@ -7,7 +7,6 @@ import {
   planPriceGbp,
   type PremiumPlan,
 } from '../../lib/premiumPricing'
-import { BetaBadge } from '../ui/BetaBadge'
 
 type Props = {
   open: boolean
@@ -23,14 +22,6 @@ type Props = {
   onManageSubscription?: () => void
 }
 
-const ALSO_INCLUDED = [
-  'Opponent notes',
-  'Match journal',
-  'Partner chemistry',
-  'Category milestones',
-  'Tournament recaps',
-]
-
 const CONFETTI_COLORS = [
   'bg-shuttle-400',
   'bg-brand-300',
@@ -41,16 +32,14 @@ const CONFETTI_COLORS = [
 ] as const
 
 const CONFETTI_SLOTS = [
-  { top: '12%', left: '6%' },
-  { top: '22%', left: '16%' },
-  { top: '10%', left: '30%' },
-  { top: '16%', left: '70%' },
-  { top: '8%', left: '86%' },
-  { top: '30%', left: '93%' },
-  { top: '62%', left: '5%' },
-  { top: '74%', left: '18%' },
-  { top: '70%', left: '82%' },
-  { top: '56%', left: '95%' },
+  { top: '14%', left: '6%' },
+  { top: '30%', left: '16%' },
+  { top: '10%', left: '32%' },
+  { top: '16%', left: '72%' },
+  { top: '8%', left: '88%' },
+  { top: '40%', left: '93%' },
+  { top: '78%', left: '8%' },
+  { top: '82%', left: '86%' },
 ] as const
 
 function formatDate(iso: string): string {
@@ -88,7 +77,7 @@ function TickIcon({ className }: { className?: string }) {
   )
 }
 
-function ArrowIcon({ className }: { className?: string }) {
+function ArrowRightIcon({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -102,6 +91,72 @@ function ArrowIcon({ className }: { className?: string }) {
     >
       <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
+  )
+}
+
+function ArrowUpIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 19V5M6 11l6-6 6 6" />
+    </svg>
+  )
+}
+
+function CrownIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+      <path d="M2.5 14.5h15l-1.2-7.2a.75.75 0 00-1.22-.42L12 9.5 10.42 5.3a.75.75 0 00-1.34 0L7.5 9.5 4.42 6.88a.75.75 0 00-1.22.42L2.5 14.5zM3 16a1 1 0 001 1h12a1 1 0 001-1v-.5H3V16z" />
+    </svg>
+  )
+}
+
+const MOCK_CHIP = 'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium'
+
+/**
+ * Small drawing of the Stage row on a tournament page, with the Companion chip
+ * highlighted. Built from the same chip styles as the real page so it stays accurate.
+ */
+function StageRowGuide() {
+  return (
+    <div
+      className="mt-3 rounded-xl border border-ink-200 bg-white px-3 pb-2.5 pt-3"
+      aria-hidden
+    >
+      <div className="space-y-1.5">
+        <div className="h-2 w-2/3 rounded-full bg-ink-100" />
+        <div className="h-2 w-2/5 rounded-full bg-ink-100" />
+      </div>
+      <div className="mt-3 flex items-center gap-1.5">
+        <span className="shrink-0 text-xs font-medium text-brand-700">Stage:</span>
+        <span className={`${MOCK_CHIP} hidden bg-ink-100 text-brand-700 min-[380px]:inline-flex`}>
+          Entries
+        </span>
+        <span className={`${MOCK_CHIP} bg-ink-100 text-brand-700`}>Groups</span>
+        <span className={`${MOCK_CHIP} border border-ink-900 bg-ink-200 text-ink-900`}>
+          Finals
+        </span>
+        <span className="relative ml-auto inline-flex shrink-0">
+          <span className="absolute -inset-1 rounded-full ring-2 ring-brand-500 motion-safe:animate-pulse" />
+          <span className={`${MOCK_CHIP} relative bg-ink-100 text-brand-700`}>
+            Companion
+            <CrownIcon className="h-3 w-3 shrink-0 text-amber-500" />
+          </span>
+        </span>
+      </div>
+      <p className="mt-1.5 flex items-center justify-end gap-1 pr-2 text-xs font-semibold text-brand-700">
+        <ArrowUpIcon className="h-3 w-3" />
+        Tap Companion
+      </p>
+    </div>
   )
 }
 
@@ -135,7 +190,6 @@ export function PremiumWelcomeModal({
   if (!open) return null
 
   const name = firstName(playerName)
-  const previewSrc = `${import.meta.env.BASE_URL}premium-showcase/summary-desktop.jpg`
 
   return createPortal(
     <>
@@ -146,11 +200,11 @@ export function PremiumWelcomeModal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="card-frame fixed left-1/2 top-1/2 z-[90] flex max-h-[min(94vh,860px)] w-[min(100vw-1.5rem,36rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-2 ring-brand-200 outline-none"
+        className="card-frame fixed left-1/2 top-1/2 z-[90] flex max-h-[min(94vh,760px)] w-[min(100vw-1.5rem,30rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-2 ring-brand-200 outline-none"
       >
         <div className="min-h-0 flex-1 overflow-y-auto">
           {/* Hero */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 px-5 pb-7 pt-8 text-center text-white sm:px-8">
+          <div className="relative overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 px-5 pb-5 pt-6 text-center text-white">
             <div className="pointer-events-none absolute inset-0" aria-hidden>
               {CONFETTI_SLOTS.map((slot, i) => (
                 <span
@@ -183,28 +237,45 @@ export function PremiumWelcomeModal({
             </button>
 
             <div className="relative z-[1] flex flex-col items-center">
-              <span className="animate-premium-welcome-check-pop flex h-16 w-16 items-center justify-center rounded-full bg-shuttle-400 text-brand-800 shadow-lg ring-4 ring-white/20">
-                <TickIcon className="h-8 w-8" />
+              <span className="animate-premium-welcome-check-pop flex h-12 w-12 items-center justify-center rounded-full bg-shuttle-400 text-brand-800 shadow-lg ring-4 ring-white/20">
+                <TickIcon className="h-6 w-6" />
               </span>
-              <p className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-100">
-                Premium is active
-                <BetaBadge />
-              </p>
-              <h2
-                id={titleId}
-                className="mt-1 text-3xl font-black tracking-tight sm:text-4xl"
-              >
+              <h2 id={titleId} className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
                 {name ? `You're in, ${name}.` : "You're in."}
               </h2>
-              <p className="mt-2 max-w-sm text-sm text-brand-100">
+              <p className="mt-1 text-sm text-brand-100">
                 Premium is now active for{' '}
                 <span className="font-semibold text-white">{playerName}</span>
-                {beNumber ? ` (BE ${beNumber})` : ''}. Everything is unlocked and ready to use.
+                {beNumber ? ` (BE ${beNumber})` : ''}.
               </p>
             </div>
           </div>
 
-          <div className="space-y-5 px-4 py-5 sm:px-6">
+          <div className="space-y-4 px-4 pb-5 pt-4 sm:px-5">
+            {/* Player Lab - first thing under the hero so it is always on screen */}
+            <button
+              type="button"
+              onClick={onOpenPlayerLab}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2"
+            >
+              Open your Player Lab
+              <ArrowRightIcon className="h-4 w-4" />
+            </button>
+
+            {/* Draw Companion - short pointer to where it lives */}
+            <section
+              aria-label="Draw Companion"
+              className="rounded-xl border border-ink-200 bg-ink-50/60 px-4 py-3"
+            >
+              <h3 className="text-sm font-bold text-ink-900">
+                You&apos;ve also unlocked Draw Companion
+              </h3>
+              <p className="mt-0.5 text-sm text-ink-600">
+                Find it on any tournament page, in the Stage row.
+              </p>
+              <StageRowGuide />
+            </section>
+
             {/* Payment confirmation */}
             <section
               aria-label="Payment confirmation"
@@ -216,139 +287,53 @@ export function PremiumWelcomeModal({
                 </span>
                 Payment taken - thank you
               </p>
-              <dl className="mt-2 grid gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
-                <div className="flex items-baseline justify-between gap-2 sm:block">
+              <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                <div>
                   <dt className="text-xs text-ink-500">Plan</dt>
                   <dd className="font-medium text-ink-900">
                     {planLabel(plan)} · {planBillingDescription(plan)}
                   </dd>
                 </div>
-                <div className="flex items-baseline justify-between gap-2 sm:block">
+                <div>
                   <dt className="text-xs text-ink-500">Paid today</dt>
                   <dd className="font-medium text-ink-900">
                     {formatPriceGbp(planPriceGbp(plan))}
                   </dd>
                 </div>
-                <div className="flex items-baseline justify-between gap-2 sm:block">
+                <div>
                   <dt className="text-xs text-ink-500">Next renewal</dt>
                   <dd className="font-medium text-ink-900">
                     {formatDate(firstRenewalIso(subscribedAt, plan))}
                   </dd>
                 </div>
-                <div className="flex items-baseline justify-between gap-2 sm:block">
+                <div className="min-w-0">
                   <dt className="text-xs text-ink-500">Receipt sent to</dt>
-                  <dd className="break-all font-medium text-ink-900">
+                  <dd className="break-words font-medium text-ink-900">
                     {receiptEmail || 'your email'}
                   </dd>
                 </div>
               </dl>
             </section>
 
-            {/* Player Lab - primary */}
-            <section aria-label="Player Lab">
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                Start here
-              </p>
-              <div className="mt-2 overflow-hidden rounded-xl border-2 border-brand-300 bg-white shadow-sm">
-                <div className="relative h-32 overflow-hidden bg-brand-50 sm:h-40">
-                  <img
-                    src={previewSrc}
-                    alt=""
-                    className="h-full w-full object-cover object-top"
-                    loading="lazy"
-                  />
-                  <div
-                    className="absolute inset-0 bg-gradient-to-t from-white via-white/10 to-transparent"
-                    aria-hidden
-                  />
-                </div>
-                <div className="px-4 pb-4 pt-1">
-                  <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
-                    Player Lab
-                    <BetaBadge />
-                  </p>
-                  <h3 className="mt-1 text-lg font-bold text-ink-900">
-                    Your whole game, in one place
-                  </h3>
-                  <p className="mt-1 text-sm text-ink-600">
-                    Results trends, opponent matchups, partner chemistry, milestones and your own
-                    notes - all built from your match history.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onOpenPlayerLab}
-                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2"
-                  >
-                    Open your Player Lab
-                    <ArrowIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </section>
-
-            {/* Draw Companion - secondary, explain only */}
-            <section
-              aria-label="Draw Companion"
-              className="rounded-xl border border-ink-200 bg-ink-50/60 px-4 py-3"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                At a tournament
-              </p>
-              <h3 className="mt-1 text-sm font-bold text-ink-900">Draw Companion</h3>
-              <p className="mt-1 text-sm text-ink-600">
-                See your most likely path to the final, the chance of meeting each opponent, your
-                notes on them and every time you have played them before.
-              </p>
-              <p className="mt-2 rounded-lg bg-white px-3 py-2 text-xs text-ink-700 ring-1 ring-ink-100">
-                <span className="font-semibold text-ink-900">Where to find it:</span> open any
-                tournament you are entered in, then tap{' '}
-                <span className="font-semibold text-brand-700">Draw Companion</span>.
-              </p>
-            </section>
-
-            {/* Also included */}
-            <section aria-label="Also included">
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                Also included
-              </p>
-              <ul className="mt-2 flex flex-wrap gap-1.5">
-                {ALSO_INCLUDED.map((item) => (
-                  <li
-                    key={item}
-                    className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 ring-1 ring-brand-100"
-                  >
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </section>
-
-            {/* Footer info */}
-            <section className="border-t border-ink-100 pt-4 text-sm text-ink-600">
-              <p>
-                Premium is in beta, so you may spot rough edges. Your feedback shapes what we build
-                next.
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <a
-                  href="https://discord.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <a
+                href="https://discord.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-brand-700 hover:text-brand-600 hover:underline"
+              >
+                Join the private Discord
+              </a>
+              {onManageSubscription ? (
+                <button
+                  type="button"
+                  onClick={onManageSubscription}
                   className="font-semibold text-brand-700 hover:text-brand-600 hover:underline"
                 >
-                  Join the private Discord
-                </a>
-                {onManageSubscription ? (
-                  <button
-                    type="button"
-                    onClick={onManageSubscription}
-                    className="font-semibold text-brand-700 hover:text-brand-600 hover:underline"
-                  >
-                    Manage subscription
-                  </button>
-                ) : null}
-              </div>
-            </section>
+                  Manage subscription
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
