@@ -283,7 +283,7 @@ export function PremiumWelcomeModal({
                 Payment taken - thank you
               </p>
               {/* Narrow left column (short values) leaves the most room for the plan and email. */}
-              <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 gap-y-1.5 text-sm">
+              <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-10 gap-y-1.5 text-sm">
                 <div>
                   <dt className="text-xs text-ink-500">Paid today</dt>
                   <dd className="whitespace-nowrap font-medium text-ink-900">
