@@ -178,7 +178,7 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-1.5">
       <dt className="text-sm font-semibold text-ink-900">{label}</dt>
-      <dd className="text-sm font-medium text-brand-700">{children}</dd>
+      <dd className="text-sm font-medium text-ink-900">{children}</dd>
     </div>
   )
 }
@@ -565,7 +565,7 @@ function SubscribedPremiumTab({
             <tbody>
               {coveredPlayers.map((player) => (
                 <tr key={player.beNumber} className="border-b border-ink-50 last:border-0">
-                  <td className="px-3 py-1.5 font-medium text-brand-700">{player.name}</td>
+                  <td className="px-3 py-1.5 font-medium text-ink-900">{player.name}</td>
                   <td className="px-3 py-1.5 text-ink-700">{player.beNumber}</td>
                 </tr>
               ))}
