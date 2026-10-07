@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react'
 import { CategoryMilestoneClaimLink } from './CategoryMilestoneClaimLink'
 import type {
   CelebrationHeroKind,
@@ -34,6 +35,11 @@ type Props = {
    * Used by the condensed-cards fictional recap.
    */
   compactAllCelebrations?: boolean
+  /**
+   * Kitchen-sink only: also show 1st, 2nd, and 3rd cards with the matched-best
+   * note folded in, so both treatments can be compared.
+   */
+  showMatchedBestFoldIn?: boolean
 }
 
 const CONFETTI_COLORS = [
@@ -95,12 +101,73 @@ function Confetti({ density = 'full' }: { density?: 'full' | 'light' | 'minimal'
         return (
           <span
             key={i}
+            data-confetti-piece
             className={`absolute rotate-45 rounded-sm opacity-70 ${color} ${size}`}
             style={{ top: pos.top, left: pos.left }}
           />
         )
       })}
     </div>
+  )
+}
+
+/** Hide pieces that would sit inside the matched-best note or on its border. */
+function useClearConfettiAroundNote(
+  rootRef: RefObject<HTMLElement | null>,
+  active: boolean,
+) {
+  useLayoutEffect(() => {
+    const root = rootRef.current
+    if (!root || !active) return
+
+    const gap = 16
+    const pieces = () => root.querySelectorAll<HTMLElement>('[data-confetti-piece]')
+
+    const apply = () => {
+      const note = root.querySelector<HTMLElement>('[data-matched-best-note]')
+      if (!note) return
+      const box = note.getBoundingClientRect()
+      for (const piece of pieces()) {
+        const rect = piece.getBoundingClientRect()
+        const near =
+          rect.left < box.right + gap &&
+          rect.right > box.left - gap &&
+          rect.top < box.bottom + gap &&
+          rect.bottom > box.top - gap
+        piece.style.visibility = near ? 'hidden' : ''
+      }
+    }
+
+    apply()
+    const observer = new ResizeObserver(apply)
+    observer.observe(root)
+    const note = root.querySelector('[data-matched-best-note]')
+    if (note) observer.observe(note)
+    return () => {
+      observer.disconnect()
+      for (const piece of pieces()) piece.style.visibility = ''
+    }
+  }, [rootRef, active])
+}
+
+function ConfettiClearArticle({
+  active,
+  density,
+  className,
+  children,
+}: {
+  active: boolean
+  density: 'full' | 'light' | 'minimal'
+  className: string
+  children: ReactNode
+}) {
+  const ref = useRef<HTMLElement>(null)
+  useClearConfettiAroundNote(ref, active)
+  return (
+    <article ref={ref} className={className}>
+      <Confetti density={density} />
+      {children}
+    </article>
   )
 }
 
@@ -139,10 +206,43 @@ function CelebrationIdentityChips({
   )
 }
 
+function MatchedBestScopeLine({ podium }: { podium: PodiumCelebration }) {
+  const scope = formatCategoryAgeLabel(
+    podium.tournamentCategoryLabel,
+    podium.competitionAgeLabel,
+  )
+  return (
+    <>
+      As deep as you've gone at {scope}{' '}
+      <span className="whitespace-nowrap">in {podium.discipline}</span>
+    </>
+  )
+}
+
+function MatchedBestNote({ podium }: { podium: PodiumCelebration }) {
+  return (
+    <div
+      data-matched-best-note
+      className="mx-auto mt-3 flex w-fit max-w-full items-center gap-2 rounded-lg border border-ink-200 bg-transparent px-3 py-2 text-left"
+    >
+      <span className="shrink-0 text-base leading-none" aria-hidden>
+        ↔️
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs font-semibold leading-tight text-ink-900">Matched your best</p>
+        <p className="mt-0.5 text-[11px] leading-tight text-ink-500">
+          <MatchedBestScopeLine podium={podium} />
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function CompactCelebrationRow({
   icon,
   title,
   detail,
+  matchedBestPodium,
   discipline,
   tournamentCategoryLabel,
   competitionAgeLabel,
@@ -155,6 +255,7 @@ function CompactCelebrationRow({
   icon: string
   title: string
   detail?: string
+  matchedBestPodium?: PodiumCelebration
   discipline?: string
   tournamentCategoryLabel: string
   competitionAgeLabel?: string | null
@@ -191,6 +292,19 @@ function CompactCelebrationRow({
             {detail && (
               <p className="mt-0.5 text-xs leading-snug text-ink-500">{detail}</p>
             )}
+            {matchedBestPodium && (
+              <div className="mt-1 flex items-start gap-1 text-xs leading-snug">
+                <span className="mt-0.5 shrink-0" aria-hidden>
+                  ↔️
+                </span>
+                <span className="min-w-0">
+                  <span className="font-semibold text-ink-800">Matched your best</span>
+                  <span className="block text-ink-500">
+                    <MatchedBestScopeLine podium={matchedBestPodium} />
+                  </span>
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </article>
@@ -200,9 +314,11 @@ function CompactCelebrationRow({
 
 function WinnerCard({
   podium,
+  matchedBest = false,
   startRevealed,
 }: {
   podium: PodiumCelebration
+  matchedBest?: boolean
   startRevealed?: boolean
 }) {
   const style = getDisciplineStyle(podium.discipline)
@@ -214,10 +330,11 @@ function WinnerCard({
       sealedHint="A big result is sealed inside"
       startRevealed={startRevealed}
     >
-      <article
+      <ConfettiClearArticle
+        active={matchedBest}
+        density="full"
         className={`relative overflow-hidden rounded-2xl border-2 border-shuttle-400/60 border-l-4 bg-gradient-to-br from-shuttle-400/30 via-brand-50 to-court-50 px-4 py-6 shadow-md ${style.borderClass}`}
       >
-        <Confetti density="full" />
         <div className="relative z-[1] mx-auto flex max-w-[85%] flex-col items-center text-center">
           <span className="text-5xl leading-none" aria-hidden>
             🏆
@@ -237,13 +354,14 @@ function WinnerCard({
               {podium.subtitle}
             </p>
           )}
+          {matchedBest && <MatchedBestNote podium={podium} />}
           <CategoryMilestoneClaimLink
             tournamentCategoryLabel={podium.tournamentCategoryLabel}
             competitionAgeLabel={podium.competitionAgeLabel}
             stage="winner"
           />
         </div>
-      </article>
+      </ConfettiClearArticle>
     </FlipRevealCard>
   )
 }
@@ -251,10 +369,12 @@ function WinnerCard({
 function RunnerUpCard({
   podium,
   compact,
+  matchedBest = false,
   startRevealed,
 }: {
   podium: PodiumCelebration
   compact?: boolean
+  matchedBest?: boolean
   startRevealed?: boolean
 }) {
   if (compact) {
@@ -263,6 +383,7 @@ function RunnerUpCard({
         icon="🥈"
         title="Runner-up"
         detail={podiumFlavorText(podium)}
+        matchedBestPodium={matchedBest ? podium : undefined}
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
         competitionAgeLabel={podium.competitionAgeLabel}
@@ -282,8 +403,11 @@ function RunnerUpCard({
       sealedHint="A podium finish is waiting"
       startRevealed={startRevealed}
     >
-      <article className="relative overflow-hidden rounded-xl border border-ink-200 bg-gradient-to-br from-slate-100 via-white to-brand-50/40 px-4 py-4 shadow-sm">
-        <Confetti density="light" />
+      <ConfettiClearArticle
+        active={matchedBest}
+        density="light"
+        className="relative overflow-hidden rounded-xl border border-ink-200 bg-gradient-to-br from-slate-100 via-white to-brand-50/40 px-4 py-4 shadow-sm"
+      >
         <div className="relative z-[1] mx-auto flex max-w-[85%] flex-col items-center text-center">
           <span className="text-3xl leading-none" aria-hidden>
             🥈
@@ -301,13 +425,14 @@ function RunnerUpCard({
           {podium.subtitle && (
             <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
           )}
+          {matchedBest && <MatchedBestNote podium={podium} />}
           <CategoryMilestoneClaimLink
             tournamentCategoryLabel={podium.tournamentCategoryLabel}
             competitionAgeLabel={podium.competitionAgeLabel}
             stage="runner-up"
           />
         </div>
-      </article>
+      </ConfettiClearArticle>
     </FlipRevealCard>
   )
 }
@@ -315,10 +440,12 @@ function RunnerUpCard({
 function ThirdPlaceCard({
   podium,
   compact,
+  matchedBest = false,
   startRevealed,
 }: {
   podium: PodiumCelebration
   compact?: boolean
+  matchedBest?: boolean
   startRevealed?: boolean
 }) {
   if (compact) {
@@ -327,6 +454,7 @@ function ThirdPlaceCard({
         icon="🥉"
         title="Third place"
         detail={podiumFlavorText(podium)}
+        matchedBestPodium={matchedBest ? podium : undefined}
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
         competitionAgeLabel={podium.competitionAgeLabel}
@@ -346,8 +474,11 @@ function ThirdPlaceCard({
       sealedHint="A bronze result is sealed"
       startRevealed={startRevealed}
     >
-      <article className="relative overflow-hidden rounded-xl border border-[color:var(--color-level-bronze)]/70 bg-gradient-to-br from-[color:var(--color-level-bronze)]/25 via-white to-brand-50/20 px-4 py-3.5 shadow-sm">
-        <Confetti density="minimal" />
+      <ConfettiClearArticle
+        active={matchedBest}
+        density="minimal"
+        className="relative overflow-hidden rounded-xl border border-[color:var(--color-level-bronze)]/70 bg-gradient-to-br from-[color:var(--color-level-bronze)]/25 via-white to-brand-50/20 px-4 py-3.5 shadow-sm"
+      >
         <div className="relative z-[1] mx-auto flex max-w-[85%] flex-col items-center text-center">
           <span className="text-2xl leading-none" aria-hidden>
             🥉
@@ -365,13 +496,14 @@ function ThirdPlaceCard({
           {podium.subtitle && (
             <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
           )}
+          {matchedBest && <MatchedBestNote podium={podium} />}
           <CategoryMilestoneClaimLink
             tournamentCategoryLabel={podium.tournamentCategoryLabel}
             competitionAgeLabel={podium.competitionAgeLabel}
             stage="semi-final"
           />
         </div>
-      </article>
+      </ConfettiClearArticle>
     </FlipRevealCard>
   )
 }
@@ -575,12 +707,76 @@ function isFeatured(
   return featured === kind
 }
 
+/** Repeat-finish copy, the case where a separate matched-best card feels repetitive. */
+const MATCHED_BEST_FOLD_IN_PREVIEW: PodiumCelebration[] = [
+  {
+    kind: 'winner',
+    discipline: 'MD',
+    disciplineLabel: "Men's doubles",
+    tournamentCategoryLabel: 'Gold',
+    competitionAgeLabel: 'Senior',
+    subtitle: 'Your 2nd Senior Gold title',
+  },
+  {
+    kind: 'runner-up',
+    discipline: 'WD',
+    disciplineLabel: "Women's doubles",
+    tournamentCategoryLabel: 'Gold',
+    competitionAgeLabel: 'U19',
+    subtitle: 'This is your second time as a U19 Gold WD runner-up',
+  },
+  {
+    kind: 'joint-third',
+    discipline: 'XD',
+    disciplineLabel: 'Mixed doubles',
+    tournamentCategoryLabel: 'Gold',
+    competitionAgeLabel: 'O45',
+    subtitle: 'This is your second time coming third in XD at a O45 Gold',
+  },
+]
+
+function MatchedBestFoldInPreview({
+  compact,
+  startRevealed,
+}: {
+  compact: boolean
+  startRevealed?: boolean
+}) {
+  const [winner, runnerUp, third] = MATCHED_BEST_FOLD_IN_PREVIEW
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-medium text-ink-400">When this finish matches your best</p>
+      {winner && (
+        <WinnerCard podium={winner} matchedBest startRevealed={startRevealed} />
+      )}
+      {runnerUp && (
+        <RunnerUpCard
+          podium={runnerUp}
+          matchedBest
+          compact={compact}
+          startRevealed={startRevealed}
+        />
+      )}
+      {third && (
+        <ThirdPlaceCard
+          podium={third}
+          matchedBest
+          compact={compact}
+          startRevealed={startRevealed}
+        />
+      )}
+    </div>
+  )
+}
+
 export function RecapCelebrationHero({
   celebrations,
   features = fullTournamentRecapBuildFeatures(),
   startRevealed = false,
   expandAllCelebrations = false,
   compactAllCelebrations = false,
+  showMatchedBestFoldIn = false,
 }: Props) {
   const { winners, runnerUps, jointThirds, milestones, seniorCountyDebut } =
     celebrations
@@ -766,6 +962,13 @@ export function RecapCelebrationHero({
             />
           ))}
         </div>
+      )}
+
+      {showMatchedBestFoldIn && features.showPodium && features.showPersonalBests && (
+        <MatchedBestFoldInPreview
+          compact={compactAllCelebrations}
+          startRevealed={startRevealed}
+        />
       )}
     </div>
   )

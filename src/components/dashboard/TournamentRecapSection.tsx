@@ -233,6 +233,7 @@ export function TournamentRecapSection({
               startRevealed={buildStageProp != null || isFictionalFeatureRecap}
               expandAllCelebrations={celebrationPresentation === 'expanded'}
               compactAllCelebrations={celebrationPresentation === 'compact'}
+              showMatchedBestFoldIn={isFictionalFeatureRecap}
             />
 
             {features.showEventSummaries && recap.eventSummaries.length > 0 && (
