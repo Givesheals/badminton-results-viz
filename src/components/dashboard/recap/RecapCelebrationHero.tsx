@@ -1,5 +1,4 @@
 import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react'
-import { CategoryMilestoneClaimLink } from './CategoryMilestoneClaimLink'
 import type {
   CelebrationHeroKind,
   MilestoneCelebration,
@@ -449,11 +448,6 @@ function WinnerCard({
           )}
           {personalBest && <FinishNote kind="personal_best" podium={podium} times={times} />}
           {matchedBest && <FinishNote kind="matched_best" podium={podium} times={times} />}
-          <CategoryMilestoneClaimLink
-            tournamentCategoryLabel={podium.tournamentCategoryLabel}
-            competitionAgeLabel={podium.competitionAgeLabel}
-            stage="winner"
-          />
         </div>
       </ConfettiClearArticle>
     </FlipRevealCard>
@@ -531,11 +525,6 @@ function RunnerUpCard({
           )}
           {personalBest && <FinishNote kind="personal_best" podium={podium} times={times} />}
           {matchedBest && <FinishNote kind="matched_best" podium={podium} times={times} />}
-          <CategoryMilestoneClaimLink
-            tournamentCategoryLabel={podium.tournamentCategoryLabel}
-            competitionAgeLabel={podium.competitionAgeLabel}
-            stage="runner-up"
-          />
         </div>
       </ConfettiClearArticle>
     </FlipRevealCard>
@@ -613,11 +602,6 @@ function ThirdPlaceCard({
           )}
           {personalBest && <FinishNote kind="personal_best" podium={podium} times={times} />}
           {matchedBest && <FinishNote kind="matched_best" podium={podium} times={times} />}
-          <CategoryMilestoneClaimLink
-            tournamentCategoryLabel={podium.tournamentCategoryLabel}
-            competitionAgeLabel={podium.competitionAgeLabel}
-            stage="semi-final"
-          />
         </div>
       </ConfettiClearArticle>
     </FlipRevealCard>
@@ -674,11 +658,6 @@ function PersonalBestCard({
             discipline={milestone.discipline}
             tournamentCategoryLabel={milestone.tournamentCategoryLabel}
             competitionAgeLabel={milestone.competitionAgeLabel}
-          />
-          <CategoryMilestoneClaimLink
-            tournamentCategoryLabel={milestone.tournamentCategoryLabel}
-            competitionAgeLabel={milestone.competitionAgeLabel}
-            stage={milestone.stage}
           />
         </div>
       </article>
