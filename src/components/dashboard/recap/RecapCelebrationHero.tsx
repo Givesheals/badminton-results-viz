@@ -124,7 +124,7 @@ function useClearConfettiAroundNote(
     const pieces = () => root.querySelectorAll<HTMLElement>('[data-confetti-piece]')
 
     const apply = () => {
-      const note = root.querySelector<HTMLElement>('[data-matched-best-note]')
+      const note = root.querySelector<HTMLElement>('[data-finish-note]')
       if (!note) return
       const box = note.getBoundingClientRect()
       for (const piece of pieces()) {
@@ -141,7 +141,7 @@ function useClearConfettiAroundNote(
     apply()
     const observer = new ResizeObserver(apply)
     observer.observe(root)
-    const note = root.querySelector('[data-matched-best-note]')
+    const note = root.querySelector('[data-finish-note]')
     if (note) observer.observe(note)
     return () => {
       observer.disconnect()
@@ -206,32 +206,126 @@ function CelebrationIdentityChips({
   )
 }
 
-function MatchedBestScopeLine({ podium }: { podium: PodiumCelebration }) {
+type FinishNoteKind = 'matched_best' | 'personal_best'
+
+const FINISH_NOTE_COPY: Record<FinishNoteKind, { icon: string; title: string; lead: string }> = {
+  matched_best: {
+    icon: '↔️',
+    title: 'Matched your best',
+    lead: "As deep as you've gone at",
+  },
+  personal_best: {
+    icon: '✨',
+    title: 'Personal best',
+    lead: 'Your deepest run at',
+  },
+}
+
+function ordinalOccurrence(n: number): string {
+  const mod100 = n % 100
+  const mod10 = n % 10
+  const suffix =
+    mod100 >= 11 && mod100 <= 13
+      ? 'th'
+      : mod10 === 1
+        ? 'st'
+        : mod10 === 2
+          ? 'nd'
+          : mod10 === 3
+            ? 'rd'
+            : 'th'
+  return `${n}${suffix} occurrence`
+}
+
+function FinishNoteLine({
+  kind,
+  podium,
+  times,
+}: {
+  kind: FinishNoteKind
+  podium: PodiumCelebration
+  times?: number
+}) {
   const scope = formatCategoryAgeLabel(
     podium.tournamentCategoryLabel,
     podium.competitionAgeLabel,
   )
+  const copy = FINISH_NOTE_COPY[kind]
   return (
     <>
-      As deep as you've gone at {scope}{' '}
+      {copy.lead} {scope}{' '}
       <span className="whitespace-nowrap">in {podium.discipline}</span>
+      {kind === 'matched_best' && times != null && (
+        <>
+          {' '}
+          <span className="whitespace-nowrap">({ordinalOccurrence(times)})</span>
+        </>
+      )}
     </>
   )
 }
 
-function MatchedBestNote({ podium }: { podium: PodiumCelebration }) {
+const SPARKLE_ON_SURFACE: Record<PodiumCelebration['kind'], string> = {
+  winner: '#c89612',
+  'runner-up': '#e2b325',
+  'joint-third': '#d4a41a',
+}
+
+function FinishNoteIcon({
+  kind,
+  surface,
+}: {
+  kind: FinishNoteKind
+  surface: PodiumCelebration['kind']
+}) {
+  const copy = FINISH_NOTE_COPY[kind]
+  if (kind !== 'personal_best') {
+    return (
+      <span className="shrink-0 text-base leading-none" aria-hidden>
+        {copy.icon}
+      </span>
+    )
+  }
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" aria-hidden>
+      <path
+        fill={SPARKLE_ON_SURFACE[surface]}
+        d="M12 1.5 14.8 9.2 22.5 12 14.8 14.8 12 22.5 9.2 14.8 1.5 12 9.2 9.2 12 1.5Z"
+      />
+      <path
+        fill={SPARKLE_ON_SURFACE[surface]}
+        d="M18.5 2.2 19.4 4.6 21.8 5.5 19.4 6.4 18.5 8.8 17.6 6.4 15.2 5.5 17.6 4.6 18.5 2.2Z"
+      />
+    </svg>
+  )
+}
+
+function FinishNote({
+  kind,
+  podium,
+  times,
+  compact = false,
+}: {
+  kind: FinishNoteKind
+  podium: PodiumCelebration
+  times?: number
+  compact?: boolean
+}) {
+  const copy = FINISH_NOTE_COPY[kind]
   return (
     <div
-      data-matched-best-note
-      className="mx-auto mt-3 flex w-fit max-w-full items-center gap-2 rounded-lg border border-ink-200 bg-transparent px-3 py-2 text-left"
+      data-finish-note
+      className={
+        compact
+          ? 'mt-2 flex w-full items-center gap-2 rounded-lg border border-ink-200 bg-transparent px-2 py-1.5 text-left'
+          : 'mx-auto mt-3 flex w-fit max-w-full items-center gap-2 rounded-lg border border-ink-200 bg-transparent px-3 py-2 text-left'
+      }
     >
-      <span className="shrink-0 text-base leading-none" aria-hidden>
-        ↔️
-      </span>
+      <FinishNoteIcon kind={kind} surface={podium.kind} />
       <div className="min-w-0">
-        <p className="text-xs font-semibold leading-tight text-ink-900">Matched your best</p>
+        <p className="text-xs font-semibold leading-tight text-ink-900">{copy.title}</p>
         <p className="mt-0.5 text-[11px] leading-tight text-ink-500">
-          <MatchedBestScopeLine podium={podium} />
+          <FinishNoteLine kind={kind} podium={podium} times={times} />
         </p>
       </div>
     </div>
@@ -242,7 +336,7 @@ function CompactCelebrationRow({
   icon,
   title,
   detail,
-  matchedBestPodium,
+  finishNote,
   discipline,
   tournamentCategoryLabel,
   competitionAgeLabel,
@@ -255,7 +349,7 @@ function CompactCelebrationRow({
   icon: string
   title: string
   detail?: string
-  matchedBestPodium?: PodiumCelebration
+  finishNote?: { kind: FinishNoteKind; podium: PodiumCelebration; times?: number }
   discipline?: string
   tournamentCategoryLabel: string
   competitionAgeLabel?: string | null
@@ -292,21 +386,16 @@ function CompactCelebrationRow({
             {detail && (
               <p className="mt-0.5 text-xs leading-snug text-ink-500">{detail}</p>
             )}
-            {matchedBestPodium && (
-              <div className="mt-1 flex items-start gap-1 text-xs leading-snug">
-                <span className="mt-0.5 shrink-0" aria-hidden>
-                  ↔️
-                </span>
-                <span className="min-w-0">
-                  <span className="font-semibold text-ink-800">Matched your best</span>
-                  <span className="block text-ink-500">
-                    <MatchedBestScopeLine podium={matchedBestPodium} />
-                  </span>
-                </span>
-              </div>
-            )}
           </div>
         </div>
+        {finishNote && (
+          <FinishNote
+            compact
+            kind={finishNote.kind}
+            podium={finishNote.podium}
+            times={finishNote.times}
+          />
+        )}
       </article>
     </FlipRevealCard>
   )
@@ -315,10 +404,14 @@ function CompactCelebrationRow({
 function WinnerCard({
   podium,
   matchedBest = false,
+  personalBest = false,
+  times,
   startRevealed,
 }: {
   podium: PodiumCelebration
   matchedBest?: boolean
+  personalBest?: boolean
+  times?: number
   startRevealed?: boolean
 }) {
   const style = getDisciplineStyle(podium.discipline)
@@ -331,7 +424,7 @@ function WinnerCard({
       startRevealed={startRevealed}
     >
       <ConfettiClearArticle
-        active={matchedBest}
+        active={matchedBest || personalBest}
         density="full"
         className={`relative overflow-hidden rounded-2xl border-2 border-shuttle-400/60 border-l-4 bg-gradient-to-br from-shuttle-400/30 via-brand-50 to-court-50 px-4 py-6 shadow-md ${style.borderClass}`}
       >
@@ -349,12 +442,13 @@ function WinnerCard({
             tournamentCategoryLabel={podium.tournamentCategoryLabel}
             competitionAgeLabel={podium.competitionAgeLabel}
           />
-          {podium.subtitle && (
+          {podium.subtitle && !personalBest && !matchedBest && (
             <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
               {podium.subtitle}
             </p>
           )}
-          {matchedBest && <MatchedBestNote podium={podium} />}
+          {personalBest && <FinishNote kind="personal_best" podium={podium} times={times} />}
+          {matchedBest && <FinishNote kind="matched_best" podium={podium} times={times} />}
           <CategoryMilestoneClaimLink
             tournamentCategoryLabel={podium.tournamentCategoryLabel}
             competitionAgeLabel={podium.competitionAgeLabel}
@@ -370,11 +464,15 @@ function RunnerUpCard({
   podium,
   compact,
   matchedBest = false,
+  personalBest = false,
+  times,
   startRevealed,
 }: {
   podium: PodiumCelebration
   compact?: boolean
   matchedBest?: boolean
+  personalBest?: boolean
+  times?: number
   startRevealed?: boolean
 }) {
   if (compact) {
@@ -382,8 +480,14 @@ function RunnerUpCard({
       <CompactCelebrationRow
         icon="🥈"
         title="Runner-up"
-        detail={podiumFlavorText(podium)}
-        matchedBestPodium={matchedBest ? podium : undefined}
+        detail={personalBest || matchedBest ? undefined : podiumFlavorText(podium)}
+        finishNote={
+          personalBest
+            ? { kind: 'personal_best', podium, times }
+            : matchedBest
+              ? { kind: 'matched_best', podium, times }
+              : undefined
+        }
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
         competitionAgeLabel={podium.competitionAgeLabel}
@@ -404,7 +508,7 @@ function RunnerUpCard({
       startRevealed={startRevealed}
     >
       <ConfettiClearArticle
-        active={matchedBest}
+        active={matchedBest || personalBest}
         density="light"
         className="relative overflow-hidden rounded-xl border border-ink-200 bg-gradient-to-br from-slate-100 via-white to-brand-50/40 px-4 py-4 shadow-sm"
       >
@@ -422,10 +526,11 @@ function RunnerUpCard({
             tournamentCategoryLabel={podium.tournamentCategoryLabel}
             competitionAgeLabel={podium.competitionAgeLabel}
           />
-          {podium.subtitle && (
+          {podium.subtitle && !personalBest && !matchedBest && (
             <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
           )}
-          {matchedBest && <MatchedBestNote podium={podium} />}
+          {personalBest && <FinishNote kind="personal_best" podium={podium} times={times} />}
+          {matchedBest && <FinishNote kind="matched_best" podium={podium} times={times} />}
           <CategoryMilestoneClaimLink
             tournamentCategoryLabel={podium.tournamentCategoryLabel}
             competitionAgeLabel={podium.competitionAgeLabel}
@@ -441,11 +546,15 @@ function ThirdPlaceCard({
   podium,
   compact,
   matchedBest = false,
+  personalBest = false,
+  times,
   startRevealed,
 }: {
   podium: PodiumCelebration
   compact?: boolean
   matchedBest?: boolean
+  personalBest?: boolean
+  times?: number
   startRevealed?: boolean
 }) {
   if (compact) {
@@ -453,8 +562,14 @@ function ThirdPlaceCard({
       <CompactCelebrationRow
         icon="🥉"
         title="Third place"
-        detail={podiumFlavorText(podium)}
-        matchedBestPodium={matchedBest ? podium : undefined}
+        detail={personalBest || matchedBest ? undefined : podiumFlavorText(podium)}
+        finishNote={
+          personalBest
+            ? { kind: 'personal_best', podium, times }
+            : matchedBest
+              ? { kind: 'matched_best', podium, times }
+              : undefined
+        }
         discipline={podium.discipline}
         tournamentCategoryLabel={podium.tournamentCategoryLabel}
         competitionAgeLabel={podium.competitionAgeLabel}
@@ -475,7 +590,7 @@ function ThirdPlaceCard({
       startRevealed={startRevealed}
     >
       <ConfettiClearArticle
-        active={matchedBest}
+        active={matchedBest || personalBest}
         density="minimal"
         className="relative overflow-hidden rounded-xl border border-[color:var(--color-level-bronze)]/70 bg-gradient-to-br from-[color:var(--color-level-bronze)]/25 via-white to-brand-50/20 px-4 py-3.5 shadow-sm"
       >
@@ -493,10 +608,11 @@ function ThirdPlaceCard({
             tournamentCategoryLabel={podium.tournamentCategoryLabel}
             competitionAgeLabel={podium.competitionAgeLabel}
           />
-          {podium.subtitle && (
+          {podium.subtitle && !personalBest && !matchedBest && (
             <p className="mt-2 text-xs font-medium text-ink-500">{podium.subtitle}</p>
           )}
-          {matchedBest && <MatchedBestNote podium={podium} />}
+          {personalBest && <FinishNote kind="personal_best" podium={podium} times={times} />}
+          {matchedBest && <FinishNote kind="matched_best" podium={podium} times={times} />}
           <CategoryMilestoneClaimLink
             tournamentCategoryLabel={podium.tournamentCategoryLabel}
             competitionAgeLabel={podium.competitionAgeLabel}
@@ -707,8 +823,41 @@ function isFeatured(
   return featured === kind
 }
 
+type FoldInPodium = PodiumCelebration & { times: number }
+
+/** First-time copy stays on the card data, and is hidden once the personal-best note is shown. */
+const PERSONAL_BEST_FOLD_IN_PREVIEW: FoldInPodium[] = [
+  {
+    kind: 'winner',
+    discipline: 'MD',
+    disciplineLabel: "Men's doubles",
+    tournamentCategoryLabel: 'Gold',
+    competitionAgeLabel: 'Senior',
+    subtitle: 'Your first Senior Gold title',
+    times: 1,
+  },
+  {
+    kind: 'runner-up',
+    discipline: 'WD',
+    disciplineLabel: "Women's doubles",
+    tournamentCategoryLabel: 'Gold',
+    competitionAgeLabel: 'U19',
+    subtitle: 'Your first U19 Gold runner-up finish',
+    times: 1,
+  },
+  {
+    kind: 'joint-third',
+    discipline: 'XD',
+    disciplineLabel: 'Mixed doubles',
+    tournamentCategoryLabel: 'Gold',
+    competitionAgeLabel: 'O45',
+    subtitle: 'Your first O45 Gold third place finish',
+    times: 1,
+  },
+]
+
 /** Repeat-finish copy, the case where a separate matched-best card feels repetitive. */
-const MATCHED_BEST_FOLD_IN_PREVIEW: PodiumCelebration[] = [
+const MATCHED_BEST_FOLD_IN_PREVIEW: FoldInPodium[] = [
   {
     kind: 'winner',
     discipline: 'MD',
@@ -716,6 +865,7 @@ const MATCHED_BEST_FOLD_IN_PREVIEW: PodiumCelebration[] = [
     tournamentCategoryLabel: 'Gold',
     competitionAgeLabel: 'Senior',
     subtitle: 'Your 2nd Senior Gold title',
+    times: 2,
   },
   {
     kind: 'runner-up',
@@ -724,6 +874,7 @@ const MATCHED_BEST_FOLD_IN_PREVIEW: PodiumCelebration[] = [
     tournamentCategoryLabel: 'Gold',
     competitionAgeLabel: 'U19',
     subtitle: 'This is your second time as a U19 Gold WD runner-up',
+    times: 2,
   },
   {
     kind: 'joint-third',
@@ -732,8 +883,51 @@ const MATCHED_BEST_FOLD_IN_PREVIEW: PodiumCelebration[] = [
     tournamentCategoryLabel: 'Gold',
     competitionAgeLabel: 'O45',
     subtitle: 'This is your second time coming third in XD at a O45 Gold',
+    times: 2,
   },
 ]
+
+function PersonalBestFoldInPreview({
+  compact,
+  startRevealed,
+}: {
+  compact: boolean
+  startRevealed?: boolean
+}) {
+  const [winner, runnerUp, third] = PERSONAL_BEST_FOLD_IN_PREVIEW
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-medium text-ink-400">When this finish is a personal best</p>
+      {winner && (
+        <WinnerCard
+          podium={winner}
+          personalBest
+          times={winner.times}
+          startRevealed={startRevealed}
+        />
+      )}
+      {runnerUp && (
+        <RunnerUpCard
+          podium={runnerUp}
+          personalBest
+          times={runnerUp.times}
+          compact={compact}
+          startRevealed={startRevealed}
+        />
+      )}
+      {third && (
+        <ThirdPlaceCard
+          podium={third}
+          personalBest
+          times={third.times}
+          compact={compact}
+          startRevealed={startRevealed}
+        />
+      )}
+    </div>
+  )
+}
 
 function MatchedBestFoldInPreview({
   compact,
@@ -748,12 +942,18 @@ function MatchedBestFoldInPreview({
     <div className="space-y-3">
       <p className="text-xs font-medium text-ink-400">When this finish matches your best</p>
       {winner && (
-        <WinnerCard podium={winner} matchedBest startRevealed={startRevealed} />
+        <WinnerCard
+          podium={winner}
+          matchedBest
+          times={winner.times}
+          startRevealed={startRevealed}
+        />
       )}
       {runnerUp && (
         <RunnerUpCard
           podium={runnerUp}
           matchedBest
+          times={runnerUp.times}
           compact={compact}
           startRevealed={startRevealed}
         />
@@ -762,6 +962,7 @@ function MatchedBestFoldInPreview({
         <ThirdPlaceCard
           podium={third}
           matchedBest
+          times={third.times}
           compact={compact}
           startRevealed={startRevealed}
         />
@@ -962,6 +1163,13 @@ export function RecapCelebrationHero({
             />
           ))}
         </div>
+      )}
+
+      {showMatchedBestFoldIn && features.showPodium && features.showPersonalBests && (
+        <PersonalBestFoldInPreview
+          compact={compactAllCelebrations}
+          startRevealed={startRevealed}
+        />
       )}
 
       {showMatchedBestFoldIn && features.showPodium && features.showPersonalBests && (
