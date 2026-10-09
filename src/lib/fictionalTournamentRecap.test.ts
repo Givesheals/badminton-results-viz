@@ -98,11 +98,24 @@ describe('buildFictionalTournamentRecap', () => {
       'great-form',
       'tough-luck',
     ])
-    expect(recap.recordMilestones.map((milestone) => milestone.kind).sort()).toEqual([
-      'best_win_strength',
-      'best_win_upset',
-      'nemesis_top5',
-      'scalp_top5',
+    expect(recap.recordMilestones.map((milestone) => milestone.title)).toEqual([
+      'New strongest beaten! (2nd all time)',
+      'New biggest upset! (3rd all time)',
+      'Nemesis strikes again!',
+      'A new nemesis!',
+      'Nemesis on the rise!',
+      'Nemesis defeated!',
+      'Dragon slain!',
+      'Dragon slain!',
+      'Dragon slain!',
+      'Nemesis knocked down!',
+      'Nemesis vanquished!',
+      'Still your favourite!',
+      'A new favourite!',
+      'Favourite on the rise!',
+      'Favourite bites back!',
+      'Favourite bites back!',
+      'Favourite no more!',
     ])
   })
 
