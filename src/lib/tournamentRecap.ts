@@ -1674,10 +1674,9 @@ function buildEventSummaries(
   if (wins === 0 && losses > 0) {
     summaries.push({
       id: 'tough-luck',
-      icon: '🌧️',
+      icon: '😔',
       label: 'Tough luck',
-      detail:
-        'Competing when it hurts is how you improve. Keep training and come back stronger.',
+      detail: `No wins from ${losses} ${losses === 1 ? 'match' : 'matches'} at this event. Competing when it hurts is how you improve - keep training and come back stronger.`,
     })
   }
 
