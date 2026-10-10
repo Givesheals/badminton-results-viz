@@ -112,8 +112,6 @@ export function UserMenuDrawer({
             <InertLink>Profile &amp; Results</InertLink>
           </div>
 
-          <hr className="my-6 border-ink-100" />
-
           {!isSubscribed && (
             <button
               type="button"
@@ -121,7 +119,7 @@ export function UserMenuDrawer({
                 onClose()
                 onSignUpPremium()
               }}
-              className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-base font-semibold text-white hover:bg-brand-700"
+              className="mb-6 mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-base font-semibold text-white hover:bg-brand-700"
             >
               Sign up for Premium
               <BetaBadge />
@@ -129,7 +127,7 @@ export function UserMenuDrawer({
           )}
 
           {isPremiumActive && (
-            <div className="mb-6 rounded-xl border border-court-200 bg-court-50 px-4 py-3 text-center text-sm text-court-700">
+            <div className="mb-6 mt-4 rounded-xl border border-court-200 bg-court-50 px-4 py-3 text-center text-sm text-court-700">
               Premium active
             </div>
           )}
@@ -141,7 +139,7 @@ export function UserMenuDrawer({
                 onClose()
                 onManageSubscription()
               }}
-              className="mb-6 w-full text-center text-sm font-medium text-brand-700 hover:text-brand-600"
+              className="mb-6 mt-4 w-full text-center text-sm font-medium text-brand-700 hover:text-brand-600"
             >
               Manage subscription
             </button>
