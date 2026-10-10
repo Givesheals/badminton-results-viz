@@ -22,7 +22,7 @@ export const TOURNAMENT_LISTINGS_BUILD_STAGE_META: Record<
   },
   3: {
     shortLabel: 'Cards',
-    summary: 'Level badge on the left, age under the title',
+    summary: 'Level badge beside the age badge, drive time beside the date',
   },
 }
 
