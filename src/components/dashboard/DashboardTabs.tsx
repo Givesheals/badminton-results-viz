@@ -153,7 +153,7 @@ export function DashboardTabs({ importedAt, panels }: Props) {
 
   return (
     <div>
-      <div className="sticky top-0 z-30 -mx-1 bg-white px-1">
+      <div className="sticky top-0 z-30 bg-[#f2f0f6] px-4 pt-3">
         <div
           role="tablist"
           aria-label="Dashboard sections"
@@ -175,10 +175,10 @@ export function DashboardTabs({ importedAt, panels }: Props) {
                 tabIndex={selected ? 0 : -1}
                 onClick={() => selectTab(tab.id)}
                 onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
-                className={`shrink-0 border-b-2 px-3 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
+                className={`shrink-0 rounded-t-lg border border-b-0 px-4 py-2 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
                   selected
-                    ? 'border-ink-900 text-ink-900'
-                    : 'border-transparent text-brand-700 hover:text-brand-600'
+                    ? 'border-[#e4e2e8] bg-white font-bold text-ink-900 shadow-[0_-2px_6px_rgba(52,58,64,0.08)]'
+                    : 'border-transparent font-semibold text-[#5c348c] hover:bg-white/60'
                 }`}
               >
                 {tab.label}

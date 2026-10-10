@@ -49,10 +49,8 @@ export function Dashboard({ showcaseMode = false }: Props) {
   }
 
   return (
-    <div className="space-y-3">
-      {!showcaseMode && (
-        <PremiumHubHeader playerName={headerStats.playerName ?? ''} allMatches={allMatches} />
-      )}
+    <div>
+      {!showcaseMode && <PremiumHubHeader playerName={headerStats.playerName ?? ''} />}
 
       <DashboardNavigationProvider>
         <OpponentNotesProvider playerName={headerStats.playerName}>
