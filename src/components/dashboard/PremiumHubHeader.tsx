@@ -3,26 +3,13 @@ import { findBePlayersByName } from '../../data/bePlayerDirectory'
 import { usePremium } from '../../context/PremiumContext'
 import { DRAW_PLAYER_PROFILE_LINK_CLASS } from '../notes/DrawPairNames'
 import { BetaBadge } from '../ui/BetaBadge'
-import { LabeledRatingChip } from '../notes/OpponentRatingChips'
-import { latestRatingsByDisciplineFamily } from '../../lib/ratings'
-import type { NormalizedMatch } from '../../types/matchHistory'
 
 type Props = {
   playerName: string
-  allMatches: NormalizedMatch[]
 }
 
-export function PremiumHubHeader({ playerName, allMatches }: Props) {
+export function PremiumHubHeader({ playerName }: Props) {
   const { premium } = usePremium()
-  const ratings = useMemo(
-    () => latestRatingsByDisciplineFamily(allMatches),
-    [allMatches],
-  )
-  const ratingItems = [
-    { key: 'singles', label: 'Singles', value: ratings.singles },
-    { key: 'doubles', label: 'Doubles', value: ratings.doubles },
-    { key: 'mixed', label: 'Mixed', value: ratings.mixed },
-  ].filter((item) => item.value != null)
 
   const directoryMatch = useMemo(() => {
     const matches = findBePlayersByName(playerName)
@@ -39,51 +26,42 @@ export function PremiumHubHeader({ playerName, allMatches }: Props) {
   const profileHref = `https://www.badminfo.com/player?name=${encodeURIComponent(playerName)}`
 
   return (
-    <section id="dashboard-results-header" className="scroll-mt-4">
+    <section
+      id="dashboard-results-header"
+      className="scroll-mt-4 rounded-t-2xl bg-[#f2f0f6] px-4 pt-4"
+    >
       <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
         Player Lab
         <BetaBadge />
       </p>
-      <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-2">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-xl font-bold leading-tight text-ink-900 sm:text-2xl">
-            {title}
-          </h1>
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-none text-ink-600">
-            {beNumber ? <span>BE {beNumber}</span> : null}
-            {beNumber && club ? (
-              <span className="text-ink-300" aria-hidden>
-                ·
-              </span>
-            ) : null}
-            {club ? <span>{club}</span> : null}
-            {beNumber || club ? (
-              <span className="text-ink-300" aria-hidden>
-                ·
-              </span>
-            ) : null}
-            <a
-              href={profileHref}
-              className={DRAW_PLAYER_PROFILE_LINK_CLASS}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Profile & Results
-            </a>
-          </p>
-        </div>
-        {ratingItems.length > 0 ? (
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            {ratingItems.map((item) => (
-              <LabeledRatingChip
-                key={item.key}
-                value={item.value}
-                label={item.label}
-              />
-            ))}
-          </div>
+      <h1 className="mt-1.5 text-[26px] font-bold leading-tight tracking-tight text-[#343a40]">
+        {title}
+      </h1>
+      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-none text-ink-600">
+        {beNumber ? <span>BE {beNumber}</span> : null}
+        {beNumber && club ? (
+          <span className="text-ink-300" aria-hidden>
+            ·
+          </span>
         ) : null}
-      </div>
+        {club ? <span>{club}</span> : null}
+        {beNumber || club ? (
+          <span className="text-ink-300" aria-hidden>
+            ·
+          </span>
+        ) : null}
+        <a
+          href={profileHref}
+          className={DRAW_PLAYER_PROFILE_LINK_CLASS}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Profile & Results
+        </a>
+      </p>
+      <p className="mt-2 text-sm leading-snug text-ink-600">
+        Your tournament results, opponent notes and partner stats - all in one place.
+      </p>
     </section>
   )
 }

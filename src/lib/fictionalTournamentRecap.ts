@@ -554,10 +554,10 @@ export function buildFictionalTournamentRecap(
       },
       {
         id: 'tough-luck',
-        icon: '🌧️',
+        icon: '😔',
         label: 'Tough luck',
         detail:
-          'Competing when it hurts is how you improve. Keep training and come back stronger.',
+          'No wins from 3 matches at this event. Competing when it hurts is how you improve - keep training and come back stronger.',
       },
       {
         id: 'busy-weekend',

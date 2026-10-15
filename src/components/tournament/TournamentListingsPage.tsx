@@ -951,13 +951,7 @@ export function TournamentListingsPage({
               <span>Driving</span>
             </div>
           )}
-          <ul
-            className={
-              showCards
-                ? 'grid grid-cols-[4.75rem_minmax(0,16rem)_auto_minmax(0,1fr)] gap-x-3 divide-y divide-[#ece8f3] bg-white'
-                : 'divide-y divide-[#ece8f3]'
-            }
-          >
+          <ul className="divide-y divide-[#ece8f3] bg-white">
             {rows.map((row) =>
               showCards ? (
                 <TournamentCardRow key={row.id} row={row} onOpen={onOpenTournament} />
@@ -1067,17 +1061,14 @@ function TournamentCardRow({ row, onOpen }: { row: TournamentRow; onOpen: () => 
   const lastWord = words.pop() ?? ''
   const lead = words.join(' ')
   return (
-    <li className="col-span-4 grid grid-cols-subgrid bg-white">
+    <li className="bg-white">
       <button
         type="button"
         onClick={onOpen}
         aria-label={`Open ${text}`}
-        className="col-span-4 grid grid-cols-subgrid items-start px-4 py-3 text-left hover:bg-[#f4f1f8]"
+        className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-[#f4f1f8]"
       >
-        <div className="pt-0.5">
-          <TournamentCategoryChip label={row.level} />
-        </div>
-        <div className="min-w-0">
+        <div className="min-w-0 max-w-[17rem] flex-1">
           <p className="text-[16px] font-semibold leading-snug tracking-tight text-ink-900">
             {lead ? <span>{lead} </span> : null}
             <span className="whitespace-nowrap">
@@ -1094,13 +1085,12 @@ function TournamentCardRow({ row, onOpen }: { row: TournamentRow; onOpen: () => 
               )}
             </span>
           </p>
-          {chips.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-1">
-              {chips.map((chip) => (
-                <CompetitionAgeChip key={chip} label={chip} />
-              ))}
-            </div>
-          )}
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <TournamentCategoryChip label={row.level} />
+            {chips.map((chip) => (
+              <CompetitionAgeChip key={chip} label={chip} />
+            ))}
+          </div>
           {row.entered && (
             <p className="mt-1.5 flex items-center gap-1 text-[13px] leading-snug text-[#1d8a32]">
               <CheckIcon />
@@ -1120,22 +1110,24 @@ function TournamentCardRow({ row, onOpen }: { row: TournamentRow; onOpen: () => 
             </p>
           )}
         </div>
-        <div className="text-left">
-          <p className="text-[14px] leading-tight text-ink-900">
-            {row.dateLines.map((line) => (
-              <span key={line} className="block text-left">
-                {line}
-              </span>
-            ))}
-          </p>
+        <p className="w-[5.25rem] shrink-0 pt-0.5 text-left text-[14px] leading-tight text-ink-900">
+          {row.dateLines.map((line) => (
+            <span key={line} className="block whitespace-nowrap">
+              {line}
+            </span>
+          ))}
+        </p>
+        <p
+          className="flex h-[1.1rem] w-[3.35rem] shrink-0 items-center gap-1 pt-0.5 text-left text-[13px] text-[#4c2a86]"
+        >
           {row.drivingMinutes != null && (
-            <p className="mt-1 flex items-center justify-start gap-1 text-[13px] text-[#4c2a86]">
+            <>
               <CarIcon />
-              <span>{formatDrive(row.drivingMinutes)}</span>
-            </p>
+              <span className="tabular-nums">{formatDrive(row.drivingMinutes)}</span>
+            </>
           )}
-        </div>
-        <span className="justify-self-end self-center text-[#6b6578]" aria-hidden>
+        </p>
+        <span className="ml-auto flex w-5 shrink-0 items-center justify-center self-center text-[#6b6578]" aria-hidden>
           <ChevronRight />
         </span>
       </button>
