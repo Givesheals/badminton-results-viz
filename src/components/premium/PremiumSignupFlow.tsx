@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
-import { useEffect, useId, useRef, useState } from 'react'
-import type { BePlayerRecord } from '../../data/bePlayerDirectory'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { findBePlayerByNumber, type BePlayerRecord } from '../../data/bePlayerDirectory'
 import { BetaBadge } from '../ui/BetaBadge'
 import { Modal } from '../ui/Modal'
 import { legalPageHref, PRIVACY_POLICY_URL } from '../../lib/legalPages'
@@ -22,6 +22,8 @@ type Props = {
   open: boolean
   onClose: () => void
   playerName: string
+  /** B number already saved on the account, when the user has set one. */
+  currentBeNumber?: string | null
   /** Pre-select plan when opened from settings (or elsewhere). */
   initialPlan?: PremiumPlan
   /**
@@ -42,6 +44,7 @@ export function PremiumSignupFlow({
   open,
   onClose,
   playerName,
+  currentBeNumber = null,
   initialPlan = 'yearly',
   onSubscribed,
 }: Props) {
@@ -52,20 +55,21 @@ export function PremiumSignupFlow({
   const [step, setStep] = useState<Step>('value')
   const [plan, setPlan] = useState<PremiumPlan>(initialPlan)
   const [selectedPlayer, setSelectedPlayer] = useState<BePlayerRecord | null>(null)
-  const [receiptEmail, setReceiptEmail] = useState('')
   const [playerError, setPlayerError] = useState<string | null>(null)
-  const [emailError, setEmailError] = useState<string | null>(null)
   const [agreedTerms, setAgreedTerms] = useState(false)
   const [agreedImmediateStart, setAgreedImmediateStart] = useState(false)
+
+  const clearSelectedPlayer = useCallback(() => {
+    setSelectedPlayer(null)
+    setPlayerError(null)
+  }, [])
 
   useEffect(() => {
     if (!open) return
     setStep('value')
     setPlan(initialPlan)
     setSelectedPlayer(null)
-    setReceiptEmail('')
     setPlayerError(null)
-    setEmailError(null)
     setAgreedTerms(false)
     setAgreedImmediateStart(false)
   }, [open, initialPlan])
@@ -85,40 +89,23 @@ export function PremiumSignupFlow({
 
   if (!open) return null
 
-  function validateDetails(): boolean {
-    let valid = true
-    setPlayerError(null)
-    setEmailError(null)
-
-    if (!selectedPlayer) {
-      setPlayerError('Search for and select a BadmInfo player profile.')
-      valid = false
+  function selectPlayer(player: BePlayerRecord) {
+    setSelectedPlayer(player)
+    const check = checkBeNumber(player.beNumber)
+    if (check.status === 'taken_by_other') {
+      setPlayerError(
+        'This player already has an active premium subscription. Contact support if you believe this is wrong.',
+      )
+    } else if (check.status === 'owned_by_you') {
+      setPlayerError('You already have premium for this player. Use Manage subscription in the menu.')
     } else {
-      const check = checkBeNumber(selectedPlayer.beNumber)
-      if (check.status === 'taken_by_other') {
-        setPlayerError(
-          'This player already has an active premium subscription. Contact support if you believe this is wrong.',
-        )
-        valid = false
-      } else if (check.status === 'owned_by_you') {
-        setPlayerError('You already have premium for this player. Use Manage subscription in the menu.')
-        valid = false
-      }
+      setPlayerError(null)
     }
-
-    const email = receiptEmail.trim()
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError('Enter a valid email address for receipts.')
-      valid = false
-    }
-
-    return valid
   }
 
   function handleSubscribe() {
-    if (!selectedPlayer) return
-    const resolvedReceiptEmail =
-      receiptEmail.trim() || selectedPlayer.maskedEmail
+    if (!selectedPlayer || playerError) return
+    const resolvedReceiptEmail = selectedPlayer.maskedEmail
     subscribe({
       playerName: selectedPlayer.name,
       beNumber: selectedPlayer.beNumber,
@@ -140,10 +127,11 @@ export function PremiumSignupFlow({
   }
 
   const canPay = agreedTerms && agreedImmediateStart
+  const canContinue = selectedPlayer != null && playerError == null
 
   const stepTitle: Record<Step, string> = {
     value: 'Premium (Beta)',
-    details: 'Your details',
+    details: 'Find your player',
     payment: 'Legal agreement',
     success: 'Welcome to Premium',
   }
@@ -226,6 +214,50 @@ export function PremiumSignupFlow({
             for information about how we use your personal data.
           </p>
         </div>
+      </Modal>
+    )
+  }
+
+  if (step === 'details') {
+    return (
+      <Modal
+        open
+        onClose={onClose}
+        title={stepTitle.details}
+        showHeaderClose
+        frame="plain"
+        layer="top"
+        lockHeight
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setStep('value')}
+              className="rounded-sm border border-ink-200 bg-white px-4 py-2 text-sm font-medium text-ink-900 transition hover:bg-ink-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              disabled={!canContinue}
+              onClick={() => setStep('payment')}
+              className="rounded-sm bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Continue
+            </button>
+          </>
+        }
+      >
+        <BePlayerSearch
+          defaultQuery={
+            (currentBeNumber ? findBePlayerByNumber(currentBeNumber)?.name : null) ?? playerName
+          }
+          currentBeNumber={currentBeNumber}
+          selected={selectedPlayer}
+          onSelect={selectPlayer}
+          onClear={clearSelectedPlayer}
+          error={playerError}
+        />
       </Modal>
     )
   }
@@ -345,46 +377,6 @@ export function PremiumSignupFlow({
             </div>
           )}
 
-          {step === 'details' && (
-            <div className="space-y-4">
-              <BePlayerSearch
-                defaultQuery={playerName}
-                selected={selectedPlayer}
-                onSelect={(player) => {
-                  setSelectedPlayer(player)
-                  setPlayerError(null)
-                }}
-                onClear={() => {
-                  setSelectedPlayer(null)
-                  setPlayerError(null)
-                }}
-                error={playerError}
-              />
-
-              <label className="block text-sm font-medium text-ink-900">
-                Receipt email{' '}
-                <span className="font-normal text-ink-500">(optional)</span>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  value={receiptEmail}
-                  onChange={(event) => {
-                    setReceiptEmail(event.target.value)
-                    setEmailError(null)
-                  }}
-                  className="mt-1 w-full rounded-lg border border-ink-200 px-3 py-2 text-ink-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
-                  placeholder="you@example.com"
-                />
-              </label>
-              <p className="text-xs text-ink-500">
-                {selectedPlayer
-                  ? `Leave blank to send receipts to your Badminton England email (${selectedPlayer.maskedEmail}).`
-                  : 'Leave blank to send receipts to the email on your Badminton England record.'}
-              </p>
-              {emailError && <p className="text-sm text-loss-600">{emailError}</p>}
-            </div>
-          )}
-
           {step === 'success' && (
             <div className="space-y-4 text-sm text-ink-700">
               <p className="font-medium text-court-700">
@@ -417,26 +409,6 @@ export function PremiumSignupFlow({
               <button
                 type="button"
                 onClick={() => setStep('details')}
-                className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-              >
-                Continue
-              </button>
-            </>
-          )}
-          {step === 'details' && (
-            <>
-              <button
-                type="button"
-                onClick={() => setStep('value')}
-                className="rounded-lg border border-ink-100 bg-white px-3 py-1.5 text-sm text-ink-700 hover:bg-ink-50"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (validateDetails()) setStep('payment')
-                }}
                 className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
               >
                 Continue

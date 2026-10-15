@@ -118,6 +118,13 @@ export function searchBePlayers(query: string): BePlayerRecord[] {
   }).slice(0, 8)
 }
 
+/**
+ * Prototype stand-in for the B number already saved on the BadmInfo account
+ * before Premium signup. Simon Parker, so the search can show why that card
+ * is highlighted among other people with the same name.
+ */
+export const DEMO_ACCOUNT_BE_NUMBER = '1206628'
+
 export function findBePlayerByNumber(beNumber: string): BePlayerRecord | undefined {
   return BE_PLAYER_DIRECTORY.find((player) => player.beNumber === beNumber.trim())
 }

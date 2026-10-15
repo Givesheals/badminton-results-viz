@@ -8,6 +8,7 @@ import {
   type PremiumPlan,
 } from '../../lib/premiumPricing'
 import type { StoredPremiumState } from '../../lib/premiumStorage'
+import { DEMO_ACCOUNT_BE_NUMBER } from '../../data/bePlayerDirectory'
 import { PremiumSignupFlow } from './PremiumSignupFlow'
 import { PremiumWelcomeModal } from './PremiumWelcomeModal'
 import { UserMenuDrawer } from './UserMenuDrawer'
@@ -16,7 +17,9 @@ import { NotificationsPreview } from '../notifications/NotificationsPreview'
 import { TournamentPagePreview } from '../tournament/TournamentPagePreview'
 import { TournamentListingsPage } from '../tournament/TournamentListingsPage'
 import { DesignAssetsPage } from '../design/DesignAssetsPage'
+import { playerLabHeaderPreviewHref } from '../design/PlayerLabHeaderOptionsPage'
 import { LiveFeedPage } from '../live-feed/LiveFeedPage'
+import { BeRankingAutomationPage } from '../ranking/BeRankingAutomationPage'
 import { getPlayerInitials } from '../../lib/getPlayerInitials'
 
 type Props = {
@@ -35,6 +38,7 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
   const [tournamentPreviewOpen, setTournamentPreviewOpen] = useState(false)
   const [tournamentListingsOpen, setTournamentListingsOpen] = useState(false)
   const [liveFeedOpen, setLiveFeedOpen] = useState(false)
+  const [beRankingOpen, setBeRankingOpen] = useState(false)
   const [designAssetsOpen, setDesignAssetsOpen] = useState(false)
   const [welcomeSubscription, setWelcomeSubscription] = useState<StoredPremiumState | null>(null)
 
@@ -57,6 +61,7 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
     setTournamentPreviewOpen(false)
     setTournamentListingsOpen(false)
     setLiveFeedOpen(false)
+    setBeRankingOpen(false)
     setDesignAssetsOpen(false)
     // Wait for the full-screen pages to unmount, then bring the Player Lab header into view.
     window.setTimeout(() => {
@@ -85,27 +90,43 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
         onManageSubscription={() => setManageOpen(true)}
         onOpenUserSettings={() => {
           setTournamentListingsOpen(false)
+          setBeRankingOpen(false)
           setSettingsOpen(true)
         }}
         onOpenNotifications={() => {
           setTournamentListingsOpen(false)
+          setBeRankingOpen(false)
           setNotificationsOpen(true)
         }}
         onOpenTournamentPreview={() => {
           setTournamentListingsOpen(false)
+          setBeRankingOpen(false)
           setTournamentPreviewOpen(true)
         }}
-        onOpenTournamentListings={() => setTournamentListingsOpen(true)}
+        onOpenTournamentListings={() => {
+          setBeRankingOpen(false)
+          setTournamentListingsOpen(true)
+        }}
         onOpenLiveFeed={() => {
           setTournamentListingsOpen(false)
+          setBeRankingOpen(false)
           setLiveFeedOpen(true)
+        }}
+        onOpenBeRanking={() => {
+          setTournamentListingsOpen(false)
+          setBeRankingOpen(true)
         }}
         onOpenDesignAssets={() => {
           setTournamentListingsOpen(false)
+          setBeRankingOpen(false)
           setDesignAssetsOpen(true)
+        }}
+        onOpenHeaderOptions={() => {
+          window.location.assign(playerLabHeaderPreviewHref())
         }}
         onOpenAddNewData={() => {
           setTournamentListingsOpen(false)
+          setBeRankingOpen(false)
           onOpenAddNewData()
         }}
       />
@@ -143,12 +164,15 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
 
       <LiveFeedPage open={liveFeedOpen} onClose={() => setLiveFeedOpen(false)} />
 
+      <BeRankingAutomationPage open={beRankingOpen} onClose={() => setBeRankingOpen(false)} />
+
       <DesignAssetsPage open={designAssetsOpen} onClose={() => setDesignAssetsOpen(false)} />
 
       <PremiumSignupFlow
         open={signupOpen}
         onClose={() => setSignupOpen(false)}
         playerName={playerName}
+        currentBeNumber={DEMO_ACCOUNT_BE_NUMBER}
         initialPlan={signupPlan}
         onSubscribed={showWelcome}
       />

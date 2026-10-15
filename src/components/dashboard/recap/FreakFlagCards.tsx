@@ -3,6 +3,7 @@ import type {
   FreakFlagMatchDetail,
 } from '../../../lib/tournamentRecap'
 import { DisciplineChip } from '../../discipline/DisciplineChip'
+import { BalancedHalfGrid } from './BalancedHalfGrid'
 
 type Props = {
   flags: FreakFlag[]
@@ -99,11 +100,11 @@ export function FreakFlagCards({ flags }: Props) {
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-medium text-ink-900">Curiosities</h4>
-      <div className="grid gap-3">
+      <BalancedHalfGrid>
         {flags.map((flag) => (
           <FreakFlagCard key={flag.id} flag={flag} />
         ))}
-      </div>
+      </BalancedHalfGrid>
     </div>
   )
 }

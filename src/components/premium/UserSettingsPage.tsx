@@ -11,6 +11,7 @@ import {
   type PremiumPlan,
 } from '../../lib/premiumPricing'
 import type { StoredPremiumState } from '../../lib/premiumStorage'
+import { legalPageHref } from '../../lib/legalPages'
 import { BetaBadge } from '../ui/BetaBadge'
 
 type Props = {
@@ -181,6 +182,22 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
       {/* Regular, not medium: Segoe UI on Windows draws 500 as semibold, so values matched the labels. */}
       <dd className="text-sm font-normal text-ink-900">{children}</dd>
     </div>
+  )
+}
+
+/** Quiet legal link shared by every Premium settings layout. */
+function PremiumTermsFooter() {
+  return (
+    <p className="mt-6 border-t border-ink-100 pt-3 text-xs text-ink-500">
+      <a
+        href={legalPageHref('premium-terms')}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2 hover:text-ink-700"
+      >
+        BadmInfo Premium Terms
+      </a>
+    </p>
   )
 }
 
@@ -599,6 +616,8 @@ function SubscribedPremiumTab({
           </p>
         </div>
       ) : null}
+
+      <PremiumTermsFooter />
     </div>
   )
 }
@@ -611,101 +630,105 @@ function UnsubscribedPremiumTab({
   const [plan, setPlan] = useState<PremiumPlan>('yearly')
 
   return (
-    <div className="space-y-1">
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-base font-bold text-ink-900">Premium</h3>
-        <BetaBadge />
-      </div>
-      <p className="text-sm text-ink-500">Get more from BadmInfo</p>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-ink-100 py-3">
-        <span className="text-sm font-semibold text-ink-900">Status</span>
-        <StatusPill label="Inactive" tone="idle" />
-      </div>
-
-      {/* CTA above the fold — primary action before benefits or scrolling */}
-      <div className="border-t border-ink-100 pt-5">
-        <fieldset>
-          <legend className="sr-only">Choose a plan</legend>
-          <div className="space-y-2">
-            <label
-              className={`flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 ${
-                plan === 'yearly' ? 'border-brand-500 bg-brand-50' : 'border-ink-100 bg-white'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="premium-settings-plan"
-                  checked={plan === 'yearly'}
-                  onChange={() => setPlan('yearly')}
-                  className="text-brand-600"
-                />
-                <div>
-                  <p className="font-medium text-ink-900">Yearly</p>
-                  <p className="text-xs text-court-700">
-                    Save {formatPriceGbp(PREMIUM_YEARLY_SAVINGS_GBP)}
-                  </p>
-                </div>
-              </div>
-              <span className="font-semibold text-ink-900">
-                {formatPriceGbp(PREMIUM_YEARLY_PRICE_GBP)}/yr
-              </span>
-            </label>
-
-            <label
-              className={`flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 ${
-                plan === 'monthly' ? 'border-brand-500 bg-brand-50' : 'border-ink-100 bg-white'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="premium-settings-plan"
-                  checked={plan === 'monthly'}
-                  onChange={() => setPlan('monthly')}
-                  className="text-brand-600"
-                />
-                <p className="font-medium text-ink-900">Monthly</p>
-              </div>
-              <span className="font-semibold text-ink-900">
-                {formatPriceGbp(PREMIUM_MONTHLY_PRICE_GBP)}/mo
-              </span>
-            </label>
-          </div>
-        </fieldset>
-
-        <p className="mt-3 text-xs text-ink-500">
-          Cancel anytime. Your Premium access will continue until the end of your current paid
-          period.
-        </p>
-
-        <button
-          type="button"
-          onClick={() => onSignUpPremium(plan)}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-brand-700"
-        >
-          Subscribe to Premium
+    <div>
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-base font-bold text-ink-900">Premium</h3>
           <BetaBadge />
-        </button>
+        </div>
+        <p className="text-sm text-ink-500">Get more from BadmInfo</p>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-ink-100 py-3">
+          <span className="text-sm font-semibold text-ink-900">Status</span>
+          <StatusPill label="Inactive" tone="idle" />
+        </div>
+
+        {/* CTA above the fold — primary action before benefits or scrolling */}
+        <div className="border-t border-ink-100 pt-5">
+          <fieldset>
+            <legend className="sr-only">Choose a plan</legend>
+            <div className="space-y-2">
+              <label
+                className={`flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 ${
+                  plan === 'yearly' ? 'border-brand-500 bg-brand-50' : 'border-ink-100 bg-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="premium-settings-plan"
+                    checked={plan === 'yearly'}
+                    onChange={() => setPlan('yearly')}
+                    className="text-brand-600"
+                  />
+                  <div>
+                    <p className="font-medium text-ink-900">Yearly</p>
+                    <p className="text-xs text-court-700">
+                      Save {formatPriceGbp(PREMIUM_YEARLY_SAVINGS_GBP)}
+                    </p>
+                  </div>
+                </div>
+                <span className="font-semibold text-ink-900">
+                  {formatPriceGbp(PREMIUM_YEARLY_PRICE_GBP)}/yr
+                </span>
+              </label>
+
+              <label
+                className={`flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 ${
+                  plan === 'monthly' ? 'border-brand-500 bg-brand-50' : 'border-ink-100 bg-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="premium-settings-plan"
+                    checked={plan === 'monthly'}
+                    onChange={() => setPlan('monthly')}
+                    className="text-brand-600"
+                  />
+                  <p className="font-medium text-ink-900">Monthly</p>
+                </div>
+                <span className="font-semibold text-ink-900">
+                  {formatPriceGbp(PREMIUM_MONTHLY_PRICE_GBP)}/mo
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          <p className="mt-3 text-xs text-ink-500">
+            Cancel anytime. Your Premium access will continue until the end of your current paid
+            period.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => onSignUpPremium(plan)}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-brand-700"
+          >
+            Subscribe to Premium
+            <BetaBadge />
+          </button>
+        </div>
+
+        <div className="mt-6 border-t border-ink-100 pt-5">
+          <h4 className="text-sm font-bold text-ink-900">What you get</h4>
+          <ul className="mt-3 space-y-3.5">
+            {PREMIUM_PITCH_BENEFITS.map((benefit) => (
+              <li key={benefit.title} className="flex gap-2.5">
+                <span className="mt-0.5 shrink-0 font-bold text-brand-600" aria-hidden>
+                  ✓
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-ink-900">{benefit.title}</p>
+                  <p className="mt-0.5 text-sm text-ink-600">{benefit.value}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
-      <div className="mt-6 border-t border-ink-100 pt-5">
-        <h4 className="text-sm font-bold text-ink-900">What you get</h4>
-        <ul className="mt-3 space-y-3.5">
-          {PREMIUM_PITCH_BENEFITS.map((benefit) => (
-            <li key={benefit.title} className="flex gap-2.5">
-              <span className="mt-0.5 shrink-0 font-bold text-brand-600" aria-hidden>
-                ✓
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-ink-900">{benefit.title}</p>
-                <p className="mt-0.5 text-sm text-ink-600">{benefit.value}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <PremiumTermsFooter />
     </div>
   )
 }

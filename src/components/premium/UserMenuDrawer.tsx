@@ -16,7 +16,9 @@ type Props = {
   onOpenTournamentPreview: () => void
   onOpenTournamentListings: () => void
   onOpenLiveFeed: () => void
+  onOpenBeRanking: () => void
   onOpenDesignAssets: () => void
+  onOpenHeaderOptions: () => void
   onOpenAddNewData: () => void
 }
 
@@ -47,7 +49,9 @@ export function UserMenuDrawer({
   onOpenTournamentPreview,
   onOpenTournamentListings,
   onOpenLiveFeed,
+  onOpenBeRanking,
   onOpenDesignAssets,
+  onOpenHeaderOptions,
   onOpenAddNewData,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -244,10 +248,34 @@ export function UserMenuDrawer({
                   className="text-left text-base font-medium text-[#5C3992] hover:text-[#4A2D78]"
                   onClick={() => {
                     onClose()
+                    onOpenBeRanking()
+                  }}
+                >
+                  BE Ranking Automation
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="text-left text-base font-medium text-[#5C3992] hover:text-[#4A2D78]"
+                  onClick={() => {
+                    onClose()
                     onOpenDesignAssets()
                   }}
                 >
                   Design Assets
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="text-left text-base font-medium text-[#5C3992] hover:text-[#4A2D78]"
+                  onClick={() => {
+                    onClose()
+                    onOpenHeaderOptions()
+                  }}
+                >
+                  Player Lab header options
                 </button>
               </li>
               <li>
