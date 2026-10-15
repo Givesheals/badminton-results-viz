@@ -15,13 +15,20 @@ import {
   type TournamentRecapBuildStage,
 } from '../../lib/tournamentRecapBuildStage'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
-import { RecapCelebrationHero } from './recap/RecapCelebrationHero'
+import {
+  celebrationBandCounts,
+  eventSummaryBandClass,
+  eventSummaryCardClass,
+  RecapCelebrationHero,
+  shouldStackResultPair,
+} from './recap/RecapCelebrationHero'
 import { DisciplineRecapBlock } from './recap/DisciplineRecapBlock'
 import { RecapSummaryCard } from './recap/RecapSummaryCard'
 import { FreakFlagCards } from './recap/FreakFlagCards'
 import { RecapEmojiInsightSection } from './recap/RecapEmojiInsightSection'
 import { RecapRecordMilestoneCards } from './recap/RecapRecordMilestoneCards'
 import { RecapTournamentNav } from './recap/RecapTournamentNav'
+import { DisciplineGrid } from './recap/DisciplineGrid'
 import { useTicketBuildPicker } from '../../hooks/useTicketBuildPicker'
 
 type Props = {
@@ -41,11 +48,46 @@ type Props = {
    * Off for premium showcase recordings so a real weekend is used.
    */
   includeFictionalFeatureRecap?: boolean
+  /**
+   * Plain white header: sentence-case title, weekend date, green win box.
+   * Used by the Player Lab header preview so every option matches the live recap top.
+   */
+  plainHeader?: boolean
 }
+
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
 function formatDateRange(from: string, to: string): string {
   if (from === to || to === '—') return formatDisplayDate(from)
   return `${formatDisplayDate(from)} → ${formatDisplayDate(to)}`
+}
+
+function formatWeekendDate(from: string, to: string): string {
+  const start = parseIsoDate(from)
+  const end = to === '—' ? null : parseIsoDate(to)
+  if (start == null) return formatDisplayDate(from)
+  const day = (value: number) => String(value).padStart(2, '0')
+  if (
+    end == null ||
+    (start.year === end.year && start.month === end.month && start.day === end.day)
+  ) {
+    return `${day(start.day)} ${MONTH_SHORT[start.month]} ${start.year}`
+  }
+  if (start.year === end.year && start.month === end.month) {
+    return `${day(start.day)} & ${day(end.day)} ${MONTH_SHORT[start.month]} ${start.year}`
+  }
+  if (start.year === end.year) {
+    return `${day(start.day)} ${MONTH_SHORT[start.month]} & ${day(end.day)} ${MONTH_SHORT[end.month]} ${start.year}`
+  }
+  return `${day(start.day)} ${MONTH_SHORT[start.month]} ${start.year} & ${day(end.day)} ${MONTH_SHORT[end.month]} ${end.year}`
+}
+
+function parseIsoDate(iso: string): { day: number; month: number; year: number } | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  if (match == null) return null
+  const month = Number(match[2]) - 1
+  if (month < 0 || month > 11) return null
+  return { year: Number(match[1]), month, day: Number(match[3]) }
 }
 
 export function TournamentRecapSection({
@@ -54,6 +96,7 @@ export function TournamentRecapSection({
   buildStage: buildStageProp = null,
   showBuildStagePicker = true,
   includeFictionalFeatureRecap = true,
+  plainHeader = false,
 }: Props) {
   const recaps = useMemo(() => {
     const computed = computeTournamentRecaps(allMatches).recaps
@@ -64,6 +107,10 @@ export function TournamentRecapSection({
   const [index, setIndex] = useState(() =>
     Math.min(Math.max(0, initialIndex), Math.max(0, recaps.length - 1)),
   )
+  const [disciplineOrderState, setDisciplineOrderState] = useState<{
+    key: string
+    order: string[]
+  }>({ key: '', order: [] })
   const {
     stage: localBuildStage,
     setStage: setLocalBuildStage,
@@ -105,9 +152,38 @@ export function TournamentRecapSection({
   }
 
   const recap = recaps[index]!
+  const disciplineOrder =
+    disciplineOrderState.key === recap.key ? disciplineOrderState.order : []
+  if (disciplineOrderState.key !== recap.key) {
+    setDisciplineOrderState({ key: recap.key, order: [] })
+  }
+  const handleDisciplineOrder = (order: string[]) => {
+    setDisciplineOrderState((prev) => {
+      if (prev.key === recap.key && prev.order.join('|') === order.join('|')) return prev
+      return { key: recap.key, order }
+    })
+  }
   const celebrationPresentation = fictionalCelebrationPresentation(recap.key)
   const isFictionalFeatureRecap = celebrationPresentation != null
   const features = featuresForStage
+  const summaryCount = features.showEventSummaries ? recap.eventSummaries.length : 0
+  const { bigCount, smallCount } = celebrationBandCounts(recap.celebrations, features, {
+    expandAllCelebrations: celebrationPresentation === 'expanded',
+    compactAllCelebrations: celebrationPresentation === 'compact',
+  })
+  const hasResultCelebration = bigCount + smallCount > 0
+  const singleDiscipline = recap.disciplines.length === 1
+  const stackResultPair = shouldStackResultPair(
+    recap.disciplines.length,
+    summaryCount,
+    bigCount,
+    smallCount,
+  )
+  const summaryBandClass = eventSummaryBandClass(
+    summaryCount,
+    hasResultCelebration,
+    singleDiscipline,
+  )
   const positionLabel = `${index + 1} of ${recaps.length}`
   const canGoOlder = index < recaps.length - 1
   const canGoNewer = index > 0
@@ -177,52 +253,87 @@ export function TournamentRecapSection({
       )}
 
       <section id="tournament-recap" className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
-        <div className="bg-gradient-to-br from-brand-50 via-white to-court-50/40 px-4 py-4 sm:px-5 sm:py-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
-              Tournament recap
-            </p>
-          </div>
-
-          {recaps.length > 1 && (
-            <div className="mt-3 shrink-0">
-              <RecapTournamentNav {...navProps} />
+        {plainHeader ? (
+          <div>
+            <div className="bg-[#f2f0f6] px-4 py-3 sm:px-5">
+              <h3 className="text-base font-semibold text-[#343a40]">Tournament recap</h3>
             </div>
-          )}
+            <div className="px-4 py-4 sm:px-5 sm:py-5">
+            {recaps.length > 1 && (
+              <div>
+                <RecapTournamentNav {...navProps} hasUnviewedOlder={false} />
+              </div>
+            )}
 
-          <div className={recaps.length > 1 ? 'mt-3' : 'mt-2'}>
-            <div className="flex items-start gap-3">
-              <h3 className="min-w-0 flex-1 text-xl font-semibold text-ink-900">
-                {recap.competitionName}
-              </h3>
-              {features.showWinPercent &&
-                recap.weekendWinPercent != null &&
-                (recap.weekendWinPercent === 100 ? (
-                  <div className="perfect-record-border">
-                    <div className="perfect-record-inner px-3 py-2">
-                      <p className="text-2xl font-bold tabular-nums text-court-800">
+            <div className="mt-4 flex items-center gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-xl font-semibold text-ink-900">{recap.competitionName}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <TournamentCategoryChip label={recap.tournamentCategoryLabel} />
+                  <span className="text-sm text-ink-500">
+                    {formatWeekendDate(recap.dateFrom, recap.dateTo)}
+                  </span>
+                </div>
+              </div>
+              {features.showWinPercent && recap.weekendWinPercent != null && (
+                <div className="shrink-0 rounded-xl bg-court-50 px-3.5 py-2 text-center">
+                  <p className="text-2xl font-bold tabular-nums leading-none text-court-600">
+                    {formatWholePercent(recap.weekendWinPercent)}
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-court-500">match wins</p>
+                </div>
+              )}
+            </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gradient-to-br from-brand-50 via-white to-court-50/40 px-4 py-4 sm:px-5 sm:py-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+                Tournament recap
+              </p>
+            </div>
+
+            {recaps.length > 1 && (
+              <div className="mt-3 shrink-0">
+                <RecapTournamentNav {...navProps} />
+              </div>
+            )}
+
+            <div className={recaps.length > 1 ? 'mt-3' : 'mt-2'}>
+              <div className="flex items-start gap-3">
+                <h3 className="min-w-0 flex-1 text-xl font-semibold text-ink-900">
+                  {recap.competitionName}
+                </h3>
+                {features.showWinPercent &&
+                  recap.weekendWinPercent != null &&
+                  (recap.weekendWinPercent === 100 ? (
+                    <div className="perfect-record-border">
+                      <div className="perfect-record-inner px-3 py-2">
+                        <p className="text-2xl font-bold tabular-nums text-court-800">
+                          {formatWholePercent(recap.weekendWinPercent)}
+                        </p>
+                        <p className="text-xs font-medium text-court-700">wins</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="shrink-0 rounded-xl bg-white/80 px-3 py-2 text-center shadow-sm ring-1 ring-ink-100">
+                      <p className="text-2xl font-semibold tabular-nums text-court-700">
                         {formatWholePercent(recap.weekendWinPercent)}
                       </p>
-                      <p className="text-xs font-medium text-court-700">wins</p>
+                      <p className="text-xs text-ink-500">match wins</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="shrink-0 rounded-xl bg-white/80 px-3 py-2 text-center shadow-sm ring-1 ring-ink-100">
-                    <p className="text-2xl font-semibold tabular-nums text-court-700">
-                      {formatWholePercent(recap.weekendWinPercent)}
-                    </p>
-                    <p className="text-xs text-ink-500">match wins</p>
-                  </div>
-                ))}
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <TournamentCategoryChip label={recap.tournamentCategoryLabel} />
-              <span className="text-sm text-ink-600">
-                {formatDateRange(recap.dateFrom, recap.dateTo)}
-              </span>
+                  ))}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <TournamentCategoryChip label={recap.tournamentCategoryLabel} />
+                <span className="text-sm text-ink-600">
+                  {formatDateRange(recap.dateFrom, recap.dateTo)}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {showBody && (
           <div className="space-y-4 border-t border-ink-100 px-4 py-4 sm:px-5 sm:py-5">
@@ -233,13 +344,18 @@ export function TournamentRecapSection({
               startRevealed={buildStageProp != null || isFictionalFeatureRecap}
               expandAllCelebrations={celebrationPresentation === 'expanded'}
               compactAllCelebrations={celebrationPresentation === 'compact'}
+              disciplineOrder={disciplineOrder}
+              alignLeft={singleDiscipline}
+              stackResultPair={stackResultPair}
               showMatchedBestFoldIn={isFictionalFeatureRecap}
             />
 
             {features.showEventSummaries && recap.eventSummaries.length > 0 && (
-              <div className="space-y-2">
+              <div className={summaryBandClass}>
                 {recap.eventSummaries.map((card) => (
-                  <RecapSummaryCard key={card.id} card={card} />
+                  <div key={card.id} className={eventSummaryCardClass}>
+                    <RecapSummaryCard card={card} />
+                  </div>
                 ))}
               </div>
             )}
@@ -247,7 +363,7 @@ export function TournamentRecapSection({
             {features.showDisciplines && recap.disciplines.length > 0 && (
               <div className="space-y-3">
                 <h4 className="text-sm font-medium text-ink-900">By discipline</h4>
-                <div className="space-y-3">
+                <DisciplineGrid onDisplayOrder={handleDisciplineOrder}>
                   {recap.disciplines.map((d) => (
                     <DisciplineRecapBlock
                       key={disciplineRecapKey(d)}
@@ -257,7 +373,7 @@ export function TournamentRecapSection({
                       showNotes={features.showNotes}
                     />
                   ))}
-                </div>
+                </DisciplineGrid>
               </div>
             )}
 

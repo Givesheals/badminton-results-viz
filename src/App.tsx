@@ -18,6 +18,10 @@ import { normalizeDataset } from './lib/matchHistory'
 import { getShowcaseRecordSlideId, isShowcaseMode } from './lib/showcaseMode'
 import { getLegalPageId } from './lib/legalPages'
 import { PremiumTermsPage } from './components/legal/PremiumTermsPage'
+import {
+  isPlayerLabHeaderPreview,
+  PlayerLabHeaderOptionsPage,
+} from './components/design/PlayerLabHeaderOptionsPage'
 
 function AppContent() {
   const { dataset, loadParsed, loadFromUrl, isLoading, error } = useDataset()
@@ -102,6 +106,10 @@ export default function App() {
   const legalPageId = getLegalPageId()
   if (legalPageId === 'premium-terms') {
     return <PremiumTermsPage />
+  }
+
+  if (isPlayerLabHeaderPreview()) {
+    return <PlayerLabHeaderOptionsPage />
   }
 
   return (

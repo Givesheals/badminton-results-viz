@@ -7,6 +7,7 @@ import type {
   SeniorCountyDebutCelebration,
 } from '../../../lib/tournamentRecap'
 import { featuredCelebrationHeroKind } from '../../../lib/tournamentRecap'
+import { sortByDisciplineOrder } from '../../../lib/halfGridPlacement'
 import {
   fullTournamentRecapBuildFeatures,
   type TournamentRecapBuildFeatures,
@@ -39,6 +40,15 @@ type Props = {
    * note folded in, so both treatments can be compared.
    */
   showMatchedBestFoldIn?: boolean
+  /** Left-to-right discipline codes from the event cards below. */
+  disciplineOrder?: string[]
+  /** One event only: keep result cards and callouts on the left with that event. */
+  alignLeft?: boolean
+  /**
+   * Two results, two callouts, and two events: stack the results so they do not
+   * line up as columns with the events underneath.
+   */
+  stackResultPair?: boolean
 }
 
 const CONFETTI_COLORS = [
@@ -170,8 +180,141 @@ function ConfettiClearArticle({
   )
 }
 
-function podiumGridClass(count: number): string {
-  return count === 1 ? 'grid gap-3' : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
+/**
+ * One result card on a laptop. Narrower than a discipline column.
+ * Centered, unless the weekend has only one event.
+ */
+function singleBandClass(alignLeft: boolean): string {
+  return alignLeft ? 'lg:w-full lg:max-w-md' : 'lg:mx-auto lg:w-full lg:max-w-md'
+}
+
+/**
+ * Two-up band for small celebrations and weekend comments.
+ * Narrower than the discipline row, and centered so the gap is mid-page.
+ */
+const LIMITED_PAIR =
+  'grid grid-cols-1 items-start gap-3 lg:mx-auto lg:w-full lg:max-w-3xl lg:grid-cols-2'
+
+/** Two result cards in one centred column, the same width as a single poster. */
+const STACKED_PAIR = 'flex w-full flex-col gap-3 sm:mx-auto sm:max-w-md'
+
+/** Single card, or a narrower centered pair that does not line up with the disciplines. */
+export function commentBandClass(count: number, alignLeft = false, stackPair = false): string {
+  if (count <= 1) return singleBandClass(alignLeft)
+  if (stackPair) return STACKED_PAIR
+  if (alignLeft) return 'grid grid-cols-1 items-start gap-3 lg:w-full lg:max-w-3xl lg:grid-cols-2'
+  return LIMITED_PAIR
+}
+
+/**
+ * Weekend comments (Great form, You've been busy, Tough luck).
+ * Centered with the result cards. Left when the weekend has one event,
+ * or when a lone callout is the only card.
+ * Each card hugs its text.
+ */
+export function eventSummaryBandClass(
+  count: number,
+  hasResult: boolean,
+  alignLeft = false,
+): string {
+  const left = alignLeft || (count <= 1 && !hasResult)
+  if (count <= 1) return left ? 'w-fit max-w-sm' : 'mx-auto w-fit max-w-sm'
+  const row = 'flex w-fit max-w-full flex-col gap-3 sm:flex-row sm:items-start'
+  return left ? row : `mx-auto ${row}`
+}
+
+export const eventSummaryCardClass = 'w-full sm:w-fit sm:max-w-sm'
+
+/**
+ * Two results sharing one row, two callouts, and two events.
+ * Stack the results so they do not read as columns of the events below.
+ */
+export function shouldStackResultPair(
+  disciplineCount: number,
+  summaryCount: number,
+  bigCount: number,
+  smallCount: number,
+): boolean {
+  const pairOnOneRow = (bigCount === 2 && smallCount === 0) || (bigCount === 0 && smallCount === 2)
+  return disciplineCount === 2 && summaryCount === 2 && pairOnOneRow
+}
+
+function podiumGridClass(count: number, alignLeft: boolean, stackPair: boolean): string {
+  if (count <= 1) return singleBandClass(alignLeft)
+  if (stackPair && count === 2) return STACKED_PAIR
+  if (alignLeft) return 'grid grid-cols-1 gap-3 sm:grid-cols-2'
+  // Two posters stay one row, centered, so the gap sits mid-page with the comment pair.
+  if (count === 2) {
+    return 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:mx-auto lg:w-[calc((100%-1.5rem)*2/3+0.75rem)]'
+  }
+  return 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
+}
+
+function sameRankGridClass(count: number, alignLeft: boolean, stackPair: boolean): string {
+  if (count <= 1) return singleBandClass(alignLeft)
+  if (stackPair && count === 2) return STACKED_PAIR
+  if (alignLeft) return 'grid grid-cols-1 items-start gap-3 lg:w-full lg:max-w-3xl lg:grid-cols-2'
+  return LIMITED_PAIR
+}
+
+export function celebrationBandCounts(
+  celebrations: RecapCelebrations,
+  features: TournamentRecapBuildFeatures,
+  options: {
+    expandAllCelebrations?: boolean
+    compactAllCelebrations?: boolean
+  } = {},
+): { bigCount: number; smallCount: number } {
+  const { expandAllCelebrations = false, compactAllCelebrations = false } = options
+  const winners = features.showPodium ? celebrations.winners : []
+  const runnerUps = features.showPodium ? celebrations.runnerUps : []
+  const jointThirds = features.showPodium ? celebrations.jointThirds : []
+  const personalBests = features.showPersonalBests
+    ? celebrations.milestones.filter((m) => m.variant === 'personal_best')
+    : []
+  const matchedBests = features.showPersonalBests
+    ? celebrations.milestones.filter((m) => m.variant === 'matched_best')
+    : []
+  const debuts = features.showDebutMilestones
+    ? celebrations.milestones.filter((m) => m.variant === 'debut')
+    : []
+  const featured =
+    expandAllCelebrations || compactAllCelebrations
+      ? null
+      : featuredCelebrationHeroKind({
+          winners,
+          runnerUps,
+          jointThirds,
+          milestones: [...personalBests, ...matchedBests, ...debuts],
+        })
+  const expand = (kind: CelebrationHeroKind) => {
+    if (compactAllCelebrations) return false
+    return expandAllCelebrations || featured === kind
+  }
+  const bigCount =
+    (features.showSeniorCountyDebut &&
+    celebrations.seniorCountyDebut &&
+    !compactAllCelebrations
+      ? 1
+      : 0) +
+    winners.length +
+    (expand('runner-up') ? runnerUps.length : 0) +
+    (expand('joint-third') ? jointThirds.length : 0) +
+    (expand('personal_best') ? personalBests.length : 0) +
+    (expand('matched_best') ? matchedBests.length : 0) +
+    (expand('debut') ? debuts.length : 0)
+  const smallCount =
+    (features.showSeniorCountyDebut &&
+    celebrations.seniorCountyDebut &&
+    compactAllCelebrations
+      ? 1
+      : 0) +
+    (expand('runner-up') ? 0 : runnerUps.length) +
+    (expand('joint-third') ? 0 : jointThirds.length) +
+    (expand('personal_best') ? 0 : personalBests.length) +
+    (expand('matched_best') ? 0 : matchedBests.length) +
+    (expand('debut') ? 0 : debuts.length)
+  return { bigCount, smallCount }
 }
 
 function podiumFlavorText(podium: PodiumCelebration): string {
@@ -876,7 +1019,7 @@ function PersonalBestFoldInPreview({
   const [winner, runnerUp, third] = PERSONAL_BEST_FOLD_IN_PREVIEW
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 lg:w-full lg:max-w-lg">
       <p className="text-xs font-medium text-ink-400">When this finish is a personal best</p>
       {winner && (
         <WinnerCard
@@ -918,7 +1061,7 @@ function MatchedBestFoldInPreview({
   const [winner, runnerUp, third] = MATCHED_BEST_FOLD_IN_PREVIEW
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 lg:w-full lg:max-w-lg">
       <p className="text-xs font-medium text-ink-400">When this finish matches your best</p>
       {winner && (
         <WinnerCard
@@ -957,22 +1100,34 @@ export function RecapCelebrationHero({
   expandAllCelebrations = false,
   compactAllCelebrations = false,
   showMatchedBestFoldIn = false,
+  disciplineOrder = [],
+  alignLeft = false,
+  stackResultPair = false,
 }: Props) {
   const { winners, runnerUps, jointThirds, milestones, seniorCountyDebut } =
     celebrations
 
-  const podiumWinners = features.showPodium ? winners : []
-  const podiumRunnerUps = features.showPodium ? runnerUps : []
-  const podiumThirds = features.showPodium ? jointThirds : []
-  const personalBests = features.showPersonalBests
-    ? milestones.filter((m) => m.variant === 'personal_best')
-    : []
-  const matchedBests = features.showPersonalBests
-    ? milestones.filter((m) => m.variant === 'matched_best')
-    : []
-  const debutMilestones = features.showDebutMilestones
-    ? milestones.filter((m) => m.variant === 'debut')
-    : []
+  const podiumWinners = sortByDisciplineOrder(features.showPodium ? winners : [], disciplineOrder)
+  const podiumRunnerUps = sortByDisciplineOrder(
+    features.showPodium ? runnerUps : [],
+    disciplineOrder,
+  )
+  const podiumThirds = sortByDisciplineOrder(
+    features.showPodium ? jointThirds : [],
+    disciplineOrder,
+  )
+  const personalBests = sortByDisciplineOrder(
+    features.showPersonalBests ? milestones.filter((m) => m.variant === 'personal_best') : [],
+    disciplineOrder,
+  )
+  const matchedBests = sortByDisciplineOrder(
+    features.showPersonalBests ? milestones.filter((m) => m.variant === 'matched_best') : [],
+    disciplineOrder,
+  )
+  const debutMilestones = sortByDisciplineOrder(
+    features.showDebutMilestones ? milestones.filter((m) => m.variant === 'debut') : [],
+    disciplineOrder,
+  )
   const visibleSeniorCounty =
     features.showSeniorCountyDebut ? seniorCountyDebut : null
 
@@ -1003,6 +1158,7 @@ export function RecapCelebrationHero({
     compactPersonalBests.length +
     compactMatchedBests.length +
     compactDebuts.length
+  const smallCount = compactCount + (compactCounty ? 1 : 0)
 
   const hasContent =
     podiumWinners.length > 0 ||
@@ -1017,18 +1173,13 @@ export function RecapCelebrationHero({
 
   return (
     <div className="space-y-4">
-      {compactCounty && (
-        <SeniorCountyDebutCard
-          debut={compactCounty}
-          compact
-          startRevealed={startRevealed}
-        />
-      )}
       {visibleSeniorCounty && !compactAllCelebrations && (
-        <SeniorCountyDebutCard debut={visibleSeniorCounty} startRevealed={startRevealed} />
+        <div className={singleBandClass(alignLeft)}>
+          <SeniorCountyDebutCard debut={visibleSeniorCounty} startRevealed={startRevealed} />
+        </div>
       )}
       {podiumWinners.length > 0 && (
-        <div className={podiumGridClass(podiumWinners.length)}>
+        <div className={podiumGridClass(podiumWinners.length, alignLeft, stackResultPair)}>
           {podiumWinners.map((podium) => (
             <WinnerCard
               key={podium.discipline}
@@ -1040,7 +1191,7 @@ export function RecapCelebrationHero({
       )}
 
       {expand('runner-up') && podiumRunnerUps.length > 0 && (
-        <div className={podiumGridClass(podiumRunnerUps.length)}>
+        <div className={podiumGridClass(podiumRunnerUps.length, alignLeft, stackResultPair)}>
           {podiumRunnerUps.map((podium) => (
             <RunnerUpCard
               key={podium.discipline}
@@ -1052,7 +1203,7 @@ export function RecapCelebrationHero({
       )}
 
       {expand('joint-third') && podiumThirds.length > 0 && (
-        <div className={podiumGridClass(podiumThirds.length)}>
+        <div className={podiumGridClass(podiumThirds.length, alignLeft, stackResultPair)}>
           {podiumThirds.map((podium) => (
             <ThirdPlaceCard
               key={podium.discipline}
@@ -1064,7 +1215,7 @@ export function RecapCelebrationHero({
       )}
 
       {expand('personal_best') && personalBests.length > 0 && (
-        <div className={podiumGridClass(personalBests.length)}>
+        <div className={podiumGridClass(personalBests.length, alignLeft, stackResultPair)}>
           {personalBests.map((milestone) => (
             <PersonalBestCard
               key={milestone.id}
@@ -1076,7 +1227,7 @@ export function RecapCelebrationHero({
       )}
 
       {expand('matched_best') && matchedBests.length > 0 && (
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className={sameRankGridClass(matchedBests.length, alignLeft, stackResultPair)}>
           {matchedBests.map((milestone) => (
             <MilestoneCard
               key={milestone.id}
@@ -1088,7 +1239,7 @@ export function RecapCelebrationHero({
       )}
 
       {expand('debut') && debutMilestones.length > 0 && (
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className={sameRankGridClass(debutMilestones.length, alignLeft, stackResultPair)}>
           {debutMilestones.map((milestone) => (
             <MilestoneCard
               key={milestone.id}
@@ -1099,8 +1250,19 @@ export function RecapCelebrationHero({
         </div>
       )}
 
-      {compactCount > 0 && (
-        <div className="grid gap-2">
+      {smallCount > 0 && (
+        <div
+          className={
+            commentBandClass(smallCount, alignLeft, stackResultPair)
+          }
+        >
+          {compactCounty && (
+            <SeniorCountyDebutCard
+              debut={compactCounty}
+              compact
+              startRevealed={startRevealed}
+            />
+          )}
           {compactRunnerUps.map((podium) => (
             <RunnerUpCard
               key={podium.discipline}

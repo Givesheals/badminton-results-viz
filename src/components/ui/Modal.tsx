@@ -16,6 +16,11 @@ type Props = {
   frame?: 'brand' | 'plain'
   /** Use 'top' when the modal must sit above full-screen flows such as the signup flow. */
   layer?: 'default' | 'top'
+  /**
+   * Keep the panel at its maximum height so the top edge does not move
+   * when the contents grow or shrink.
+   */
+  lockHeight?: boolean
   id?: string
 }
 
@@ -48,6 +53,7 @@ export function Modal({
   showHeaderClose = false,
   frame = 'brand',
   layer = 'default',
+  lockHeight = false,
   id,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -80,7 +86,7 @@ export function Modal({
         id={id}
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`${PANEL_BASE_CLASS} ${PANEL_LAYER[layer]} ${PANEL_FRAME[frame]} ${PANEL_WIDTH[size]}`}
+        className={`${PANEL_BASE_CLASS} ${lockHeight ? 'h-[min(90vh,640px)]' : ''} ${PANEL_LAYER[layer]} ${PANEL_FRAME[frame]} ${PANEL_WIDTH[size]}`}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             event.stopPropagation()
@@ -113,7 +119,13 @@ export function Modal({
             </button>
           ) : null}
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
+        <div
+          className={`min-h-0 flex-1 px-4 py-4 sm:px-5 ${
+            lockHeight ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
+          }`}
+        >
+          {children}
+        </div>
         {footer != null && (
           <div className="flex flex-wrap items-center justify-end gap-2 border-t border-ink-100 px-4 py-3 sm:px-5">
             {footer}
