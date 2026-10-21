@@ -38,13 +38,16 @@ function DisciplineRecapHeader({ recap }: Props) {
           </div>
           {recap.partnerName && (
             <p className="mt-0.5 text-xs text-ink-600">
-              with {recap.partnerName}
-              {recap.partnerRatingStart != null && recap.partnerRatingEnd != null && (
-                <span className="tabular-nums text-ink-500">
-                  {' '}
-                  ({formatRatingSpan(recap.partnerRatingStart, recap.partnerRatingEnd)})
-                </span>
-              )}
+              with{' '}
+              <span className="font-medium text-badminfo-link underline decoration-badminfo-link underline-offset-2">
+                {recap.partnerName}
+                {recap.partnerRatingStart != null && recap.partnerRatingEnd != null && (
+                  <span className="font-normal tabular-nums">
+                    {' '}
+                    ({formatRatingSpan(recap.partnerRatingStart, recap.partnerRatingEnd)})
+                  </span>
+                )}
+              </span>
             </p>
           )}
         </div>

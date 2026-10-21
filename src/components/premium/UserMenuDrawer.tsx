@@ -18,8 +18,8 @@ type Props = {
   onOpenLiveFeed: () => void
   onOpenBeRanking: () => void
   onOpenDesignAssets: () => void
-  onOpenHeaderOptions: () => void
   onOpenAddNewData: () => void
+  onOpenPremiumAnnouncement: () => void
 }
 
 function MenuDivider({ className = '' }: { className?: string }) {
@@ -51,8 +51,8 @@ export function UserMenuDrawer({
   onOpenLiveFeed,
   onOpenBeRanking,
   onOpenDesignAssets,
-  onOpenHeaderOptions,
   onOpenAddNewData,
+  onOpenPremiumAnnouncement,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -173,6 +173,18 @@ export function UserMenuDrawer({
                   className="text-left text-base font-medium text-[#5C3992] hover:text-[#4A2D78]"
                   onClick={() => {
                     onClose()
+                    onOpenPremiumAnnouncement()
+                  }}
+                >
+                  Premium announcement
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="text-left text-base font-medium text-[#5C3992] hover:text-[#4A2D78]"
+                  onClick={() => {
+                    onClose()
                     onOpenAddNewData()
                   }}
                 >
@@ -264,18 +276,6 @@ export function UserMenuDrawer({
                   }}
                 >
                   Design Assets
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  className="text-left text-base font-medium text-[#5C3992] hover:text-[#4A2D78]"
-                  onClick={() => {
-                    onClose()
-                    onOpenHeaderOptions()
-                  }}
-                >
-                  Player Lab header options
                 </button>
               </li>
               <li>

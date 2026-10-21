@@ -53,11 +53,31 @@ type Props = {
   panels: Record<DashboardTabId, ReactNode>
 }
 
+function useAppHeaderOffset() {
+  const [offset, setOffset] = useState(0)
+
+  useEffect(() => {
+    const header = document.querySelector('[data-app-header]')
+    if (!(header instanceof HTMLElement)) return
+
+    const update = () => setOffset(Math.round(header.getBoundingClientRect().height))
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [])
+
+  return offset
+}
+
 export function DashboardTabs({ importedAt, panels }: Props) {
   const baseId = useId()
   const tabRefs = useRef<Partial<Record<DashboardTabId, HTMLButtonElement>>>({})
+  const sentinelRef = useRef<HTMLDivElement>(null)
   const suppressSectionScrollRef = useRef(false)
   const [activeTab, setActiveTab] = useState<DashboardTabId>(readStoredTab)
+  const [stuck, setStuck] = useState(false)
+  const headerOffset = useAppHeaderOffset()
   const { registerNavigator, scrollTarget, clearScrollTarget, clearMilestoneTarget } =
     useDashboardNavigation()
 
@@ -93,6 +113,18 @@ export function DashboardTabs({ importedAt, panels }: Props) {
       suppressSectionScrollRef.current = false
     })
   }, [clearMilestoneTarget, clearScrollTarget, importedAt, selectTab])
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setStuck(!entry.isIntersecting),
+      { rootMargin: `-${headerOffset}px 0px 0px 0px`, threshold: 0 },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [headerOffset])
 
   useEffect(() => {
     if (!scrollTarget || suppressSectionScrollRef.current) return
@@ -153,11 +185,17 @@ export function DashboardTabs({ importedAt, panels }: Props) {
 
   return (
     <div>
-      <div className="sticky top-0 z-30 bg-[#f2f0f6] px-4 pt-3">
+      <div ref={sentinelRef} aria-hidden className="h-px" />
+      <div
+        className={`sticky z-20 -mx-4 bg-white px-4 py-3 sm:-mx-6 sm:px-6 ${
+          stuck ? 'border-b border-ink-200 shadow-[0_8px_18px_-6px_rgba(20,25,38,0.35)]' : ''
+        }`}
+        style={{ top: headerOffset }}
+      >
         <div
           role="tablist"
           aria-label="Dashboard sections"
-          className="flex gap-1 overflow-x-auto"
+          className="inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-[#f7f6fa] p-1"
         >
           {TABS.map((tab) => {
             const selected = activeTab === tab.id
@@ -175,10 +213,10 @@ export function DashboardTabs({ importedAt, panels }: Props) {
                 tabIndex={selected ? 0 : -1}
                 onClick={() => selectTab(tab.id)}
                 onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
-                className={`shrink-0 rounded-t-lg border border-b-0 px-4 py-2 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
+                className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
                   selected
-                    ? 'border-[#e4e2e8] bg-white font-bold text-ink-900 shadow-[0_-2px_6px_rgba(52,58,64,0.08)]'
-                    : 'border-transparent font-semibold text-[#5c348c] hover:bg-white/60'
+                    ? 'bg-white text-ink-900 shadow-sm'
+                    : 'text-brand-700 hover:text-brand-600'
                 }`}
               >
                 {tab.label}
@@ -188,7 +226,7 @@ export function DashboardTabs({ importedAt, panels }: Props) {
         </div>
       </div>
 
-      <div className="mt-4">
+      <div>
         {TABS.map((tab) => {
           const selected = activeTab === tab.id
           return (

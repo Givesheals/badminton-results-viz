@@ -84,7 +84,7 @@ export function BestWinsSection({ allMatches }: Props) {
   return (
     <article
       id="best-wins"
-      className="scroll-mt-6 rounded-2xl card-frame bg-white p-4 shadow-sm"
+      className="scroll-mt-32 rounded-2xl card-frame bg-white p-4 shadow-sm"
     >
       <SectionHeaderWithFilters
         title={<h3 className="font-medium text-ink-900">Best wins</h3>}

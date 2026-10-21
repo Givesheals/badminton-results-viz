@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react'
 
 type Props = {
   open: boolean
@@ -22,6 +22,28 @@ type Props = {
    */
   lockHeight?: boolean
   id?: string
+  /** Skip the title bar so a hero can sit at the top. Use ModalTitle for the heading. */
+  hideTitleBar?: boolean
+  /** Turn off when the hero should run to the edges of the panel. */
+  padded?: boolean
+}
+
+const ModalTitleIdContext = createContext<string | undefined>(undefined)
+
+/** Dialog heading, for a modal that hides the standard title bar. */
+export function ModalTitle({
+  children,
+  className,
+}: {
+  children: ReactNode
+  className?: string
+}) {
+  const titleId = useContext(ModalTitleIdContext)
+  return (
+    <h2 id={titleId} className={className}>
+      {children}
+    </h2>
+  )
 }
 
 const BACKDROP_CLASS: Record<'default' | 'top', string> = {
@@ -55,6 +77,8 @@ export function Modal({
   layer = 'default',
   lockHeight = false,
   id,
+  hideTitleBar = false,
+  padded = true,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -77,7 +101,7 @@ export function Modal({
   if (!open) return null
 
   return createPortal(
-    <>
+    <ModalTitleIdContext.Provider value={titleId}>
       <div className={BACKDROP_CLASS[layer]} aria-hidden onClick={onClose} />
       <div
         ref={panelRef}
@@ -94,6 +118,7 @@ export function Modal({
           }
         }}
       >
+        {hideTitleBar ? null : (
         <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3 sm:px-5">
           <h2 id={titleId} className="text-base font-semibold text-ink-900">
             {title}
@@ -119,8 +144,9 @@ export function Modal({
             </button>
           ) : null}
         </div>
+        )}
         <div
-          className={`min-h-0 flex-1 px-4 py-4 sm:px-5 ${
+          className={`min-h-0 flex-1 ${padded ? 'px-4 py-4 sm:px-5' : ''} ${
             lockHeight ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
           }`}
         >
@@ -132,7 +158,7 @@ export function Modal({
           </div>
         )}
       </div>
-    </>,
+    </ModalTitleIdContext.Provider>,
     document.body,
   )
 }

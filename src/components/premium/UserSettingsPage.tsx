@@ -13,6 +13,7 @@ import {
 import type { StoredPremiumState } from '../../lib/premiumStorage'
 import { legalPageHref } from '../../lib/legalPages'
 import { BetaBadge } from '../ui/BetaBadge'
+import { PREMIUM_PITCH_BENEFITS, PREMIUM_PITCH_TAGLINE } from './premiumPitch'
 
 type Props = {
   open: boolean
@@ -82,30 +83,6 @@ const PILL_TONE: Record<
     dot: 'bg-ink-500',
   },
 }
-
-/** Value-led pitch lines: what you get, not just what the feature is. */
-const PREMIUM_PITCH_BENEFITS: { title: string; value: string }[] = [
-  {
-    title: 'Personal notes',
-    value:
-      'Capture what worked - and we surface those notes again the next time you draw that player or pair. Get a tactical head start next time.',
-  },
-  {
-    title: 'Analytics',
-    value:
-      'See how your results really trend over time with powerful analytics.',
-  },
-  {
-    title: 'Draw Companion',
-    value:
-      'See your most likely path to the final: the probability of every opponent, your notes on them, and every time you’ve played them before.',
-  },
-  {
-    title: 'Tournament recaps',
-    value:
-      'Relive the weekend - the results, the run, the story worth keeping. See how your performance tracks against your personal best.',
-  },
-]
 
 function ExternalLinkIcon({ className }: { className?: string }) {
   return (
@@ -636,7 +613,7 @@ function UnsubscribedPremiumTab({
           <h3 className="text-base font-bold text-ink-900">Premium</h3>
           <BetaBadge />
         </div>
-        <p className="text-sm text-ink-500">Get more from BadmInfo</p>
+        <p className="text-sm text-ink-500">{PREMIUM_PITCH_TAGLINE}</p>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-ink-100 py-3">
           <span className="text-sm font-semibold text-ink-900">Status</span>

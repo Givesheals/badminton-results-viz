@@ -26,18 +26,13 @@ export function PremiumHubHeader({ playerName }: Props) {
   const profileHref = `https://www.badminfo.com/player?name=${encodeURIComponent(playerName)}`
 
   return (
-    <section
-      id="dashboard-results-header"
-      className="scroll-mt-4 rounded-t-2xl bg-[#f2f0f6] px-4 pt-4"
-    >
+    <section id="dashboard-results-header" className="scroll-mt-20">
       <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
         Player Lab
         <BetaBadge />
       </p>
-      <h1 className="mt-1.5 text-[26px] font-bold leading-tight tracking-tight text-[#343a40]">
-        {title}
-      </h1>
-      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-none text-ink-600">
+      <h1 className="mt-1 text-xl font-bold leading-tight text-ink-900 sm:text-2xl">{title}</h1>
+      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-600">
         {beNumber ? <span>BE {beNumber}</span> : null}
         {beNumber && club ? (
           <span className="text-ink-300" aria-hidden>
@@ -59,8 +54,8 @@ export function PremiumHubHeader({ playerName }: Props) {
           Profile & Results
         </a>
       </p>
-      <p className="mt-2 text-sm leading-snug text-ink-600">
-        Your tournament results, opponent notes and partner stats - all in one place.
+      <p className="mt-2 text-sm text-ink-600">
+        Tournament recaps, notes, the people behind your results, and stats on your own play - all in one place.
       </p>
     </section>
   )
