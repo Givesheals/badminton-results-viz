@@ -717,6 +717,22 @@ export function isRoundRobinOnlyEvent(matches: NormalizedMatch[]): boolean {
   return hasParsedRound
 }
 
+/**
+ * A finished box of three where the player won one match and lost the other.
+ * That is the middle result: about a third of a box-of-three draw finish there.
+ */
+export function isMiddleFinishInBoxOfThree(matches: NormalizedMatch[]): boolean {
+  if (inferGroupEntrantCount(matches) !== 3) return false
+  const groupMatches = matches.filter(
+    (match) =>
+      isCompetitiveMatch(match) &&
+      parseRoundToStage(getMatchRound(match)) === 'group-stages' &&
+      match.nonCompetitiveReason == null,
+  )
+  if (groupMatches.length !== 2) return false
+  return groupMatches.filter((match) => match.outcome === 'win').length === 1
+}
+
 /** Estimate entrant count from unique group opponents (+ player). Null when no group matches. */
 export function inferGroupEntrantCount(matches: NormalizedMatch[]): number | null {
   const opponents = new Set<string>()

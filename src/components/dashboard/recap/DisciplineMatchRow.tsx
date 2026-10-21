@@ -15,26 +15,42 @@ type Props = {
   showNotes?: boolean
 }
 
-function OpponentNames({ match }: { match: DisciplineMatchRecap }) {
-  if (match.opponentMembers.length === 0) {
-    return <>{match.opponents}</>
-  }
+type OpponentLine = {
+  name: string
+  rating: number | null
+}
 
+const PLAYER_NAME_CLASS =
+  'text-badminfo-link underline decoration-badminfo-link underline-offset-2'
+
+function opponentLines(match: DisciplineMatchRecap): OpponentLine[] {
+  if (match.opponentMembers.length > 0) {
+    return match.opponentMembers.map((member) => ({
+      name: member.name,
+      rating: member.rating,
+    }))
+  }
+  return match.opponents
+    .split(/\s*&\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, rating: null }))
+}
+
+function PlayerName({
+  name,
+  rating,
+  won,
+}: {
+  name: string
+  rating: number | null
+  won: boolean
+}) {
   return (
-    <>
-      {match.opponentMembers.map((member, index) => (
-        <span key={`${member.name}-${index}`}>
-          {index > 0 && <span className="text-ink-400"> & </span>}
-          {member.name}
-          {member.rating != null && (
-            <span className="font-normal tabular-nums text-ink-500">
-              {' '}
-              ({member.rating})
-            </span>
-          )}
-        </span>
-      ))}
-    </>
+    <span className={`${PLAYER_NAME_CLASS} ${won ? 'font-bold' : 'font-medium'}`}>
+      {name}
+      {rating != null && <span className="font-normal tabular-nums"> ({rating})</span>}
+    </span>
   )
 }
 
@@ -52,6 +68,8 @@ export function DisciplineMatchRow({
         ? 'text-loss-700'
         : 'text-ink-500'
   const hasRatingChip = match.ratingChange != null || !match.ratingEligible
+  const names = opponentLines(match)
+  const opponentsWon = match.outcome === 'loss'
 
   return (
     <li className="border-b border-ink-100/80 py-1.5 last:border-b-0">
@@ -73,18 +91,29 @@ export function DisciplineMatchRow({
               ) : null}
             </p>
           )}
-          <p className="break-words text-sm font-medium leading-snug text-ink-900">
-            vs <OpponentNames match={match} />
+          <p className="break-words text-sm leading-snug text-ink-900">
+            vs{' '}
+            {names.length === 0
+              ? match.opponents
+              : names.map((member, index) => (
+                  <span key={`${member.name}-${index}`}>
+                    {index > 0 && <span className="text-ink-400"> & </span>}
+                    <PlayerName
+                      name={member.name}
+                      rating={member.rating}
+                      won={opponentsWon}
+                    />
+                  </span>
+                ))}
           </p>
           {match.showPartnerName && match.partnerName && (
             <p className="break-words text-xs leading-snug text-ink-600">
-              with {match.partnerName}
-              {match.partnerRating != null && (
-                <span className="tabular-nums text-ink-500">
-                  {' '}
-                  ({match.partnerRating})
-                </span>
-              )}
+              with{' '}
+              <PlayerName
+                name={match.partnerName}
+                rating={match.partnerRating}
+                won={match.outcome === 'win'}
+              />
             </p>
           )}
           <p className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-ink-500">

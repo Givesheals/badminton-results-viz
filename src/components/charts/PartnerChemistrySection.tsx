@@ -80,7 +80,7 @@ export function PartnerChemistrySection({
   return (
     <article
       id="partner-chemistry"
-      className="scroll-mt-6 rounded-2xl card-frame bg-white p-4 shadow-sm"
+      className="scroll-mt-32 rounded-2xl card-frame bg-white p-4 shadow-sm"
     >
       <SectionHeaderWithFilters
         title={

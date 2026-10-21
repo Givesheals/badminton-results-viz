@@ -425,7 +425,69 @@ describe('computeTournamentRecaps', () => {
       busy.eventSummaries.some((c) => c.label === "You've been busy!"),
     ).toBe(true)
     expect(busy.eventSummaries.find((c) => c.id === 'busy-weekend')?.detail).toBe(
-      "7 competitive matches at this event. That's a lot!",
+      "7 competitive matches at this tournament. That's a lot!",
+    )
+  })
+
+  it('says match for county callouts and tournament for graded events', () => {
+    const winRow = {
+      'Player Game 1 Score': 21,
+      'Opponent Game 1 Score': 15,
+      'Player Game 2 Score': 21,
+      'Opponent Game 2 Score': 12,
+      'Player Game 3 Score': null,
+      'Opponent Game 3 Score': null,
+    }
+    const priorLoss = makeMatch({
+      competitionName: 'Earlier',
+      date: '2026-01-01',
+      discipline: 'WS',
+      outcome: 'loss',
+      raw: {
+        ...winRow,
+        'Player Game 1 Score': 15,
+        'Opponent Game 1 Score': 21,
+        'Player Game 2 Score': 12,
+        'Opponent Game 2 Score': 21,
+      },
+    })
+    const tournamentWins = Array.from({ length: 7 }, (_, i) =>
+      makeMatch({
+        competitionName: 'Busy Open',
+        date: `2026-02-0${(i % 9) + 1}`,
+        discipline: 'WS',
+        raw: winRow,
+      }),
+    )
+    const countyWins = Array.from({ length: 7 }, (_, i) =>
+      makeMatch({
+        competitionName: 'County Fixture',
+        date: `2026-03-0${(i % 9) + 1}`,
+        discipline: 'WS',
+        tournamentCategory: 'county',
+        tournamentCategoryLabel: 'County',
+        raw: { ...winRow, 'Tournament Category': 'County' },
+      }),
+    )
+
+    const tournamentBusy = computeTournamentRecaps([priorLoss, ...tournamentWins]).recaps.find(
+      (r) => r.competitionName === 'Busy Open',
+    )!
+    const countyBusy = computeTournamentRecaps([priorLoss, ...countyWins]).recaps.find(
+      (r) => r.competitionName === 'County Fixture',
+    )!
+
+    expect(tournamentBusy.eventSummaries.find((c) => c.id === 'great-form')?.detail).toContain(
+      'at this tournament',
+    )
+    expect(tournamentBusy.eventSummaries.find((c) => c.id === 'busy-weekend')?.detail).toContain(
+      'at this tournament',
+    )
+    expect(countyBusy.eventSummaries.find((c) => c.id === 'great-form')?.detail).toContain(
+      'at this match',
+    )
+    expect(countyBusy.eventSummaries.find((c) => c.id === 'busy-weekend')?.detail).toContain(
+      'at this match',
     )
   })
 
@@ -866,7 +928,7 @@ describe('computeTournamentRecaps', () => {
     expect(debut?.title).toBe('First O45 Gold tournament')
   })
 
-  it('does not show matched your best when still in the box', () => {
+  it('does not show matched your best for a repeat group win outside a box of three', () => {
     const groupOnly = (comp: string, date: string) =>
       makeMatch({
         competitionName: comp,
@@ -891,9 +953,60 @@ describe('computeTournamentRecaps', () => {
       groupOnly('Again', '2026-06-01'),
     ]).recaps.find((r) => r.competitionName === 'Again')!
 
-    expect(
-      recap.celebrations.milestones.some((m) => m.variant === 'matched_best'),
-    ).toBe(false)
+    expect(recap.celebrations.milestones.some((m) => m.variant === 'matched_best')).toBe(false)
+  })
+
+  it('says earned your place when a box of three win ties a prior middle finish', () => {
+    const groupScores = {
+      'Player Game 1 Score': 21,
+      'Opponent Game 1 Score': 15,
+      'Player Game 2 Score': 21,
+      'Opponent Game 2 Score': 12,
+      'Player Game 3 Score': null,
+      'Opponent Game 3 Score': null,
+    }
+    const boxWeekend = (comp: string, date: string) => [
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'MS',
+        opponents: 'Alex Reed',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'win',
+        raw: { Round: 'Group 1', 'Tournament Category': 'Bronze', ...groupScores },
+      }),
+      makeMatch({
+        competitionName: comp,
+        date,
+        discipline: 'MS',
+        opponents: 'Sam Cole',
+        tournamentCategoryLabel: 'Bronze',
+        outcome: 'loss',
+        raw: {
+          Round: 'Group 1',
+          'Tournament Category': 'Bronze',
+          'Player Game 1 Score': 15,
+          'Opponent Game 1 Score': 21,
+          'Player Game 2 Score': 12,
+          'Opponent Game 2 Score': 21,
+          'Player Game 3 Score': null,
+          'Opponent Game 3 Score': null,
+        },
+      }),
+    ]
+
+    const recap = computeTournamentRecaps([
+      ...boxWeekend('Earlier', '2025-06-01'),
+      ...boxWeekend('Again', '2026-06-01'),
+    ]).recaps.find((r) => r.competitionName === 'Again')!
+
+    expect(recap.celebrations.milestones.find((m) => m.variant === 'matched_best')).toMatchObject({
+      stage: 'group-wins',
+      discipline: 'MS',
+      title: 'Earned your place',
+      detail:
+        "Your second time winning some of your group games in men's singles at a Bronze, matching your best",
+    })
   })
 
   it('does not duplicate freak flags in insights', () => {
@@ -1816,6 +1929,8 @@ describe('computeTournamentRecaps', () => {
       stage: 'group-wins',
       discipline: 'XD',
       tournamentCategoryLabel: 'Bronze',
+      title: 'Personal best',
+      detail: 'Your first win in mixed doubles in Bronze',
     })
   })
 

@@ -9,6 +9,9 @@ import {
 } from '../../lib/premiumPricing'
 import type { StoredPremiumState } from '../../lib/premiumStorage'
 import { DEMO_ACCOUNT_BE_NUMBER } from '../../data/bePlayerDirectory'
+import { PlayerLabGateModal } from './PlayerLabGateModal'
+import { PremiumAnnouncementModal } from './PremiumAnnouncementModal'
+import { PremiumCrown } from './PremiumCrown'
 import { PremiumSignupFlow } from './PremiumSignupFlow'
 import { PremiumWelcomeModal } from './PremiumWelcomeModal'
 import { UserMenuDrawer } from './UserMenuDrawer'
@@ -17,7 +20,6 @@ import { NotificationsPreview } from '../notifications/NotificationsPreview'
 import { TournamentPagePreview } from '../tournament/TournamentPagePreview'
 import { TournamentListingsPage } from '../tournament/TournamentListingsPage'
 import { DesignAssetsPage } from '../design/DesignAssetsPage'
-import { playerLabHeaderPreviewHref } from '../design/PlayerLabHeaderOptionsPage'
 import { LiveFeedPage } from '../live-feed/LiveFeedPage'
 import { BeRankingAutomationPage } from '../ranking/BeRankingAutomationPage'
 import { getPlayerInitials } from '../../lib/getPlayerInitials'
@@ -28,7 +30,7 @@ type Props = {
 }
 
 export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
-  const { premium, clearSubscription } = usePremium()
+  const { premium, isSubscribed, clearSubscription } = usePremium()
   const [menuOpen, setMenuOpen] = useState(false)
   const [signupOpen, setSignupOpen] = useState(false)
   const [signupPlan, setSignupPlan] = useState<PremiumPlan>('yearly')
@@ -40,6 +42,8 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
   const [liveFeedOpen, setLiveFeedOpen] = useState(false)
   const [beRankingOpen, setBeRankingOpen] = useState(false)
   const [designAssetsOpen, setDesignAssetsOpen] = useState(false)
+  const [announcementOpen, setAnnouncementOpen] = useState(false)
+  const [playerLabGateOpen, setPlayerLabGateOpen] = useState(false)
   const [welcomeSubscription, setWelcomeSubscription] = useState<StoredPremiumState | null>(null)
 
   const initials = getPlayerInitials(playerName)
@@ -73,14 +77,27 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setMenuOpen(true)}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold text-white shadow-sm ring-2 ring-brand-200 hover:bg-brand-700"
-        aria-label={`Open account menu for ${playerName}`}
-      >
-        {initials}
-      </button>
+      <div className="flex items-center gap-1 sm:gap-2">
+        {!isSubscribed && (
+          <button
+            type="button"
+            onClick={() => setPlayerLabGateOpen(true)}
+            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-1.5 py-1.5 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+            aria-haspopup="dialog"
+          >
+            <PremiumCrown className="h-4 w-4 shrink-0 text-favourite-star" />
+            Player Lab
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold text-white shadow-sm ring-2 ring-brand-200 hover:bg-brand-700"
+          aria-label={`Open account menu for ${playerName}`}
+        >
+          {initials}
+        </button>
+      </div>
 
       <UserMenuDrawer
         open={menuOpen}
@@ -121,14 +138,12 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
           setBeRankingOpen(false)
           setDesignAssetsOpen(true)
         }}
-        onOpenHeaderOptions={() => {
-          window.location.assign(playerLabHeaderPreviewHref())
-        }}
         onOpenAddNewData={() => {
           setTournamentListingsOpen(false)
           setBeRankingOpen(false)
           onOpenAddNewData()
         }}
+        onOpenPremiumAnnouncement={() => setAnnouncementOpen(true)}
       />
 
       <UserSettingsPage
@@ -175,6 +190,24 @@ export function PremiumUserMenu({ playerName, onOpenAddNewData }: Props) {
         currentBeNumber={DEMO_ACCOUNT_BE_NUMBER}
         initialPlan={signupPlan}
         onSubscribed={showWelcome}
+      />
+
+      <PremiumAnnouncementModal
+        open={announcementOpen}
+        onClose={() => setAnnouncementOpen(false)}
+        onSubscribe={() => {
+          setAnnouncementOpen(false)
+          openSignup('yearly')
+        }}
+      />
+
+      <PlayerLabGateModal
+        open={playerLabGateOpen}
+        onClose={() => setPlayerLabGateOpen(false)}
+        onSubscribe={() => {
+          setPlayerLabGateOpen(false)
+          openSignup('yearly')
+        }}
       />
 
       {welcomeSubscription ? (

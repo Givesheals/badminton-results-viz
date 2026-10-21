@@ -45,6 +45,13 @@ export function getTournamentCategoryChipStyle(label: string): TournamentCategor
     }
   }
 
+  if (normalized === 'shires') {
+    return {
+      label: 'Shires',
+      chipClass: 'bg-level-shires font-semibold text-white',
+    }
+  }
+
   if (normalized === 'other' || LEVEL_STYLES[normalized] == null) {
     const displayLabel =
       normalized === 'other' ? 'Other' : label.charAt(0).toUpperCase() + label.slice(1).toLowerCase()

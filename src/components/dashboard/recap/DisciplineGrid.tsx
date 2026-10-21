@@ -22,9 +22,9 @@ function heightsChanged(prev: number[], next: number[]): boolean {
 
 /**
  * Event cards in height order: tallest at the top left, shortest at the bottom right.
- * A single event, and any leftover card, stays half the row and sits on the left.
- * Three events share one row on a wide screen. Two events, and every other count,
- * stay two columns from a small tablet upward.
+ * A single event fills its parent (the section centres a half-row column when needed).
+ * Three or more events use three columns on a wide screen. Two events stay a pair
+ * from a small tablet upward.
  */
 function disciplineCode(child: ReactElement): string {
   const recap = (child.props as { recap?: { discipline?: string } }).recap
@@ -93,10 +93,10 @@ export function DisciplineGrid({ children, onDisplayOrder }: Props) {
   }
 
   if (items.length === 1) {
-    return <div className="sm:grid sm:grid-cols-2 sm:gap-3">{card(0)}</div>
+    return card(0)
   }
 
-  if (items.length === 3) {
+  if (items.length >= 3) {
     return (
       <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {visualIndexes.map(card)}
@@ -104,21 +104,9 @@ export function DisciplineGrid({ children, onDisplayOrder }: Props) {
     )
   }
 
-  const rows: number[][] = []
-  for (let index = 0; index < visualIndexes.length; index += 2) {
-    rows.push(visualIndexes.slice(index, index + 2))
-  }
-
   return (
-    <div className="space-y-3">
-      {rows.map((indexes) => (
-        <div
-          key={indexes.join('-')}
-          className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2"
-        >
-          {indexes.map(card)}
-        </div>
-      ))}
+    <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
+      {visualIndexes.map(card)}
     </div>
   )
 }

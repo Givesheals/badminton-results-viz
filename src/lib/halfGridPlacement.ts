@@ -78,8 +78,8 @@ export function sequentialHalfGrid(count: number): HalfGridSlot[] {
 
 /**
  * Left-to-right, top-to-bottom order for the discipline cards.
- * Three events are one row on a wide screen. Every other count stays two columns.
- * Before heights are known, the original order is kept.
+ * Three or more events fill tallest-first across a wide three-column row.
+ * Two events stay a pair. Before heights are known, the original order is kept.
  */
 export function visualDisciplineIndexes(
   count: number,
@@ -88,8 +88,10 @@ export function visualDisciplineIndexes(
   if (count <= 0) return []
   if (count === 1) return [0]
   const measured = measuredHeights != null && measuredHeights.length === count
-  if (count === 3) {
-    return measured ? tallestFirstIndexes(measuredHeights) : [0, 1, 2]
+  if (count >= 3) {
+    return measured
+      ? tallestFirstIndexes(measuredHeights)
+      : Array.from({ length: count }, (_, index) => index)
   }
   const slots = measured ? placeTallestFirst(measuredHeights) : sequentialHalfGrid(count)
   return halfGridRows(slots).flat()

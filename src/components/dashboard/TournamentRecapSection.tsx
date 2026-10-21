@@ -6,7 +6,11 @@ import {
   fictionalCelebrationPresentation,
   insertFictionalTournamentRecap,
 } from '../../lib/fictionalTournamentRecap'
-import { computeTournamentRecaps, disciplineRecapKey } from '../../lib/tournamentRecap'
+import {
+  computeTournamentRecaps,
+  disciplineRecapKey,
+  type TournamentRecap,
+} from '../../lib/tournamentRecap'
 import {
   fullTournamentRecapBuildFeatures,
   getTournamentRecapBuildFeatures,
@@ -15,12 +19,13 @@ import {
   type TournamentRecapBuildStage,
 } from '../../lib/tournamentRecapBuildStage'
 import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
+import { FixtureTeamPair } from './recap/FixtureTeamPair'
 import {
   celebrationBandCounts,
   eventSummaryBandClass,
   eventSummaryCardClass,
   RecapCelebrationHero,
-  shouldStackResultPair,
+  shouldAlignResultPair,
 } from './recap/RecapCelebrationHero'
 import { DisciplineRecapBlock } from './recap/DisciplineRecapBlock'
 import { RecapSummaryCard } from './recap/RecapSummaryCard'
@@ -48,46 +53,31 @@ type Props = {
    * Off for premium showcase recordings so a real weekend is used.
    */
   includeFictionalFeatureRecap?: boolean
-  /**
-   * Plain white header: sentence-case title, weekend date, green win box.
-   * Used by the Player Lab header preview so every option matches the live recap top.
-   */
-  plainHeader?: boolean
 }
-
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
 function formatDateRange(from: string, to: string): string {
   if (from === to || to === '—') return formatDisplayDate(from)
   return `${formatDisplayDate(from)} → ${formatDisplayDate(to)}`
 }
 
-function formatWeekendDate(from: string, to: string): string {
-  const start = parseIsoDate(from)
-  const end = to === '—' ? null : parseIsoDate(to)
-  if (start == null) return formatDisplayDate(from)
-  const day = (value: number) => String(value).padStart(2, '0')
-  if (
-    end == null ||
-    (start.year === end.year && start.month === end.month && start.day === end.day)
-  ) {
-    return `${day(start.day)} ${MONTH_SHORT[start.month]} ${start.year}`
-  }
-  if (start.year === end.year && start.month === end.month) {
-    return `${day(start.day)} & ${day(end.day)} ${MONTH_SHORT[start.month]} ${start.year}`
-  }
-  if (start.year === end.year) {
-    return `${day(start.day)} ${MONTH_SHORT[start.month]} & ${day(end.day)} ${MONTH_SHORT[end.month]} ${start.year}`
-  }
-  return `${day(start.day)} ${MONTH_SHORT[start.month]} ${start.year} & ${day(end.day)} ${MONTH_SHORT[end.month]} ${end.year}`
+function RecapCategoryChip({ recap }: { recap: TournamentRecap }) {
+  const label = recap.fixture?.program === 'shires' ? 'Shires' : recap.tournamentCategoryLabel
+  return <TournamentCategoryChip label={label} />
 }
 
-function parseIsoDate(iso: string): { day: number; month: number; year: number } | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
-  if (match == null) return null
-  const month = Number(match[2]) - 1
-  if (month < 0 || month > 11) return null
-  return { year: Number(match[1]), month, day: Number(match[3]) }
+function RecapCompetitionHeading({
+  recap,
+  className,
+}: {
+  recap: TournamentRecap
+  className: string
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+      <h3 className={className}>{recap.competitionName}</h3>
+      {recap.fixture ? <FixtureTeamPair fixture={recap.fixture} /> : null}
+    </div>
+  )
 }
 
 export function TournamentRecapSection({
@@ -96,7 +86,6 @@ export function TournamentRecapSection({
   buildStage: buildStageProp = null,
   showBuildStagePicker = true,
   includeFictionalFeatureRecap = true,
-  plainHeader = false,
 }: Props) {
   const recaps = useMemo(() => {
     const computed = computeTournamentRecaps(allMatches).recaps
@@ -173,9 +162,8 @@ export function TournamentRecapSection({
   })
   const hasResultCelebration = bigCount + smallCount > 0
   const singleDiscipline = recap.disciplines.length === 1
-  const stackResultPair = shouldStackResultPair(
+  const alignResultPair = shouldAlignResultPair(
     recap.disciplines.length,
-    summaryCount,
     bigCount,
     smallCount,
   )
@@ -253,40 +241,6 @@ export function TournamentRecapSection({
       )}
 
       <section id="tournament-recap" className="overflow-hidden rounded-2xl card-frame bg-white shadow-sm">
-        {plainHeader ? (
-          <div>
-            <div className="bg-[#f2f0f6] px-4 py-3 sm:px-5">
-              <h3 className="text-base font-semibold text-[#343a40]">Tournament recap</h3>
-            </div>
-            <div className="px-4 py-4 sm:px-5 sm:py-5">
-            {recaps.length > 1 && (
-              <div>
-                <RecapTournamentNav {...navProps} hasUnviewedOlder={false} />
-              </div>
-            )}
-
-            <div className="mt-4 flex items-center gap-4">
-              <div className="min-w-0 flex-1">
-                <p className="text-xl font-semibold text-ink-900">{recap.competitionName}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <TournamentCategoryChip label={recap.tournamentCategoryLabel} />
-                  <span className="text-sm text-ink-500">
-                    {formatWeekendDate(recap.dateFrom, recap.dateTo)}
-                  </span>
-                </div>
-              </div>
-              {features.showWinPercent && recap.weekendWinPercent != null && (
-                <div className="shrink-0 rounded-xl bg-court-50 px-3.5 py-2 text-center">
-                  <p className="text-2xl font-bold tabular-nums leading-none text-court-600">
-                    {formatWholePercent(recap.weekendWinPercent)}
-                  </p>
-                  <p className="mt-1 text-xs font-medium text-court-500">match wins</p>
-                </div>
-              )}
-            </div>
-            </div>
-          </div>
-        ) : (
           <div className="bg-gradient-to-br from-brand-50 via-white to-court-50/40 px-4 py-4 sm:px-5 sm:py-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
@@ -302,9 +256,12 @@ export function TournamentRecapSection({
 
             <div className={recaps.length > 1 ? 'mt-3' : 'mt-2'}>
               <div className="flex items-start gap-3">
-                <h3 className="min-w-0 flex-1 text-xl font-semibold text-ink-900">
-                  {recap.competitionName}
-                </h3>
+                <div className="min-w-0 flex-1">
+                  <RecapCompetitionHeading
+                    recap={recap}
+                    className="text-xl font-semibold text-ink-900"
+                  />
+                </div>
                 {features.showWinPercent &&
                   recap.weekendWinPercent != null &&
                   (recap.weekendWinPercent === 100 ? (
@@ -326,14 +283,13 @@ export function TournamentRecapSection({
                   ))}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <TournamentCategoryChip label={recap.tournamentCategoryLabel} />
+                <RecapCategoryChip recap={recap} />
                 <span className="text-sm text-ink-600">
                   {formatDateRange(recap.dateFrom, recap.dateTo)}
                 </span>
               </div>
             </div>
           </div>
-        )}
 
         {showBody && (
           <div className="space-y-4 border-t border-ink-100 px-4 py-4 sm:px-5 sm:py-5">
@@ -345,8 +301,7 @@ export function TournamentRecapSection({
               expandAllCelebrations={celebrationPresentation === 'expanded'}
               compactAllCelebrations={celebrationPresentation === 'compact'}
               disciplineOrder={disciplineOrder}
-              alignLeft={singleDiscipline}
-              stackResultPair={stackResultPair}
+              alignResultPair={alignResultPair}
               showMatchedBestFoldIn={isFictionalFeatureRecap}
             />
 
@@ -361,7 +316,13 @@ export function TournamentRecapSection({
             )}
 
             {features.showDisciplines && recap.disciplines.length > 0 && (
-              <div className="space-y-3">
+              <div
+                className={
+                  singleDiscipline
+                    ? 'space-y-3 sm:mx-auto sm:w-[calc((100%-0.75rem)/2)]'
+                    : 'space-y-3'
+                }
+              >
                 <h4 className="text-sm font-medium text-ink-900">By discipline</h4>
                 <DisciplineGrid onDisplayOrder={handleDisciplineOrder}>
                   {recap.disciplines.map((d) => (

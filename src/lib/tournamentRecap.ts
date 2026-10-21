@@ -1,4 +1,4 @@
-import type { MatchOutcome, NormalizedMatch } from '../types/matchHistory'
+import { DISCIPLINE_LABELS, type MatchOutcome, type NormalizedMatch } from '../types/matchHistory'
 import {
   findBestWinInMatches,
   findBigUpsetWinsInMatches,
@@ -20,6 +20,11 @@ import {
 import { isCompetitiveMatch } from './matchExclusions'
 import { buildRatingChanges, type MatchRatingChange } from './matchRatingChange'
 import { getMatchGames, getMatchVolume } from './matchScores'
+import {
+  countyFixtureForWeekend,
+  inferRepresentedCounty,
+  type CountyFixtureSides,
+} from './countyFixture'
 import { getOpponentTeamMembers, type TeamMember } from './matchTeams'
 import { getMatchExpectedWinProbability, getPartnerRating, getPlayerRating } from './ratings'
 import {
@@ -31,6 +36,7 @@ import {
   formatMatchStageLabel,
   getMatchRound,
   isCountyTournament,
+  isMiddleFinishInBoxOfThree,
   isProgressionTournament,
   isSeniorCountyMatch,
   medianRank,
@@ -278,6 +284,11 @@ export type TournamentRecap = {
   dateFrom: string
   dateTo: string
   tournamentCategoryLabel: string
+  /**
+   * County tie shown beside the competition name.
+   * Null for graded tournaments. Team names are illustrative.
+   */
+  fixture: CountyFixtureSides | null
   disciplines: DisciplineRecap[]
   eventSummaries: RecapSummaryCard[]
   celebrations: RecapCelebrations
@@ -511,6 +522,40 @@ function ordinalFinish(n: number): string {
   if (n === 2) return '2nd'
   if (n === 3) return '3rd'
   return `${n}th`
+}
+
+function groupWinDisciplineName(discipline: string, disciplineLabel: string): string {
+  return (DISCIPLINE_LABELS[discipline] ?? disciplineLabel).toLowerCase()
+}
+
+export const BOX_OF_THREE_BELONG_TITLE = 'Earned your place'
+
+/** First group-stage win at this age, grade, and discipline. */
+export function groupWinPersonalBestDetail(
+  discipline: string,
+  disciplineLabel: string,
+  categoryLabel: string,
+  ageLabel: string | null,
+): string {
+  const name = groupWinDisciplineName(discipline, disciplineLabel)
+  const scope = scopedCategoryLabel(categoryLabel, ageLabel)
+  return `Your first win in ${name} in ${scope}`
+}
+
+/**
+ * Repeat middle finish in a box of three at this age, grade, and discipline.
+ * `times` includes this weekend, and only weekends that ended in the group.
+ */
+export function groupWinMatchedBestDetail(
+  times: number,
+  discipline: string,
+  disciplineLabel: string,
+  categoryLabel: string,
+  ageLabel: string | null,
+): string {
+  const name = groupWinDisciplineName(discipline, disciplineLabel)
+  const scope = scopedCategoryLabel(categoryLabel, ageLabel)
+  return `Your ${ordinalOccurrence(times)} time winning some of your group games in ${name} at a ${scope}, matching your best`
 }
 
 /** “fourth” for small n; falls back to “11th” style for rarer counts. */
@@ -817,6 +862,10 @@ function buildCelebrations(
       allWeekends,
     )
     const stageLabel = d.bestStageLabel ?? PROGRESSION_STAGE_LABELS[d.bestStage]
+    const scope = scopedCategoryLabel(categoryLabel, competitionAgeLabel)
+    const groupWinBest =
+      d.bestStage === 'group-wins' && currentRank === STAGE_RANK['group-wins']
+    const belongInBox = groupWinBest && isMiddleFinishInBoxOfThree(disciplineMatches)
 
     if (canCelebratePersonalBest(disciplineMatches, d.bestStage, currentRank, priorMax)) {
       milestones.push({
@@ -829,13 +878,30 @@ function buildCelebrations(
         stage: d.bestStage,
         stageLabel,
         title: 'Personal best',
-        detail: `Your deepest ${scopedCategoryLabel(categoryLabel, competitionAgeLabel)} ${d.disciplineLabel} run - ${stageLabel}`,
+        detail: groupWinBest
+          ? groupWinPersonalBestDetail(
+              d.discipline,
+              d.disciplineLabel,
+              categoryLabel,
+              competitionAgeLabel,
+            )
+          : `Your deepest ${scope} ${d.disciplineLabel} run - ${stageLabel}`,
       })
     } else if (
       currentRank === priorMax &&
-      priorMax >= STAGE_RANK['knockout'] &&
+      (priorMax >= STAGE_RANK['knockout'] || belongInBox) &&
       canCelebrateMatchedBest(disciplineMatches, d.bestStage)
     ) {
+      const groupWinTimes = belongInBox
+        ? countPriorFinishesAtStage(
+            categoryLabel,
+            d.discipline,
+            competitionAgeLabel,
+            'group-wins',
+            currentWeekendKey,
+            allWeekends,
+          ) + 1
+        : null
       milestones.push({
         id: `matched-${historyKey(categoryLabel, d.discipline, competitionAgeLabel)}`,
         variant: 'matched_best',
@@ -845,8 +911,17 @@ function buildCelebrations(
         competitionAgeLabel,
         stage: d.bestStage,
         stageLabel,
-        title: 'Matched your best',
-        detail: `As deep as you've gone at ${scopedCategoryLabel(categoryLabel, competitionAgeLabel)} ${d.disciplineLabel} before - ${stageLabel}`,
+        title: belongInBox ? BOX_OF_THREE_BELONG_TITLE : 'Matched your best',
+        detail:
+          groupWinTimes != null
+            ? groupWinMatchedBestDetail(
+                groupWinTimes,
+                d.discipline,
+                d.disciplineLabel,
+                categoryLabel,
+                competitionAgeLabel,
+              )
+            : `As deep as you've gone at ${scope} ${d.disciplineLabel} before - ${stageLabel}`,
       })
     }
   }
@@ -1650,6 +1725,11 @@ function recapBestStageLabel(stage: ProgressionStage): string {
   return PROGRESSION_STAGE_LABELS[stage]
 }
 
+/** Graded weekends say "tournament"; county fixtures say "match". */
+function competitionOccasionNoun(matches: NormalizedMatch[]): 'tournament' | 'match' {
+  return dominantCategoryLabel(matches) === 'County' ? 'match' : 'tournament'
+}
+
 function buildEventSummaries(
   weekendMatches: NormalizedMatch[],
   overallWinPercent: number | null,
@@ -1658,6 +1738,7 @@ function buildEventSummaries(
   const competitive = weekendMatches.filter(isCompetitiveMatch)
   const wins = competitive.filter((m) => m.outcome === 'win').length
   const losses = competitive.filter((m) => m.outcome === 'loss').length
+  const occasion = competitionOccasionNoun(weekendMatches)
 
   if (overallWinPercent != null && competitive.length > 0) {
     const weekendWinPercent = roundPercent((wins / competitive.length) * 100)
@@ -1666,7 +1747,7 @@ function buildEventSummaries(
         id: 'great-form',
         icon: '💪',
         label: 'Great form',
-        detail: `${weekendWinPercent}% match wins at this event vs ${overallWinPercent}% overall`,
+        detail: `${weekendWinPercent}% match wins at this ${occasion} vs ${overallWinPercent}% overall`,
       })
     }
   }
@@ -1676,7 +1757,7 @@ function buildEventSummaries(
       id: 'tough-luck',
       icon: '😔',
       label: 'Tough luck',
-      detail: `No wins from ${losses} ${losses === 1 ? 'match' : 'matches'} at this event. Competing when it hurts is how you improve - keep training and come back stronger.`,
+      detail: `No wins from ${losses} ${losses === 1 ? 'match' : 'matches'} at this ${occasion}. Competing when it hurts is how you improve - keep training and come back stronger.`,
     })
   }
 
@@ -1685,7 +1766,7 @@ function buildEventSummaries(
       id: 'busy-weekend',
       icon: '🥵',
       label: "You've been busy!",
-      detail: `${competitive.length} competitive matches at this event. That's a lot!`,
+      detail: `${competitive.length} competitive matches at this ${occasion}. That's a lot!`,
     })
   }
 
@@ -1697,6 +1778,7 @@ function buildWeekendRecap(
   allWeekends: WeekendBucket[],
   allCompetitive: NormalizedMatch[],
   overallWinPercent: number | null,
+  representedCounty: string | null,
 ): TournamentRecap {
   const { dateFrom, dateTo } = weekendDateRange(bucket.matches)
   const showMatchDates = dateFrom !== dateTo
@@ -1743,6 +1825,7 @@ function buildWeekendRecap(
     dateFrom,
     dateTo,
     tournamentCategoryLabel: dominantCategoryLabel(bucket.matches),
+    fixture: countyFixtureForWeekend(bucket.matches, representedCounty),
     disciplines,
     eventSummaries,
     celebrations,
@@ -1769,8 +1852,9 @@ export function computeTournamentRecaps(
       ? roundPercent((overallWins / allCompetitive.length) * 100)
       : null
 
+  const representedCounty = inferRepresentedCounty(matches)
   const recaps = weekends.map((bucket) =>
-    buildWeekendRecap(bucket, weekends, allCompetitive, overallWinPercent),
+    buildWeekendRecap(bucket, weekends, allCompetitive, overallWinPercent, representedCounty),
   )
 
   return { recaps }

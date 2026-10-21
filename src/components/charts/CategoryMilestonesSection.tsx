@@ -189,7 +189,7 @@ export function CategoryMilestonesSection({
   return (
     <article
       id={CATEGORY_MILESTONE_SECTION_ID}
-      className="scroll-mt-6 rounded-2xl card-frame bg-white p-4 shadow-sm sm:p-5"
+      className="scroll-mt-32 rounded-2xl card-frame bg-white p-4 shadow-sm sm:p-5"
     >
       <SectionHeaderWithFilters
         bordered

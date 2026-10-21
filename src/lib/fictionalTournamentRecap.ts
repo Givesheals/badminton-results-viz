@@ -7,14 +7,17 @@ import {
   formatCategoryAgeLabel,
   type ProgressionStage,
 } from './tournamentProgression'
-import type {
-  DisciplineMatchHighlight,
-  DisciplineMatchRecap,
-  DisciplineRecap,
-  FreakFlagMatchDetail,
-  PartnerChemistryHighlight,
-  RecapSummaryCard,
-  TournamentRecap,
+import {
+  BOX_OF_THREE_BELONG_TITLE,
+  groupWinMatchedBestDetail,
+  groupWinPersonalBestDetail,
+  type DisciplineMatchHighlight,
+  type DisciplineMatchRecap,
+  type DisciplineRecap,
+  type FreakFlagMatchDetail,
+  type PartnerChemistryHighlight,
+  type RecapSummaryCard,
+  type TournamentRecap,
 } from './tournamentRecap'
 
 /** 0-based slot in the recap carousel (the fifth tournament shown). */
@@ -203,21 +206,23 @@ function podium(discipline: (typeof DISCIPLINES)[number], kind: 'winner' | 'runn
 }
 
 function milestone(
-  discipline: (typeof DISCIPLINES)[number],
+  discipline: string,
   variant: 'personal_best' | 'matched_best' | 'debut',
   stage: ProgressionStage,
   title: string,
   detail: string,
+  competitionAgeLabel?: string,
 ) {
+  const known = discipline as (typeof DISCIPLINES)[number]
   return {
     id: `${variant}-${discipline}`,
     variant,
     discipline,
     disciplineLabel: DISCIPLINE_LABELS[discipline] ?? discipline,
     tournamentCategoryLabel: CATEGORY,
-    competitionAgeLabel: AGES[discipline],
+    competitionAgeLabel: competitionAgeLabel ?? AGES[known],
     stage,
-    stageLabel: STAGE_LABELS[discipline],
+    stageLabel: STAGE_LABELS[known] ?? (stage === 'group-wins' ? 'Group match wins' : stage),
     title,
     detail,
   }
@@ -544,26 +549,27 @@ export function buildFictionalTournamentRecap(
     dateFrom: DATE_SAT,
     dateTo: DATE_SUN,
     tournamentCategoryLabel: CATEGORY,
+    fixture: null,
     disciplines,
     eventSummaries: [
       {
         id: 'great-form',
         icon: '💪',
         label: 'Great form',
-        detail: '69% match wins at this event vs 48% overall',
+        detail: '69% match wins at this tournament vs 48% overall',
       },
       {
         id: 'tough-luck',
         icon: '😔',
         label: 'Tough luck',
         detail:
-          'No wins from 3 matches at this event. Competing when it hurts is how you improve - keep training and come back stronger.',
+          'No wins from 3 matches at this tournament. Competing when it hurts is how you improve - keep training and come back stronger.',
       },
       {
         id: 'busy-weekend',
         icon: '🥵',
         label: "You've been busy!",
-        detail: '13 competitive matches at this event. That\'s a lot!',
+        detail: '13 competitive matches at this tournament. That\'s a lot!',
       },
     ],
     celebrations: {
@@ -591,6 +597,22 @@ export function buildFictionalTournamentRecap(
           'semi-final',
           `First ${scopedCategory('XD')} tournament`,
           `Your first ${scopedCategory('XD')} tournament in mixed doubles`,
+        ),
+        milestone(
+          'OD',
+          'personal_best',
+          'group-wins',
+          'Personal best',
+          groupWinPersonalBestDetail('OD', DISCIPLINE_LABELS.OD, CATEGORY, 'Senior'),
+          'Senior',
+        ),
+        milestone(
+          'MS',
+          'matched_best',
+          'group-wins',
+          BOX_OF_THREE_BELONG_TITLE,
+          groupWinMatchedBestDetail(2, 'MS', DISCIPLINE_LABELS.MS, CATEGORY, 'Senior'),
+          'Senior',
         ),
       ],
       seniorCountyDebut: {

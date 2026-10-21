@@ -72,13 +72,36 @@ describe('buildFictionalTournamentRecap', () => {
     ).toEqual(['O45', 'Senior', 'U19'])
     expect(
       celebrations.milestones.map((milestone) => milestone.competitionAgeLabel).sort(),
-    ).toEqual(['O45', 'Senior', 'U19'])
+    ).toEqual(['O45', 'Senior', 'Senior', 'Senior', 'U19'])
     expect(
-      celebrations.milestones.find((m) => m.variant === 'personal_best')!.detail,
+      celebrations.milestones.find((m) => m.variant === 'personal_best' && m.discipline === 'MD')!
+        .detail,
     ).toBe("Your deepest Senior Gold Men's doubles run - Winner")
     expect(
-      celebrations.milestones.find((m) => m.variant === 'matched_best')!.detail,
+      celebrations.milestones.find((m) => m.variant === 'personal_best' && m.discipline === 'MD')!
+        .stage,
+    ).toBe('winner')
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'personal_best' && m.discipline === 'OD')!
+        .detail,
+    ).toBe('Your first win in open doubles in Senior Gold')
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'personal_best' && m.discipline === 'OD')!
+        .stage,
+    ).toBe('group-wins')
+    expect(
+      celebrations.milestones.find((m) => m.variant === 'matched_best' && m.discipline === 'WD')!
+        .detail,
     ).toBe("As deep as you've gone at U19 Gold Women's doubles before - Runner-up")
+    expect(celebrations.milestones.some((m) => m.discipline === 'WS')).toBe(false)
+    expect(
+      celebrations.milestones.find((m) => m.discipline === 'MS'),
+    ).toMatchObject({
+      discipline: 'MS',
+      title: 'Earned your place',
+      detail:
+        "Your second time winning some of your group games in men's singles at a Senior Gold, matching your best",
+    })
     expect(celebrations.milestones.find((m) => m.variant === 'debut')!.title).toBe(
       'First O45 Gold tournament',
     )
@@ -88,6 +111,8 @@ describe('buildFictionalTournamentRecap', () => {
     expect(celebrations.milestones.map((milestone) => milestone.variant).sort()).toEqual([
       'debut',
       'matched_best',
+      'matched_best',
+      'personal_best',
       'personal_best',
     ])
   })

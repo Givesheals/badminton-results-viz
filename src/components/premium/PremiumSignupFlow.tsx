@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { findBePlayerByNumber, type BePlayerRecord } from '../../data/bePlayerDirectory'
+import type { BePlayerRecord } from '../../data/bePlayerDirectory'
 import { BetaBadge } from '../ui/BetaBadge'
 import { Modal } from '../ui/Modal'
 import { legalPageHref, PRIVACY_POLICY_URL } from '../../lib/legalPages'
@@ -43,7 +43,6 @@ const PREMIUM_BENEFITS = [
 export function PremiumSignupFlow({
   open,
   onClose,
-  playerName,
   currentBeNumber = null,
   initialPlan = 'yearly',
   onSubscribed,
@@ -90,6 +89,10 @@ export function PremiumSignupFlow({
   if (!open) return null
 
   function selectPlayer(player: BePlayerRecord) {
+    if (selectedPlayer?.beNumber === player.beNumber) {
+      clearSelectedPlayer()
+      return
+    }
     setSelectedPlayer(player)
     const check = checkBeNumber(player.beNumber)
     if (check.status === 'taken_by_other') {
@@ -131,7 +134,7 @@ export function PremiumSignupFlow({
 
   const stepTitle: Record<Step, string> = {
     value: 'Premium (Beta)',
-    details: 'Find your player',
+    details: 'Select your player',
     payment: 'Legal agreement',
     success: 'Welcome to Premium',
   }
@@ -249,9 +252,6 @@ export function PremiumSignupFlow({
         }
       >
         <BePlayerSearch
-          defaultQuery={
-            (currentBeNumber ? findBePlayerByNumber(currentBeNumber)?.name : null) ?? playerName
-          }
           currentBeNumber={currentBeNumber}
           selected={selectedPlayer}
           onSelect={selectPlayer}

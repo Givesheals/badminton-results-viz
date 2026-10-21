@@ -42,13 +42,13 @@ type Props = {
   showMatchedBestFoldIn?: boolean
   /** Left-to-right discipline codes from the event cards below. */
   disciplineOrder?: string[]
-  /** One event only: keep result cards and callouts on the left with that event. */
+  /** Optional: pin result cards and callouts to the left instead of centering. */
   alignLeft?: boolean
   /**
-   * Two results, two callouts, and two events: stack the results so they do not
-   * line up as columns with the events underneath.
+   * Two results and two events: put the results side by side at full row width
+   * so each poster sits above the matching discipline card.
    */
-  stackResultPair?: boolean
+  alignResultPair?: boolean
 }
 
 const CONFETTI_COLORS = [
@@ -182,7 +182,7 @@ function ConfettiClearArticle({
 
 /**
  * One result card on a laptop. Narrower than a discipline column.
- * Centered, unless the weekend has only one event.
+ * Centered single poster / callout band (same max width as a half-row event card).
  */
 function singleBandClass(alignLeft: boolean): string {
   return alignLeft ? 'lg:w-full lg:max-w-md' : 'lg:mx-auto lg:w-full lg:max-w-md'
@@ -195,29 +195,21 @@ function singleBandClass(alignLeft: boolean): string {
 const LIMITED_PAIR =
   'grid grid-cols-1 items-start gap-3 lg:mx-auto lg:w-full lg:max-w-3xl lg:grid-cols-2'
 
-/** Two result cards in one centred column, the same width as a single poster. */
-const STACKED_PAIR = 'flex w-full flex-col gap-3 sm:mx-auto sm:max-w-md'
-
-/** Single card, or a narrower centered pair that does not line up with the disciplines. */
-export function commentBandClass(count: number, alignLeft = false, stackPair = false): string {
-  if (count <= 1) return singleBandClass(alignLeft)
-  if (stackPair) return STACKED_PAIR
-  if (alignLeft) return 'grid grid-cols-1 items-start gap-3 lg:w-full lg:max-w-3xl lg:grid-cols-2'
-  return LIMITED_PAIR
-}
+/** Two result cards in the same columns as the two discipline cards below. */
+const ALIGNED_PAIR = 'grid grid-cols-1 gap-3 sm:grid-cols-2'
 
 /**
  * Weekend comments (Great form, You've been busy, Tough luck).
- * Centered with the result cards. Left when the weekend has one event,
- * or when a lone callout is the only card.
+ * Centered with the result cards, and whenever the weekend has one event.
+ * Left only when a lone callout sits above a multi-event row.
  * Each card hugs its text.
  */
 export function eventSummaryBandClass(
   count: number,
   hasResult: boolean,
-  alignLeft = false,
+  singleDiscipline = false,
 ): string {
-  const left = alignLeft || (count <= 1 && !hasResult)
+  const left = count <= 1 && !hasResult && !singleDiscipline
   if (count <= 1) return left ? 'w-fit max-w-sm' : 'mx-auto w-fit max-w-sm'
   const row = 'flex w-fit max-w-full flex-col gap-3 sm:flex-row sm:items-start'
   return left ? row : `mx-auto ${row}`
@@ -225,23 +217,34 @@ export function eventSummaryBandClass(
 
 export const eventSummaryCardClass = 'w-full sm:w-fit sm:max-w-sm'
 
+/** Three-up band matching the wide discipline grid. */
+const SHOWCASE_TRIPLE = 'grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3'
+
+/** Single card, or a narrower centered pair that does not line up with the disciplines. */
+export function commentBandClass(count: number, alignLeft = false, alignPair = false): string {
+  if (count <= 1) return singleBandClass(alignLeft)
+  if (alignPair) return ALIGNED_PAIR
+  if (count >= 3) return SHOWCASE_TRIPLE
+  if (alignLeft) return 'grid grid-cols-1 items-start gap-3 lg:w-full lg:max-w-3xl lg:grid-cols-2'
+  return LIMITED_PAIR
+}
+
 /**
- * Two results sharing one row, two callouts, and two events.
- * Stack the results so they do not read as columns of the events below.
+ * Two results sharing one row above two events: use the full discipline columns
+ * so each poster lines up with its event card (order comes from disciplineOrder).
  */
-export function shouldStackResultPair(
+export function shouldAlignResultPair(
   disciplineCount: number,
-  summaryCount: number,
   bigCount: number,
   smallCount: number,
 ): boolean {
   const pairOnOneRow = (bigCount === 2 && smallCount === 0) || (bigCount === 0 && smallCount === 2)
-  return disciplineCount === 2 && summaryCount === 2 && pairOnOneRow
+  return disciplineCount === 2 && pairOnOneRow
 }
 
-function podiumGridClass(count: number, alignLeft: boolean, stackPair: boolean): string {
+function podiumGridClass(count: number, alignLeft: boolean, alignPair: boolean): string {
   if (count <= 1) return singleBandClass(alignLeft)
-  if (stackPair && count === 2) return STACKED_PAIR
+  if (alignPair && count === 2) return ALIGNED_PAIR
   if (alignLeft) return 'grid grid-cols-1 gap-3 sm:grid-cols-2'
   // Two posters stay one row, centered, so the gap sits mid-page with the comment pair.
   if (count === 2) {
@@ -250,9 +253,9 @@ function podiumGridClass(count: number, alignLeft: boolean, stackPair: boolean):
   return 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
 }
 
-function sameRankGridClass(count: number, alignLeft: boolean, stackPair: boolean): string {
+function sameRankGridClass(count: number, alignLeft: boolean, alignPair: boolean): string {
   if (count <= 1) return singleBandClass(alignLeft)
-  if (stackPair && count === 2) return STACKED_PAIR
+  if (alignPair && count === 2) return ALIGNED_PAIR
   if (alignLeft) return 'grid grid-cols-1 items-start gap-3 lg:w-full lg:max-w-3xl lg:grid-cols-2'
   return LIMITED_PAIR
 }
@@ -1019,34 +1022,36 @@ function PersonalBestFoldInPreview({
   const [winner, runnerUp, third] = PERSONAL_BEST_FOLD_IN_PREVIEW
 
   return (
-    <div className="space-y-3 lg:w-full lg:max-w-lg">
+    <div className="space-y-3">
       <p className="text-xs font-medium text-ink-400">When this finish is a personal best</p>
-      {winner && (
-        <WinnerCard
-          podium={winner}
-          personalBest
-          times={winner.times}
-          startRevealed={startRevealed}
-        />
-      )}
-      {runnerUp && (
-        <RunnerUpCard
-          podium={runnerUp}
-          personalBest
-          times={runnerUp.times}
-          compact={compact}
-          startRevealed={startRevealed}
-        />
-      )}
-      {third && (
-        <ThirdPlaceCard
-          podium={third}
-          personalBest
-          times={third.times}
-          compact={compact}
-          startRevealed={startRevealed}
-        />
-      )}
+      <div className={SHOWCASE_TRIPLE}>
+        {winner && (
+          <WinnerCard
+            podium={winner}
+            personalBest
+            times={winner.times}
+            startRevealed={startRevealed}
+          />
+        )}
+        {runnerUp && (
+          <RunnerUpCard
+            podium={runnerUp}
+            personalBest
+            times={runnerUp.times}
+            compact={compact}
+            startRevealed={startRevealed}
+          />
+        )}
+        {third && (
+          <ThirdPlaceCard
+            podium={third}
+            personalBest
+            times={third.times}
+            compact={compact}
+            startRevealed={startRevealed}
+          />
+        )}
+      </div>
     </div>
   )
 }
@@ -1061,34 +1066,36 @@ function MatchedBestFoldInPreview({
   const [winner, runnerUp, third] = MATCHED_BEST_FOLD_IN_PREVIEW
 
   return (
-    <div className="space-y-3 lg:w-full lg:max-w-lg">
+    <div className="space-y-3">
       <p className="text-xs font-medium text-ink-400">When this finish matches your best</p>
-      {winner && (
-        <WinnerCard
-          podium={winner}
-          matchedBest
-          times={winner.times}
-          startRevealed={startRevealed}
-        />
-      )}
-      {runnerUp && (
-        <RunnerUpCard
-          podium={runnerUp}
-          matchedBest
-          times={runnerUp.times}
-          compact={compact}
-          startRevealed={startRevealed}
-        />
-      )}
-      {third && (
-        <ThirdPlaceCard
-          podium={third}
-          matchedBest
-          times={third.times}
-          compact={compact}
-          startRevealed={startRevealed}
-        />
-      )}
+      <div className={SHOWCASE_TRIPLE}>
+        {winner && (
+          <WinnerCard
+            podium={winner}
+            matchedBest
+            times={winner.times}
+            startRevealed={startRevealed}
+          />
+        )}
+        {runnerUp && (
+          <RunnerUpCard
+            podium={runnerUp}
+            matchedBest
+            times={runnerUp.times}
+            compact={compact}
+            startRevealed={startRevealed}
+          />
+        )}
+        {third && (
+          <ThirdPlaceCard
+            podium={third}
+            matchedBest
+            times={third.times}
+            compact={compact}
+            startRevealed={startRevealed}
+          />
+        )}
+      </div>
     </div>
   )
 }
@@ -1102,7 +1109,7 @@ export function RecapCelebrationHero({
   showMatchedBestFoldIn = false,
   disciplineOrder = [],
   alignLeft = false,
-  stackResultPair = false,
+  alignResultPair = false,
 }: Props) {
   const { winners, runnerUps, jointThirds, milestones, seniorCountyDebut } =
     celebrations
@@ -1171,6 +1178,11 @@ export function RecapCelebrationHero({
 
   if (!hasContent) return null
 
+  const showcasePodiumCount =
+    podiumWinners.length + podiumRunnerUps.length + podiumThirds.length
+  const showcaseMilestoneCount =
+    personalBests.length + matchedBests.length + debutMilestones.length
+
   return (
     <div className="space-y-4">
       {visibleSeniorCounty && !compactAllCelebrations && (
@@ -1178,82 +1190,140 @@ export function RecapCelebrationHero({
           <SeniorCountyDebutCard debut={visibleSeniorCounty} startRevealed={startRevealed} />
         </div>
       )}
-      {podiumWinners.length > 0 && (
-        <div className={podiumGridClass(podiumWinners.length, alignLeft, stackResultPair)}>
-          {podiumWinners.map((podium) => (
-            <WinnerCard
-              key={podium.discipline}
-              podium={podium}
-              startRevealed={startRevealed}
-            />
-          ))}
-        </div>
-      )}
 
-      {expand('runner-up') && podiumRunnerUps.length > 0 && (
-        <div className={podiumGridClass(podiumRunnerUps.length, alignLeft, stackResultPair)}>
-          {podiumRunnerUps.map((podium) => (
-            <RunnerUpCard
-              key={podium.discipline}
-              podium={podium}
-              startRevealed={startRevealed}
-            />
-          ))}
-        </div>
-      )}
+      {expandAllCelebrations ? (
+        <>
+          {showcasePodiumCount > 0 && (
+            <div className={SHOWCASE_TRIPLE}>
+              {podiumWinners.map((podium) => (
+                <WinnerCard
+                  key={podium.discipline}
+                  podium={podium}
+                  startRevealed={startRevealed}
+                />
+              ))}
+              {podiumRunnerUps.map((podium) => (
+                <RunnerUpCard
+                  key={podium.discipline}
+                  podium={podium}
+                  startRevealed={startRevealed}
+                />
+              ))}
+              {podiumThirds.map((podium) => (
+                <ThirdPlaceCard
+                  key={podium.discipline}
+                  podium={podium}
+                  startRevealed={startRevealed}
+                />
+              ))}
+            </div>
+          )}
+          {showcaseMilestoneCount > 0 && (
+            <div className={SHOWCASE_TRIPLE}>
+              {personalBests.map((milestone) => (
+                <PersonalBestCard
+                  key={milestone.id}
+                  milestone={milestone}
+                  startRevealed={startRevealed}
+                />
+              ))}
+              {matchedBests.map((milestone) => (
+                <MilestoneCard
+                  key={milestone.id}
+                  milestone={milestone}
+                  startRevealed={startRevealed}
+                />
+              ))}
+              {debutMilestones.map((milestone) => (
+                <MilestoneCard
+                  key={milestone.id}
+                  milestone={milestone}
+                  startRevealed={startRevealed}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {podiumWinners.length > 0 && (
+            <div className={podiumGridClass(podiumWinners.length, alignLeft, alignResultPair)}>
+              {podiumWinners.map((podium) => (
+                <WinnerCard
+                  key={podium.discipline}
+                  podium={podium}
+                  startRevealed={startRevealed}
+                />
+              ))}
+            </div>
+          )}
 
-      {expand('joint-third') && podiumThirds.length > 0 && (
-        <div className={podiumGridClass(podiumThirds.length, alignLeft, stackResultPair)}>
-          {podiumThirds.map((podium) => (
-            <ThirdPlaceCard
-              key={podium.discipline}
-              podium={podium}
-              startRevealed={startRevealed}
-            />
-          ))}
-        </div>
-      )}
+          {expand('runner-up') && podiumRunnerUps.length > 0 && (
+            <div className={podiumGridClass(podiumRunnerUps.length, alignLeft, alignResultPair)}>
+              {podiumRunnerUps.map((podium) => (
+                <RunnerUpCard
+                  key={podium.discipline}
+                  podium={podium}
+                  startRevealed={startRevealed}
+                />
+              ))}
+            </div>
+          )}
 
-      {expand('personal_best') && personalBests.length > 0 && (
-        <div className={podiumGridClass(personalBests.length, alignLeft, stackResultPair)}>
-          {personalBests.map((milestone) => (
-            <PersonalBestCard
-              key={milestone.id}
-              milestone={milestone}
-              startRevealed={startRevealed}
-            />
-          ))}
-        </div>
-      )}
+          {expand('joint-third') && podiumThirds.length > 0 && (
+            <div className={podiumGridClass(podiumThirds.length, alignLeft, alignResultPair)}>
+              {podiumThirds.map((podium) => (
+                <ThirdPlaceCard
+                  key={podium.discipline}
+                  podium={podium}
+                  startRevealed={startRevealed}
+                />
+              ))}
+            </div>
+          )}
 
-      {expand('matched_best') && matchedBests.length > 0 && (
-        <div className={sameRankGridClass(matchedBests.length, alignLeft, stackResultPair)}>
-          {matchedBests.map((milestone) => (
-            <MilestoneCard
-              key={milestone.id}
-              milestone={milestone}
-              startRevealed={startRevealed}
-            />
-          ))}
-        </div>
-      )}
+          {expand('personal_best') && personalBests.length > 0 && (
+            <div className={podiumGridClass(personalBests.length, alignLeft, alignResultPair)}>
+              {personalBests.map((milestone) => (
+                <PersonalBestCard
+                  key={milestone.id}
+                  milestone={milestone}
+                  startRevealed={startRevealed}
+                />
+              ))}
+            </div>
+          )}
 
-      {expand('debut') && debutMilestones.length > 0 && (
-        <div className={sameRankGridClass(debutMilestones.length, alignLeft, stackResultPair)}>
-          {debutMilestones.map((milestone) => (
-            <MilestoneCard
-              key={milestone.id}
-              milestone={milestone}
-              startRevealed={startRevealed}
-            />
-          ))}
-        </div>
+          {expand('matched_best') && matchedBests.length > 0 && (
+            <div className={sameRankGridClass(matchedBests.length, alignLeft, alignResultPair)}>
+              {matchedBests.map((milestone) => (
+                <MilestoneCard
+                  key={milestone.id}
+                  milestone={milestone}
+                  startRevealed={startRevealed}
+                />
+              ))}
+            </div>
+          )}
+
+          {expand('debut') && debutMilestones.length > 0 && (
+            <div className={sameRankGridClass(debutMilestones.length, alignLeft, alignResultPair)}>
+              {debutMilestones.map((milestone) => (
+                <MilestoneCard
+                  key={milestone.id}
+                  milestone={milestone}
+                  startRevealed={startRevealed}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {smallCount > 0 && (
         <div
           className={
-            commentBandClass(smallCount, alignLeft, stackResultPair)
+            commentBandClass(smallCount, alignLeft, alignResultPair)
           }
         >
           {compactCounty && (
