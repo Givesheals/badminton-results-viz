@@ -12,7 +12,6 @@ import {
 } from '../../lib/premiumPricing'
 import type { StoredPremiumState } from '../../lib/premiumStorage'
 import { legalPageHref } from '../../lib/legalPages'
-import { BetaBadge } from '../ui/BetaBadge'
 import { PREMIUM_PITCH_BENEFITS, PREMIUM_PITCH_TAGLINE } from './premiumPitch'
 
 type Props = {
@@ -58,6 +57,10 @@ const DEMO_VIEWS: { id: DemoView; label: string }[] = [
   { id: 'cancelled_ended', label: 'Ended' },
 ]
 
+/** Shared width steps for the settings card and the prototype toolbar above it. */
+const SETTINGS_FRAME =
+  'mx-auto w-full max-w-xl min-[720px]:max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl'
+
 const PILL_TONE: Record<
   StatusTone,
   { wrap: string; dot: string }
@@ -67,8 +70,8 @@ const PILL_TONE: Record<
     dot: 'bg-court-600',
   },
   idle: {
-    wrap: 'bg-ink-100 text-ink-600 ring-1 ring-ink-200',
-    dot: 'bg-ink-400',
+    wrap: 'bg-[#ececef] text-[#5c616c]',
+    dot: 'bg-[#6b707a]',
   },
   wait: {
     wrap: 'bg-[#fbf6e4] text-[#7a6a12] ring-1 ring-shuttle-400',
@@ -154,10 +157,10 @@ function buildDemoPremium(playerName: string, status: BillingStatus): StoredPrem
 
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-1.5">
+    <div className="col-span-2 grid grid-cols-subgrid items-baseline gap-x-4 border-t border-ink-100 py-1.5">
       <dt className="text-sm font-semibold text-ink-900">{label}</dt>
       {/* Regular, not medium: Segoe UI on Windows draws 500 as semibold, so values matched the labels. */}
-      <dd className="text-sm font-normal text-ink-900">{children}</dd>
+      <dd className="whitespace-nowrap text-right text-sm font-normal text-ink-900">{children}</dd>
     </div>
   )
 }
@@ -165,12 +168,12 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
 /** Quiet legal link shared by every Premium settings layout. */
 function PremiumTermsFooter() {
   return (
-    <p className="mt-6 border-t border-ink-100 pt-3 text-xs text-ink-500">
+    <p className="mt-6 border-t border-[#ececf1] pt-4 text-[13px] text-ink-600">
       <a
         href={legalPageHref('premium-terms')}
         target="_blank"
         rel="noopener noreferrer"
-        className="underline underline-offset-2 hover:text-ink-700"
+        className="underline underline-offset-2 hover:text-ink-900"
       >
         BadmInfo Premium Terms
       </a>
@@ -181,7 +184,7 @@ function PremiumTermsFooter() {
 function StatusPill({ label, tone }: { label: string; tone: StatusTone }) {
   const style = PILL_TONE[tone]
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${style.wrap}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${style.wrap}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} aria-hidden />
       {label}
     </span>
@@ -343,16 +346,18 @@ export function UserSettingsPage({
       aria-modal="true"
       aria-labelledby={titleId}
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex flex-col bg-[#f3f0f8] outline-none"
+      className="fixed inset-0 z-50 overflow-y-auto bg-white outline-none"
     >
-      <header className="border-b border-ink-200 bg-white px-5 py-4">
+      <div className="px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+      <header className="mb-4">
+        <div className={SETTINGS_FRAME}>
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 id={titleId} className="text-base font-semibold text-ink-900">
               User Settings
             </h1>
             <p className="text-xs text-ink-500">
-              Premium account management prototype — other tabs are inert shells
+              Premium account management prototype - other tabs are inert shells
             </p>
           </div>
           <button
@@ -404,15 +409,17 @@ export function UserSettingsPage({
             </button>
           </div>
         </div>
+        </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
-        <div className="mx-auto w-full max-w-3xl rounded-xl border border-ink-200 bg-white shadow-sm">
-          <div className="px-5 pt-4 sm:px-6 sm:pt-5">
-            <h2 className="text-xl font-bold text-ink-900 sm:text-2xl">User Settings</h2>
+        <div className={`${SETTINGS_FRAME} overflow-hidden rounded-xl border border-[#e4e4ea] bg-white shadow-sm`}>
+          <div className="bg-[#f2f3f5] px-5 py-4 sm:px-6 sm:py-5 lg:px-8 xl:px-10">
+            <h2 className="text-xl font-bold text-ink-900">User Settings</h2>
+          </div>
 
+          <div className="bg-white px-5 sm:px-6 lg:px-8 xl:px-10">
             <nav
-              className="mt-3 flex gap-1 overflow-x-auto border-b border-ink-200"
+              className="flex gap-5 border-b border-[#e6e6ea] sm:gap-7"
               aria-label="Settings sections"
             >
               {TABS.map((tab) => {
@@ -422,10 +429,10 @@ export function UserSettingsPage({
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`shrink-0 border-b-2 px-3 py-2 text-sm font-semibold transition ${
+                    className={`-mb-px shrink-0 border-b-2 px-0.5 pb-2.5 pt-2 text-sm transition ${
                       selected
-                        ? 'border-ink-900 text-ink-900'
-                        : 'border-transparent text-brand-700 hover:text-brand-600'
+                        ? 'border-ink-900 font-bold text-ink-900'
+                        : 'border-transparent font-semibold text-badminfo-link hover:text-[#4a287d]'
                     }`}
                   >
                     {tab.label}
@@ -435,7 +442,7 @@ export function UserSettingsPage({
             </nav>
           </div>
 
-          <div className="px-5 py-4 sm:px-6 sm:py-4">
+          <div className="px-5 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-7 xl:px-10 xl:py-8">
             {activeTab === 'premium' ? (
               showAccount && displayPremium ? (
                 <SubscribedPremiumTab
@@ -498,28 +505,26 @@ function SubscribedPremiumTab({
     billingStatus === 'processing' ||
     billingStatus === 'payment_failed'
 
+  const actionButtonClass =
+    view.action === 'payment'
+      ? 'bg-loss-600 hover:bg-loss-700 focus-visible:ring-loss-600'
+      : 'bg-badminfo-link hover:bg-[#4a287d] focus-visible:ring-badminfo-link'
+
   return (
     <div>
-      <h3 className="text-base font-bold text-ink-900">Premium</h3>
-      <p className="mt-0.5 text-sm text-ink-500">Your BadmInfo Premium account</p>
+      <div className="flex flex-col gap-y-5 min-[720px]:grid min-[720px]:grid-cols-[minmax(16rem,1fr)_19.25rem] min-[720px]:items-start min-[720px]:gap-x-6 min-[720px]:gap-y-0 lg:flex lg:max-w-4xl lg:flex-row lg:gap-x-16">
+        <div className="w-full min-w-0 lg:w-96 lg:shrink-0">
+          <h3 className="text-lg font-bold text-ink-900">Premium</h3>
+          <p className="mt-0.5 text-sm text-ink-500">Your BadmInfo Premium account</p>
 
-      <dl className="mt-2.5 divide-y divide-ink-100 border-t border-ink-100">
-        <div>
-          <DetailRow label="Status">
-            <StatusPill label={view.pillLabel} tone={view.tone} />
-          </DetailRow>
           {view.message && view.box !== 'none' ? (
-            <div className={`mb-2.5 rounded-lg border px-3 py-2.5 ${STATUS_BOX[view.box]}`}>
-              <p className="text-sm text-ink-800">{view.message}</p>
+            <div className={`mt-4 rounded-lg border px-3 py-2.5 ${STATUS_BOX[view.box]}`}>
+              <p className="text-sm leading-relaxed text-ink-800">{view.message}</p>
               {boxHasButton ? (
                 <button
                   type="button"
                   onClick={handleAction}
-                  className={`mt-2.5 inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-sm font-semibold text-white ${
-                    view.action === 'payment'
-                      ? 'bg-loss-600 hover:bg-loss-700'
-                      : 'bg-brand-600 hover:bg-brand-700'
-                  }`}
+                  className={`mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${actionButtonClass}`}
                 >
                   {view.actionLabel}
                   <ExternalLinkIcon />
@@ -527,75 +532,138 @@ function SubscribedPremiumTab({
               ) : null}
             </div>
           ) : null}
-        </div>
-        <DetailRow label="Plan">
-          {planLabel(premium.plan)}
-          <span className="ml-1.5 font-normal text-ink-500">
-            · {planBillingDescription(premium.plan)}
-          </span>
-        </DetailRow>
-        {view.dateRow ? (
-          <DetailRow label={view.dateRow.label}>{dateValue || view.dateRow.value}</DetailRow>
-        ) : null}
-        {showStartedLabel ? (
-          <DetailRow label="Started">{formatDisplayDate(premium.subscribedAt)}</DetailRow>
-        ) : (
-          <DetailRow label="Subscribed since">{formatDisplayDate(premium.subscribedAt)}</DetailRow>
-        )}
-      </dl>
 
-      <div className="mt-3 border-t border-ink-100 pt-3">
-        <h4 className="text-sm font-bold text-ink-900">Covered players</h4>
-        <p className="mt-0.5 text-xs text-ink-500">
-          Players this subscription covers (by Badminton England number).
-        </p>
-        <div className="mt-2 overflow-x-auto rounded-lg border border-ink-100">
-          <table className="w-full min-w-[280px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-ink-100 bg-[#f6f2fa] text-xs font-semibold uppercase tracking-wide text-ink-500">
-                <th className="px-3 py-1.5 font-semibold">Name</th>
-                <th className="px-3 py-1.5 font-semibold">BE Number</th>
-              </tr>
-            </thead>
-            <tbody>
-              {coveredPlayers.map((player) => (
-                <tr key={player.beNumber} className="border-b border-ink-50 last:border-0">
-                  <td className="px-3 py-1.5">
-                    <a
-                      href={`https://www.badminfo.com/player?name=${encodeURIComponent(player.name)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-normal text-badminfo-link underline underline-offset-2 hover:opacity-80"
-                    >
-                      {player.name}
-                    </a>
-                  </td>
-                  <td className="px-3 py-1.5 text-ink-700">{player.beNumber}</td>
+          <dl className="mt-4 grid grid-cols-[max-content_minmax(0,1fr)]">
+            <div className="col-span-2 grid grid-cols-subgrid items-center gap-x-4 border-t border-ink-100 py-1.5">
+              <span className="text-sm font-semibold text-ink-900">Status</span>
+              <span className="text-right">
+                <StatusPill label={view.pillLabel} tone={view.tone} />
+              </span>
+            </div>
+            <DetailRow label="Plan">
+              {planLabel(premium.plan)}
+              <span className="ml-1.5 font-normal text-ink-500">
+                · {planBillingDescription(premium.plan)}
+              </span>
+            </DetailRow>
+            {view.dateRow ? (
+              <DetailRow label={view.dateRow.label}>{dateValue || view.dateRow.value}</DetailRow>
+            ) : null}
+            {showStartedLabel ? (
+              <DetailRow label="Started">{formatDisplayDate(premium.subscribedAt)}</DetailRow>
+            ) : (
+              <DetailRow label="Subscribed since">{formatDisplayDate(premium.subscribedAt)}</DetailRow>
+            )}
+          </dl>
+
+          {view.action === 'manage' ? (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={onManageSubscription}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-badminfo-link px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#4a287d] focus:outline-none focus-visible:ring-2 focus-visible:ring-badminfo-link focus-visible:ring-offset-2"
+              >
+                Manage subscription
+                <ExternalLinkIcon />
+              </button>
+              <p className="mt-1.5 text-xs text-ink-500">
+                Opens the Stripe Customer Portal (cancel, change plan, payment details).
+              </p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="w-full min-w-0 border-t border-ink-100 pt-4 min-[720px]:border-0 min-[720px]:pt-0 lg:w-auto lg:max-w-md lg:flex-none">
+          <h4 className="text-base font-bold text-ink-900">Covered players</h4>
+          <p className="mt-0.5 text-sm text-ink-500">
+            Players this subscription covers (by Badminton England number).
+          </p>
+          <div className="mt-3 overflow-x-auto overflow-y-hidden rounded-lg border border-ink-100">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-ink-100 bg-[#f3f1f8] text-xs font-semibold uppercase tracking-wide text-ink-500">
+                  <th className="px-3 py-2 font-semibold">Name</th>
+                  <th className="px-3 py-2 font-semibold">BE Number</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {coveredPlayers.map((player) => (
+                  <tr key={player.beNumber} className="border-b border-ink-50 last:border-0">
+                    <td className="px-3 py-2">
+                      <a
+                        href={`https://www.badminfo.com/player?name=${encodeURIComponent(player.name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-normal text-badminfo-link underline underline-offset-2 hover:opacity-80"
+                      >
+                        {player.name}
+                      </a>
+                    </td>
+                    <td className="px-3 py-2 text-ink-700">{player.beNumber}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {view.action === 'manage' ? (
-        <div className="mt-3 border-t border-ink-100 pt-3">
-          <button
-            type="button"
-            onClick={onManageSubscription}
-            className="inline-flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-          >
-            Manage subscription
-            <ExternalLinkIcon />
-          </button>
-          <p className="mt-1 text-xs text-ink-500">
-            Opens the Stripe Customer Portal (cancel, change plan, payment details).
-          </p>
-        </div>
-      ) : null}
-
-      <PremiumTermsFooter />
+      <div className="lg:max-w-4xl">
+        <PremiumTermsFooter />
+      </div>
     </div>
+  )
+}
+
+function PlanChoice({
+  plan,
+  selected,
+  onSelect,
+  title,
+  price,
+  hint,
+}: {
+  plan: PremiumPlan
+  selected: PremiumPlan
+  onSelect: (plan: PremiumPlan) => void
+  title: string
+  price: string
+  hint?: string
+}) {
+  const active = selected === plan
+  return (
+    <label
+      className={`flex h-full cursor-pointer items-center justify-between gap-3 rounded-lg border px-3.5 py-3 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-badminfo-link/40 ${
+        active
+          ? 'border-badminfo-link bg-[#faf4ff]'
+          : 'border-[#e3e3e6] bg-white hover:border-[#cdced6]'
+      }`}
+    >
+      <input
+        type="radio"
+        name="premium-settings-plan"
+        checked={active}
+        onChange={() => onSelect(plan)}
+        className="sr-only"
+      />
+      <span className="flex min-w-0 items-center gap-3">
+        <span
+          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+            active ? 'border-badminfo-link' : 'border-[#c8c8cc]'
+          }`}
+          aria-hidden
+        >
+          {active ? <span className="h-2 w-2 rounded-full bg-badminfo-link" /> : null}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-bold text-ink-900">{title}</span>
+          {hint ? (
+            <span className="mt-0.5 block text-xs font-semibold text-[#198754]">{hint}</span>
+          ) : null}
+        </span>
+      </span>
+      <span className="shrink-0 text-sm font-semibold text-ink-900">{price}</span>
+    </label>
   )
 }
 
@@ -608,96 +676,57 @@ function UnsubscribedPremiumTab({
 
   return (
     <div>
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-base font-bold text-ink-900">Premium</h3>
-          <BetaBadge />
-        </div>
-        <p className="text-sm text-ink-500">{PREMIUM_PITCH_TAGLINE}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 md:items-start md:gap-x-10 lg:grid-cols-12 lg:gap-x-12 xl:gap-x-14 2xl:gap-x-16">
+        <div className="lg:col-span-5 xl:col-span-6">
+          <h3 className="text-lg font-bold text-ink-900">Premium</h3>
+          <p className="mt-1 text-sm text-ink-500">{PREMIUM_PITCH_TAGLINE}</p>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-ink-100 py-3">
-          <span className="text-sm font-semibold text-ink-900">Status</span>
-          <StatusPill label="Inactive" tone="idle" />
-        </div>
+          <div className="mt-5 flex items-center justify-between gap-4">
+            <span className="text-sm font-bold text-ink-900">Status</span>
+            <StatusPill label="Inactive" tone="idle" />
+          </div>
 
-        {/* CTA above the fold — primary action before benefits or scrolling */}
-        <div className="border-t border-ink-100 pt-5">
-          <fieldset>
+          <fieldset className="mt-3">
             <legend className="sr-only">Choose a plan</legend>
-            <div className="space-y-2">
-              <label
-                className={`flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 ${
-                  plan === 'yearly' ? 'border-brand-500 bg-brand-50' : 'border-ink-100 bg-white'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="premium-settings-plan"
-                    checked={plan === 'yearly'}
-                    onChange={() => setPlan('yearly')}
-                    className="text-brand-600"
-                  />
-                  <div>
-                    <p className="font-medium text-ink-900">Yearly</p>
-                    <p className="text-xs text-court-700">
-                      Save {formatPriceGbp(PREMIUM_YEARLY_SAVINGS_GBP)}
-                    </p>
-                  </div>
-                </div>
-                <span className="font-semibold text-ink-900">
-                  {formatPriceGbp(PREMIUM_YEARLY_PRICE_GBP)}/yr
-                </span>
-              </label>
-
-              <label
-                className={`flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 ${
-                  plan === 'monthly' ? 'border-brand-500 bg-brand-50' : 'border-ink-100 bg-white'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="premium-settings-plan"
-                    checked={plan === 'monthly'}
-                    onChange={() => setPlan('monthly')}
-                    className="text-brand-600"
-                  />
-                  <p className="font-medium text-ink-900">Monthly</p>
-                </div>
-                <span className="font-semibold text-ink-900">
-                  {formatPriceGbp(PREMIUM_MONTHLY_PRICE_GBP)}/mo
-                </span>
-              </label>
+            <div className="grid grid-cols-1 gap-2.5">
+              <PlanChoice
+                plan="yearly"
+                selected={plan}
+                onSelect={setPlan}
+                title="Yearly"
+                hint={`Save ${formatPriceGbp(PREMIUM_YEARLY_SAVINGS_GBP)}/yr`}
+                price={`${formatPriceGbp(PREMIUM_YEARLY_PRICE_GBP)}/yr`}
+              />
+              <PlanChoice
+                plan="monthly"
+                selected={plan}
+                onSelect={setPlan}
+                title="Monthly"
+                price={`${formatPriceGbp(PREMIUM_MONTHLY_PRICE_GBP)}/mo`}
+              />
             </div>
           </fieldset>
-
-          <p className="mt-3 text-xs text-ink-500">
-            Cancel anytime. Your Premium access will continue until the end of your current paid
-            period.
-          </p>
 
           <button
             type="button"
             onClick={() => onSignUpPremium(plan)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-brand-700"
+            className="mt-4 flex w-full items-center justify-center rounded-md bg-badminfo-link px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#4a287d] focus:outline-none focus-visible:ring-2 focus-visible:ring-badminfo-link focus-visible:ring-offset-2"
           >
             Subscribe to Premium
-            <BetaBadge />
           </button>
         </div>
 
-        <div className="mt-6 border-t border-ink-100 pt-5">
-          <h4 className="text-sm font-bold text-ink-900">What you get</h4>
-          <ul className="mt-3 space-y-3.5">
+        <div className="mt-6 border-t border-[#ececf1] pt-5 md:mt-0 md:border-0 md:pt-0 lg:col-span-7 xl:col-span-6">
+          <h4 className="text-base font-bold text-ink-900">What you get</h4>
+          <ul className="mt-4 space-y-4">
             {PREMIUM_PITCH_BENEFITS.map((benefit) => (
-              <li key={benefit.title} className="flex gap-2.5">
-                <span className="mt-0.5 shrink-0 font-bold text-brand-600" aria-hidden>
+              <li key={benefit.title} className="flex gap-2">
+                <span className="mt-0.5 w-4 shrink-0 text-sm font-bold text-badminfo-link" aria-hidden>
                   ✓
                 </span>
-                <div>
-                  <p className="text-sm font-semibold text-ink-900">{benefit.title}</p>
-                  <p className="mt-0.5 text-sm text-ink-600">{benefit.value}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-ink-900">{benefit.title}</p>
+                  <p className="mt-0.5 text-sm leading-snug text-ink-600">{benefit.value}</p>
                 </div>
               </li>
             ))}
