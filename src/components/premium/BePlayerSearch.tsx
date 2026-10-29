@@ -158,7 +158,7 @@ function ordinalDay(day: number): string {
 /** Stable sample of recent tournaments, different for each BE Number. */
 function prototypePlayerGlance(beNumber: string): GlanceEvent[] {
   const hash = hashBeNumber(beNumber)
-  const events = [0, 1].map((index) => {
+  const events: GlanceEvent[] = [0, 1].map((index) => {
     const monthsBack = (hash % 4) + index * 5
     const totalMonths = 2026 * 12 + 6 - monthsBack
     const year = Math.floor(totalMonths / 12)
