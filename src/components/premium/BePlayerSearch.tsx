@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import {
+  DEMO_ACCOUNT_BE_NUMBER,
   findBePlayerByNumber,
   searchBePlayers,
   type BePlayerRecord,
@@ -9,9 +10,11 @@ import {
   ratingChipBandForRating,
   U19_RATING_DISCIPLINES,
 } from '../../lib/opponentNoteIdentity'
-import { DRAW_PLAYER_PROFILE_LINK_CLASS } from '../notes/DrawPairNames'
+import { DisciplineChip } from '../discipline/DisciplineChip'
 import { RatingChip } from '../notes/OpponentRatingChips'
+import { CompetitionAgeChip } from '../tournament/CompetitionAgeChip'
 import { CountyAffiliationChip } from '../tournament/CountyAffiliationChip'
+import { TournamentCategoryChip } from '../tournament/TournamentCategoryChip'
 
 type Props = {
   defaultQuery?: string
@@ -73,6 +76,150 @@ const COUNTY_BADGE_SHORT_NAMES: Record<string, string> = {
   yorkshire: 'Yorks',
 }
 
+function hashBeNumber(value: string): number {
+  let hash = 0
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0
+  }
+  return hash
+}
+
+const GLANCE_TOURNAMENTS = [
+  'Cambridgeshire Senior County Championships',
+  'Suffolk Masters Open Championships',
+  'Essex Restricted Graded Tournament',
+  'Surrey Open Championships',
+  'Buckinghamshire County Championships',
+  'Norfolk Senior County Tournament',
+  'Kent Restricted Championships',
+  'Oxfordshire Masters Open',
+  'Hertfordshire Senior Championships',
+  'Middlesex Open Championships',
+] as const
+
+const GLANCE_LEVELS = ['Bronze', 'Silver', 'Gold', 'Copper'] as const
+
+const GLANCE_MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+] as const
+
+const SARAH_CHEN_BE_NUMBER = '1172208'
+
+const GLANCE_PARTNERS = [
+  'James Smith',
+  'Emma Wilson',
+  'Sarah Chen',
+  'Alex Taylor',
+  'Christopher Parker',
+  'Daniel Bates',
+  'Joseph Simon',
+  'Joel Simon',
+] as const
+
+type GlanceMatch = {
+  discipline: 'OS' | 'OD' | 'XD'
+  name?: string
+}
+
+type GlanceEvent = {
+  name: string
+  level: string
+  age: string
+  date: string
+  partners: GlanceMatch[]
+}
+
+function ordinalDay(day: number): string {
+  const mod100 = day % 100
+  if (mod100 >= 11 && mod100 <= 13) return `${day}th`
+  switch (day % 10) {
+    case 1:
+      return `${day}st`
+    case 2:
+      return `${day}nd`
+    case 3:
+      return `${day}rd`
+    default:
+      return `${day}th`
+  }
+}
+
+/** Stable sample of recent tournaments, different for each BE Number. */
+function prototypePlayerGlance(beNumber: string): GlanceEvent[] {
+  const hash = hashBeNumber(beNumber)
+  const events = [0, 1].map((index) => {
+    const monthsBack = (hash % 4) + index * 5
+    const totalMonths = 2026 * 12 + 6 - monthsBack
+    const year = Math.floor(totalMonths / 12)
+    const month = GLANCE_MONTH_NAMES[totalMonths % 12]!
+    const day = 3 + ((hash + index * 7) % 25)
+    const partnerA = GLANCE_PARTNERS[(hash + index * 2) % GLANCE_PARTNERS.length]!
+    let partnerB = GLANCE_PARTNERS[(hash + index * 2 + 3) % GLANCE_PARTNERS.length]!
+    if (partnerB === partnerA) {
+      partnerB = GLANCE_PARTNERS[(hash + index + 5) % GLANCE_PARTNERS.length]!
+    }
+    const partners: GlanceMatch[] =
+      index === 1 && hash % 2 === 0
+        ? [{ discipline: 'OD', name: partnerA }]
+        : [
+            { discipline: 'OD', name: partnerA },
+            { discipline: 'XD', name: partnerB },
+          ]
+    return {
+      name: GLANCE_TOURNAMENTS[(hash + index * 3) % GLANCE_TOURNAMENTS.length]!,
+      level: GLANCE_LEVELS[(hash + index) % GLANCE_LEVELS.length]!,
+      age: 'Senior',
+      date: `${ordinalDay(day)} ${month} ${year}`,
+      partners,
+    }
+  })
+
+  if (beNumber === DEMO_ACCOUNT_BE_NUMBER) {
+    const countyIndex = events.findIndex((event) => event.name === 'Buckinghamshire County Championships')
+    const target = countyIndex >= 0 ? countyIndex : 1
+    events[target] = {
+      name: 'Senior County Championships - 25/26',
+      level: 'County',
+      age: 'Senior',
+      date: '15th & 16th January 2026',
+      partners: [
+        { discipline: 'OS' },
+        { discipline: 'OD', name: 'Joel Simon, Daniel Bates' },
+        { discipline: 'XD', name: 'Sarah Chen' },
+      ],
+    }
+  }
+
+  if (beNumber === SARAH_CHEN_BE_NUMBER) {
+    const juniorNames = ['Oxfordshire Junior Championships', 'Essex Junior Open'] as const
+    const otherPartners = ['James Smith', 'Emma Wilson', 'Alex Taylor', 'Daniel Bates']
+    events.forEach((event, index) => {
+      event.name = juniorNames[index] ?? event.name
+      event.age = 'U17'
+      const used = new Set(event.partners.map((match) => match.name).filter(Boolean))
+      for (const match of event.partners) {
+        if (match.name !== 'Sarah Chen') continue
+        const replacement = otherPartners.find((name) => !used.has(name)) ?? 'James Smith'
+        match.name = replacement
+        used.add(replacement)
+      }
+    })
+  }
+
+  return events
+}
+
 function countyBadgeShortName(county: string): string | null {
   const trimmed = county.trim()
   if (!trimmed) return null
@@ -84,28 +231,33 @@ function PlayerResultCard({
   selected,
   onSelect,
   label,
+  expanded,
+  onToggleGlance,
 }: {
   player: BePlayerRecord
   selected: boolean
   onSelect: (player: BePlayerRecord) => void
   /** Shown above the name, for the account's current BE Number. */
   label?: string
+  expanded: boolean
+  onToggleGlance: (beNumber: string) => void
 }) {
   const shortName = countyBadgeShortName(player.county)
   const ratings = prototypeDisciplineRatings(`${player.name}|${player.beNumber}`)
-  const profileHref = `https://www.badminfo.com/player?name=${encodeURIComponent(player.name)}`
   const radioId = useId()
+  const glance = prototypePlayerGlance(player.beNumber)
 
   return (
     <div
-      className={`rounded-xl border-2 transition ${
-        selected
-          ? 'border-brand-500 bg-brand-50'
-          : 'border-ink-100 bg-white hover:border-brand-300'
+      className={`overflow-hidden rounded-xl border-2 transition ${
+        selected ? 'border-brand-500' : 'border-ink-100 hover:border-brand-300'
       }`}
     >
-      <div className="flex items-center gap-3 px-3 py-2">
-        <label htmlFor={radioId} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+      <div className="flex items-stretch">
+        <label
+          htmlFor={radioId}
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 bg-white px-3 py-2"
+        >
           <input
             id={radioId}
             type="radio"
@@ -144,16 +296,68 @@ function PlayerResultCard({
             </span>
           </span>
         </label>
-        <a
-          href={profileHref}
-          target="_blank"
-          rel="noreferrer"
-          className={`shrink-0 self-center text-sm ${DRAW_PLAYER_PROFILE_LINK_CLASS}`}
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-label="Events and partners"
+          onClick={() => onToggleGlance(player.beNumber)}
+          className="flex w-12 shrink-0 items-center justify-center border-l border-ink-100 bg-white text-ink-700 transition hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200"
         >
-          Profile
-        </a>
+          <ChevronIcon expanded={expanded} />
+        </button>
       </div>
+      {expanded ? (
+        <div className="border-t border-ink-100 bg-white px-3 py-2.5">
+          <p className="text-sm font-semibold text-ink-900">Latest events</p>
+          <ul className="mt-2">
+            {glance.map((event, index) => (
+              <li key={`${event.name}-${event.date}`} className={index > 0 ? 'mt-3' : undefined}>
+                {index > 0 ? <div className="mb-3 h-px w-full bg-ink-200" aria-hidden /> : null}
+                <p className="text-[13px] font-medium leading-5 text-ink-900">{event.name}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <TournamentCategoryChip label={event.level} />
+                  <CompetitionAgeChip label={event.age} />
+                  <span className="text-xs font-medium text-ink-900">{event.date}</span>
+                </div>
+                <ul className="mt-1.5 space-y-1">
+                  {event.partners.map((match) => (
+                    <li
+                      key={`${match.discipline}-${match.name ?? 'solo'}`}
+                      className="flex items-center gap-1.5 text-xs"
+                    >
+                      <DisciplineChip code={match.discipline} />
+                      {match.name ? (
+                        <>
+                          <span className="italic text-ink-600">with</span>
+                          <span className="font-medium text-ink-900">{match.name}</span>
+                        </>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
+  )
+}
+
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      className={`h-6 w-6 shrink-0 transition ${expanded ? 'rotate-180' : ''}`}
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path
+        fillRule="evenodd"
+        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z"
+        clipRule="evenodd"
+      />
+    </svg>
   )
 }
 
@@ -166,6 +370,7 @@ export function BePlayerSearch({
   error,
 }: Props) {
   const [query, setQuery] = useState(defaultQuery)
+  const [openBeNumber, setOpenBeNumber] = useState<string | null>(null)
   const currentPlayer = currentBeNumber ? (findBePlayerByNumber(currentBeNumber) ?? null) : null
   const results = useMemo(() => {
     return searchBePlayers(query).filter((player) => player.beNumber !== currentPlayer?.beNumber)
@@ -188,6 +393,10 @@ export function BePlayerSearch({
           selected={selected?.beNumber === currentPlayer.beNumber}
           onSelect={onSelect}
           label="Your current BE Number"
+          expanded={openBeNumber === currentPlayer.beNumber}
+          onToggleGlance={(beNumber) =>
+            setOpenBeNumber((current) => (current === beNumber ? null : beNumber))
+          }
         />
       ) : null}
 
@@ -216,6 +425,10 @@ export function BePlayerSearch({
                   player={player}
                   selected={selected?.beNumber === player.beNumber}
                   onSelect={onSelect}
+                  expanded={openBeNumber === player.beNumber}
+                  onToggleGlance={(beNumber) =>
+                    setOpenBeNumber((current) => (current === beNumber ? null : beNumber))
+                  }
                 />
               </li>
             ))}
