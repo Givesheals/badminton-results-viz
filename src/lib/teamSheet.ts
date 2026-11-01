@@ -358,8 +358,8 @@ export function countOpenPlaces(state: TeamSheetState): number {
 
 export function openPlacesLabel(count: number): string {
   if (count === 0) return 'Sheet complete'
-  if (count === 1) return '1 place still open'
-  return `${count} places still open`
+  if (count === 1) return '1 match place still open'
+  return `${count} match places still open`
 }
 
 export function summariseTeamSheet(state: TeamSheetState): {
@@ -381,6 +381,13 @@ export function summariseTeamSheet(state: TeamSheetState): {
 
 export function sheetIssues(state: TeamSheetState): SheetIssue[] {
   const issues: SheetIssue[] = []
+  if (state.players.length === 0) {
+    issues.push({
+      id: 'empty-sheet',
+      text: "Bruh... you haven't set your team up at all...",
+      tone: 'note',
+    })
+  }
   pushLoadIssues(state, 'man', issues)
   pushLoadIssues(state, 'woman', issues)
   const names = new Map(state.players.map((player) => [player.id, player.name]))

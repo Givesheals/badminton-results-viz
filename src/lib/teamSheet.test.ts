@@ -227,8 +227,8 @@ describe('summariseTeamSheet', () => {
     ])
     expect(summary.women).toEqual([])
     expect(summary.openPlaces).toBe(countOpenPlaces(state))
-    expect(openPlacesLabel(summary.openPlaces)).toBe(`${summary.openPlaces} places still open`)
-    expect(openPlacesLabel(1)).toBe('1 place still open')
+    expect(openPlacesLabel(summary.openPlaces)).toBe(`${summary.openPlaces} match places still open`)
+    expect(openPlacesLabel(1)).toBe('1 match place still open')
     expect(openPlacesLabel(0)).toBe('Sheet complete')
   })
 })
@@ -246,6 +246,18 @@ describe('setPlayerGender', () => {
     expect(next.players[0]?.gender).toBe('woman')
     expect(next.slots.MS1).toBeNull()
     expect(next.slots.MD1A).toBeNull()
+  })
+})
+
+describe('sheet issues', () => {
+  it('calls out a completely blank sheet', () => {
+    expect(sheetIssues(createEmptyTeamSheet())).toEqual([
+      {
+        id: 'empty-sheet',
+        text: "Bruh... you haven't set your team up at all...",
+        tone: 'note',
+      },
+    ])
   })
 })
 

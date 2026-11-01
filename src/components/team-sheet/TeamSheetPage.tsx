@@ -1,4 +1,13 @@
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+  type FormEvent,
+  type PointerEvent,
+} from 'react'
 import { getDisciplineFamilyStyle } from '../../lib/disciplineStyle'
 import { readTeamSheetLink, teamSheetHash } from '../../lib/teamSheetLink'
 import {
@@ -43,15 +52,22 @@ export function TeamSheetPage() {
   const [name, setName] = useState('')
   const [gender, setGender] = useState<TeamGender>('man')
   const [nameError, setNameError] = useState<string | null>(null)
+  const [addingPlayer, setAddingPlayer] = useState(false)
   const [openSlot, setOpenSlot] = useState<SlotId | null>(null)
   const [savedHash, setSavedHash] = useState<string | null>(loaded.savedHash)
   const [copyState, setCopyState] = useState<'copied' | 'manual' | null>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
+  const playerDragRef = useRef<{ id: string; x: number; y: number; moved: boolean; over: TeamGender | null } | null>(null)
+  const [playerDrag, setPlayerDrag] = useState<{ id: string; x: number; y: number; over: TeamGender | null } | null>(null)
+  const nativeDragId = useRef<string | null>(null)
+  const gestureHandled = useRef(false)
+  const [dropOver, setDropOver] = useState<TeamGender | null>(null)
   const linkRef = useRef<HTMLInputElement>(null)
   const shouldFocusLink = useRef(false)
   const summary = useMemo(() => summariseTeamSheet(sheet), [sheet])
   const issues = useMemo(() => sheetIssues(sheet), [sheet])
+  const [issuesChecked, setIssuesChecked] = useState(false)
   const currentHash = teamSheetHash(sheet)
   const linkMatches = savedHash !== null && savedHash === currentHash
   const shareUrl =
@@ -95,6 +111,16 @@ export function TeamSheetPage() {
     }
   }, [openSlot])
 
+  useEffect(() => {
+    if (addingPlayer) nameInputRef.current?.focus()
+  }, [addingPlayer])
+
+  function closePlayerForm() {
+    setAddingPlayer(false)
+    setName('')
+    setNameError(null)
+  }
+
   function onAdd(event: FormEvent) {
     event.preventDefault()
     const result = addPlayer(sheet, { id: crypto.randomUUID(), name, gender })
@@ -106,6 +132,29 @@ export function TeamSheetPage() {
     setName('')
     setNameError(null)
     nameInputRef.current?.focus()
+  }
+
+  function finishAdding() {
+    if (name.trim().length === 0) {
+      closePlayerForm()
+      return
+    }
+    const result = addPlayer(sheet, { id: crypto.randomUUID(), name, gender })
+    if (!result.ok) {
+      setNameError(result.error)
+      return
+    }
+    setSheet(result.sheet)
+    closePlayerForm()
+  }
+
+  function movePlayer(playerId: string, nextGender: TeamGender) {
+    if (gestureHandled.current) return
+    const player = sheet.players.find((item) => item.id === playerId)
+    if (!player || player.gender === nextGender) return
+    gestureHandled.current = true
+    setSheet(setPlayerGender(sheet, playerId, nextGender))
+    if (openSlot && sheet.slots[openSlot] === playerId) setOpenSlot(null)
   }
 
   async function onSave() {
@@ -169,93 +218,164 @@ export function TeamSheetPage() {
 
         <div className="mt-4 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-x-6 lg:gap-y-4">
           <section className="rounded-xl border border-ink-200 bg-white p-4">
-            <h2 className="text-sm font-semibold">Squad</h2>
-            {sheet.players.length === 0 && (
+            <h2 className="text-sm font-semibold">Squad setup</h2>
+            {sheet.players.length === 0 && !addingPlayer && (
               <p className="mt-1 text-sm text-ink-500">
                 Add every player in the squad, including anyone who might not get on the card.
               </p>
             )}
-            <form onSubmit={onAdd} className="mt-3 space-y-3">
-              <label className="block" htmlFor="squad-name">
-                <span className="text-xs font-medium text-ink-500">Name</span>
-                <input
-                  ref={nameInputRef}
-                  id="squad-name"
-                  value={name}
-                  autoComplete="off"
-                  autoCapitalize="words"
-                  onChange={(event) => {
-                    setName(event.target.value)
-                    setNameError(null)
-                  }}
-                  className="mt-1 h-11 w-full rounded-lg border border-ink-200 bg-white px-3 text-sm text-ink-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-                />
-              </label>
-              <div className="flex items-center gap-2">
-                <div
-                  role="group"
-                  aria-label="Gender"
-                  className="inline-flex rounded-lg border border-ink-200 bg-white p-0.5"
-                >
-                  <GenderChoice label="Man" pressed={gender === 'man'} onPress={() => setGender('man')} />
-                  <GenderChoice label="Woman" pressed={gender === 'woman'} onPress={() => setGender('woman')} />
+            {addingPlayer ? (
+              <form onSubmit={onAdd} className="mt-3 space-y-3">
+                <label className="block" htmlFor="squad-name">
+                  <span className="text-xs font-medium text-ink-500">Player name</span>
+                  <input
+                    ref={nameInputRef}
+                    id="squad-name"
+                    value={name}
+                    autoComplete="off"
+                    autoCapitalize="words"
+                    onChange={(event) => {
+                      setName(event.target.value)
+                      setNameError(null)
+                    }}
+                    className="mt-1 h-8 w-full rounded-md border border-ink-200 bg-white px-2 text-sm text-ink-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                  />
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    role="group"
+                    aria-label="Gender"
+                    className="inline-flex rounded-md border border-ink-200 bg-white p-0.5"
+                  >
+                    <GenderChoice label="M" spoken="Man" pressed={gender === 'man'} onPress={() => setGender('man')} />
+                    <GenderChoice label="W" spoken="Woman" pressed={gender === 'woman'} onPress={() => setGender('woman')} />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={name.trim().length === 0}
+                    className="inline-flex h-8 items-center justify-center rounded-md bg-brand-600 px-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-ink-200 disabled:text-ink-500"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={finishAdding}
+                    className="inline-flex h-8 items-center justify-center rounded-md px-2 text-sm text-ink-500 hover:text-ink-900"
+                  >
+                    Done
+                  </button>
                 </div>
-                <button
-                  type="submit"
-                  disabled={name.trim().length === 0}
-                  className="ml-auto inline-flex h-8 items-center justify-center rounded-lg bg-brand-600 px-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-ink-200 disabled:text-ink-500"
-                >
-                  Add
-                </button>
-              </div>
-              {nameError && (
-                <p role="alert" className="text-sm text-loss-700">
-                  {nameError}
-                </p>
-              )}
-            </form>
+                {nameError && (
+                  <p role="alert" className="text-sm text-loss-700">
+                    {nameError}
+                  </p>
+                )}
+              </form>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAddingPlayer(true)}
+                className="mt-3 inline-flex h-8 items-center justify-center rounded-md border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 hover:border-ink-300"
+              >
+                Add players
+              </button>
+            )}
             {sheet.players.length > 0 && (
-              <ul className="mt-3 flex flex-wrap gap-1.5">
-                {sheet.players.map((player) => {
-                  const nextGender = player.gender === 'man' ? 'woman' : 'man'
-                  const placed = Object.values(sheet.slots).includes(player.id)
-                  return (
-                    <li
-                      key={player.id}
-                      className="inline-flex max-w-full items-center gap-1 rounded-full border border-ink-200 bg-ink-50 py-0.5 pl-2.5 pr-1"
-                    >
-                      <span className="truncate text-sm font-medium">{player.name}</span>
-                      <button
-                        type="button"
-                        aria-label={`${player.name} is a ${player.gender}. Switch to ${nextGender}.`}
-                        title={
-                          placed
-                            ? `Switch to ${nextGender}. This clears their places on the card.`
-                            : `Switch to ${nextGender}.`
-                        }
-                        onClick={() => {
-                          setSheet(setPlayerGender(sheet, player.id, nextGender))
-                          if (openSlot && sheet.slots[openSlot] === player.id) setOpenSlot(null)
-                        }}
-                        className="shrink-0 rounded-full bg-white px-1.5 py-0.5 text-[11px] font-medium text-ink-600 ring-1 ring-ink-200 hover:text-ink-900"
-                      >
-                        {player.gender === 'man' ? 'Man' : 'Woman'}
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Remove ${player.name}`}
-                        onClick={() => {
-                          setSheet(removePlayer(sheet, player.id))
-                          if (openSlot && sheet.slots[openSlot] === player.id) setOpenSlot(null)
-                        }}
-                        className="shrink-0 rounded-full px-1 text-sm leading-none text-ink-400 hover:text-ink-900"
-                      >
-                        ×
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                {(['man', 'woman'] as const).map((column) => (
+                  <PlayerColumn
+                    key={column}
+                    gender={column}
+                    title={column === 'man' ? 'Men' : 'Women'}
+                    players={sheet.players.filter((player) => player.gender === column)}
+                    sheet={sheet}
+                    dragOver={
+                      (playerDrag !== null &&
+                        playerDrag.over === column &&
+                        sheet.players.find((player) => player.id === playerDrag.id)?.gender !== column) ||
+                      (dropOver === column &&
+                        sheet.players.find((player) => player.id === nativeDragId.current)?.gender !== column)
+                    }
+                    onGender={(playerId, nextGender) => {
+                      gestureHandled.current = false
+                      setSheet(setPlayerGender(sheet, playerId, nextGender))
+                      if (openSlot && sheet.slots[openSlot] === playerId) setOpenSlot(null)
+                    }}
+                    onRemove={(playerId) => {
+                      setSheet(removePlayer(sheet, playerId))
+                      if (openSlot && sheet.slots[openSlot] === playerId) setOpenSlot(null)
+                    }}
+                    onPointerDown={(event, playerId) => {
+                      if ((event.target as HTMLElement).closest('button')) return
+                      gestureHandled.current = false
+                      playerDragRef.current = {
+                        id: playerId,
+                        x: event.clientX,
+                        y: event.clientY,
+                        moved: false,
+                        over: null,
+                      }
+                      try {
+                        event.currentTarget.setPointerCapture(event.pointerId)
+                      } catch {
+                        // A mouse drag the browser handles itself still lands on drop.
+                      }
+                    }}
+                    onPointerMove={(event) => {
+                      const drag = playerDragRef.current
+                      if (!drag) return
+                      const distance = (event.clientX - drag.x) ** 2 + (event.clientY - drag.y) ** 2
+                      if (!drag.moved && distance < 36) return
+                      drag.moved = true
+                      const hit = document.elementFromPoint(event.clientX, event.clientY)
+                      const columnHit = hit?.closest('[data-squad-column]')?.getAttribute('data-squad-column')
+                      drag.over = columnHit === 'man' || columnHit === 'woman' ? columnHit : null
+                      setPlayerDrag({ id: drag.id, x: event.clientX, y: event.clientY, over: drag.over })
+                    }}
+                    onPointerUp={() => {
+                      const drag = playerDragRef.current
+                      playerDragRef.current = null
+                      setPlayerDrag(null)
+                      if (!drag?.moved || !drag.over) return
+                      movePlayer(drag.id, drag.over)
+                    }}
+                    onDragStart={(event, playerId) => {
+                      if ((event.target as HTMLElement).closest('button')) {
+                        event.preventDefault()
+                        return
+                      }
+                      gestureHandled.current = false
+                      nativeDragId.current = playerId
+                      event.dataTransfer.setData('text/plain', playerId)
+                      event.dataTransfer.effectAllowed = 'move'
+                    }}
+                    onDragOver={(event, columnGender) => {
+                      event.preventDefault()
+                      event.dataTransfer.dropEffect = 'move'
+                      setDropOver((current) => (current === columnGender ? current : columnGender))
+                    }}
+                    onDrop={(event, columnGender) => {
+                      event.preventDefault()
+                      const playerId = event.dataTransfer.getData('text/plain') || nativeDragId.current
+                      nativeDragId.current = null
+                      setDropOver(null)
+                      if (playerId) movePlayer(playerId, columnGender)
+                    }}
+                    onDragEnd={() => {
+                      nativeDragId.current = null
+                      setDropOver(null)
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+            {playerDrag && (
+              <div
+                className="pointer-events-none fixed z-50 rounded-md border border-ink-200 bg-white px-2 py-1 text-sm font-medium shadow-sm"
+                style={{ left: playerDrag.x + 12, top: playerDrag.y + 12 }}
+              >
+                {sheet.players.find((player) => player.id === playerDrag.id)?.name}
+              </div>
             )}
             {sheet.players.length >= 2 && (
               <Partnerships
@@ -292,8 +412,13 @@ export function TeamSheetPage() {
           </section>
 
           <aside className="mt-6 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:mt-0">
-            <div className="lg:sticky lg:top-6">
-              <Summary summary={summary} issues={issues} />
+            <div className="space-y-4 lg:sticky lg:top-6">
+              <Summary summary={summary} />
+              <IssuesPanel
+                issues={issues}
+                revealed={issuesChecked || summary.openPlaces === 0}
+                onCheck={() => setIssuesChecked(true)}
+              />
             </div>
           </aside>
         </div>
@@ -302,20 +427,123 @@ export function TeamSheetPage() {
   )
 }
 
+function PlayerColumn({
+  title,
+  gender,
+  players,
+  sheet,
+  dragOver,
+  onGender,
+  onRemove,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+}: {
+  title: string
+  gender: TeamGender
+  players: TeamSheetState['players']
+  sheet: TeamSheetState
+  dragOver: boolean
+  onGender: (playerId: string, gender: TeamGender) => void
+  onRemove: (playerId: string) => void
+  onPointerDown: (event: PointerEvent<HTMLLIElement>, playerId: string) => void
+  onPointerMove: (event: PointerEvent<HTMLLIElement>) => void
+  onPointerUp: () => void
+  onDragStart: (event: DragEvent<HTMLLIElement>, playerId: string) => void
+  onDragOver: (event: DragEvent<HTMLDivElement>, gender: TeamGender) => void
+  onDrop: (event: DragEvent<HTMLDivElement>, gender: TeamGender) => void
+  onDragEnd: () => void
+}) {
+  return (
+    <div
+      data-squad-column={gender}
+      onDragOver={(event) => onDragOver(event, gender)}
+      onDrop={(event) => onDrop(event, gender)}
+      className={`min-w-0 rounded-md p-1 ${dragOver ? 'bg-brand-50 ring-2 ring-brand-200' : ''}`}
+    >
+      <h3
+        className={`flex items-center gap-1.5 text-xs font-medium tracking-wide ${
+          gender === 'man' ? 'text-[#1577a8]' : 'text-[#a33b6b]'
+        }`}
+      >
+        <GenderMark gender={gender} className="h-4 w-4" />
+        <span className="text-ink-500">{title}</span>
+      </h3>
+      <ul className="mt-1.5 flex min-h-8 flex-col gap-1.5">
+        {players.map((player) => {
+          const nextGender = player.gender === 'man' ? 'woman' : 'man'
+          const onCard = Object.values(sheet.slots).includes(player.id)
+          return (
+            <li
+              key={player.id}
+              draggable
+              onDragStart={(event) => onDragStart(event, player.id)}
+              onDragEnd={onDragEnd}
+              onPointerDown={(event) => onPointerDown(event, player.id)}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={onPointerUp}
+              className="flow-root cursor-grab touch-none select-none rounded-md border border-ink-200 bg-ink-50 py-0.5 pl-2 pr-1 active:cursor-grabbing"
+            >
+              <span className="float-right ml-1 flex items-center">
+                <button
+                  type="button"
+                  aria-label={`${player.name} is a ${player.gender}. Switch to ${nextGender}.`}
+                  title={
+                    onCard
+                      ? `Switch to ${nextGender}. This clears their places on the card.`
+                      : `Switch to ${nextGender}.`
+                  }
+                  onClick={() => onGender(player.id, nextGender)}
+                  className={`inline-flex shrink-0 items-center rounded-md px-1 py-0.5 text-[11px] font-medium ring-1 ${
+                    player.gender === 'man'
+                      ? 'bg-[#e7f4fb] text-[#1577a8] ring-[#c5e4f4]'
+                      : 'bg-[#fdeef4] text-[#a33b6b] ring-[#f3d0e0]'
+                  }`}
+                >
+                  {player.gender === 'man' ? 'M' : 'W'}
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Remove ${player.name}`}
+                  onClick={() => onRemove(player.id)}
+                  className="shrink-0 rounded-md px-1 text-sm leading-none text-ink-400 hover:text-ink-900"
+                >
+                  ×
+                </button>
+              </span>
+              <span className="break-words text-sm font-medium">{player.name}</span>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 function Partnerships({ sheet, onChange }: { sheet: TeamSheetState; onChange: (sheet: TeamSheetState) => void }) {
-  const [playerA, setPlayerA] = useState(sheet.players[0]?.id ?? '')
-  const [playerB, setPlayerB] = useState(sheet.players[1]?.id ?? '')
+  const [adding, setAdding] = useState(false)
+  const [playerA, setPlayerA] = useState('')
+  const [playerB, setPlayerB] = useState('')
   const [strength, setStrength] = useState<PartnershipStrength>('lots')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setPlayerA((current) =>
-      sheet.players.some((player) => player.id === current) ? current : (sheet.players[0]?.id ?? ''),
-    )
-    setPlayerB((current) =>
-      sheet.players.some((player) => player.id === current) ? current : (sheet.players[1]?.id ?? ''),
-    )
+    setPlayerA((current) => (sheet.players.some((player) => player.id === current) ? current : ''))
+    setPlayerB((current) => (sheet.players.some((player) => player.id === current) ? current : ''))
   }, [sheet.players])
+
+  function closeForm() {
+    setAdding(false)
+    setPlayerA('')
+    setPlayerB('')
+    setStrength('lots')
+    setError(null)
+  }
 
   function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -325,63 +553,12 @@ function Partnerships({ sheet, onChange }: { sheet: TeamSheetState; onChange: (s
       return
     }
     onChange(result.sheet)
-    setError(null)
+    closeForm()
   }
 
   return (
     <div className="mt-3 border-t border-ink-100 pt-3">
       <h3 className="text-xs font-medium tracking-wide text-ink-500">Partnerships</h3>
-      <p className="mt-1 text-xs text-ink-500">How much they have played together.</p>
-      <form onSubmit={onSubmit} className="mt-2 flex flex-wrap items-center gap-2">
-        <select
-          aria-label="First player"
-          value={playerA}
-          onChange={(event) => {
-            setPlayerA(event.target.value)
-            setError(null)
-          }}
-          className="h-8 min-w-0 flex-1 basis-36 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900"
-        >
-          {sheet.players.map((player) => (
-            <option key={player.id} value={player.id}>
-              {player.name}
-            </option>
-          ))}
-        </select>
-        <span className="text-xs text-ink-400" aria-hidden>
-          &
-        </span>
-        <select
-          aria-label="Second player"
-          value={playerB}
-          onChange={(event) => {
-            setPlayerB(event.target.value)
-            setError(null)
-          }}
-          className="h-8 min-w-0 flex-1 basis-36 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900"
-        >
-          {sheet.players.map((player) => (
-            <option key={player.id} value={player.id}>
-              {player.name}
-            </option>
-          ))}
-        </select>
-        <div role="group" aria-label="Experience together" className="inline-flex rounded-lg border border-ink-200 bg-white p-0.5">
-          <GenderChoice label="Lots" pressed={strength === 'lots'} onPress={() => setStrength('lots')} />
-          <GenderChoice label="A bit" pressed={strength === 'bit'} onPress={() => setStrength('bit')} />
-        </div>
-        <button
-          type="submit"
-          className="inline-flex h-8 items-center justify-center rounded-lg bg-brand-600 px-3 text-sm font-semibold text-white hover:bg-brand-700"
-        >
-          Add pair
-        </button>
-      </form>
-      {error && (
-        <p role="alert" className="mt-2 text-sm text-loss-700">
-          {error}
-        </p>
-      )}
       {sheet.partnerships.length > 0 && (
         <ul className="mt-2 flex flex-wrap gap-1.5">
           {sheet.partnerships.map((pair) => {
@@ -393,7 +570,7 @@ function Partnerships({ sheet, onChange }: { sheet: TeamSheetState; onChange: (s
             return (
               <li
                 key={pair.id}
-                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-ink-200 bg-white py-0.5 pl-2.5 pr-1"
+                className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-ink-200 bg-white py-0.5 pl-2 pr-1"
               >
                 <span className="truncate text-sm">
                   {first.name} & {second.name}
@@ -402,7 +579,7 @@ function Partnerships({ sheet, onChange }: { sheet: TeamSheetState; onChange: (s
                   type="button"
                   aria-label={`${first.name} and ${second.name}, ${spoken}. Switch intensity.`}
                   onClick={() => onChange(setPartnershipStrength(sheet, pair.id, next))}
-                  className={`shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
+                  className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
                     pair.strength === 'lots' ? 'bg-brand-50 text-brand-800' : 'bg-ink-100 text-ink-600'
                   }`}
                 >
@@ -412,7 +589,7 @@ function Partnerships({ sheet, onChange }: { sheet: TeamSheetState; onChange: (s
                   type="button"
                   aria-label={`Remove ${first.name} and ${second.name}`}
                   onClick={() => onChange(removePartnership(sheet, pair.id))}
-                  className="shrink-0 rounded-full px-1 text-sm leading-none text-ink-400 hover:text-ink-900"
+                  className="shrink-0 rounded-md px-1 text-sm leading-none text-ink-400 hover:text-ink-900"
                 >
                   ×
                 </button>
@@ -421,22 +598,113 @@ function Partnerships({ sheet, onChange }: { sheet: TeamSheetState; onChange: (s
           })}
         </ul>
       )}
+      {adding ? (
+        <form onSubmit={onSubmit} className="mt-2 flex flex-wrap items-center gap-2">
+          <p className="w-full text-xs text-ink-500">How much they have played together.</p>
+          <select
+            aria-label="First player"
+            value={playerA}
+            onChange={(event) => {
+              setPlayerA(event.target.value)
+              setError(null)
+            }}
+            className="h-8 min-w-0 flex-1 basis-36 rounded-md border border-ink-200 bg-white px-2 text-sm text-ink-900"
+          >
+            <option value="">Choose player</option>
+            {sheet.players.map((player) => (
+              <option key={player.id} value={player.id}>
+                {player.name}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-ink-400" aria-hidden>
+            &
+          </span>
+          <select
+            aria-label="Second player"
+            value={playerB}
+            onChange={(event) => {
+              setPlayerB(event.target.value)
+              setError(null)
+            }}
+            className="h-8 min-w-0 flex-1 basis-36 rounded-md border border-ink-200 bg-white px-2 text-sm text-ink-900"
+          >
+            <option value="">Choose player</option>
+            {sheet.players.map((player) => (
+              <option key={player.id} value={player.id}>
+                {player.name}
+              </option>
+            ))}
+          </select>
+          <div role="group" aria-label="Experience together" className="inline-flex rounded-md border border-ink-200 bg-white p-0.5">
+            <GenderChoice label="Lots" pressed={strength === 'lots'} onPress={() => setStrength('lots')} />
+            <GenderChoice label="A bit" pressed={strength === 'bit'} onPress={() => setStrength('bit')} />
+          </div>
+          <button
+            type="submit"
+            disabled={playerA.length === 0 || playerB.length === 0}
+            className="inline-flex h-8 items-center justify-center rounded-md bg-brand-600 px-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-ink-200 disabled:text-ink-500"
+          >
+            Add
+          </button>
+          <button
+            type="button"
+            onClick={closeForm}
+            className="inline-flex h-8 items-center justify-center rounded-md px-2 text-sm text-ink-500 hover:text-ink-900"
+          >
+            Cancel
+          </button>
+          {error && (
+            <p role="alert" className="w-full text-sm text-loss-700">
+              {error}
+            </p>
+          )}
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="mt-2 inline-flex h-8 items-center justify-center rounded-md border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 hover:border-ink-300"
+        >
+          Add pair
+        </button>
+      )}
     </div>
+  )
+}
+
+function GenderMark({ gender, className = 'h-3.5 w-3.5' }: { gender: TeamGender; className?: string }) {
+  if (gender === 'man') {
+    return (
+      <svg viewBox="0 0 16 16" className={`${className} shrink-0`} fill="none" aria-hidden>
+        <circle cx="6.5" cy="9.2" r="3.1" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M8.8 6.9 12.4 3.3M12.4 3.3H9.4M12.4 3.3v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+  return (
+    <svg viewBox="0 0 16 16" className={`${className} shrink-0`} fill="none" aria-hidden>
+      <circle cx="8" cy="5.6" r="3.1" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M8 8.7v4.6M6 11.2h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
   )
 }
 
 function GenderChoice({
   label,
+  spoken,
   pressed,
   onPress,
 }: {
   label: string
+  spoken?: string
   pressed: boolean
   onPress: () => void
 }) {
   return (
     <button
       type="button"
+      aria-label={spoken}
       aria-pressed={pressed}
       onClick={onPress}
       className={`h-7 rounded-md px-2.5 text-sm font-medium ${
@@ -621,13 +889,7 @@ function PlayerPicker({
   )
 }
 
-function Summary({
-  summary,
-  issues,
-}: {
-  summary: ReturnType<typeof summariseTeamSheet>
-  issues: ReturnType<typeof sheetIssues>
-}) {
+function Summary({ summary }: { summary: ReturnType<typeof summariseTeamSheet> }) {
   const status = openPlacesLabel(summary.openPlaces)
   return (
     <section className="rounded-xl border border-ink-200 bg-white p-4">
@@ -640,10 +902,27 @@ function Summary({
       </p>
       <SummaryGroup title="Men" entries={summary.men} empty="No men in the squad yet." />
       <SummaryGroup title="Women" entries={summary.women} empty="No women in the squad yet." />
-      {issues.length > 0 && (
-        <div className="mt-3 border-t border-ink-100 pt-2">
-          <h3 className="text-xs font-medium tracking-wide text-ink-500">Potential issues</h3>
-          <ul className="mt-1.5 space-y-1.5">
+    </section>
+  )
+}
+
+function IssuesPanel({
+  issues,
+  revealed,
+  onCheck,
+}: {
+  issues: ReturnType<typeof sheetIssues>
+  revealed: boolean
+  onCheck: () => void
+}) {
+  return (
+    <section className="rounded-xl border border-ink-200 bg-white p-4">
+      <h2 className="text-sm font-semibold">Potential issues</h2>
+      {revealed ? (
+        issues.length === 0 ? (
+          <p className="mt-2 text-sm text-ink-500">No issues.</p>
+        ) : (
+          <ul className="mt-2 space-y-1.5">
             {issues.map((issue) => (
               <li
                 key={issue.id}
@@ -657,7 +936,15 @@ function Summary({
               </li>
             ))}
           </ul>
-        </div>
+        )
+      ) : (
+        <button
+          type="button"
+          onClick={onCheck}
+          className="mt-3 inline-flex h-8 items-center justify-center rounded-md border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 hover:border-ink-300"
+        >
+          Check for issues
+        </button>
       )}
     </section>
   )
@@ -687,11 +974,11 @@ function SummaryGroup({
       ) : (
         <ul className="mt-1">
           {entries.map((entry) => (
-            <li key={entry.player.id} className="flex items-center gap-2 py-1">
-              <p className="flex min-w-0 flex-1 items-baseline gap-2 text-sm">
-                <span className="truncate font-medium">{entry.player.name}</span>
+            <li key={entry.player.id} className="flex items-start gap-2 py-1">
+              <p className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                <span className="break-words font-medium">{entry.player.name}</span>
                 {entry.allThree && (
-                  <span className="shrink-0 rounded-full bg-loss-50 px-1.5 py-0.5 text-[11px] font-semibold text-loss-700">
+                  <span className="shrink-0 rounded-md bg-loss-50 px-1.5 py-0.5 text-[11px] font-semibold text-loss-700">
                     All three
                   </span>
                 )}
