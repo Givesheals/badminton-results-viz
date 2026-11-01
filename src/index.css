@@ -90,6 +90,10 @@
   --color-discipline-mixed-soft: #f7fcfc;
   --color-discipline-doubles-soft: #f8f9fd;
   --color-discipline-singles-soft: #fcfaf5;
+  /* Stronger wash for “you may also meet” panels — still the discipline hue. */
+  --color-discipline-mixed-panel: color-mix(in srgb, var(--color-discipline-mixed) 28%, #fff);
+  --color-discipline-doubles-panel: color-mix(in srgb, var(--color-discipline-doubles) 40%, #fff);
+  --color-discipline-singles-panel: color-mix(in srgb, var(--color-discipline-singles) 42%, #fff);
 
   /* Soft amber drip for notes identity (badges / tab accents) — not clickable chrome */
   --color-notes-amber: #d4a017;

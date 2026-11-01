@@ -49,6 +49,11 @@ export type DrawPlayerBusyStatus = {
    * e.g. "QF", "SF", "F", "Group"
    */
   nextRoundShort: string
+  /**
+   * Quiet strip for a lower-confidence warning. Omit for the standard pink banner.
+   * Prototype visual only until the confidence rules are settled.
+   */
+  visualWeight?: 'quiet'
 }
 
 /** Named person blocking settlement of a pending next opponent. */

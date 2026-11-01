@@ -117,7 +117,9 @@ export const tournamentProgressionInfo = (
   <div className={infoBlockClass}>
     <p>
       Average depth is the mean finish across events in the current filter (one entry per
-      event). Early knockout rounds are grouped with quarter-finals on the charts.
+      event). In a competition with group stages, rounds before the quarter-final count as a
+      quarter-final. With no group stages, those rounds count as Group match wins if you have
+      won a match, and Group if you have not.
     </p>
     <p>
       County events and other league results are excluded. Only competitive matches count.

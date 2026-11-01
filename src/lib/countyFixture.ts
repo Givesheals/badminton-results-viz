@@ -147,16 +147,40 @@ function squadLabel(short: string, program: CountyFixtureProgram, seed: string):
   return `${short} ${squad}`
 }
 
+export type AssignedCountyFixture = {
+  tieIndex: number
+  fixture: CountyFixtureSides
+}
+
+export type CountyFixturePlan = {
+  program: CountyFixtureProgram | null
+  /**
+   * Set when every game belongs to one tie, so the card title can name it.
+   * Several ties leave this empty and label each group of games instead.
+   */
+  headerFixture: CountyFixtureSides | null
+  byMatch: Map<NormalizedMatch, AssignedCountyFixture>
+}
+
 /**
- * One tie for the weekend. Shires badges are the county only (Cambs).
+ * Team badges for a county day. Shires badges are the county only (Cambs).
  * Senior and masters county include the squad number (Cambs 1).
+ * Names are illustrative: match sheets do not name the other county.
+ *
+ * A day splits into several ties only when every discipline's games divide
+ * into rubbers of one or two. A single tie keeps today's one pair of badges.
  */
-export function countyFixtureForWeekend(
+export function planCountyFixtures(
   matches: NormalizedMatch[],
   representedCounty: string | null,
-): CountyFixtureSides | null {
+): CountyFixturePlan {
+  const empty: CountyFixturePlan = {
+    program: null,
+    headerFixture: null,
+    byMatch: new Map(),
+  }
   const program = dominantProgram(matches)
-  if (!program || matches.length === 0) return null
+  if (!program || matches.length === 0) return empty
 
   const sample = matches[0]!
   const homeShort =
@@ -164,11 +188,75 @@ export function countyFixtureForWeekend(
     COUNTIES[hashString(sample.playerName || 'player') % COUNTIES.length]!.short
   const opponents = COUNTIES.filter((county) => county.short !== homeShort)
   const fixtureSeed = `${sample.competitionName}|${matches.map((match) => match.date).sort()[0]}`
-  const awayShort = opponents[hashString(`${fixtureSeed}:away`) % opponents.length]!.short
+  const tieCount = tieCountFor(matches)
+  const fixtures = Array.from({ length: tieCount }, (_, index) =>
+    fixtureForTie(program, homeShort, opponents, fixtureSeed, index),
+  )
+
+  const byDiscipline = new Map<string, NormalizedMatch[]>()
+  for (const match of matches) {
+    const list = byDiscipline.get(match.discipline) ?? []
+    list.push(match)
+    byDiscipline.set(match.discipline, list)
+  }
+
+  const byMatch = new Map<NormalizedMatch, AssignedCountyFixture>()
+  for (const list of byDiscipline.values()) {
+    // Earlier day first. Same-day order stays as it was recorded.
+    list.sort((a, b) => a.date.localeCompare(b.date))
+    const perTie = list.length / tieCount
+    list.forEach((match, index) => {
+      const tieIndex = tieCount === 1 ? 0 : Math.floor(index / perTie)
+      byMatch.set(match, { tieIndex, fixture: fixtures[tieIndex]! })
+    })
+  }
 
   return {
     program,
+    headerFixture: tieCount === 1 ? fixtures[0]! : null,
+    byMatch,
+  }
+}
+
+/**
+ * How many ties this day is. One, unless each discipline splits into rubbers
+ * of one or two games. Challenge events stay one group.
+ */
+function tieCountFor(matches: NormalizedMatch[]): number {
+  const name = matches[0]?.competitionName ?? ''
+  if (/challenge/i.test(name)) return 1
+
+  const counts = new Map<string, number>()
+  for (const match of matches) {
+    counts.set(match.discipline, (counts.get(match.discipline) ?? 0) + 1)
+  }
+  const values = [...counts.values()]
+  if (values.length === 0) return 1
+
+  const suggested = Math.max(...values.map((count) => Math.ceil(count / 2)))
+  if (suggested < 2) return 1
+
+  const splitsEvenly = values.every((count) => {
+    if (count % suggested !== 0) return false
+    const perTie = count / suggested
+    return perTie >= 1 && perTie <= 2
+  })
+  return splitsEvenly ? suggested : 1
+}
+
+function fixtureForTie(
+  program: CountyFixtureProgram,
+  homeShort: string,
+  opponents: CountyOption[],
+  fixtureSeed: string,
+  index: number,
+): CountyFixtureSides {
+  const start = hashString(`${fixtureSeed}:away`) % opponents.length
+  const awayShort = opponents[(start + index) % opponents.length]!.short
+  const awaySeed = index === 0 ? `${fixtureSeed}:away` : `${fixtureSeed}:away:${index}`
+  return {
+    program,
     home: squadLabel(homeShort, program, `${fixtureSeed}:home`),
-    away: squadLabel(awayShort, program, `${fixtureSeed}:away`),
+    away: squadLabel(awayShort, program, awaySeed),
   }
 }

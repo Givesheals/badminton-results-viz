@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useOpponentNotesContext } from '../../context/OpponentNotesContext'
 import { useTicketBuildPicker } from '../../hooks/useTicketBuildPicker'
 import {
@@ -360,6 +360,68 @@ function OpponentNoteGroupSection({
   )
 }
 
+const NOTES_FILTER_LABELS = [
+  'Filter your notes by opponent, competition, or note text.',
+  'Filter by opponent, competition, note text',
+  'Filter your notes',
+] as const
+
+const NOTES_FILTER_PLACEHOLDER = NOTES_FILTER_LABELS[0]
+
+function useFittingFilterLabel() {
+  const measureRef = useRef<HTMLSpanElement>(null)
+  const [box, setBox] = useState<HTMLDivElement | null>(null)
+  const [label, setLabel] = useState<(typeof NOTES_FILTER_LABELS)[number]>(
+    NOTES_FILTER_LABELS[NOTES_FILTER_LABELS.length - 1],
+  )
+
+  useLayoutEffect(() => {
+    const measure = measureRef.current
+    const parent = box?.parentElement
+    if (!box || !measure || !parent) return
+
+    const pick = () => {
+      const available = parent.clientWidth
+      const border =
+        parseFloat(getComputedStyle(box).borderLeftWidth) +
+        parseFloat(getComputedStyle(box).borderRightWidth)
+      const next =
+        NOTES_FILTER_LABELS.find((option) => {
+          measure.textContent = option
+          return measure.offsetWidth + border <= available + 1
+        }) ?? NOTES_FILTER_LABELS[NOTES_FILTER_LABELS.length - 1]
+      setLabel((current) => (current === next ? current : next))
+    }
+
+    pick()
+    const observer = new ResizeObserver(pick)
+    observer.observe(parent)
+    return () => observer.disconnect()
+  }, [box])
+
+  return { boxRef: setBox, measureRef, label }
+}
+
+function FilterIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+      <path
+        fillRule="evenodd"
+        d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 01.628.74v2.288a2.25 2.25 0 01-.659 1.59l-4.682 4.683a2.25 2.25 0 00-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 018 18.25v-4.757a2.25 2.25 0 00-.659-1.591L2.659 7.22A2.25 2.25 0 012 5.629V2.34a.75.75 0 01.628-.74z"
+        clipRule="evenodd"
+      />
+    </svg>
+  )
+}
+
+function ClearIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden className="h-4 w-4">
+      <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+    </svg>
+  )
+}
+
 function ChevronIcon({ open, className = 'h-4 w-4 text-ink-500' }: { open: boolean; className?: string }) {
   return (
     <svg
@@ -387,6 +449,12 @@ export function OpponentNotesSection({ allMatches }: Props) {
     NOTES_BUILD_STAGES[NOTES_BUILD_STAGES.length - 1],
   )
   const [search, setSearch] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const {
+    boxRef: filterBoxRef,
+    measureRef: filterMeasureRef,
+    label: filterLabel,
+  } = useFittingFilterLabel()
   const [activeNote, setActiveNote] = useState<OpponentNote | null>(null)
   const [addNoteState, setAddNoteState] = useState<AddNoteState>({ step: 'closed' })
   const [tagLibraryRevision, setTagLibraryRevision] = useState(0)
@@ -506,18 +574,51 @@ export function OpponentNotesSection({ allMatches }: Props) {
             <div className="space-y-6">
               <div className="space-y-3">
                 <h4 className="text-sm font-medium text-ink-700">Opponent notes</h4>
-                <div>
+                <div
+                  ref={filterBoxRef}
+                  className="relative w-fit max-w-full rounded-lg border border-ink-200 focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-100"
+                >
                   <label htmlFor="opponent-notes-search" className="sr-only">
-                    Filter notes by opponent, competition, or note text
+                    {NOTES_FILTER_PLACEHOLDER}
                   </label>
+                  <span
+                    ref={filterMeasureRef}
+                    aria-hidden
+                    className="pointer-events-none invisible absolute py-2 pr-3 pl-9 text-sm leading-5 whitespace-nowrap"
+                  />
+                  <span
+                    aria-hidden
+                    className={`invisible block py-2 pl-9 text-sm leading-5 whitespace-nowrap ${search ? 'pr-9' : 'pr-3'}`}
+                  >
+                    {search || filterLabel}
+                  </span>
+                  <FilterIcon className="pointer-events-none absolute top-2.5 left-3 z-10 h-4 w-4 text-ink-400" />
                   <input
+                    ref={searchInputRef}
                     id="opponent-notes-search"
                     type="search"
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Filter notes by Opponent, competition, or note text."
-                    className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                    className={`absolute inset-0 h-full w-full bg-transparent py-2 pl-9 text-sm leading-5 text-ink-900 focus:outline-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden ${search ? 'pr-9' : 'pr-3'}`}
                   />
+                  {search ? null : (
+                    <span className="pointer-events-none absolute inset-0 truncate py-2 pr-3 pl-9 text-sm leading-5 whitespace-nowrap text-ink-400">
+                      {filterLabel}
+                    </span>
+                  )}
+                  {search ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearch('')
+                        searchInputRef.current?.focus()
+                      }}
+                      aria-label="Clear filter"
+                      className="absolute top-1/2 right-1.5 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-ink-400 transition hover:bg-ink-50 hover:text-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                    >
+                      <ClearIcon />
+                    </button>
+                  ) : null}
                 </div>
                 {groups.length === 0 ? (
                   <p className="text-sm text-ink-600">No notes match your search.</p>

@@ -1,4 +1,3 @@
-import { BetaBadge } from '../ui/BetaBadge'
 import { Modal, ModalTitle } from '../ui/Modal'
 import {
   formatPriceGbp,
@@ -80,7 +79,6 @@ export function PlayerLabGateModal({ open, onClose, onSubscribe }: Props) {
           <p className="mt-0.5 max-w-xs text-sm text-ink-600">
             This feature requires a Premium subscription.
           </p>
-          <BetaBadge className="mt-2" />
         </div>
       </div>
 

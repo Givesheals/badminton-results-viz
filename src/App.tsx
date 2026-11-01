@@ -18,6 +18,10 @@ import { normalizeDataset } from './lib/matchHistory'
 import { getShowcaseRecordSlideId, isShowcaseMode } from './lib/showcaseMode'
 import { getLegalPageId } from './lib/legalPages'
 import { PremiumTermsPage } from './components/legal/PremiumTermsPage'
+import { PremiumLaunchBannerPreview } from './components/premium/PremiumLaunchBannerPreview'
+import { TeamSheetPage } from './components/team-sheet/TeamSheetPage'
+import { LoginMenuPreview } from './components/premium/UserMenuDrawer'
+import { isTeamSheetPage } from './lib/teamSheet'
 
 function AppContent() {
   const { dataset, loadParsed, loadFromUrl, isLoading, error } = useDataset()
@@ -98,7 +102,38 @@ function AppContent() {
   )
 }
 
+function previewParam(): string | null {
+  if (typeof window === 'undefined') return null
+  return new URLSearchParams(window.location.search).get('preview')
+}
+
+function isPremiumBannerPreview(): boolean {
+  return previewParam() === 'premium-banner'
+}
+
+function isLoginMenuPreview(): boolean {
+  return previewParam() === 'login-menu'
+}
+
 export default function App() {
+  if (isTeamSheetPage()) {
+    return <TeamSheetPage />
+  }
+
+  if (isPremiumBannerPreview()) {
+    return <PremiumLaunchBannerPreview />
+  }
+
+  if (isLoginMenuPreview()) {
+    return (
+      <PremiumProvider>
+        <TicketBuildVisibilityProvider>
+          <LoginMenuPreview />
+        </TicketBuildVisibilityProvider>
+      </PremiumProvider>
+    )
+  }
+
   const legalPageId = getLegalPageId()
   if (legalPageId === 'premium-terms') {
     return <PremiumTermsPage />

@@ -91,7 +91,8 @@ function player(name: string, extra: { seedLabel?: string; rating?: number } = {
 /**
  * Simon’s progressive draw story (one scroll, three stages):
  * - Singles: one group game played, three still to play (mixed compact + upcoming
- *   cards + QF/SF in “may also meet”); Callum still busy in OD
+ *   cards + QF/SF in “may also meet”); Callum still busy in OD (pink banner);
+ *   Lewis still busy in XD (quiet banner)
  * - Doubles: groups done (compact results) + QF probable with path status per side
  * - Mixed: groups done with wins (compact results) + QF definite opponent (advanced)
  */
@@ -122,7 +123,7 @@ const simonSinglesDoublesMixed: DrawDisciplineGroup[] = [
         opponentSide: [player('Owen Blake')],
         result: { outcome: 'win', scoreSummary: '21-15, 21-12' },
       },
-      // Neither notes nor games — unplayed (plain card, fourth group game)
+      // Neither notes nor games — unplayed; quiet cross-discipline banner
       {
         id: 'os4',
         roundLabel: 'Group C',
@@ -421,6 +422,11 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
         disciplineCode: 'OD',
         nextRoundShort: 'QF',
       },
+      'Lewis Hart': {
+        disciplineCode: 'XD',
+        nextRoundShort: 'Group',
+        visualWeight: 'quiet',
+      },
     },
     entrants: [
       {
@@ -431,6 +437,23 @@ export const drawScoutPreviewCompetitions: DrawScoutCompetition[] = [
       {
         name: 'Callum Reed',
         disciplineGroups: callumDraw,
+      },
+      {
+        name: 'Lewis Hart',
+        disciplineGroups: [
+          {
+            disciplineCode: 'XD',
+            disciplineLabel: 'Mixed Doubles',
+            matchups: [
+              {
+                id: 'lewis-xd1',
+                roundLabel: 'Group B',
+                yourSide: [player('Lewis Hart'), player('Chloe Adams')],
+                opponentSide: [player('Nina West'), player('Ryan Cole')],
+              },
+            ],
+          },
+        ],
       },
       {
         name: 'Sara Moore',
