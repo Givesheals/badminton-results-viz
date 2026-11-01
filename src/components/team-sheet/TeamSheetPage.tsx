@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'rea
 import { getDisciplineFamilyStyle } from '../../lib/disciplineStyle'
 import { readTeamSheetLink, teamSheetHash } from '../../lib/teamSheetLink'
 import {
+  addPartnership,
   addPlayer,
   assignPlayer,
   clearSlot,
@@ -9,9 +10,14 @@ import {
   disciplineFamilyForRubber,
   openPlacesLabel,
   pickerRows,
+  removePartnership,
   removePlayer,
   RUBBER_GROUPS,
+  setPartnershipStrength,
+  setPlayerGender,
+  sheetIssues,
   summariseTeamSheet,
+  type PartnershipStrength,
   type RubberDef,
   type RubberGroupDef,
   type RubberSlotDef,
@@ -45,6 +51,7 @@ export function TeamSheetPage() {
   const linkRef = useRef<HTMLInputElement>(null)
   const shouldFocusLink = useRef(false)
   const summary = useMemo(() => summariseTeamSheet(sheet), [sheet])
+  const issues = useMemo(() => sheetIssues(sheet), [sheet])
   const currentHash = teamSheetHash(sheet)
   const linkMatches = savedHash !== null && savedHash === currentHash
   const shareUrl =
@@ -129,9 +136,6 @@ export function TeamSheetPage() {
             Save
           </button>
         </div>
-        <p className="mt-1 text-sm leading-relaxed text-ink-600">
-          Type your squad, then fill in the card. Save makes a link you can open again or share.
-        </p>
         {loaded.linkError && (
           <p role="alert" className="mt-3 text-sm text-loss-700">
             This link could not be read. Starting a blank sheet.
@@ -191,7 +195,7 @@ export function TeamSheetPage() {
                 <div
                   role="group"
                   aria-label="Gender"
-                  className="inline-flex rounded-lg border border-ink-200 bg-white p-1"
+                  className="inline-flex rounded-lg border border-ink-200 bg-white p-0.5"
                 >
                   <GenderChoice label="Man" pressed={gender === 'man'} onPress={() => setGender('man')} />
                   <GenderChoice label="Woman" pressed={gender === 'woman'} onPress={() => setGender('woman')} />
@@ -199,7 +203,7 @@ export function TeamSheetPage() {
                 <button
                   type="submit"
                   disabled={name.trim().length === 0}
-                  className="ml-auto inline-flex h-11 items-center justify-center rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-ink-200 disabled:text-ink-500"
+                  className="ml-auto inline-flex h-8 items-center justify-center rounded-lg bg-brand-600 px-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-ink-200 disabled:text-ink-500"
                 >
                   Add
                 </button>
@@ -211,38 +215,65 @@ export function TeamSheetPage() {
               )}
             </form>
             {sheet.players.length > 0 && (
-              <ul className="mt-3 border-t border-ink-100">
-                {sheet.players.map((player) => (
-                  <li key={player.id} className="flex items-center justify-between gap-3 border-b border-ink-100 py-1.5">
-                    <p className="min-w-0 truncate text-sm">
-                      <span className="font-medium">{player.name}</span>
-                      <span className="ml-2 text-ink-500">{player.gender === 'man' ? 'Man' : 'Woman'}</span>
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSheet(removePlayer(sheet, player.id))
-                        if (openSlot && sheet.slots[openSlot] === player.id) setOpenSlot(null)
-                      }}
-                      className="shrink-0 rounded-md px-2 py-1 text-sm text-ink-500 hover:bg-ink-50 hover:text-ink-900"
+              <ul className="mt-3 flex flex-wrap gap-1.5">
+                {sheet.players.map((player) => {
+                  const nextGender = player.gender === 'man' ? 'woman' : 'man'
+                  const placed = Object.values(sheet.slots).includes(player.id)
+                  return (
+                    <li
+                      key={player.id}
+                      className="inline-flex max-w-full items-center gap-1 rounded-full border border-ink-200 bg-ink-50 py-0.5 pl-2.5 pr-1"
                     >
-                      Remove
-                    </button>
-                  </li>
-                ))}
+                      <span className="truncate text-sm font-medium">{player.name}</span>
+                      <button
+                        type="button"
+                        aria-label={`${player.name} is a ${player.gender}. Switch to ${nextGender}.`}
+                        title={
+                          placed
+                            ? `Switch to ${nextGender}. This clears their places on the card.`
+                            : `Switch to ${nextGender}.`
+                        }
+                        onClick={() => {
+                          setSheet(setPlayerGender(sheet, player.id, nextGender))
+                          if (openSlot && sheet.slots[openSlot] === player.id) setOpenSlot(null)
+                        }}
+                        className="shrink-0 rounded-full bg-white px-1.5 py-0.5 text-[11px] font-medium text-ink-600 ring-1 ring-ink-200 hover:text-ink-900"
+                      >
+                        {player.gender === 'man' ? 'Man' : 'Woman'}
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${player.name}`}
+                        onClick={() => {
+                          setSheet(removePlayer(sheet, player.id))
+                          if (openSlot && sheet.slots[openSlot] === player.id) setOpenSlot(null)
+                        }}
+                        className="shrink-0 rounded-full px-1 text-sm leading-none text-ink-400 hover:text-ink-900"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  )
+                })}
               </ul>
+            )}
+            {sheet.players.length >= 2 && (
+              <Partnerships
+                sheet={sheet}
+                onChange={setSheet}
+              />
             )}
           </section>
 
           <section ref={cardRef} className="mt-4 overflow-hidden rounded-xl border border-ink-200 bg-white lg:col-start-1 lg:mt-0">
+            <h2 className="border-b border-ink-100 px-3 py-2 text-sm font-semibold">Team card</h2>
             {RUBBER_GROUPS.map((group, groupIndex) => (
               <div key={group.id} className={groupIndex === 0 ? undefined : 'border-t border-ink-200'}>
-                {group.rubbers.map((rubber, rubberIndex) => (
+                {group.rubbers.map((rubber) => (
                   <RubberRow
                     key={rubber.id}
                     group={group}
                     rubber={rubber}
-                    divided={rubberIndex > 0}
                     sheet={sheet}
                     openSlot={openSlot}
                     onToggleSlot={(slotId) => setOpenSlot((current) => (current === slotId ? null : slotId))}
@@ -262,11 +293,134 @@ export function TeamSheetPage() {
 
           <aside className="mt-6 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:mt-0">
             <div className="lg:sticky lg:top-6">
-              <Summary summary={summary} />
+              <Summary summary={summary} issues={issues} />
             </div>
           </aside>
         </div>
       </main>
+    </div>
+  )
+}
+
+function Partnerships({ sheet, onChange }: { sheet: TeamSheetState; onChange: (sheet: TeamSheetState) => void }) {
+  const [playerA, setPlayerA] = useState(sheet.players[0]?.id ?? '')
+  const [playerB, setPlayerB] = useState(sheet.players[1]?.id ?? '')
+  const [strength, setStrength] = useState<PartnershipStrength>('lots')
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setPlayerA((current) =>
+      sheet.players.some((player) => player.id === current) ? current : (sheet.players[0]?.id ?? ''),
+    )
+    setPlayerB((current) =>
+      sheet.players.some((player) => player.id === current) ? current : (sheet.players[1]?.id ?? ''),
+    )
+  }, [sheet.players])
+
+  function onSubmit(event: FormEvent) {
+    event.preventDefault()
+    const result = addPartnership(sheet, playerA, playerB, strength)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    onChange(result.sheet)
+    setError(null)
+  }
+
+  return (
+    <div className="mt-3 border-t border-ink-100 pt-3">
+      <h3 className="text-xs font-medium tracking-wide text-ink-500">Partnerships</h3>
+      <p className="mt-1 text-xs text-ink-500">How much they have played together.</p>
+      <form onSubmit={onSubmit} className="mt-2 flex flex-wrap items-center gap-2">
+        <select
+          aria-label="First player"
+          value={playerA}
+          onChange={(event) => {
+            setPlayerA(event.target.value)
+            setError(null)
+          }}
+          className="h-8 min-w-0 flex-1 basis-36 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900"
+        >
+          {sheet.players.map((player) => (
+            <option key={player.id} value={player.id}>
+              {player.name}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs text-ink-400" aria-hidden>
+          &
+        </span>
+        <select
+          aria-label="Second player"
+          value={playerB}
+          onChange={(event) => {
+            setPlayerB(event.target.value)
+            setError(null)
+          }}
+          className="h-8 min-w-0 flex-1 basis-36 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900"
+        >
+          {sheet.players.map((player) => (
+            <option key={player.id} value={player.id}>
+              {player.name}
+            </option>
+          ))}
+        </select>
+        <div role="group" aria-label="Experience together" className="inline-flex rounded-lg border border-ink-200 bg-white p-0.5">
+          <GenderChoice label="Lots" pressed={strength === 'lots'} onPress={() => setStrength('lots')} />
+          <GenderChoice label="A bit" pressed={strength === 'bit'} onPress={() => setStrength('bit')} />
+        </div>
+        <button
+          type="submit"
+          className="inline-flex h-8 items-center justify-center rounded-lg bg-brand-600 px-3 text-sm font-semibold text-white hover:bg-brand-700"
+        >
+          Add pair
+        </button>
+      </form>
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-loss-700">
+          {error}
+        </p>
+      )}
+      {sheet.partnerships.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-1.5">
+          {sheet.partnerships.map((pair) => {
+            const first = sheet.players.find((player) => player.id === pair.playerIds[0])
+            const second = sheet.players.find((player) => player.id === pair.playerIds[1])
+            if (!first || !second) return null
+            const next: PartnershipStrength = pair.strength === 'lots' ? 'bit' : 'lots'
+            const spoken = pair.strength === 'lots' ? 'lots of experience' : 'a bit of experience'
+            return (
+              <li
+                key={pair.id}
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-ink-200 bg-white py-0.5 pl-2.5 pr-1"
+              >
+                <span className="truncate text-sm">
+                  {first.name} & {second.name}
+                </span>
+                <button
+                  type="button"
+                  aria-label={`${first.name} and ${second.name}, ${spoken}. Switch intensity.`}
+                  onClick={() => onChange(setPartnershipStrength(sheet, pair.id, next))}
+                  className={`shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
+                    pair.strength === 'lots' ? 'bg-brand-50 text-brand-800' : 'bg-ink-100 text-ink-600'
+                  }`}
+                >
+                  {pair.strength === 'lots' ? 'Lots' : 'A bit'}
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Remove ${first.name} and ${second.name}`}
+                  onClick={() => onChange(removePartnership(sheet, pair.id))}
+                  className="shrink-0 rounded-full px-1 text-sm leading-none text-ink-400 hover:text-ink-900"
+                >
+                  ×
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </div>
   )
 }
@@ -285,7 +439,7 @@ function GenderChoice({
       type="button"
       aria-pressed={pressed}
       onClick={onPress}
-      className={`h-9 rounded-md px-3 text-sm font-medium ${
+      className={`h-7 rounded-md px-2.5 text-sm font-medium ${
         pressed ? 'bg-ink-900 text-white' : 'text-ink-600 hover:bg-ink-50'
       }`}
     >
@@ -297,7 +451,6 @@ function GenderChoice({
 function RubberRow({
   group,
   rubber,
-  divided,
   sheet,
   openSlot,
   onToggleSlot,
@@ -306,7 +459,6 @@ function RubberRow({
 }: {
   group: RubberGroupDef
   rubber: RubberDef
-  divided: boolean
   sheet: TeamSheetState
   openSlot: SlotId | null
   onToggleSlot: (slotId: SlotId) => void
@@ -317,7 +469,7 @@ function RubberRow({
   const openDef = rubber.slots.find((slot) => slot.id === openSlot) ?? null
   const pair = rubber.slots.length === 2
   return (
-    <div className={divided ? 'border-t border-ink-100' : undefined}>
+    <div>
       <div className="flex items-center gap-2 px-2 py-1">
         <span className={`h-5 w-1 shrink-0 rounded-full ${style.accentClass}`} aria-hidden />
         <span className="w-9 shrink-0 text-xs font-semibold tracking-wide text-ink-800">{rubber.id}</span>
@@ -471,8 +623,10 @@ function PlayerPicker({
 
 function Summary({
   summary,
+  issues,
 }: {
   summary: ReturnType<typeof summariseTeamSheet>
+  issues: ReturnType<typeof sheetIssues>
 }) {
   const status = openPlacesLabel(summary.openPlaces)
   return (
@@ -486,6 +640,25 @@ function Summary({
       </p>
       <SummaryGroup title="Men" entries={summary.men} empty="No men in the squad yet." />
       <SummaryGroup title="Women" entries={summary.women} empty="No women in the squad yet." />
+      {issues.length > 0 && (
+        <div className="mt-3 border-t border-ink-100 pt-2">
+          <h3 className="text-xs font-medium tracking-wide text-ink-500">Potential issues</h3>
+          <ul className="mt-1.5 space-y-1.5">
+            {issues.map((issue) => (
+              <li
+                key={issue.id}
+                className={
+                  issue.tone === 'warning'
+                    ? 'rounded-md bg-loss-50 px-2 py-1.5 text-sm leading-snug text-loss-700'
+                    : 'text-sm leading-snug text-ink-700'
+                }
+              >
+                {issue.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   )
 }
@@ -517,7 +690,11 @@ function SummaryGroup({
             <li key={entry.player.id} className="flex items-center gap-2 py-1">
               <p className="flex min-w-0 flex-1 items-baseline gap-2 text-sm">
                 <span className="truncate font-medium">{entry.player.name}</span>
-                {entry.allThree && <span className="shrink-0 text-xs font-medium text-brand-700">All three</span>}
+                {entry.allThree && (
+                  <span className="shrink-0 rounded-full bg-loss-50 px-1.5 py-0.5 text-[11px] font-semibold text-loss-700">
+                    All three
+                  </span>
+                )}
               </p>
               {entry.rubbers.length > 0 && (
                 <div className="flex shrink-0 gap-1">

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { addPlayer, assignPlayer, createEmptyTeamSheet, type SlotId, type TeamGender } from './teamSheet'
+import {
+  addPartnership,
+  addPlayer,
+  assignPlayer,
+  createEmptyTeamSheet,
+  type SlotId,
+  type TeamGender,
+} from './teamSheet'
 import { encodeTeamSheet, readTeamSheetLink, teamSheetHash } from './teamSheetLink'
 
 function build(players: Array<[string, TeamGender]>, assignments: Array<[SlotId, string]> = []) {
@@ -69,6 +76,31 @@ describe('team sheet links', () => {
   it('uses the same link text for the same sheet', () => {
     const sheet = build([['Alex', 'man']], [['MS1', 'Alex']])
     expect(encodeTeamSheet(sheet)).toBe(encodeTeamSheet(sheet))
+  })
+
+  it('keeps partnership strength in the shared link', () => {
+    const sheet = build(
+      [
+        ['Martin Crossley', 'man'],
+        ['Polly Thisdell', 'woman'],
+        ['Sara Moore', 'woman'],
+      ],
+      [['XD3M', 'Martin Crossley'], ['XD3W', 'Polly Thisdell']],
+    )
+    const withLots = addPartnership(sheet, sheet.players[0]!.id, sheet.players[1]!.id, 'lots')
+    if (!withLots.ok) throw new Error(withLots.error)
+    const withBit = addPartnership(withLots.sheet, sheet.players[2]!.id, sheet.players[0]!.id, 'bit')
+    if (!withBit.ok) throw new Error(withBit.error)
+
+    const hash = teamSheetHash(withBit.sheet)
+    const restored = readOk(hash)
+    expect(restored.partnerships.map((pair) => pair.strength)).toEqual(['lots', 'bit'])
+    expect(restored.players.map((player) => player.name)).toEqual([
+      'Martin Crossley',
+      'Polly Thisdell',
+      'Sara Moore',
+    ])
+    expect(teamSheetHash(restored)).toBe(hash)
   })
 
   it('treats a blank address as a new sheet and rejects a broken one', () => {

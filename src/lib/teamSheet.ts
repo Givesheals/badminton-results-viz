@@ -36,9 +36,25 @@ export type SquadPlayer = {
   gender: TeamGender
 }
 
+/** How much the two players have played together. */
+export type PartnershipStrength = 'lots' | 'bit'
+
+export type Partnership = {
+  id: string
+  playerIds: [string, string]
+  strength: PartnershipStrength
+}
+
 export type TeamSheetState = {
   players: SquadPlayer[]
   slots: Record<SlotId, string | null>
+  partnerships: Partnership[]
+}
+
+export type SheetIssue = {
+  id: string
+  text: string
+  tone: 'warning' | 'note'
 }
 
 export type RubberSlotDef = {
@@ -80,6 +96,8 @@ export type SummaryEntry = {
 export type AddPlayerResult =
   | { ok: true; sheet: TeamSheetState }
   | { ok: false; error: string }
+
+export type AddPartnershipResult = AddPlayerResult
 
 const RUBBER_CODES = ['MS1', 'MS2', 'WS1', 'WS2', 'MD1', 'MD2', 'WD1', 'WD2', 'XD1', 'XD2', 'XD3'] as const
 
@@ -201,7 +219,7 @@ for (const group of RUBBER_GROUPS) {
 export function createEmptyTeamSheet(): TeamSheetState {
   const slots = {} as Record<SlotId, string | null>
   for (const id of SLOT_IDS) slots[id] = null
-  return { players: [], slots }
+  return { players: [], slots, partnerships: [] }
 }
 
 export function normalisePlayerName(name: string): string {
@@ -235,6 +253,72 @@ export function removePlayer(state: TeamSheetState, playerId: string): TeamSheet
     ...state,
     players: state.players.filter((player) => player.id !== playerId),
     slots,
+    partnerships: state.partnerships.filter((pair) => !pair.playerIds.includes(playerId)),
+  }
+}
+
+export function setPlayerGender(state: TeamSheetState, playerId: string, gender: TeamGender): TeamSheetState {
+  const player = state.players.find((item) => item.id === playerId)
+  if (!player || player.gender === gender) return state
+  const slots = { ...state.slots }
+  for (const id of SLOT_IDS) {
+    if (slots[id] === playerId) slots[id] = null
+  }
+  return {
+    ...state,
+    players: state.players.map((item) => (item.id === playerId ? { ...item, gender } : item)),
+    slots,
+  }
+}
+
+export function addPartnership(
+  state: TeamSheetState,
+  playerAId: string,
+  playerBId: string,
+  strength: PartnershipStrength,
+): AddPartnershipResult {
+  if (!playerAId || !playerBId || playerAId === playerBId) {
+    return { ok: false, error: 'Choose two different players.' }
+  }
+  const players = new Map(state.players.map((player) => [player.id, player]))
+  if (!players.has(playerAId) || !players.has(playerBId)) {
+    return { ok: false, error: 'Choose two players from the squad.' }
+  }
+  const id = partnershipId(playerAId, playerBId)
+  if (state.partnerships.some((pair) => pair.id === id)) {
+    return { ok: false, error: 'That partnership is already recorded.' }
+  }
+  const order = new Map(state.players.map((player, index) => [player.id, index]))
+  const playerIds: [string, string] =
+    (order.get(playerAId) ?? 0) <= (order.get(playerBId) ?? 0)
+      ? [playerAId, playerBId]
+      : [playerBId, playerAId]
+  return {
+    ok: true,
+    sheet: {
+      ...state,
+      partnerships: [...state.partnerships, { id, playerIds, strength }],
+    },
+  }
+}
+
+export function setPartnershipStrength(
+  state: TeamSheetState,
+  partnershipId: string,
+  strength: PartnershipStrength,
+): TeamSheetState {
+  if (!state.partnerships.some((pair) => pair.id === partnershipId && pair.strength !== strength)) return state
+  return {
+    ...state,
+    partnerships: state.partnerships.map((pair) => (pair.id === partnershipId ? { ...pair, strength } : pair)),
+  }
+}
+
+export function removePartnership(state: TeamSheetState, partnershipId: string): TeamSheetState {
+  if (!state.partnerships.some((pair) => pair.id === partnershipId)) return state
+  return {
+    ...state,
+    partnerships: state.partnerships.filter((pair) => pair.id !== partnershipId),
   }
 }
 
@@ -295,6 +379,26 @@ export function summariseTeamSheet(state: TeamSheetState): {
   }
 }
 
+export function sheetIssues(state: TeamSheetState): SheetIssue[] {
+  const issues: SheetIssue[] = []
+  pushLoadIssues(state, 'man', issues)
+  pushLoadIssues(state, 'woman', issues)
+  const names = new Map(state.players.map((player) => [player.id, player.name]))
+  for (const pair of state.partnerships) {
+    const [firstId, secondId] = pair.playerIds
+    const first = names.get(firstId)
+    const second = names.get(secondId)
+    if (!first || !second || pairedRubber(state, firstId, secondId)) continue
+    const experience = pair.strength === 'lots' ? 'lots of experience' : 'a bit of experience'
+    issues.push({
+      id: `pair:${pair.id}`,
+      text: `${first} has ${experience} with ${second}, and they are not paired.`,
+      tone: 'note',
+    })
+  }
+  return issues
+}
+
 export function disciplineFamilyForRubber(code: string): SelectableDisciplineFamily {
   if (code.startsWith('XD')) return 'mixed'
   if (code.startsWith('MD') || code.startsWith('WD')) return 'doubles'
@@ -315,6 +419,53 @@ export function isTeamSheetPath(pathname: string, baseUrl = '/'): boolean {
 export function isTeamSheetPage(): boolean {
   if (typeof window === 'undefined') return false
   return isTeamSheetPath(window.location.pathname, import.meta.env.BASE_URL)
+}
+
+function pushLoadIssues(state: TeamSheetState, gender: TeamGender, issues: SheetIssue[]) {
+  const players = state.players.filter((player) => player.gender === gender)
+  const onThree = players.filter((player) => familiesOf(state, player.id).size === 3)
+  const onZero = players.filter((player) => familiesOf(state, player.id).size === 0)
+  const people = (count: number) => {
+    if (gender === 'man') return count === 1 ? '1 man' : `${count} men`
+    return count === 1 ? '1 woman' : `${count} women`
+  }
+
+  if (onThree.length > 1) {
+    issues.push({
+      id: `triple-limit:${gender}`,
+      text: `You have ${people(onThree.length)} playing 3 disciplines. This is not allowed.`,
+      tone: 'warning',
+    })
+  } else if (onThree[0]) {
+    issues.push({
+      id: `all-three:${onThree[0].id}`,
+      text: `${onThree[0].name} is playing all three.`,
+      tone: 'note',
+    })
+  }
+
+  if (onZero.length > 0) {
+    issues.push({
+      id: `spare:${gender}`,
+      text: `You have ${people(onZero.length)} playing 0 disciplines. This is allowed.`,
+      tone: 'note',
+    })
+  }
+}
+
+function partnershipId(playerAId: string, playerBId: string): string {
+  return [playerAId, playerBId].sort().join('|')
+}
+
+function pairedRubber(state: TeamSheetState, playerAId: string, playerBId: string): string | null {
+  for (const group of RUBBER_GROUPS) {
+    for (const rubber of group.rubbers) {
+      if (rubber.slots.length < 2) continue
+      const occupants = rubber.slots.map((slot) => state.slots[slot.id])
+      if (occupants.includes(playerAId) && occupants.includes(playerBId)) return rubber.id
+    }
+  }
+  return null
 }
 
 function slotsInFamily(family: SelectableDisciplineFamily, gender: TeamGender): SlotId[] {

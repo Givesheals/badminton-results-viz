@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addPartnership,
   addPlayer,
   assignPlayer,
   clearSlot,
@@ -9,6 +10,8 @@ import {
   openPlacesLabel,
   pickerRows,
   removePlayer,
+  setPlayerGender,
+  sheetIssues,
   summariseTeamSheet,
   type SlotId,
   type TeamGender,
@@ -227,6 +230,108 @@ describe('summariseTeamSheet', () => {
     expect(openPlacesLabel(summary.openPlaces)).toBe(`${summary.openPlaces} places still open`)
     expect(openPlacesLabel(1)).toBe('1 place still open')
     expect(openPlacesLabel(0)).toBe('Sheet complete')
+  })
+})
+
+describe('setPlayerGender', () => {
+  it('switches the player and clears places that no longer fit', () => {
+    const { state, id } = build(
+      [['Alex', 'man']],
+      [
+        ['MS1', 'Alex'],
+        ['MD1A', 'Alex'],
+      ],
+    )
+    const next = setPlayerGender(state, id.Alex!, 'woman')
+    expect(next.players[0]?.gender).toBe('woman')
+    expect(next.slots.MS1).toBeNull()
+    expect(next.slots.MD1A).toBeNull()
+  })
+})
+
+describe('partnerships', () => {
+  it('records two intensities and flags a pair that is not on the card', () => {
+    const { state, id } = build([
+      ['Martin', 'man'],
+      ['Polly', 'woman'],
+      ['Sara', 'woman'],
+    ])
+    const lots = addPartnership(state, id.Martin!, id.Polly!, 'lots')
+    expect(lots.ok).toBe(true)
+    if (!lots.ok) return
+    const bit = addPartnership(lots.sheet, id.Sara!, id.Martin!, 'bit')
+    expect(bit.ok).toBe(true)
+    if (!bit.ok) return
+    expect(bit.sheet.partnerships.map((pair) => [pair.playerIds.map((playerId) => playerId), pair.strength])).toEqual([
+      [[id.Martin, id.Polly], 'lots'],
+      [[id.Martin, id.Sara], 'bit'],
+    ])
+    expect(addPartnership(bit.sheet, id.Polly!, id.Martin!, 'lots').ok).toBe(false)
+    expect(sheetIssues(bit.sheet).map((issue) => issue.text)).toEqual([
+      'You have 1 man playing 0 disciplines. This is allowed.',
+      'You have 2 women playing 0 disciplines. This is allowed.',
+      'Martin has lots of experience with Polly, and they are not paired.',
+      'Martin has a bit of experience with Sara, and they are not paired.',
+    ])
+
+    const paired = assignPlayer(assignPlayer(bit.sheet, 'XD1M', id.Martin!), 'XD1W', id.Polly!)
+    expect(sheetIssues(paired).map((issue) => issue.text)).toEqual([
+      'You have 1 woman playing 0 disciplines. This is allowed.',
+      'Martin has a bit of experience with Sara, and they are not paired.',
+    ])
+  })
+
+  it('names a player who is on all three', () => {
+    const { state } = build(
+      [
+        ['Alex', 'man'],
+        ['Sam', 'man'],
+      ],
+      [
+        ['MS1', 'Alex'],
+        ['MD1A', 'Alex'],
+        ['XD1M', 'Alex'],
+        ['MD1B', 'Sam'],
+      ],
+    )
+    expect(sheetIssues(state).map((issue) => issue.text)).toEqual(['Alex is playing all three.'])
+  })
+
+  it('rejects two players of one gender on all three, and notes a spare', () => {
+    const { state, id } = build([
+      ['Alex', 'man'],
+      ['Sam', 'man'],
+      ['Jordan', 'man'],
+      ['Priya', 'woman'],
+    ])
+    const next = {
+      ...state,
+      slots: {
+        ...state.slots,
+        MS1: id.Alex!,
+        MD1A: id.Alex!,
+        XD1M: id.Alex!,
+        MS2: id.Sam!,
+        MD2A: id.Sam!,
+        XD2M: id.Sam!,
+      },
+    }
+    expect(sheetIssues(next).map((issue) => issue.text)).toEqual([
+      'You have 2 men playing 3 disciplines. This is not allowed.',
+      'You have 1 man playing 0 disciplines. This is allowed.',
+      'You have 1 woman playing 0 disciplines. This is allowed.',
+    ])
+    expect(sheetIssues(next).find((issue) => issue.id === 'triple-limit:man')?.tone).toBe('warning')
+  })
+
+  it('drops a partnership when one player leaves the squad', () => {
+    const { state, id } = build([
+      ['Martin', 'man'],
+      ['Polly', 'woman'],
+    ])
+    const added = addPartnership(state, id.Martin!, id.Polly!, 'lots')
+    if (!added.ok) throw new Error(added.error)
+    expect(removePlayer(added.sheet, id.Polly!).partnerships).toEqual([])
   })
 })
 
