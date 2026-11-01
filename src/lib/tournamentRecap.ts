@@ -12,7 +12,7 @@ import {
   buildRecapRecordMilestones,
   type RecapRecordMilestone,
 } from './recapRecordMilestones'
-import { sortMatchesChronologically } from './matchChronology'
+import { compareMatchesChronologically, sortMatchesChronologically } from './matchChronology'
 import {
   buildNoteContextFromMatch,
   type OpponentNoteMatchContext,
@@ -21,8 +21,10 @@ import { isCompetitiveMatch } from './matchExclusions'
 import { buildRatingChanges, type MatchRatingChange } from './matchRatingChange'
 import { getMatchGames, getMatchVolume } from './matchScores'
 import {
-  countyFixtureForWeekend,
+  planCountyFixtures,
   inferRepresentedCounty,
+  type AssignedCountyFixture,
+  type CountyFixtureProgram,
   type CountyFixtureSides,
 } from './countyFixture'
 import { getOpponentTeamMembers, type TeamMember } from './matchTeams'
@@ -98,6 +100,11 @@ export type DisciplineMatchRecap = {
    * a grey hyphen chip instead of a rating change.
    */
   ratingEligible: boolean
+  /**
+   * County tie this game belongs to. Null on graded tournaments.
+   * Team names are illustrative.
+   */
+  fixture: CountyFixtureSides | null
   noteContext: OpponentNoteMatchContext
 }
 
@@ -285,10 +292,13 @@ export type TournamentRecap = {
   dateTo: string
   tournamentCategoryLabel: string
   /**
-   * County tie shown beside the competition name.
+   * County tie shown beside the competition name when the day is a single tie.
+   * Several ties leave this empty and label each group of games instead.
    * Null for graded tournaments. Team names are illustrative.
    */
   fixture: CountyFixtureSides | null
+  /** Shires, senior county, or masters county. Null for graded tournaments. */
+  countyProgram: CountyFixtureProgram | null
   disciplines: DisciplineRecap[]
   eventSummaries: RecapSummaryCard[]
   celebrations: RecapCelebrations
@@ -1087,6 +1097,7 @@ function buildDisciplineTimeline(
   partnerChemistryHighlights: PartnerChemistryHighlight[],
   sharedPartner: string | null,
   showMatchDates: boolean,
+  fixtures: Map<NormalizedMatch, AssignedCountyFixture>,
 ): DisciplineTimeline {
   const eventCallouts: RecapSummaryCard[] = []
 
@@ -1151,7 +1162,7 @@ function buildDisciplineTimeline(
         )
       : new Map<string, MatchRatingChange>()
 
-  const matches = sortMatchesChronologically(disciplineMatches).map((match) => {
+  const matches = orderDisciplineMatches(disciplineMatches, fixtures).map((match) => {
       const key = recapMatchKey(match)
       return {
         matchKey: key,
@@ -1170,6 +1181,7 @@ function buildDisciplineTimeline(
         ratingEligible:
           isCompetitiveMatch(match) &&
           (match.outcome === 'win' || match.outcome === 'loss'),
+        fixture: fixtures.get(match)?.fixture ?? null,
         noteContext: buildNoteContextFromMatch(match),
       }
     })
@@ -1178,6 +1190,20 @@ function buildDisciplineTimeline(
     eventCallouts,
     matches,
   }
+}
+
+/** Ties stay together. Within a tie, games stay in play order. */
+function orderDisciplineMatches(
+  matches: NormalizedMatch[],
+  fixtures: Map<NormalizedMatch, AssignedCountyFixture>,
+): NormalizedMatch[] {
+  if (fixtures.size === 0) return sortMatchesChronologically(matches)
+  return [...matches].sort((a, b) => {
+    const tieA = fixtures.get(a)?.tieIndex ?? 0
+    const tieB = fixtures.get(b)?.tieIndex ?? 0
+    if (tieA !== tieB) return tieA - tieB
+    return compareMatchesChronologically(a, b)
+  })
 }
 
 function calendarDaysBetween(earlier: string, later: string): number {
@@ -1523,6 +1549,7 @@ function buildDisciplineRecaps(
   currentKey: string,
   partnerChemistryHighlights: PartnerChemistryHighlight[],
   showMatchDates: boolean,
+  fixtures: Map<NormalizedMatch, AssignedCountyFixture>,
 ): DisciplineRecap[] {
   const buckets = new Map<string, NormalizedMatch[]>()
   for (const match of weekendMatches.filter(isCompetitiveMatch)) {
@@ -1624,6 +1651,7 @@ function buildDisciplineRecaps(
         partnerChemistryHighlights,
         sharedPartner,
         showMatchDates,
+        fixtures,
       )
 
       return {
@@ -1791,12 +1819,14 @@ function buildWeekendRecap(
     allCompetitive,
     weekendMatchKeys,
   )
+  const fixturePlan = planCountyFixtures(bucket.matches, representedCounty)
   const disciplines = buildDisciplineRecaps(
     bucket.matches,
     allWeekends,
     bucket.key,
     partnerChemistryHighlights,
     showMatchDates,
+    fixturePlan.byMatch,
   )
   const bestWin = findBestWinInMatches(bucket.matches)
   const freakFlags = detectFreakFlags(bucket.matches)
@@ -1825,7 +1855,8 @@ function buildWeekendRecap(
     dateFrom,
     dateTo,
     tournamentCategoryLabel: dominantCategoryLabel(bucket.matches),
-    fixture: countyFixtureForWeekend(bucket.matches, representedCounty),
+    fixture: fixturePlan.headerFixture,
+    countyProgram: fixturePlan.program,
     disciplines,
     eventSummaries,
     celebrations,

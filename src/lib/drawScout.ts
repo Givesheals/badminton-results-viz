@@ -143,15 +143,14 @@ export function formatCrossDisciplineBusyBanner(
       ? formatDrawRelativeTime(options.resultsLastUpdatedAt, now)
       : null
   const stale = isDrawResultsUpdateStale(options.resultsLastUpdatedAt, now)
-  const firstName = playerName.split(/\s+/)[0] ?? playerName
   const code = status.disciplineCode
   const lead =
     stale && relative != null
-      ? `As of ${relative}: ${firstName} still in ${code}`
-      : `${firstName} still playing ${code}`
+      ? `As of ${relative}: ${playerName} still in ${code}`
+      : `${playerName} still playing ${code}`
   const roundCue = `${status.nextRoundShort} next`
   const support =
-    !stale && relative != null ? `${roundCue} · ${relative}` : roundCue
+    !stale && relative != null ? `As of ${relative} · ${roundCue}` : roundCue
   return { lead, support }
 }
 

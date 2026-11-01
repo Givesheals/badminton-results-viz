@@ -127,16 +127,30 @@ function CrossDisciplineBusyBanners({
   return (
     <div className="space-y-1">
       {rows.map(({ playerName, status }) => {
+        const quiet = status.visualWeight === 'quiet'
         const copy = formatCrossDisciplineBusyBanner(playerName, status, {
           resultsLastUpdatedAt: competitionStatus.resultsLastUpdatedAt,
         })
         const profileUrl = players.find((player) => player.name === playerName)?.url
-        const className =
-          'mt-1.5 w-full rounded-md border border-loss-100 bg-loss-50 px-2 py-1 text-left transition hover:border-loss-200 hover:bg-loss-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-loss-200'
+        const className = quiet
+          ? 'mt-1.5 block w-fit max-w-full rounded-md border border-ink-200 bg-ink-50 px-2 py-1 text-left transition hover:border-ink-300 hover:bg-ink-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-200'
+          : 'mt-1.5 block w-fit max-w-full rounded-md border border-loss-100 bg-loss-50 px-2 py-1 text-left transition hover:border-loss-200 hover:bg-loss-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-loss-200'
         const body = (
           <>
-            <p className="text-[11px] font-semibold leading-tight text-loss-700">{copy.lead}</p>
-            <p className="text-[10px] font-medium leading-tight text-loss-600/85">{copy.support}</p>
+            <p
+              className={`text-[11px] leading-tight ${
+                quiet ? 'font-medium text-ink-700' : 'font-semibold text-loss-700'
+              }`}
+            >
+              {copy.lead}
+            </p>
+            <p
+              className={`text-[10px] font-medium leading-tight ${
+                quiet ? 'text-ink-500' : 'text-loss-600/85'
+              }`}
+            >
+              {copy.support}
+            </p>
           </>
         )
 
@@ -174,6 +188,14 @@ function DisciplineIdentityLine({ players }: { players: DrawPlayer[] }) {
         </span>
       ))}
     </p>
+  )
+}
+
+function ViewNotesChip({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center rounded-md border border-notes-amber/35 bg-notes-amber-soft px-1.5 py-0.5 text-[11px] font-semibold leading-none text-notes-amber-ink">
+      {label}
+    </span>
   )
 }
 
@@ -1037,6 +1059,65 @@ function LaterOpponentBlock({
     )
   }
 
+  if (variant === 'embedded') {
+    return (
+      <div
+        className={`overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-ink-900/5 ${
+          teaser != null ? 'transition hover:bg-ink-50/80' : ''
+        }`}
+      >
+        <div className="relative">
+          {teaser != null ? (
+            <button
+              type="button"
+              onClick={toggleOpen}
+              aria-expanded={open}
+              aria-label={
+                open ? 'Hide notes and previous games' : 'Show notes and previous games'
+              }
+              className="absolute inset-0 z-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200"
+            />
+          ) : null}
+          <div
+            className={`relative z-10 flex items-start gap-3 px-3 py-2.5 ${
+              teaser != null ? 'pointer-events-none' : ''
+            }`}
+          >
+            <span className="w-10 shrink-0 pt-0.5 text-sm font-bold tabular-nums text-brand-700">
+              {probabilityLabel}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className={teaser != null ? 'pointer-events-auto' : undefined}>
+                <DrawPairNames
+                  players={opponent.opponentSide}
+                  className="min-w-0 text-sm leading-snug text-ink-900"
+                />
+              </div>
+              {teaser != null && (teaser.notesCta != null || teaser.gamesLabel != null) ? (
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {teaser.notesCta != null ? <ViewNotesChip label={teaser.notesCta} /> : null}
+                  {teaser.gamesLabel != null ? (
+                    <span className="text-xs text-ink-500">{teaser.gamesLabel}</span>
+                  ) : null}
+                </div>
+              ) : null}
+              {pathStatusLine != null ? (
+                <p className="mt-0.5 text-xs leading-snug text-ink-500">{pathStatusLine}</p>
+              ) : null}
+              <div className={teaser != null ? 'pointer-events-auto' : undefined}>{busyBanner}</div>
+            </div>
+            {teaser != null ? (
+              <span className="self-center">
+                <ChevronIcon open={open} />
+              </span>
+            ) : null}
+          </div>
+        </div>
+        {expanded}
+      </div>
+    )
+  }
+
   const card = (
     <div className={cardShell}>
       <div className={`rounded-r border-l-4 ${disciplineStyle.borderClass}`}>
@@ -1046,11 +1127,7 @@ function LaterOpponentBlock({
     </div>
   )
 
-  if (variant === 'standalone') return card
-
-  return (
-    <div className="border-t border-ink-100 py-2 first:border-t-0 first:pt-0">{card}</div>
-  )
+  return card
 }
 
 const LATER_OPPONENTS_INITIAL_VISIBLE = 2
@@ -1082,48 +1159,42 @@ function LaterOpponentRoundGroup({
     ? group.opponents
     : group.opponents.slice(0, LATER_OPPONENTS_INITIAL_VISIBLE)
   const hiddenCount = group.opponents.length - visibleOpponents.length
+  const disciplineStyle = getDisciplineStyle(disciplineCode)
 
   return (
-    <div className="mt-3 first:mt-2">
+    <div
+      className={`overflow-hidden rounded-xl border-l-4 ${disciplineStyle.borderClass} ${disciplineStyle.panelBgClass}`}
+    >
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center justify-between rounded-lg bg-ink-100 px-3 py-2 text-left transition hover:bg-ink-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+        className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition hover:bg-black/[0.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-200"
         aria-expanded={open}
       >
         <h5 className="text-sm font-semibold text-ink-900">{group.roundLabel}</h5>
         <ChevronIcon open={open} />
       </button>
       {open && (
-        <>
-          <div
-            className={`mt-1 ${
-              (hiddenCount > 0 && !showAll) ||
-              (showAll && group.opponents.length > LATER_OPPONENTS_INITIAL_VISIBLE)
-                ? '[&>div:last-child]:pb-0'
-                : ''
-            }`}
-          >
-            {visibleOpponents.map((opponent) => (
-              <LaterOpponentBlock
-                key={laterOpponentKey(opponent)}
-                opponent={opponent}
-                displayNotes={displayNotes}
-                displayMatches={displayMatches}
-                playerName={playerName}
-                matchByKey={matchByKey}
-                disciplineCode={disciplineCode}
-                viewingOwnDraw={viewingOwnDraw}
-                matchHistoryEnabled={matchHistoryEnabled}
-                competitionStatus={competitionStatus}
-              />
-            ))}
-          </div>
+        <div className="space-y-2 px-2 pb-2">
+          {visibleOpponents.map((opponent) => (
+            <LaterOpponentBlock
+              key={laterOpponentKey(opponent)}
+              opponent={opponent}
+              displayNotes={displayNotes}
+              displayMatches={displayMatches}
+              playerName={playerName}
+              matchByKey={matchByKey}
+              disciplineCode={disciplineCode}
+              viewingOwnDraw={viewingOwnDraw}
+              matchHistoryEnabled={matchHistoryEnabled}
+              competitionStatus={competitionStatus}
+            />
+          ))}
           {hiddenCount > 0 && !showAll && (
             <button
               type="button"
               onClick={() => setShowAll(true)}
-              className="mt-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+              className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
             >
               Show more
             </button>
@@ -1132,12 +1203,12 @@ function LaterOpponentRoundGroup({
             <button
               type="button"
               onClick={() => setShowAll(false)}
-              className="mt-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+              className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
             >
               Show less
             </button>
           )}
-        </>
+        </div>
       )}
     </div>
   )
@@ -1185,15 +1256,17 @@ function DisciplineLaterSection({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+        className="flex w-full items-center justify-between gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
         aria-expanded={open}
       >
-        <span className="text-sm font-semibold text-ink-800">{title}</span>
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-ink-900">{title}</span>
+          <span className="mt-0.5 block text-xs font-normal text-ink-500">{helper}</span>
+        </span>
         <ChevronIcon open={open} />
       </button>
-      <p className="mt-0.5 text-xs text-ink-500">{helper}</p>
       {open && (
-        <div>
+        <div className="mt-2 space-y-2">
           {roundGroups.map((group) => (
             <LaterOpponentRoundGroup
               key={group.roundLabel}

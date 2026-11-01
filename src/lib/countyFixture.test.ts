@@ -1,190 +1,124 @@
 import { describe, expect, it } from 'vitest'
 import type { NormalizedMatch } from '../types/matchHistory'
-import {
-  classifyCountyFixture,
-  countyFixtureForWeekend,
-  inferRepresentedCounty,
-} from './countyFixture'
+import { planCountyFixtures } from './countyFixture'
 
-function makeMatch(
-  overrides: Partial<NormalizedMatch> &
-    Pick<NormalizedMatch, 'competitionName' | 'date' | 'discipline'>,
+function match(
+  overrides: Partial<NormalizedMatch> & Pick<NormalizedMatch, 'discipline' | 'opponents'>,
 ): NormalizedMatch {
-  const { competitionName, date, discipline, ...rest } = overrides
   return {
+    competitionName: 'Masters County Championships 2025-26',
     tournamentCategory: 'county',
     tournamentCategoryLabel: 'County',
-    disciplineLabel: discipline,
+    date: '2026-02-22',
+    disciplineLabel: overrides.discipline,
     playerName: 'Alex',
     partnerName: null,
-    opponents: 'Opponent',
-    outcome: 'win',
+    outcome: 'loss',
     nonCompetitiveReason: null,
-    scoreSummary: '21-15, 21-12',
-    playerRating: 500,
+    scoreSummary: '21-18, 21-17',
+    playerRating: 580,
+    competitionAgeGroup: 'Masters',
     raw: { 'Tournament Category': 'N/A' },
-    ...rest,
-    competitionName,
-    date,
-    discipline,
+    ...overrides,
   }
 }
 
-describe('classifyCountyFixture', () => {
-  it('treats shires league as shires', () => {
-    expect(
-      classifyCountyFixture(
-        makeMatch({ competitionName: 'Shires League 2024-25', date: '2025-03-02', discipline: 'OS' }),
-      ),
-    ).toBe('shires')
-  })
-
-  it('treats senior county championships as senior county', () => {
-    expect(
-      classifyCountyFixture(
-        makeMatch({
-          competitionName: 'Senior County Championships - Regional Divisions 2024-25',
-          date: '2025-03-22',
-          discipline: 'MD',
-          competitionAgeGroup: 'Senior',
-        }),
-      ),
-    ).toBe('senior-county')
-  })
-
-  it('treats masters county championships as masters county', () => {
-    expect(
-      classifyCountyFixture(
-        makeMatch({
-          competitionName: 'Masters County Championships 2025-26',
-          date: '2026-02-12',
-          discipline: 'OD',
-          competitionAgeGroup: 'Masters',
-        }),
-      ),
-    ).toBe('masters-county')
-  })
-
-  it('ignores graded tournaments', () => {
-    expect(
-      classifyCountyFixture(
-        makeMatch({
-          competitionName: 'Cambridgeshire Senior Bronze',
-          date: '2026-07-12',
-          discipline: 'OS',
-          tournamentCategory: 'bronze',
-          tournamentCategoryLabel: 'Bronze',
-          raw: { 'Tournament Category': 'Bronze' },
-        }),
-      ),
-    ).toBeNull()
-  })
-})
-
-describe('countyFixtureForWeekend', () => {
-  it('uses green-style county names without a squad number for shires', () => {
-    const fixture = countyFixtureForWeekend(
-      [
-        makeMatch({
-          competitionName: 'Shires League 2024-25',
-          date: '2025-03-02',
-          discipline: 'OS',
-        }),
-      ],
-      'Cambs',
-    )
-    expect(fixture).toEqual({
-      program: 'shires',
-      home: 'Cambs',
-      away: expect.any(String),
-    })
-    expect(fixture!.away).not.toMatch(/\d/)
-    expect(fixture!.away).not.toBe('Cambs')
-  })
-
-  it('adds squad numbers for senior and masters county', () => {
-    const senior = countyFixtureForWeekend(
-      [
-        makeMatch({
-          competitionName: 'Senior County Championships',
-          date: '2025-03-22',
-          discipline: 'MD',
-          competitionAgeGroup: 'Senior',
-        }),
-      ],
-      'Cambs',
-    )
-    const masters = countyFixtureForWeekend(
-      [
-        makeMatch({
-          competitionName: 'Masters County Championships 2025-26',
-          date: '2026-02-12',
-          discipline: 'OD',
-          competitionAgeGroup: 'Masters',
-        }),
-      ],
-      'Cambs',
-    )
-    expect(senior!.program).toBe('senior-county')
-    expect(masters!.program).toBe('masters-county')
-    expect(senior!.home).toMatch(/^Cambs [1-3]$/)
-    expect(masters!.home).toMatch(/^Cambs [1-3]$/)
-    expect(senior!.away).toMatch(/ [1-3]$/)
-    expect(masters!.away).toMatch(/ [1-3]$/)
-  })
-
-  it('keeps the same tie for every rubber in the weekend', () => {
-    const matches = ['OS', 'OD', 'XD'].map((discipline) =>
-      makeMatch({
-        competitionName: 'Shires League 2024-25',
-        date: '2025-03-02',
-        discipline,
-      }),
-    )
-    const first = countyFixtureForWeekend(matches, 'Cambs')
-    const second = countyFixtureForWeekend(matches, 'Cambs')
-    expect(second).toEqual(first)
-  })
-
-  it('returns nothing for a graded weekend', () => {
-    expect(
-      countyFixtureForWeekend(
-        [
-          makeMatch({
-            competitionName: 'Suffolk Open',
-            date: '2026-04-01',
-            discipline: 'OS',
-            raw: { 'Tournament Category': 'Silver' },
-          }),
-        ],
-        'Cambs',
-      ),
-    ).toBeNull()
-  })
-})
-
-describe('inferRepresentedCounty', () => {
-  it('prefers the county on home events over a busier away circuit', () => {
+describe('planCountyFixtures', () => {
+  it('keeps one tie when a player has a pair of doubles and one mixed', () => {
     const matches = [
-      makeMatch({
-        competitionName: 'Kent Masters Gold 2026',
-        date: '2026-01-10',
-        discipline: 'OS',
-        raw: { 'Tournament Category': 'Gold' },
-      }),
-      makeMatch({
-        competitionName: 'Kent Masters Gold 2026',
-        date: '2026-01-10',
+      match({ discipline: 'OD', opponents: 'A' }),
+      match({ discipline: 'OD', opponents: 'B' }),
+      match({ discipline: 'XD', opponents: 'C' }),
+    ]
+
+    const plan = planCountyFixtures(matches, 'Cambs')
+
+    expect(plan.program).toBe('masters-county')
+    expect(plan.headerFixture?.home.startsWith('Cambs')).toBe(true)
+    const away = plan.headerFixture?.away
+    expect(away).toBeTruthy()
+    expect(plan.byMatch.get(matches[0]!)?.fixture.away).toBe(away)
+    expect(plan.byMatch.get(matches[1]!)?.fixture.away).toBe(away)
+    expect(plan.byMatch.get(matches[2]!)?.fixture.away).toBe(away)
+  })
+
+  it('splits a day into ties when every discipline divides into rubbers', () => {
+    const matches = [
+      match({ discipline: 'OD', opponents: 'OD1' }),
+      match({ discipline: 'OD', opponents: 'OD2' }),
+      match({ discipline: 'XD', opponents: 'XD1' }),
+      match({ discipline: 'OD', opponents: 'OD3' }),
+      match({ discipline: 'OD', opponents: 'OD4' }),
+      match({ discipline: 'XD', opponents: 'XD2' }),
+    ]
+
+    const plan = planCountyFixtures(matches, 'Cambs')
+    const away = (opponent: string) =>
+      plan.byMatch.get(matches.find((row) => row.opponents === opponent)!)!.fixture.away
+
+    expect(plan.headerFixture).toBeNull()
+    expect(away('OD1')).toBe(away('OD2'))
+    expect(away('OD1')).toBe(away('XD1'))
+    expect(away('OD3')).toBe(away('OD4'))
+    expect(away('OD3')).toBe(away('XD2'))
+    expect(away('OD1')).not.toBe(away('OD3'))
+  })
+
+  it('splits three ties when doubles has two games in each', () => {
+    const matches = [
+      ...[0, 1, 2].map((tie) => match({ discipline: 'OS', opponents: `OS${tie}` })),
+      ...[0, 1, 2].flatMap((tie) => [
+        match({ discipline: 'OD', opponents: `OD${tie}a` }),
+        match({ discipline: 'OD', opponents: `OD${tie}b` }),
+      ]),
+      ...[0, 1, 2].map((tie) => match({ discipline: 'XD', opponents: `XD${tie}` })),
+    ]
+
+    const plan = planCountyFixtures(matches, 'Cambs')
+    const away = (opponent: string) =>
+      plan.byMatch.get(matches.find((row) => row.opponents === opponent)!)!.fixture.away
+
+    expect(new Set([away('OS0'), away('OS1'), away('OS2')]).size).toBe(3)
+    expect(away('OS0')).toBe(away('OD0a'))
+    expect(away('OS0')).toBe(away('OD0b'))
+    expect(away('OS0')).toBe(away('XD0'))
+    expect(away('OS1')).toBe(away('OD1a'))
+    expect(away('OS2')).toBe(away('XD2'))
+  })
+
+  it('leaves a county challenge as one tie', () => {
+    const matches = [0, 1, 2, 3, 4, 5].map((index) =>
+      match({
+        competitionName: 'Masters County Challenge 2024',
         discipline: 'OD',
-        raw: { 'Tournament Category': 'Gold' },
+        opponents: `OD${index}`,
       }),
-      makeMatch({
-        competitionName: 'Cambridgeshire Restricted 2025',
-        date: '2025-09-01',
-        discipline: 'OS',
-        raw: { 'Tournament Category': 'Other' },
+    )
+
+    const plan = planCountyFixtures(matches, 'Cambs')
+    const aways = new Set(
+      matches.map((row) => plan.byMatch.get(row)!.fixture.away),
+    )
+
+    expect(plan.headerFixture).not.toBeNull()
+    expect(aways.size).toBe(1)
+  })
+
+  it('does not invent a tie for a graded tournament', () => {
+    const matches = [
+      match({
+        competitionName: 'Cambridgeshire Senior Bronze',
+        tournamentCategory: 'bronze',
+        tournamentCategoryLabel: 'Bronze',
+        discipline: 'OD',
+        opponents: 'A',
+        raw: { 'Tournament Category': 'Bronze' },
       }),
     ]
-    expect(inferRepresentedCounty(matches)).toBe('Cambs')
+
+    const plan = planCountyFixtures(matches, 'Cambs')
+    expect(plan.program).toBeNull()
+    expect(plan.headerFixture).toBeNull()
+    expect(plan.byMatch.size).toBe(0)
   })
 })

@@ -723,6 +723,11 @@ describe('drawScout', () => {
       disciplineCode: 'OD',
       nextRoundShort: 'QF',
     })
+    expect(cambs.busyPlayersByName?.['Lewis Hart']).toEqual({
+      disciplineCode: 'XD',
+      nextRoundShort: 'Group',
+      visualWeight: 'quiet',
+    })
     expect(cambs.entrants.some((entrant) => entrant.name === 'Callum Reed')).toBe(true)
     const callum = cambs.entrants.find((entrant) => entrant.name === 'Callum Reed')!
     expect(callum.disciplineGroups.map((group) => group.disciplineCode)).toEqual(['OS', 'OD'])
@@ -777,8 +782,8 @@ describe('drawScout', () => {
         now,
       },
     )
-    expect(fresh.lead).toBe('Lucy still playing OS')
-    expect(fresh.support).toBe('QF next · 14 min ago')
+    expect(fresh.lead).toBe('Lucy Grant still playing OS')
+    expect(fresh.support).toBe('As of 14 min ago · QF next')
 
     const stale = formatCrossDisciplineBusyBanner(
       'Lucy Grant',
@@ -791,8 +796,23 @@ describe('drawScout', () => {
         now,
       },
     )
-    expect(stale.lead).toBe('As of 3 hr ago: Lucy still in OS')
+    expect(stale.lead).toBe('As of 3 hr ago: Lucy Grant still in OS')
     expect(stale.support).toBe('QF next')
+
+    const quiet = formatCrossDisciplineBusyBanner(
+      'Lewis Hart',
+      {
+        disciplineCode: 'XD',
+        nextRoundShort: 'Group',
+        visualWeight: 'quiet',
+      },
+      {
+        resultsLastUpdatedAt: new Date(now.getTime() - 14 * 60_000).toISOString(),
+        now,
+      },
+    )
+    expect(quiet.lead).toBe('Lewis Hart still playing XD')
+    expect(quiet.support).toBe('As of 14 min ago · Group next')
 
     expect(
       formatOpponentPathStatusLine(

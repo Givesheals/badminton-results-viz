@@ -9,6 +9,8 @@ export type DisciplineStyle = {
   rowBgClass: string
   /** Solid fill for a left accent bar (straight inner edge, rounded outer clip). */
   accentClass: string
+  /** Tinted ground for a grouped “you may also meet” round panel. */
+  panelBgClass: string
 }
 
 const SINGLES_CODES = new Set(['MS', 'WS', 'OS'])
@@ -58,31 +60,35 @@ export function getDisciplineFamilyStyle(family: SelectableDisciplineFamily) {
 
 const FAMILY_STYLES: Record<
   DisciplineFamily,
-  Pick<DisciplineStyle, 'chipClass' | 'borderClass' | 'rowBgClass' | 'accentClass'>
+  Pick<DisciplineStyle, 'chipClass' | 'borderClass' | 'rowBgClass' | 'accentClass' | 'panelBgClass'>
 > = {
   singles: {
     chipClass: 'bg-discipline-singles text-white',
     borderClass: 'border-l-discipline-singles',
     rowBgClass: 'bg-discipline-singles-soft',
     accentClass: 'bg-discipline-singles',
+    panelBgClass: 'bg-discipline-singles-panel',
   },
   doubles: {
     chipClass: 'bg-discipline-doubles text-white',
     borderClass: 'border-l-discipline-doubles',
     rowBgClass: 'bg-discipline-doubles-soft',
     accentClass: 'bg-discipline-doubles',
+    panelBgClass: 'bg-discipline-doubles-panel',
   },
   mixed: {
     chipClass: 'bg-discipline-mixed text-white',
     borderClass: 'border-l-discipline-mixed',
     rowBgClass: 'bg-discipline-mixed-soft',
     accentClass: 'bg-discipline-mixed',
+    panelBgClass: 'bg-discipline-mixed-panel',
   },
   unknown: {
     chipClass: 'bg-ink-100 text-ink-700',
     borderClass: 'border-l-ink-200',
     rowBgClass: 'bg-ink-50/40',
     accentClass: 'bg-ink-200',
+    panelBgClass: 'bg-ink-50',
   },
 }
 

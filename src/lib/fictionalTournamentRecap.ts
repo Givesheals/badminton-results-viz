@@ -150,6 +150,7 @@ function matchRow(args: {
     highlights: args.highlights ?? [],
     ratingChange: null,
     ratingEligible: args.ratingEligible ?? true,
+    fixture: null,
     noteContext: {
       matchKey,
       competitionName: args.competitionName,
@@ -550,6 +551,7 @@ export function buildFictionalTournamentRecap(
     dateTo: DATE_SUN,
     tournamentCategoryLabel: CATEGORY,
     fixture: null,
+    countyProgram: null,
     disciplines,
     eventSummaries: [
       {

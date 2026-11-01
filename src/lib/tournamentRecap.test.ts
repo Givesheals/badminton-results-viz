@@ -1079,6 +1079,41 @@ describe('computeTournamentRecaps', () => {
     expect(flags.some((f) => f.kind === 'shoulda_been_final')).toBe(false)
   })
 
+  it('labels each tie inside a discipline when a county day has two', () => {
+    const day = {
+      competitionName: 'Masters County Championships 2025-26',
+      date: '2026-02-12',
+      tournamentCategory: 'county',
+      tournamentCategoryLabel: 'County',
+      competitionAgeGroup: 'Masters' as const,
+      raw: { 'Tournament Category': 'N/A' },
+    }
+    const matches = [
+      makeMatch({ ...day, discipline: 'OD', opponents: 'OD1', partnerName: 'Sam' }),
+      makeMatch({ ...day, discipline: 'OD', opponents: 'OD2', partnerName: 'Sam' }),
+      makeMatch({ ...day, discipline: 'XD', opponents: 'XD1', partnerName: 'Chris' }),
+      makeMatch({ ...day, discipline: 'OD', opponents: 'OD3', partnerName: 'Sam' }),
+      makeMatch({ ...day, discipline: 'OD', opponents: 'OD4', partnerName: 'Sam' }),
+      makeMatch({ ...day, discipline: 'XD', opponents: 'XD2', partnerName: 'Chris' }),
+    ]
+
+    const recap = computeTournamentRecaps(matches).recaps[0]!
+    const doubles = recap.disciplines.find((discipline) => discipline.discipline === 'OD')!
+    const mixed = recap.disciplines.find((discipline) => discipline.discipline === 'XD')!
+
+    expect(recap.fixture).toBeNull()
+    expect(recap.countyProgram).toBe('masters-county')
+    expect(doubles.matches.map((row) => row.fixture?.away)).toEqual([
+      doubles.matches[0]!.fixture?.away,
+      doubles.matches[0]!.fixture?.away,
+      doubles.matches[2]!.fixture?.away,
+      doubles.matches[2]!.fixture?.away,
+    ])
+    expect(doubles.matches[0]!.fixture?.away).not.toBe(doubles.matches[2]!.fixture?.away)
+    expect(mixed.matches[0]!.fixture?.away).toBe(doubles.matches[0]!.fixture?.away)
+    expect(mixed.matches[1]!.fixture?.away).toBe(doubles.matches[2]!.fixture?.away)
+  })
+
   it('rolls shoulda and lost-to-winner independently and never both', () => {
     const kinds = new Set<string>()
 

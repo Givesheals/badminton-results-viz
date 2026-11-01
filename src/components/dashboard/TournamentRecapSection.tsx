@@ -61,7 +61,7 @@ function formatDateRange(from: string, to: string): string {
 }
 
 function RecapCategoryChip({ recap }: { recap: TournamentRecap }) {
-  const label = recap.fixture?.program === 'shires' ? 'Shires' : recap.tournamentCategoryLabel
+  const label = recap.countyProgram === 'shires' ? 'Shires' : recap.tournamentCategoryLabel
   return <TournamentCategoryChip label={label} />
 }
 

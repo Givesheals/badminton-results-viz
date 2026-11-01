@@ -1,6 +1,5 @@
 import { createPortal } from 'react-dom'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
-import { BetaBadge } from '../ui/BetaBadge'
 import { getPlayerInitials } from '../../lib/getPlayerInitials'
 import { usePremium } from '../../context/PremiumContext'
 import { useTicketBuildVisibility } from '../../context/TicketBuildVisibilityContext'
@@ -9,6 +8,8 @@ type Props = {
   open: boolean
   onClose: () => void
   playerName: string
+  /** Screenshot stand-in for the production menu before someone has logged in. */
+  loggedOut?: boolean
   onSignUpPremium: () => void
   onManageSubscription: () => void
   onOpenUserSettings: () => void
@@ -24,6 +25,32 @@ type Props = {
 
 function MenuDivider({ className = '' }: { className?: string }) {
   return <div aria-hidden className={`h-px bg-[#E0E0E0] ${className}`} />
+}
+
+function PersonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-8 w-8 text-white" fill="currentColor" aria-hidden>
+      <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4 0-7 2-7 4.5V20h14v-1.5C19 16 16 14 12 14z" />
+    </svg>
+  )
+}
+
+function BeNumberIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-7 w-7 text-[#5C3992]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      aria-hidden
+    >
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="9" cy="11" r="1.5" fill="currentColor" stroke="none" />
+      <path d="M6.8 15.2c.4-1.3 1.3-1.9 2.2-1.9s1.8.6 2.2 1.9" strokeLinecap="round" />
+      <path d="M14 10.5h4M14 13.5h4" strokeLinecap="round" />
+    </svg>
+  )
 }
 
 function InertLink({ children }: { children: ReactNode }) {
@@ -42,6 +69,7 @@ export function UserMenuDrawer({
   open,
   onClose,
   playerName,
+  loggedOut = false,
   onSignUpPremium,
   onManageSubscription,
   onOpenUserSettings,
@@ -109,6 +137,70 @@ export function UserMenuDrawer({
         <MenuDivider className="mx-5" />
 
         <div className="flex-1 overflow-y-auto px-5 py-5">
+          {loggedOut ? (
+            <>
+              <div className="flex flex-col items-center pt-4 text-center">
+                <div
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-[#5C3992]"
+                  aria-hidden
+                >
+                  <PersonIcon />
+                </div>
+                <button
+                  type="button"
+                  className="mt-4 text-[28px] font-medium leading-tight text-[#5C3992]"
+                  onClick={(event) => event.preventDefault()}
+                >
+                  Log in
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="mb-6 mt-6 flex w-full items-center justify-center rounded-xl bg-[#5C3992] px-4 py-3 text-base font-semibold text-white"
+                onClick={(event) => event.preventDefault()}
+              >
+                Get Premium
+              </button>
+
+              <MenuDivider />
+
+              <section className="mt-5">
+                <h3 className="mb-4 text-2xl font-semibold text-[#222]">Your Account</h3>
+                <ul className="space-y-4">
+                  <li>
+                    <button
+                      type="button"
+                      className="flex items-center gap-3 text-left"
+                      onClick={(event) => event.preventDefault()}
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#5C3992] text-sm font-semibold text-white">
+                        SP
+                      </span>
+                      <span className="text-[26px] font-medium leading-tight text-[#5C3992]">
+                        Profile &amp; Results
+                      </span>
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      className="flex items-center gap-3 text-left"
+                      onClick={(event) => event.preventDefault()}
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center">
+                        <BeNumberIcon />
+                      </span>
+                      <span className="text-[26px] font-medium leading-tight text-[#5C3992]">
+                        Change BE Number
+                      </span>
+                    </button>
+                  </li>
+                </ul>
+              </section>
+            </>
+          ) : (
+            <>
           <div className="flex flex-col items-center text-center">
             <div
               className="flex h-12 w-12 items-center justify-center rounded-full bg-[#5C3992] text-[22px] font-semibold leading-none text-white"
@@ -136,10 +228,9 @@ export function UserMenuDrawer({
                 onClose()
                 onSignUpPremium()
               }}
-              className="mb-5 mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#5C3992] px-4 py-3 text-base font-semibold text-white hover:bg-[#4A2D78]"
+              className="mb-5 mt-4 flex w-full items-center justify-center rounded-xl bg-[#5C3992] px-4 py-3 text-base font-semibold text-white hover:bg-[#4A2D78]"
             >
-              Sign up for Premium
-              <BetaBadge />
+              Get Premium
             </button>
           )}
 
@@ -178,6 +269,14 @@ export function UserMenuDrawer({
                 >
                   Premium announcement
                 </button>
+              </li>
+              <li>
+                <a
+                  href="?preview=premium-banner"
+                  className="text-base font-medium text-[#5C3992] hover:text-[#4A2D78]"
+                >
+                  Premium banner
+                </a>
               </li>
               <li>
                 <button
@@ -299,9 +398,38 @@ export function UserMenuDrawer({
               </li>
             </ul>
           </section>
+            </>
+          )}
         </div>
       </div>
     </>,
     document.body,
+  )
+}
+
+function noop() {}
+
+/** Open with ?preview=login-menu. Stays open so it can be screenshotted for a ticket. */
+export function LoginMenuPreview() {
+  return (
+    <div className="min-h-screen bg-[#c8c8c8]">
+      <UserMenuDrawer
+        open
+        loggedOut
+        onClose={noop}
+        playerName="Simon Parker"
+        onSignUpPremium={noop}
+        onManageSubscription={noop}
+        onOpenUserSettings={noop}
+        onOpenNotifications={noop}
+        onOpenTournamentPreview={noop}
+        onOpenTournamentListings={noop}
+        onOpenLiveFeed={noop}
+        onOpenBeRanking={noop}
+        onOpenDesignAssets={noop}
+        onOpenAddNewData={noop}
+        onOpenPremiumAnnouncement={noop}
+      />
+    </div>
   )
 }

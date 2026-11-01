@@ -13,6 +13,11 @@ type Props = {
   showMatchHighlights?: boolean
   /** When false, hide opponent notes icon (build stage < 10). */
   showNotes?: boolean
+  /**
+   * `soft` is the lightest rule, between games in one tie. The parent draws
+   * the stronger rules above the list and between ties.
+   */
+  separator?: 'regular' | 'soft'
 }
 
 type OpponentLine = {
@@ -58,6 +63,7 @@ export function DisciplineMatchRow({
   match,
   showMatchHighlights = true,
   showNotes = true,
+  separator = 'regular',
 }: Props) {
   const outcomeLabel =
     match.outcome === 'win' ? 'Win' : match.outcome === 'loss' ? 'Loss' : null
@@ -72,7 +78,13 @@ export function DisciplineMatchRow({
   const opponentsWon = match.outcome === 'loss'
 
   return (
-    <li className="border-b border-ink-100/80 py-1.5 last:border-b-0">
+    <li
+      className={
+        separator === 'soft'
+          ? 'border-b border-[#e4e5ee] py-0.5 last:border-b-0'
+          : 'border-b border-ink-100/80 py-1.5 last:border-b-0'
+      }
+    >
       <div className="grid grid-cols-[1fr_auto] items-start gap-x-2 gap-y-0.5">
         <div className="min-w-0">
           {(match.showDate || match.roundLabel) && (
