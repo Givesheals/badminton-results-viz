@@ -272,7 +272,7 @@ export function UserMenuDrawer({
               </li>
               <li>
                 <a
-                  href="?preview=premium-banner"
+                  href="/?preview=premium-banner"
                   className="text-base font-medium text-[#5C3992] hover:text-[#4A2D78]"
                 >
                   Premium banner

@@ -1,4 +1,4 @@
-const PREMIUM_ICON = `${import.meta.env.BASE_URL}badminfo-premium-icon.svg`
+const PREMIUM_ICON = `${import.meta.env.BASE_URL}badminfo-premium-figma.png`
 
 const NAV_GROUPS = [
   ['Seniors', 'Juniors', 'Masters', 'Para', 'Grades', 'Ratings'],
@@ -7,30 +7,15 @@ const NAV_GROUPS = [
   ['Contact Us'],
 ] as const
 
-function BannerRow() {
-  return (
-    <div className="flex items-center gap-2.5 bg-[#e0c9f3] px-3 py-2.5 sm:px-4">
-      <img src={PREMIUM_ICON} alt="" className="h-8 w-8 shrink-0" />
-      <span className="min-w-0 flex-1 text-[15px] leading-snug">
-        <span className="font-semibold">BadmInfo Premium is now live!</span> Get a tactical head start.{' '}
-        <span className="text-[#593196] underline">Learn more.</span>
-      </span>
-      <span className="shrink-0 px-1 text-xl leading-none text-[#5c5c5c]" aria-hidden>
-        ×
-      </span>
-    </div>
-  )
-}
-
 /**
- * Chosen premium icon, in the banner and at a large size.
- * Open with ?preview=premium-banner
+ * Premium launch banner in the production notice slot.
+ * Open with ?preview=premium-banner, or from the account menu.
  */
 export function PremiumLaunchBannerPreview() {
   return (
-    <div className="min-h-screen bg-[#f3eef8] text-[#222]">
-      <header className="bg-[#f3eef8]">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-3 py-2.5 sm:px-4">
+    <div className="min-h-screen bg-white text-[#222]">
+      <header className="bg-[#efe6f6]">
+        <div className="mx-auto flex max-w-[720px] items-center gap-3 px-3 py-2.5">
           <button
             type="button"
             className="flex h-10 w-10 shrink-0 flex-col items-center justify-center gap-[5px]"
@@ -41,7 +26,7 @@ export function PremiumLaunchBannerPreview() {
             <span className="block h-[2.5px] w-6 rounded-full bg-[#5b2d91]" />
           </button>
 
-          <nav className="hidden min-w-0 items-center gap-3 text-[15px] lg:flex" aria-label="Main">
+          <nav className="hidden min-w-0 items-center gap-3 text-[15px] sm:flex" aria-label="Main">
             {NAV_GROUPS.map((group, index) => (
               <div
                 key={group[0]}
@@ -61,27 +46,58 @@ export function PremiumLaunchBannerPreview() {
               type="search"
               placeholder="Search"
               aria-label="Search"
-              className="h-9 w-full min-w-0 max-w-[220px] rounded-sm border border-[#e4dced] bg-white px-3 text-sm outline-none placeholder:text-[#9a94a3] sm:w-52"
+              className="h-9 w-full min-w-0 max-w-[220px] rounded-sm border border-transparent bg-white px-3 text-sm outline-none placeholder:text-[#9a94a3]"
             />
             <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#6d28a0] text-white"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#6d28a0] text-sm font-bold text-white"
               aria-hidden
             >
-              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
-                <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5z" />
-              </svg>
+              SP
             </span>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-4 px-3 py-4 sm:px-4">
-        <p className="text-sm text-[#4a3d5c]">
-          The chosen icon. Same artwork in the banner and at a large size.
-        </p>
-        <BannerRow />
-        <img src={PREMIUM_ICON} alt="BadmInfo Premium icon" className="h-80 w-80" />
-      </main>
+      <div className="mx-auto max-w-[720px] space-y-3 px-2.5 py-3">
+        <div className="flex items-center gap-1.5 bg-[#F4D99A] px-2.5 py-3">
+          <img src={PREMIUM_ICON} alt="" className="h-8 w-8 shrink-0" />
+          <p className="@container min-w-0 flex-1 text-[15px] leading-snug">
+            {/* Break after the headline once the second sentence fits. Below that, drop "now" so it still fits on two lines. */}
+            <span className="font-semibold">
+              BadmInfo Premium is <span className="hidden @min-[250px]:inline">now </span>live!
+            </span>
+            <span className="@min-[250px]:hidden"> </span>
+            <br className="hidden @min-[250px]:block" />
+            Get a tactical head start.{' '}
+            <span className="text-[#593196] underline">Learn more.</span>
+          </p>
+          <span className="shrink-0 text-xl leading-none text-[#5c5c5c]" aria-hidden>
+            ×
+          </span>
+        </div>
+
+        <div className="flex items-start gap-3 bg-[#CDEAFB] px-4 py-3 text-[15px] leading-snug">
+          <div className="min-w-0 flex-1">
+            <p>
+              <span className="font-semibold">You are not logged in</span>, though your BE number is set.
+            </p>
+            <p className="mt-2">
+              <span className="text-[#1a4f86] underline">Log in</span> to access favourites and notifications.
+            </p>
+          </div>
+          <span className="shrink-0 px-1 text-xl leading-none text-[#5c5c5c]" aria-hidden>
+            ×
+          </span>
+        </div>
+
+        <section className="overflow-hidden rounded-2xl border border-[#e4e2e8] bg-white shadow-sm">
+          <div className="bg-[#f2f0f6] px-4 py-4">
+            <h1 className="text-[26px] font-bold leading-tight tracking-tight text-[#343a40]">
+              Senior Tournaments
+            </h1>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }
